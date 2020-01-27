@@ -1,0 +1,31 @@
+{
+  "name": "@project/service3",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "npx sls offline start --host localhost --port 3003",
+    "stop": "npx kill-port --port 3003",
+    "clear": "npm run clear:modules && npm run clear:lib && npm run clear:package",
+    "clear:all": "npm run clear && npm run clear:lock",
+    "clear:modules": "rm -rf ./node_modules",
+    "clear:lock": "rm -f ./package-lock.json",
+    "clear:lib": "rm -rf ./lib",
+    "clear:package": "rm -rf ./.package",
+    "build": "npx tsc",
+    "package": "npx ts-node ../../scripts-services/packagr.ts",
+    "print": "cat serverless.yml",
+    "prune": "npx sls prune -n 3",
+    "deploy": "npx serverless deploy"
+  },
+  "dependencies": {
+    "@hapi/joi": "^17.1.0",
+    "@project/greet": "^0.0.1",
+    "@project/shared": "^0.0.1",
+    "@project/types": "^0.0.1",
+    "node-serverless-helpers": "^3.0.5"
+  },
+  "devDependencies": {
+    "@project/test": "^0.0.1",
+    "@types/hapi__joi": "^16.0.8"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./lib",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "removeComments": true,
+    "module": "commonjs",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es6",
+    "lib": ["es6", "esnext"],
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true
+  },
+  "include": ["./src"]
+}

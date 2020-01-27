@@ -1,0 +1,20 @@
+{
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
+  "compilerOptions": {
+    "declaration": true,
+    "removeComments": true,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es6",
+    "lib": ["es6", "esnext"],
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "sourceMap": true
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@mulambda/cli",
+  "version": "0.0.1",
+  "description": "µlambda framework CLI ",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "serverless",
+    "typescript",
+    "lerna"
+  ],
+  "author": "Mario Arnautou",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^13.5.0",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.5"
+  },
+  "dependencies": {
+    "chalk": "^3.0.0",
+    "figlet": "^1.2.4",
+    "yo": "^3.1.1"
+  }
+}

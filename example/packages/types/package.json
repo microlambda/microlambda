@@ -1,0 +1,23 @@
+{
+  "name": "@project/types",
+  "version": "0.0.1",
+  "description": "All the project type definitions are gathered here",
+  "private": true,
+  "main": "lib/src/index.js",
+  "typings": "lib/src/index.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "tsc": "npx tsc -v && npx tsc",
+    "clear": "npm run clear:modules && npm run clear:lib && npm run clear:package",
+    "clear:all": "npm run clear && npm run clear:lock",
+    "clear:modules": "rm -rf ./node_modules",
+    "clear:lock": "rm -f ./package-lock.json",
+    "clear:lib": "rm -rf ./lib",
+    "clear:package": "rm -rf ./.package"
+  }
+}

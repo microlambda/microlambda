@@ -1,0 +1,48 @@
+service: service-2
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  region: eu-west-1
+  stage: ${env:ENV}
+  environment:
+    env: ${env:ENV}
+
+defaultCors: &defaultCors
+  cors:
+    origins:
+      - '*'
+    headers:
+      - Authorization
+      - Content-Type
+      - X-Amz-Date
+      - X-Amz-Security-Token
+      - X-Api-Key
+      - X-Impersonate
+    allowCredentials: true
+
+functions:
+  hello:
+    handler: src/handlers/hello.handler
+    events:
+      - http:
+          path: hello
+          method: get
+          <<: *defaultCors
+  greet:
+    handler: src/handlers/greet.handler
+    events:
+      - http:
+          path: greet
+          method: post
+          <<: *defaultCors
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-prune-plugin
+
+custom:
+  prune:
+    automatic: true
+    number: 3
