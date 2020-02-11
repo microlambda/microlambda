@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import { IGraphElement } from './lerna-node';
 import { LernaGraph } from './lerna-graph';
+import { IConfig } from '../config/config';
 
 interface IPackage {
   name: string;
@@ -9,7 +10,8 @@ interface IPackage {
   location: string;
 }
 
-export const getLernaGraph = (projectRoot: string) => {
+
+export const getLernaGraph = (projectRoot: string, config: IConfig, defaultPort = 3001) => {
   const packages: IPackage[] = JSON.parse(execSync('npx lerna la --json', {cwd: projectRoot}).toString());
   const rawGraph: {[key: string]: string[]} = JSON.parse(execSync('npx lerna la --graph', { cwd: projectRoot}).toString());
 
@@ -23,5 +25,11 @@ export const getLernaGraph = (projectRoot: string) => {
       dependencies: children.map(n => resolvePackage(n)),
     }
   };
-  return new LernaGraph(Object.keys(rawGraph).filter(n => names.has(n)).map(n => resolvePackage(n)));
+
+  return new LernaGraph(
+    Object.keys(rawGraph).filter(n => names.has(n)).map(n => resolvePackage(n)),
+    projectRoot,
+    config,
+    defaultPort,
+  );
 };
