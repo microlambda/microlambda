@@ -6,12 +6,12 @@
     "esModuleInterop": true,
     "declaration": true,
     "removeComments": true,
-    "module": "commonjs",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "target": "es6",
     "lib": ["es6", "esnext"],
     "noImplicitAny": true,
+    "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true
   },

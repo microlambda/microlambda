@@ -12,5 +12,5 @@ export const handler = handle(async (event: ApiHandlerEvent<IGreetEvent>) => {
       name: Joi.string().required(),
     }),
   );
-  return greet(event.name, event.queryParameters ? event.queryParameters.lang : null);
+  return greet(event.body.name, event.queryStringParameters ? event.queryStringParameters.lang : null);
 });

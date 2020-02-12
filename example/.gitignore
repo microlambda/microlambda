@@ -195,3 +195,4 @@ report-unit.json
 .build
 
 scripts/**/reports
+.logs

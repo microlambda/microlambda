@@ -1,53 +1,38 @@
-#!/usr/bin/env node
-import { getLernaGraph } from './lerna';
-import { options } from 'yargs';
+import { showOff } from './utils/ascii';
 import { getProjectRoot } from './utils/get-project-root';
 import { loadConfig } from './config/load-config';
-import { showOff } from './utils/ascii';
+import { getLernaGraph } from './utils/get-lerna-graph';
+import { log } from './utils/logger';
+import { recreateLogDirectory } from './utils/logs';
 
-const DEFAULT_PORT = 3001;
-
-const argv = options({
-  env: {
-    alias: 'e',
-    choices: ['dev', 'prod'] as const,
-    default: 'dev',
-    demandOption: true,
-    description: 'app environment'
-  },
-  port: {
-    alias: 'p',
-    type: 'number',
-    default: 80,
-    description: 'port'
-  },
-  path: {
-    alias: 'path',
-    type: 'string',
-    default: process.cwd(),
-    description: 'path'
-  }
-})
-  .command(['start'], 'Starting up sls-tool!', {}, (argv) => {
-    showOff();
-    console.log('Starting up the app');
-    const projectRoot = getProjectRoot(argv.path as string);
-
-    console.log('Loading config');
-    const config = loadConfig();
-    console.debug(config);
-
-    console.log('Parsing lerna dependency graph', projectRoot);
-    const defaultPort = argv.port != null ? parseInt(argv.port as string, 10) : DEFAULT_PORT;
-    const graph = getLernaGraph(projectRoot, config, defaultPort);
-
-    const services = graph.getServices();
-
-    console.log(`Found ${services.length} services`);
-    console.log('Starting services');
-    services.forEach(s => s.start());
-  })
-  .check(data => !isNaN(data.port))
-  .help()
-  .wrap(80)
-  .argv;
+export const start = async (defaultPort = 3001) => {
+  showOff();
+  log.info('Starting up the app');
+  const projectRoot = getProjectRoot();
+  log.debug('Loading config');
+  const config = loadConfig();
+  log.debug(config);
+  log.info('Parsing lerna dependency graph', projectRoot);
+  const graph = getLernaGraph(projectRoot, config, defaultPort);
+  await graph.bootstrap().catch(() => {
+    log.error('Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
+    process.exit(1);
+  });
+  await graph.compile().catch(() => {
+    log.error('Error compiling dependencies graph. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
+    process.exit(1);
+  });
+  const services = graph.getServices();
+  recreateLogDirectory(projectRoot);
+  log.info(`Found ${services.length} services`);
+  log.info('Starting services');
+  log.debug(services);
+  services.forEach(s => s.start().catch((err) => {
+    log.error(`Could not start ${s.getName()}`, err);
+  }));
+  process.on('SIGINT', async () => {
+    log.warn('SIGINT signal received');
+    services.forEach(s => s.stop());
+    process.exit();
+  });
+};

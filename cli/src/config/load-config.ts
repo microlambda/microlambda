@@ -3,5 +3,5 @@ import fallback from './default.json';
 import rc from 'rc';
 
 export const loadConfig: () => IConfig = () => {
-  return rc('mulambda', fallback) as IConfig;
+  return rc('microlambda', fallback) as IConfig;
 };

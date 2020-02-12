@@ -1,22 +1,15 @@
-import { IGraphElement, LernaNode } from './lerna-node';
+import { IGraphElement, LernaNode } from './';
 import { createWriteStream } from "fs";
-import { spawn } from "child_process";
-import { LernaGraph } from './lerna-graph';
-import { createLogDirectory, getLogsPath } from '../utils/logs';
-
-enum ServiceStatus {
-  STARTING,
-  RUNNING,
-  STOPPING,
-  STOPPED,
-  CRASHED,
-  RESTARTING,
-}
+import { ChildProcess, spawn } from 'child_process';
+import { LernaGraph } from './';
+import { createLogFile, getLogsPath } from '../utils/logs';
+import { log } from '../utils/logger';
+import { ServiceStatus } from './enums/service.status';
 
 export class Service extends LernaNode {
   private status: ServiceStatus;
-  private readonly node: LernaNode;
   private readonly port: number;
+  private process: ChildProcess;
 
   constructor(graph: LernaGraph, node: IGraphElement) {
     super(graph, node);
@@ -25,20 +18,24 @@ export class Service extends LernaNode {
   }
 
   public getStatus() { return this.status };
-  public getNode() { return this.node };
+
+  public stop() {
+    log.warn(`Stopping service ${this.name}`);
+    this.process.kill();
+  }
 
   public start() {
     this.status = ServiceStatus.STARTING;
-    createLogDirectory(this.graph.getProjectRoot());
-    console.log(`Starting ${this.node.getName()} on localhost:${this.port}`);
-    console.log('Location:', this.node.getLocation());
-    console.log('Env:', process.env);
-    const logsStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.node.getName()));
-    const spawnProcess = spawn('npm', ['run', 'start', '--port', `${this.port}`], {
-      cwd: this.getNode().getLocation(),
+    createLogFile(this.graph.getProjectRoot(), this.name);
+    log.info(`Starting ${this.name} on localhost:${this.port}`);
+    log.debug('Location:', this.location);
+    log.debug('Env:', process.env.ENV);
+    const logsStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name));
+    const spawnProcess = spawn('npx', ['sls', 'offline', 'start', '--port', this.port.toString()], {
+      cwd: this.location,
       env: process.env,
-      stdio: 'inherit',
     });
+    this.process = spawnProcess;
     return new Promise<void>(((resolve, reject) => {
       spawnProcess.stdout.on('data', (data) => {
         logsStream.write(data);
@@ -48,15 +45,16 @@ export class Service extends LernaNode {
         }
       });
       spawnProcess.stderr.on('data', (data) => {
+        log.error(data);
         logsStream.write(data);
       });
       spawnProcess.on('close', (code) => {
-        console.log(`Service ${this.getNode().getName()} exited with code ${code}`);
+        log.error(`Service ${this.name} exited with code ${code}`);
         this.status = ServiceStatus.CRASHED;
         reject();
       });
       spawnProcess.on('error', (err) => {
-        console.log(err);
+        log.error(err);
         this.status = ServiceStatus.CRASHED;
         reject(err);
       })

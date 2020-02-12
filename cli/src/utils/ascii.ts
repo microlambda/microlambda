@@ -1,8 +1,7 @@
-import * as chalk from 'chalk';
+import { magenta } from 'chalk';
+import { textSync } from 'figlet';
 
-const figlet = require('figlet');
-
-export const showOff = () => console.log(chalk.cyan(`\n\n`, figlet.textSync('NX-SLS', {
+export const showOff = () => console.log(magenta(`\n\n`, textSync('MicroLambda', {
   font: 'Big Money-ne',
   horizontalLayout: 'default',
   verticalLayout: 'default'

@@ -4,5 +4,5 @@ import { sayHello } from '@project/greet';
 
 export const handler = handle(async (event: ApiHandlerEvent) => {
   logger.debug('Event received', event);
-  return sayHello(event.queryParameters ? event.queryParameters.lang : null);
+  return sayHello(event.queryStringParameters ? event.queryStringParameters.lang : null);
 });

@@ -1,10 +1,12 @@
-import { IGraphElement, LernaNode } from './lerna-node';
+import { IGraphElement, LernaNode } from './';
 import { existsSync } from "fs";
 import { join } from "path";
-import { Package } from './package';
-import { Service } from './service';
+import { Package } from './';
+import { Service } from './';
 import { resolvePorts } from '../utils/resolve-ports';
 import { IConfig } from '../config/config';
+import { spawn } from 'child_process';
+import { log } from '../utils/logger';
 
 export class LernaGraph {
 
@@ -39,11 +41,30 @@ export class LernaGraph {
     return this.nodes.find(n => n.getName() === name);
   }
 
-  public bootstrap(): void {
-    // NPX LERNA BOOTSTRAP
+  public async bootstrap(): Promise<void> {
+    log.info('Bootstrapping dependencies');
+    const spawnedProcess = spawn('npx', ['lerna', 'bootstrap'], {
+      cwd: this.projectRoot,
+    });
+    return new Promise<void>((resolve, reject) => {
+      spawnedProcess.stdout.on('data', (data) => log.debug(data.toString()));
+      spawnedProcess.stderr.on('data', (data) => log.debug(data.toString()));
+      spawnedProcess.on('close', (code) => {
+        if (code === 0) {
+          return resolve();
+        }
+        return reject();
+      });
+    });
   }
 
-  public compile(): void {
-    // NPX LERNA RUN TSC
+  public async compile(): Promise<void> {
+    log.info('Compiling dependency graph');
+    const alreadyCompiling = new Set<string>();
+    const roots = this.getRootNodes();
+    // Proceed sequentially has leaf packages have to be compiled first
+    for(const root of roots) {
+      await root.compile(alreadyCompiling);
+    }
   }
 }

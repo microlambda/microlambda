@@ -2,7 +2,11 @@
   "name": "@mulambda/cli",
   "version": "0.0.1",
   "description": "µlambda framework CLI ",
-  "main": "lib/index.js",
+  "main": "lib/src/index.js",
+  "bin": {
+    "microlambda": "lib/src/index.js",
+    "mila": "lib/src/index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc --build",
@@ -13,21 +17,26 @@
     "typescript",
     "lerna"
   ],
-  "author": "Mario Arnautou & Arthur Brunck",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^13.5.0",
-    "@types/rc": "^1.1.0",
-    "@types/yargs": "^15.0.3",
-    "ts-node": "^8.6.2",
-    "typescript": "^3.7.5"
-  },
   "dependencies": {
     "chalk": "^3.0.0",
+    "commander": "^4.1.1",
     "figlet": "^1.2.4",
     "is-port-reachable": "^3.0.0",
     "rc": "^1.2.8",
+    "rimraf": "^3.0.2",
     "yargs": "^15.1.0",
     "yo": "^3.1.1"
+  },
+  "author": "Mario Arnautou & Arthur Brunck",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/figlet": "^1.2.0",
+    "@types/node": "^13.5.0",
+    "@types/rc": "^1.1.0",
+    "@types/rimraf": "^2.0.3",
+    "@types/yargs": "^15.0.3",
+    "madge": "^3.7.0",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.5"
   }
 }
