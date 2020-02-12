@@ -27,5 +27,8 @@ export const recreateLogDirectory = (projectRoot: string) => {
 };
 
 export const createLogFile = (projectRoot: string, service: string) => {
-  closeSync(openSync(getLogsPath(projectRoot, service), 'w'));
+  const logsPath = getLogsPath(projectRoot, service);
+  if (!existsSync(logsPath)) {
+    closeSync(openSync(logsPath,  'w'));
+  }
 };

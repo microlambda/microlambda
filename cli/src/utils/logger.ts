@@ -1,6 +1,11 @@
-import { blue, green, yellow, red } from 'chalk';
+import { blue, green, cyan,yellow, red } from 'chalk';
 
 export const log = {
+  silly: (...args: any[]) => {
+    if (process.env.MILA_DEBUG === '*') {
+      console.debug(cyan('[SILLY]'), ...args);
+    }
+  },
   debug: (...args: any[]) => {
     if (process.env.MILA_DEBUG) {
       console.debug(blue('[DEBUG]'), ...args);

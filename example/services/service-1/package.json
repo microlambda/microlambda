@@ -21,11 +21,11 @@
     "@hapi/joi": "^17.1.0",
     "@project/greet": "^0.0.1",
     "@project/shared": "^0.0.1",
-    "@project/types": "^0.0.1",
     "node-serverless-helpers": "^3.0.5"
   },
   "devDependencies": {
     "@project/test": "^0.0.1",
+    "@project/types": "^0.0.1",
     "@types/hapi__joi": "^16.0.8"
   }
 }

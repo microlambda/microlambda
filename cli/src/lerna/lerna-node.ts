@@ -1,10 +1,12 @@
 import { LernaGraph } from './lerna-graph';
-import { existsSync } from 'fs';
+import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
 import { CompilationStatus } from './enums/compilation.status';
-import { execSync, spawn } from 'child_process';
 import { log } from '../utils/logger';
+import glob from 'glob';
+import { RecompilationScheduler } from '../utils/scheduler';
+import chalk from 'chalk';
 
 export interface IGraphElement {
   name: string;
@@ -39,6 +41,10 @@ export abstract class LernaNode {
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   };
 
+  public setStatus(status: CompilationStatus) {
+    this.compilationStatus = status;
+  }
+
   public isRoot(): boolean {
     return this.getDependent().length === 0;
   }
@@ -63,59 +69,83 @@ export abstract class LernaNode {
 
     const dependencies: Set<string> = new Set();
     concatNext(dependencies, this);
-    return Array.from(dependencies).map(name => this.graph.get(name));
+    const dependencyNodes = Array.from(dependencies).map(name => this.graph.get(name));
+    log.silly(`Node ${this.name} has the following dependencies`, dependencyNodes.map(d => d.name));
+    return dependencyNodes;
   }
 
+  /**
+   * Get all dependents nodes.
+   */
   public getDependent(): LernaNode[] {
-    return this.graph.getNodes().filter(n => n.getDependencies().includes(this));
+    const dependent = this.graph.getNodes()
+      .filter(n => n
+        .getDependencies()
+        .map(n => n .name)
+        .includes(this.name));
+    log.silly(`Nodes depending upon ${this.name}`, dependent.map(d => d.name));
+    return dependent;
+  }
+
+  /**
+   * Get the direct parents in dependency tree.
+   */
+  public getParents(): LernaNode[] {
+    return this.graph.getNodes()
+      .filter(n => n.dependencies.some(d => d.name === this.name))
   }
 
   /**
    * Recursively compiles this package and all its dependencies
    */
-  public async compile(_alreadyCompiling?: Set<string>): Promise<void> {
-    log.debug('Compiling', this.name);
-    const alreadyCompiling= !_alreadyCompiling ? new Set<string>() : _alreadyCompiling;
-    if (!alreadyCompiling.has(this.name)) {
-      alreadyCompiling.add(this.name);
-      log.debug('Already compiling', alreadyCompiling);
-      for (const dep of this.dependencies) {
-        // Proceed sequentially has leaf packages have to be compiled first
-        await dep.compile(alreadyCompiling);
+  public compile(scheduler: RecompilationScheduler): void {
+    log.debug('Recursively compile', this.name);
+    for (const dep of this.dependencies) {
+      log.debug('Compiling dependency first', dep.name);
+      try {
+        dep.compile(scheduler)
+      } catch (e) {
+        log.error(e);
+        throw e;
       }
-      await this._compile();
     }
+    scheduler.requestCompilation(this);
   }
 
-  protected async _compile(): Promise<void> {
-    const tsVersion = execSync('npx tsc --version').toString().match(/[0-9]\.[0-9]\.[0-9]/)[0];
-    this.compilationStatus = CompilationStatus.COMPILING;
-    log.info(`Compiling package ${this.name} with typescript ${tsVersion}`);
-    const spawnProcess = spawn('npx', ['tsc'], {
-      cwd: this.location,
-      env: process.env,
-    });
-    return new Promise<void>((resolve, reject) => {
-      spawnProcess.stderr.on('data', (data) => {
-        log.error(data);
-      });
-      spawnProcess.on('close', (code) => {
-        if (code === 0) {
-          this.compilationStatus = CompilationStatus.COMPILED;
-          log.info(`Package compiled ${this.name}`);
-          return resolve();
-        } else {
-          this.compilationStatus = CompilationStatus.ERROR_COMPILING;
-          log.info(`Error compiling ${this.name}`);
-          return reject();
-        }
-      });
-      spawnProcess.on('error', (err) => {
-        log.error(err);
-        this.compilationStatus = CompilationStatus.ERROR_COMPILING;
-        log.info(`Error compiling ${this.name}`, err);
-        return reject();
+  public async watch(scheduler: RecompilationScheduler) {
+    log.debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+    glob(`${this.location}/src/**/*.{ts,js,json}`, (err, matches) => {
+      if (err) {
+        log.error('Error determining files to watch', matches);
+      }
+      matches.forEach((path) => {
+        log.debug('Watching', path);
+        watch(path, ((event, filename) => {
+            log.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+            this._recompile(scheduler);
+        }));
       })
-    });
+    })
+  }
+
+  private async _recompile(scheduler: RecompilationScheduler): Promise<void> {
+    // scheduler.abort();
+    const dependentNodes = this.getDependent().concat(this);
+    log.debug(`${chalk.bold(this.name)}: Dependent nodes`, dependentNodes.map(d => d.name));
+    const dependentServices = dependentNodes.filter(dep => dep instanceof Service);
+    log.debug(`${chalk.bold(this.name)}: Dependent services`, dependentServices.map(d => d.name));
+    log.debug(`${chalk.bold(this.name)}: Stopping dependent services`);
+    await Promise.all(dependentServices.map((s: Service) => s.stop()));
+    this._recompileUpstream(scheduler);
+    dependentServices.forEach((s: Service) => scheduler.requestStart(s));
+    await scheduler.exec()
+  }
+
+  private _recompileUpstream(scheduler: RecompilationScheduler): void {
+    log.debug(`${chalk.bold(this.name)}: Recompiling upstream`);
+    scheduler.requestCompilation(this);
+    for (const parent of this.getParents()) {
+      parent._recompileUpstream(scheduler);
+    }
   }
 }

@@ -4,8 +4,9 @@ import { loadConfig } from './config/load-config';
 import { getLernaGraph } from './utils/get-lerna-graph';
 import { log } from './utils/logger';
 import { recreateLogDirectory } from './utils/logs';
+import { RecompilationScheduler } from './utils/scheduler';
 
-export const start = async (defaultPort = 3001) => {
+export const start = async (scheduler: RecompilationScheduler, defaultPort = 3001) => {
   showOff();
   log.info('Starting up the app');
   const projectRoot = getProjectRoot();
@@ -18,7 +19,7 @@ export const start = async (defaultPort = 3001) => {
     log.error('Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
     process.exit(1);
   });
-  await graph.compile().catch(() => {
+  await graph.compile(scheduler).catch(() => {
     log.error('Error compiling dependencies graph. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
     process.exit(1);
   });
@@ -27,9 +28,12 @@ export const start = async (defaultPort = 3001) => {
   log.info(`Found ${services.length} services`);
   log.info('Starting services');
   log.debug(services);
-  services.forEach(s => s.start().catch((err) => {
-    log.error(`Could not start ${s.getName()}`, err);
-  }));
+
+  services.forEach(s => scheduler.requestStart(s));
+  await scheduler.exec().catch((err) => {
+    log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.')
+  });
+  graph.getNodes().forEach(s => s.watch(scheduler));
   process.on('SIGINT', async () => {
     log.warn('SIGINT signal received');
     services.forEach(s => s.stop());

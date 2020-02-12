@@ -7,6 +7,7 @@ import { resolvePorts } from '../utils/resolve-ports';
 import { IConfig } from '../config/config';
 import { spawn } from 'child_process';
 import { log } from '../utils/logger';
+import { RecompilationScheduler } from '../utils/scheduler';
 
 export class LernaGraph {
 
@@ -58,13 +59,14 @@ export class LernaGraph {
     });
   }
 
-  public async compile(): Promise<void> {
+  public async compile(scheduler: RecompilationScheduler): Promise<void> {
     log.info('Compiling dependency graph');
-    const alreadyCompiling = new Set<string>();
     const roots = this.getRootNodes();
+    log.debug('Roots nodes', roots.map(n => n.getName()));
     // Proceed sequentially has leaf packages have to be compiled first
     for(const root of roots) {
-      await root.compile(alreadyCompiling);
+      await root.compile(scheduler);
     }
+    return scheduler.exec();
   }
 }
