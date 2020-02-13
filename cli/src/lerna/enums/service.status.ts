@@ -4,5 +4,4 @@ export enum ServiceStatus {
   STOPPING,
   STOPPED,
   CRASHED,
-  RESTARTING,
 }

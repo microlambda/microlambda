@@ -36,7 +36,9 @@ export const start = async (scheduler: RecompilationScheduler, defaultPort = 300
   graph.getNodes().forEach(s => s.watch(scheduler));
   process.on('SIGINT', async () => {
     log.warn('SIGINT signal received');
-    services.forEach(s => s.stop());
+    scheduler.reset();
+    services.forEach(s => scheduler.requestStop(s));
+    await scheduler.exec();
     process.exit();
   });
 };

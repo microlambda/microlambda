@@ -1,22 +1,46 @@
-import { concat, forkJoin, Observable, Subject, throwError } from 'rxjs';
+import { concat, forkJoin, Observable, of, Subject, throwError } from 'rxjs';
 import { LernaNode, Service } from '../lerna';
-import { catchError, concatAll, takeUntil } from 'rxjs/operators';
-import { execSync, spawn } from 'child_process';
-import { CompilationStatus } from '../lerna/enums/compilation.status';
+import { catchError, concatAll, last, map, takeUntil } from 'rxjs/operators';
 import { log } from './logger';
+import { remove } from 'lodash';
 
-enum Status {
+enum SchedulerStatus {
   READY,
   BUSY,
+  ABORTED,
+}
+
+enum RecompilationStatus {
+  READY,
+  STOPPING,
+  STOPPED,
+  COMPILING,
+  COMPILED,
+  STARTING,
+  STARTED,
+  FINISHED,
+}
+
+enum RecompilationEventType {
+  SERVICE_STOPPED,
+  NODE_COMPILED,
+  SERVICE_STARTED,
+}
+
+interface RecompilationEvent {
+  type: RecompilationEventType;
+  node: LernaNode;
 }
 
 export class RecompilationScheduler {
 
   private _queue: {
+    stop: Service[];
     compile: LernaNode[];
     start: Service[];
   };
-  private _status: Status;
+  private _status: SchedulerStatus;
+  private _recompilation: RecompilationStatus;
   private _abort$: Subject<void> = new Subject<void>();
 
   constructor() {
@@ -26,28 +50,56 @@ export class RecompilationScheduler {
 
   private _reset() {
     this._queue = {
+      stop: [],
       compile: [],
       start: [],
     };
-    this._status = Status.READY;
+    this._recompilation = RecompilationStatus.READY;
+    this._status = SchedulerStatus.READY;
+  }
+
+  public reset() {
+    this._abort$.next();
+    this._reset();
+  }
+
+  public requestStop(service: Service) {
+    log.debug(`Request to add stop job`, service.getName());
+    const inQueue = this._alreadyQueued(service, 'stop');
+    log.debug('Already in stop queue', inQueue);
+    if (!inQueue) {
+      log.debug('Adding service in stop job queue', service.getName());
+      this._queue.stop.push(service);
+    }
   }
 
   public requestCompilation(node: LernaNode) {
     log.debug(`Request to add compilation job`, node.getName());
     const inQueue = this._alreadyQueued(node, 'compile');
+    const preempted = this._status === SchedulerStatus.ABORTED;
     const isRoot = node.isRoot();
     log.debug('Already in compilation queue', inQueue);
     log.debug('Root node', isRoot);
-    if (!inQueue && !isRoot) {
+    log.debug('Preemption context', preempted);
+    if (!preempted && !inQueue && !isRoot) {
       log.debug('Adding node in compilation job queue', node.getName());
       this._queue.compile.push(node);
+    } else if (preempted && !isRoot) {
+      if (!inQueue) {
+        log.debug('Adding node in compilation job queue', node.getName());
+        this._queue.compile.push(node);
+      } else {
+        log.debug('Moving job in last position of compilation queue', node.getName());
+        remove(this._queue.compile, node.getName());
+        this._queue.compile.push(node);
+      }
     }
   }
 
   public requestStart(service: Service) {
     log.debug(`Request to add start job`, service.getName());
     const inQueue = this._alreadyQueued(service, 'start');
-    log.debug('Already in compilation queue', inQueue);
+    log.debug('Already in start queue', inQueue);
     if (!inQueue) {
       log.debug('Adding service in start job queue', service.getName());
       this._queue.start.push(service);
@@ -55,39 +107,103 @@ export class RecompilationScheduler {
   }
 
 
-  private _alreadyQueued(node: LernaNode, queue: 'compile' | 'start') {
+  private _alreadyQueued(node: LernaNode, queue: 'compile' | 'start' | 'stop') {
     return this._queue[queue].some(n => n.getName() === node.getName());
   }
 
   public exec(): Promise<void> {
-    if (this._status === Status.BUSY) {
-      log.error('Scheduler is already busy');
-      return;
+    if (this._status === SchedulerStatus.BUSY) {
+      log.warn('Scheduler is already busy');
+      this.abort();
+      return this.exec();
     }
-    this._status = Status.BUSY;
+    if (this._status === SchedulerStatus.ABORTED) {
+      log.info('Previous recompilation has been preempted');
+    }
+    this._status = SchedulerStatus.BUSY;
     log.debug('Executing recompilation task');
+    log.debug('To stop', this._queue.stop.map(n => n.getName()));
     log.debug('To compile', this._queue.compile.map(n => n.getName()));
     log.debug('To start', this._queue.start.map(n => n.getName()));
 
-    const compilationJobs$ = this._queue.compile.map(node => this._compile(node));
-    const startJobs$ = this._queue.start.map(service => service.start());
+    const stopJobs$: Array<Observable<RecompilationEvent>> = this._queue.stop.map(s => s.stop()
+      .pipe(
+        map((service) => {
+        log.debug('[scheduler] stopped', service.getName());
+        return {node: service, type: RecompilationEventType.SERVICE_STOPPED};
+        }),
+        catchError((err) => {
+          log.error(err);
+          return throwError(err);
+        })
+      ));
 
-    const recompilationProcess$ = concat(compilationJobs$, forkJoin(startJobs$))
-      .pipe(concatAll())
-      .pipe(catchError((err) => {
-        log.error(err);
-        return throwError(err);
-      }))
-      .pipe(takeUntil(this._abort$));
+    const compilationJobs$: Array<Observable<RecompilationEvent>> = this._queue.compile.map(node => node.compileNode()
+      .pipe(
+        map((node) => {
+          log.debug('[scheduler] compiled', node.getName());
+          return {node: node, type: RecompilationEventType.NODE_COMPILED};
+        }),
+        catchError((err) => {
+          log.error(err);
+          return throwError(err);
+        })
+      ));
+
+    const startJobs$: Array<Observable<RecompilationEvent>> = this._queue.start.map(s => s.start()
+      .pipe(
+        map((service) => {
+          log.debug('[scheduler] started', service.getName());
+          return {node: service, type: RecompilationEventType.SERVICE_STARTED};
+        }),
+        catchError((err) => {
+          log.error(err);
+          return throwError(err);
+        })
+      ));
+
+    this._recompilation = RecompilationStatus.STOPPING;
+
+    const stop$: Observable<RecompilationStatus> = forkJoin(stopJobs$)
+      .pipe(map(() => RecompilationStatus.STOPPED));
+    const start$: Observable<RecompilationStatus> = forkJoin(startJobs$)
+      .pipe(map(() => RecompilationStatus.STARTED));
+    const compile$: Observable<RecompilationStatus> = compilationJobs$.length > 0
+      ? concat(compilationJobs$)
+        .pipe(concatAll(), last())
+        .pipe(map(() => RecompilationStatus.COMPILED))
+      : of(RecompilationStatus.COMPILED);
+
+    const recompilationProcess$ = concat([stop$, compile$, start$])
+      .pipe(
+        concatAll(),
+        takeUntil(this._abort$),
+      );
+
     return new Promise<void>((resolve, reject) => {
       recompilationProcess$.subscribe(
-        () => log.debug('Compiled'),
+        (status) => {
+          switch (status) {
+            case RecompilationStatus.STOPPED:
+              log.debug('[scheduler] All services stopped');
+              this._recompilation = RecompilationStatus.COMPILING;
+              break;
+            case RecompilationStatus.COMPILED:
+              log.debug('[scheduler] All dependencies compiled');
+              this._recompilation = RecompilationStatus.STARTING;
+              break;
+            case RecompilationStatus.STARTED:
+              log.debug('[scheduler] All services started');
+              this._recompilation = RecompilationStatus.FINISHED;
+              break;
+          }
+        },
         (err) => {
           log.error(err);
           reject();
         },
         () => {
-          log.info('All nodes recompiled');
+          log.info('[scheduler] all tasks finished');
           this._reset();
           resolve();
         },
@@ -97,41 +213,42 @@ export class RecompilationScheduler {
 
   public abort(): void {
     log.debug('Requested to abort recompilation');
-    if (this._status === Status.BUSY) {
-      this._reset();
+    if (this._status === SchedulerStatus.BUSY) {
+      log.debug('Scheduler is busy. Aborting');
+      this._status = SchedulerStatus.ABORTED;
+      // Keep a copy of these parameters as this._abort$.next() will reset them
+      const stop = [...this._queue.stop];
+      const compile =  [...this._queue.compile];
+      const start = [...this._queue.start];
+      const recompilationStatus = this._recompilation;
       this._abort$.next();
+      switch (recompilationStatus) {
+        case RecompilationStatus.READY:
+          log.debug('Scheduler was ready. No preemption.');
+          break;
+        case RecompilationStatus.STOPPING:
+          log.debug('Scheduler was stopping services. Keep them in stop queue');
+          stop.forEach(s => this._queue.stop.push(s));
+          compile.forEach(n => this._queue.compile.push(n));
+          start.forEach(s => this._queue.start.push(s));
+          break;
+        case RecompilationStatus.STOPPED:
+        case RecompilationStatus.COMPILING:
+          log.debug('Scheduler was compiling services.');
+          compile.forEach(n => this._queue.compile.push(n));
+          start.forEach(s => this._queue.start.push(s));
+          break;
+        case RecompilationStatus.COMPILED:
+        case RecompilationStatus.STARTING:
+          // Some services where starting, put them back in stop queue
+          log.debug('Scheduler was starting services. Stopping them');
+          this._queue.start.forEach(s => this._queue.stop.push(s));
+          start.forEach(s => this._queue.start.push(s));
+          break;
+        default:
+          log.debug('Scheduler was in stable state. No preemption.');
+          break;
+      }
     }
-  }
-
-  private _compile(node: LernaNode): Observable<void> {
-    return new Observable<void>((observer) => {
-      const tsVersion = execSync('npx tsc --version').toString().match(/[0-9]\.[0-9]\.[0-9]/)[0];
-      node.setStatus(CompilationStatus.COMPILING);
-      const spawnProcess = spawn('npx', ['tsc'], {
-        cwd: node.getLocation(),
-        env: process.env,
-      });
-      log.info(`Compiling package ${node.getName()} with typescript ${tsVersion}`);
-      spawnProcess.stderr.on('data', (data) => {
-        log.error(data);
-      });
-      spawnProcess.on('close', (code) => {
-        if (code === 0) {
-          node.setStatus(CompilationStatus.COMPILED);
-          log.info(`Package compiled ${node.getName()}`);
-          return observer.complete();
-        } else {
-          node.setStatus(CompilationStatus.ERROR_COMPILING);
-          log.info(`Error compiling ${node.getName()}`);
-          return observer.error();
-        }
-      });
-      spawnProcess.on('error', (err) => {
-        log.error(err);
-        node.setStatus(CompilationStatus.ERROR_COMPILING);
-        log.info(`Error compiling ${node.getName()}`, err);
-        return observer.error(err);
-      })
-    });
   }
 }

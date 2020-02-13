@@ -7,6 +7,10 @@ import { log } from '../utils/logger';
 import glob from 'glob';
 import { RecompilationScheduler } from '../utils/scheduler';
 import chalk from 'chalk';
+import { ChildProcess, execSync, spawn } from 'child_process';
+import { Observable } from 'rxjs';
+
+const tsVersion = execSync('npx tsc --version').toString().match(/[0-9]\.[0-9]\.[0-9]/)[0];
 
 export interface IGraphElement {
   name: string;
@@ -26,6 +30,7 @@ export abstract class LernaNode {
   private readonly private: boolean;
 
   protected compilationStatus: CompilationStatus;
+  protected compilationProcess: ChildProcess;
 
   protected constructor(graph: LernaGraph, node: IGraphElement) {
     this.graph = graph;
@@ -40,6 +45,10 @@ export abstract class LernaNode {
   public isService(): boolean {
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   };
+
+  public getCompilationStatus() {
+    return this.compilationStatus;
+  }
 
   public setStatus(status: CompilationStatus) {
     this.compilationStatus = status;
@@ -129,13 +138,13 @@ export abstract class LernaNode {
   }
 
   private async _recompile(scheduler: RecompilationScheduler): Promise<void> {
-    // scheduler.abort();
+    scheduler.abort();
     const dependentNodes = this.getDependent().concat(this);
     log.debug(`${chalk.bold(this.name)}: Dependent nodes`, dependentNodes.map(d => d.name));
     const dependentServices = dependentNodes.filter(dep => dep instanceof Service);
     log.debug(`${chalk.bold(this.name)}: Dependent services`, dependentServices.map(d => d.name));
     log.debug(`${chalk.bold(this.name)}: Stopping dependent services`);
-    await Promise.all(dependentServices.map((s: Service) => s.stop()));
+    dependentServices.forEach((s: Service) => scheduler.requestStop(s));
     this._recompileUpstream(scheduler);
     dependentServices.forEach((s: Service) => scheduler.requestStart(s));
     await scheduler.exec()
@@ -147,5 +156,70 @@ export abstract class LernaNode {
     for (const parent of this.getParents()) {
       parent._recompileUpstream(scheduler);
     }
+  }
+
+  public compileNode(): Observable<LernaNode> {
+    return new Observable<LernaNode>((observer) => {
+      log.info(`Compiling package ${this.name} with typescript ${tsVersion}`);
+      switch (this.compilationStatus) {
+        case CompilationStatus.COMPILED:
+        case CompilationStatus.ERROR_COMPILING:
+        case CompilationStatus.NOT_COMPILED:
+          this._startCompilation();
+          this._watchCompilation().subscribe(
+            (next) => observer.next(next),
+            (err) => observer.error(err),
+            () => observer.complete(),
+          );
+          break;
+        case CompilationStatus.COMPILING:
+          // Already compiling, just wait for it to complete
+          this._watchCompilation().subscribe(
+            (next) => observer.next(next),
+            (err) => observer.error(err),
+            () => observer.complete(),
+          );
+          break;
+      }
+    });
+
+  }
+
+  private _startCompilation(): void {
+    this.setStatus(CompilationStatus.COMPILING);
+    this.compilationProcess = spawn('npx', ['tsc'], {
+      cwd: this.location,
+      env: process.env,
+    });
+    this.compilationProcess.stderr.on('data', data => process.stderr.write(data));
+    this.compilationProcess.stdout.on('data', data => process.stdout.write(data));
+  }
+
+  private _watchCompilation(): Observable<LernaNode> {
+    return new Observable<LernaNode>((observer) => {
+      this.compilationProcess.on('close', (code) => {
+        log.silly('npx tsc process closed');
+        if (code === 0) {
+          this.setStatus(CompilationStatus.COMPILED);
+          log.info(`Package compiled ${this.getName()}`);
+          observer.next(this);
+          // this.compilationProcess.removeAllListeners('close');
+          return observer.complete();
+        } else {
+          this.setStatus(CompilationStatus.ERROR_COMPILING);
+          log.info(`Error compiling ${this.getName()}`);
+          // this.compilationProcess.removeAllListeners('close');
+          return observer.error();
+        }
+      });
+      this.compilationProcess.on('error', (err) => {
+        log.silly('npx tsc process error');
+        log.error(err);
+        this.setStatus(CompilationStatus.ERROR_COMPILING);
+        log.info(`Error compiling ${this.getName()}`, err);
+        // this.compilationProcess.removeAllListeners('error');
+        return observer.error(err);
+      })
+    });
   }
 }

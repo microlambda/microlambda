@@ -5,7 +5,7 @@ import { logger } from '@project/shared';
 import { IGreetEvent } from '@project/types';
 
 export const handler = handle(async (event: ApiHandlerEvent<IGreetEvent>) => {
-  logger.debug('Event receivdded', event);
+  logger.debug('Event receiv', event);
   await validate<IGreetEvent>(
     event.body,
     Joi.object().keys({
