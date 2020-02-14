@@ -1,5 +1,0 @@
-.dynamodb/
-node_modules/
-.webpack/
-.package/
-lib/

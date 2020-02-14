@@ -1,7 +1,12 @@
 {
-  "name": "@mulambda/cli",
-  "version": "0.0.1",
+  "name": "@microlambda/cli",
+  "version": "0.0.1alpha",
   "description": "µlambda framework CLI ",
+  "author": "Mario Arnautou & Arthur Brunck",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+  },
+  "license": "MIT",
   "main": "lib/src/index.js",
   "bin": {
     "microlambda": "lib/src/index.js",
@@ -30,8 +35,6 @@
     "yargs": "^15.1.0",
     "yo": "^3.1.1"
   },
-  "author": "Mario Arnautou & Arthur Brunck",
-  "license": "MIT",
   "devDependencies": {
     "@types/figlet": "^1.2.0",
     "@types/lodash": "^4.14.149",

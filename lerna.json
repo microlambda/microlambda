@@ -1,7 +1,6 @@
 {
   "packages": [
-    "services/*",
-    "packages/*"
+    "cli/"
   ],
   "npmClient": "npm",
   "version": "independent"

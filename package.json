@@ -1,7 +1,13 @@
 {
-  "name": "$name$",
-  "version": "$version$",
-  "dependencies": {
-    $END$
+  "name": "microlambdamicrolambda",
+  "version": "1.0.0",
+  "description": "Microlambda framework (a.k.a µlambda or mila) monorepo main package",
+  "author": "Mario Arnautou & Arthur Brunck",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "lerna": "^3.20.2"
   }
 }
