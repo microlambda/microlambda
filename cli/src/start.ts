@@ -1,3 +1,5 @@
+import inquirer from 'inquirer';
+
 import { showOff } from './utils/ascii';
 import { getProjectRoot } from './utils/get-project-root';
 import { loadConfig } from './config/load-config';
@@ -5,6 +7,7 @@ import { getLernaGraph } from './utils/get-lerna-graph';
 import { log } from './utils/logger';
 import { recreateLogDirectory } from './utils/logs';
 import { RecompilationScheduler } from './utils/scheduler';
+import { Service } from './lerna';
 
 interface IStartOptions {
   interactive: boolean;
@@ -32,7 +35,24 @@ export const start = async (scheduler: RecompilationScheduler, options : IStartO
       process.exit(1);
     });
   }
-  const services = graph.getServices();
+  let services = graph.getServices();
+  console.log(services);
+
+  if (interactiveSelection) {
+    const choices = await inquirer.prompt({
+      type: 'checkbox',
+      name: 'microservices',
+      message: 'Please select the microservices you wants to start',
+      choices: services.map((service: Service) => service.name),
+    });
+    if (choices.microservices.length !== 0) {
+      console.log('setting microservices', choices);
+      // Here we only have services name...
+      services = choices.microservices;
+    }
+  }
+  console.log(services);
+
   recreateLogDirectory(projectRoot);
   log.info(`Found ${services.length} services`);
   log.info('Starting services');

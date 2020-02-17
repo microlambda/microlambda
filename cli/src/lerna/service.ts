@@ -13,16 +13,22 @@ export class Service extends LernaNode {
   private readonly port: number;
   private process: ChildProcess;
   private logStream: WriteStream;
+  public name: string;
 
   constructor(graph: LernaGraph, node: IGraphElement) {
     super(graph, node);
     this.status = ServiceStatus.STOPPED;
     this.port = graph.getPort(node.name);
+    this.name = node.name;
+  }
+
+  get service(): Service {
+    return this;
   }
 
   public stop(): Observable<Service> {
     return new Observable<Service>(((observer) => {
-      log.debug('Requested to stop', this.name, 'which status is',this.status);
+      log.debug('Requested to stop', this.name, 'which status is', this.status);
       switch (this.status) {
         case ServiceStatus.RUNNING:
         case ServiceStatus.STARTING:

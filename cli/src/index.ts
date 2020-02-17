@@ -13,6 +13,7 @@ program.version('0.0.1alpha');
 
 program
   .command('start')
+  .option('-i', 'interactively choose microservices')
   .option('--no-recompile', 'avoid recompiling dependency graph before starting microservices')
   .description('starts microlambda project')
   .action(async (cmd) => {
