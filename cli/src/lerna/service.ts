@@ -22,7 +22,7 @@ export class Service extends LernaNode {
     this.name = node.name;
   }
 
-  get service(): Service {
+  get get(): Service {
     return this;
   }
 

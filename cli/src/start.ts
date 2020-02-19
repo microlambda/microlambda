@@ -36,7 +36,6 @@ export const start = async (scheduler: RecompilationScheduler, options : IStartO
     });
   }
   let services = graph.getServices();
-  console.log(services);
 
   if (interactiveSelection) {
     const choices = await inquirer.prompt({
@@ -46,12 +45,19 @@ export const start = async (scheduler: RecompilationScheduler, options : IStartO
       choices: services.map((service: Service) => service.name),
     });
     if (choices.microservices.length !== 0) {
-      console.log('setting microservices', choices);
-      // Here we only have services name...
-      services = choices.microservices;
+
+      const choosenServices: Service[] = [];
+      choices.microservices.map((ms: string) => {
+        const i = services.findIndex((s) => s.name === ms);
+
+        if (i !== - 1) {
+          choosenServices.push(services[i].get);
+        }
+      });
+
+      services = choosenServices;
     }
   }
-  console.log(services);
 
   recreateLogDirectory(projectRoot);
   log.info(`Found ${services.length} services`);
