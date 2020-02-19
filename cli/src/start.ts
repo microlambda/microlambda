@@ -15,7 +15,7 @@ interface IStartOptions {
   defaultPort: number;
 }
 
-export const start = async (scheduler: RecompilationScheduler, options : IStartOptions) => {
+export const start = async (scheduler: RecompilationScheduler, options: IStartOptions) => {
   showOff();
   log.info('Starting up the app');
   const projectRoot = getProjectRoot();
@@ -37,7 +37,7 @@ export const start = async (scheduler: RecompilationScheduler, options : IStartO
   }
   let services = graph.getServices();
 
-  if (interactiveSelection) {
+  if (options.interactive) {
     const choices = await inquirer.prompt({
       type: 'checkbox',
       name: 'microservices',
@@ -63,7 +63,7 @@ export const start = async (scheduler: RecompilationScheduler, options : IStartO
   log.info(`Found ${services.length} services`);
   log.info('Starting services');
   log.debug(services);
-  const toStart =  services.filter(s => !config.noStart.includes(s.getName()));
+  const toStart = services.filter(s => !config.noStart.includes(s.getName()));
   toStart.forEach(s => scheduler.requestStart(s));
   await scheduler.exec().catch((err) => {
     log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.')
