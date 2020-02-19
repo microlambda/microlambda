@@ -6,7 +6,13 @@ import { log } from './utils/logger';
 import { recreateLogDirectory } from './utils/logs';
 import { RecompilationScheduler } from './utils/scheduler';
 
-export const start = async (scheduler: RecompilationScheduler, defaultPort = 3001) => {
+interface IStartOptions {
+  interactive: boolean;
+  recompile: boolean;
+  defaultPort: number;
+}
+
+export const start = async (scheduler: RecompilationScheduler, options : IStartOptions) => {
   showOff();
   log.info('Starting up the app');
   const projectRoot = getProjectRoot();
