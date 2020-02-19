@@ -141,7 +141,7 @@ export abstract class LernaNode {
     scheduler.abort();
     const dependentNodes = this.getDependent().concat(this);
     log.debug(`${chalk.bold(this.name)}: Dependent nodes`, dependentNodes.map(d => d.name));
-    const dependentServices = dependentNodes.filter(dep => dep instanceof Service);
+    const dependentServices = dependentNodes.filter(dep => dep instanceof Service && !this.graph.getNoStart().includes(dep.getName()));
     log.debug(`${chalk.bold(this.name)}: Dependent services`, dependentServices.map(d => d.name));
     log.debug(`${chalk.bold(this.name)}: Stopping dependent services`);
     dependentServices.forEach((s: Service) => scheduler.requestStop(s));

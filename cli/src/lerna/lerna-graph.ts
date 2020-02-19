@@ -14,6 +14,7 @@ export class LernaGraph {
   private readonly projectRoot: string;
   private readonly ports: {[key: string]: number};
   private readonly nodes: LernaNode[];
+  private noStart: string[];
 
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
     this.projectRoot = projectRoot;
@@ -27,6 +28,14 @@ export class LernaGraph {
 
   public getPort(service: string) {
     return this.ports[service];
+  }
+
+  public getNoStart() {
+    return this.noStart;
+  }
+
+  public setNoStart(noStart: string[]) {
+    this.noStart = noStart;
   }
 
   public getProjectRoot() { return this.projectRoot }

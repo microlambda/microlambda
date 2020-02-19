@@ -1,3 +1,4 @@
 {
-  "ports": {}
+  "ports": {},
+  "noStart": []
 }
