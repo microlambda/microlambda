@@ -13,17 +13,11 @@ export class Service extends LernaNode {
   private readonly port: number;
   private process: ChildProcess;
   private logStream: WriteStream;
-  public name: string;
 
   constructor(graph: LernaGraph, node: IGraphElement) {
     super(graph, node);
     this.status = ServiceStatus.STOPPED;
     this.port = graph.getPort(node.name);
-    this.name = node.name;
-  }
-
-  get get(): Service {
-    return this;
   }
 
   public stop(): Observable<Service> {

@@ -24,47 +24,46 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   log.debug(config);
   log.info('Parsing lerna dependency graph', projectRoot);
   const graph = getLernaGraph(projectRoot, config, options.defaultPort);
-  graph.setNoStart(config.noStart);
   await graph.bootstrap().catch(() => {
     log.error('Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
     process.exit(1);
   });
+
+  const enabledServices = graph.getServices().filter(s => config.noStart.includes(s.getName()));
+  let chosenServices: Service[] = [];
+
+  if (options.interactive) {
+    const choices: {microservices: string[]} = await inquirer.prompt({
+      type: 'checkbox',
+      name: 'microservices',
+      message: 'Please select the microservices you wants to start',
+      choices: enabledServices.map((service: Service) => service.getName()),
+    });
+    if (choices.microservices.length !== 0) {
+      chosenServices = enabledServices.filter(s => choices.microservices.includes(s.getName()));
+    } else {
+      log.info('No services to start, exiting...');
+      process.exit(0);
+    }
+  } else {
+    chosenServices = enabledServices;
+  }
+
+  chosenServices.forEach(s => s.enable());
+  graph.enableNodes();
+
   if (options.recompile) {
     await graph.compile(scheduler).catch(() => {
       log.error('Error compiling dependencies graph. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
       process.exit(1);
     });
   }
-  let services = graph.getServices();
-
-  if (options.interactive) {
-    const choices = await inquirer.prompt({
-      type: 'checkbox',
-      name: 'microservices',
-      message: 'Please select the microservices you wants to start',
-      choices: services.map((service: Service) => service.name),
-    });
-    if (choices.microservices.length !== 0) {
-
-      const choosenServices: Service[] = [];
-      choices.microservices.map((ms: string) => {
-        const i = services.findIndex((s) => s.name === ms);
-
-        if (i !== - 1) {
-          choosenServices.push(services[i].get);
-        }
-      });
-
-      services = choosenServices;
-    }
-  }
 
   recreateLogDirectory(projectRoot);
-  log.info(`Found ${services.length} services`);
+  log.info(`Found ${chosenServices.length} services`);
   log.info('Starting services');
-  log.debug(services);
-  const toStart = services.filter(s => !config.noStart.includes(s.getName()));
-  toStart.forEach(s => scheduler.requestStart(s));
+  log.debug(chosenServices);
+  chosenServices.forEach(s => scheduler.requestStart(s));
   await scheduler.exec().catch((err) => {
     log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.')
   });
@@ -72,7 +71,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   process.on('SIGINT', async () => {
     log.warn('SIGINT signal received');
     scheduler.reset();
-    toStart.forEach(s => scheduler.requestStop(s));
+    chosenServices.forEach(s => scheduler.requestStop(s));
     await scheduler.exec();
     process.exit();
   });

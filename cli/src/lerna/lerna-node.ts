@@ -25,6 +25,7 @@ export abstract class LernaNode {
   protected readonly location: string;
   protected readonly graph: LernaGraph;
   protected readonly dependencies: LernaNode[];
+  protected _enabled: boolean;
 
   private readonly version: string;
   private readonly private: boolean;
@@ -38,13 +39,20 @@ export abstract class LernaNode {
     this.version = node.version;
     this.private = node.private;
     this.location = node.location;
+    this._enabled = false;
     this.compilationStatus = CompilationStatus.NOT_COMPILED;
     this.dependencies = node.dependencies.map(d => this.isService() ? new Service(graph, d) : new Package(graph, d));
   };
 
+  public enable(): void {
+    this._enabled = true;
+  }
+
+  public get enabled(): boolean { return this._enabled }
+
   public isService(): boolean {
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
-  };
+  }
 
   public getCompilationStatus() {
     return this.compilationStatus;
@@ -108,6 +116,10 @@ export abstract class LernaNode {
    * Recursively compiles this package and all its dependencies
    */
   public compile(scheduler: RecompilationScheduler): void {
+    if (!this.enabled) {
+      log.debug('Node is disabled', this.name);
+      return;
+    }
     log.debug('Recursively compile', this.name);
     for (const dep of this.dependencies) {
       log.debug('Compiling dependency first', dep.name);
@@ -139,9 +151,9 @@ export abstract class LernaNode {
 
   private async _recompile(scheduler: RecompilationScheduler): Promise<void> {
     scheduler.abort();
-    const dependentNodes = this.getDependent().concat(this);
+    const dependentNodes = this.getDependent().concat(this).filter(n => n.enabled);
     log.debug(`${chalk.bold(this.name)}: Dependent nodes`, dependentNodes.map(d => d.name));
-    const dependentServices = dependentNodes.filter(dep => dep instanceof Service && !this.graph.getNoStart().includes(dep.getName()));
+    const dependentServices = dependentNodes.filter(dep => dep instanceof Service);
     log.debug(`${chalk.bold(this.name)}: Dependent services`, dependentServices.map(d => d.name));
     log.debug(`${chalk.bold(this.name)}: Stopping dependent services`);
     dependentServices.forEach((s: Service) => scheduler.requestStop(s));

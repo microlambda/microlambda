@@ -25,7 +25,7 @@ program
       recompile: cmd.recompile,
       defaultPort: portOption !== -1 ? parseInt(process.argv[portOption + 1]) : 3001,
       interactive: !!process.argv.indexOf('-i'),
-    }
+    };
 
     log.debug(options);
     await start(scheduler, options);
