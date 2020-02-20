@@ -191,8 +191,8 @@ export abstract class LernaNode {
       cwd: this.location,
       env: process.env,
     });
-    this.compilationProcess.stderr.on('data', data => process.stderr.write(data));
-    this.compilationProcess.stdout.on('data', data => process.stdout.write(data));
+    this.compilationProcess.stderr.on('data', data => log.error(`${chalk.bold(this.name)}: ${data}`));
+    this.compilationProcess.stdout.on('data', data => log.debug(`${chalk.bold(this.name)}: ${data}`));
   }
 
   private _watchCompilation(): Observable<LernaNode> {

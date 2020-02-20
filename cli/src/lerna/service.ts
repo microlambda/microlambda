@@ -105,7 +105,7 @@ export class Service extends LernaNode {
       env: process.env,
     });
     this.process.stderr.on('data', (data) => {
-      process.stdout.write(data);
+      log.error(`${chalk.bold(this.name)}: ${data}`);
       this.logStream.write(data);
     });
   }
