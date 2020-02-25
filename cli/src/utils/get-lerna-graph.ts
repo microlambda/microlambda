@@ -1,6 +1,6 @@
-import { execSync } from 'child_process';
 import { IConfig } from '../config/config';
 import { IGraphElement, LernaGraph } from '../lerna';
+import { execCmd } from './child-process';
 
 interface IPackage {
   name: string;
@@ -9,9 +9,9 @@ interface IPackage {
   location: string;
 }
 
-export const getLernaGraph = (projectRoot: string, config: IConfig, defaultPort = 3001) => {
-  const packages: IPackage[] = JSON.parse(execSync('npx lerna la --json', {cwd: projectRoot}).toString());
-  const rawGraph: {[key: string]: string[]} = JSON.parse(execSync('npx lerna la --graph', { cwd: projectRoot}).toString());
+export const getLernaGraph = async (projectRoot: string, config: IConfig, defaultPort = 3001) => {
+  const packages: IPackage[] = JSON.parse(await execCmd('npx', ['lerna', 'la', '--json'], { cwd: projectRoot}, 'debug', 'debug'));
+  const rawGraph: {[key: string]: string[]} = JSON.parse(await execCmd('npx', ['lerna', 'la', '--graph'],{ cwd: projectRoot}, 'debug', 'debug'));
 
   const names: Set<string> = new Set(packages.map(p => p.name));
 

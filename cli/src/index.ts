@@ -13,22 +13,18 @@ program.version('0.0.1alpha');
 
 program
   .command('start')
-  .option('--interactive, -i', 'interactively choose microservices')
-  .option('--port, -p', 'Choose a new port')
-  .option('--no-recompile, -nr', 'Avoid recompiling dependency graph before starting microservices')
+  .option('-i, --interactive', 'interactively choose microservices', false)
+  .option('-p <port>, --port <port>', 'if not specified in config, start microservices from port', 3001)
+  .option('-n, --no-recompile', 'avoid recompiling dependency graph before starting microservices')
   .description('Starts microlambda project')
   .action(async (cmd) => {
-
-    const portOption = process.argv.indexOf('-p' || '--port');
-
     const options = {
       recompile: cmd.recompile,
-      defaultPort: portOption !== -1 ? parseInt(process.argv[portOption + 1]) : 3001,
-      interactive: !!process.argv.indexOf('-i'),
+      defaultPort: cmd.P || 3001,
+      interactive: cmd.interactive,
     };
-
     log.debug(options);
     await start(scheduler, options);
   });
 
-program.parse(process.argv);
+(async() => program.parseAsync(process.argv))();

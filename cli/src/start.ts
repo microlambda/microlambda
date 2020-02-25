@@ -23,16 +23,21 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   const config = loadConfig();
   log.debug(config);
   log.info('Parsing lerna dependency graph', projectRoot);
-  const graph = getLernaGraph(projectRoot, config, options.defaultPort);
-  await graph.bootstrap().catch(() => {
+  const graph = await getLernaGraph(projectRoot, config, options.defaultPort);
+  await graph.bootstrap().catch((e) => {
+    log.error(e);
     log.error('Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
     process.exit(1);
   });
 
-  const enabledServices = graph.getServices().filter(s => config.noStart.includes(s.getName()));
+  log.debug('Services excluded by config', config.noStart);
+  const enabledServices = graph.getServices().filter(s => !config.noStart.includes(s.getName()));
+  log.debug('Enabled services', enabledServices.map(s => s.getName()));
+
   let chosenServices: Service[] = [];
 
   if (options.interactive) {
+    log.debug('Interactive option chosen, prompting user');
     const choices: {microservices: string[]} = await inquirer.prompt({
       type: 'checkbox',
       name: 'microservices',
@@ -48,9 +53,10 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   } else {
     chosenServices = enabledServices;
   }
-
+  log.debug('Chosen services', chosenServices.map(s => s.getName()));
   chosenServices.forEach(s => s.enable());
   graph.enableNodes();
+  log.debug('Enabled nodes', graph.getNodes().filter(n => n.isEnabled()).map(n => n.getName()));
 
   if (options.recompile) {
     await graph.compile(scheduler).catch(() => {

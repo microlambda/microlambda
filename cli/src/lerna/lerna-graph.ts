@@ -30,8 +30,11 @@ export class LernaGraph {
   }
 
   public enableNodes(): void {
-    this.nodes.filter(n => n.enabled).forEach(n => {
+    log.debug('Enabling nodes descendants');
+    this.nodes.filter(n => n.isEnabled()).forEach(n => {
+      log.debug('Enabling node descendants', n.getName());
       const dependencies = n.getDependencies();
+      log.silly('Descendants', n.getDependencies());
       dependencies.forEach(d => d.enable());
     })
   }
