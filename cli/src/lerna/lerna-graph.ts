@@ -65,10 +65,9 @@ export class LernaGraph {
     log.info('Bootstrapping dependencies');
     const spawnedProcess = spawn('npx', ['lerna', 'bootstrap'], {
       cwd: this.projectRoot,
+      stdio: 'inherit',
     });
     return new Promise<void>((resolve, reject) => {
-      spawnedProcess.stdout.on('data', (data) => log.debug(data.toString()));
-      spawnedProcess.stderr.on('data', (data) => log.debug(data.toString()));
       spawnedProcess.on('close', (code) => {
         if (code === 0) {
           return resolve();
