@@ -1,10 +1,3 @@
-import { IGraphElement, LernaNode } from './';
-import { LernaGraph } from './';
+import { LernaNode } from './';
 
-export class Package extends LernaNode {
-  constructor(graph: LernaGraph, node: IGraphElement) {
-    super(graph, node);
-  }
-
-  public getStatus() { return this.compilationStatus };
-}
+export class Package extends LernaNode {}

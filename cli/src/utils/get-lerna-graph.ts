@@ -20,7 +20,7 @@ export const getLernaGraph = async (projectRoot: string, config: IConfig, defaul
     const children = rawGraph[name].filter(n => names.has(n));
     return {
       ...pkg,
-      dependencies: children.map(n => resolvePackage(n)),
+      dependencies: children,
     }
   };
 

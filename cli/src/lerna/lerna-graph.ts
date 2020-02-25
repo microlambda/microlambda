@@ -16,13 +16,22 @@ export class LernaGraph {
   private readonly nodes: LernaNode[];
 
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
+    log.debug('Building graph with', nodes);
     this.projectRoot = projectRoot;
     const isService = (location: string) => {
       return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
     };
     const services = nodes.filter(n => isService(n.location));
     this.ports = resolvePorts(services, config, defaultPort);
-    this.nodes = nodes.map(n => isService(n.location) ? new Service(this, n) : new Package(this, n));
+    const builtNodes: LernaNode[] = [];
+    for (const node of nodes) {
+      const builtNode: LernaNode = isService(node.location)
+        ? new Service(this, node, builtNodes, nodes)
+        : new Package(this, node, builtNodes, nodes);
+      builtNodes.push(builtNode);
+    }
+    this.nodes = builtNodes;
+    log.info(`Successfully built ${this.nodes.length} nodes`);
   };
 
   public getPort(service: string) {

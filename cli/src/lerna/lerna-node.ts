@@ -17,7 +17,12 @@ export interface IGraphElement {
   version: string;
   private: boolean;
   location: string;
-  dependencies: IGraphElement[];
+  dependencies: string[];
+}
+
+enum NodeStatus {
+  DISABLED,
+  ENABLED,
 }
 
 export abstract class LernaNode {
@@ -25,30 +30,43 @@ export abstract class LernaNode {
   protected readonly location: string;
   protected readonly graph: LernaGraph;
   protected readonly dependencies: LernaNode[];
-  protected _enabled: boolean;
 
   private readonly version: string;
   private readonly private: boolean;
 
   protected compilationStatus: CompilationStatus;
   protected compilationProcess: ChildProcess;
+  private nodeStatus: NodeStatus;
 
-  protected constructor(graph: LernaGraph, node: IGraphElement) {
+  public constructor(graph: LernaGraph, node: IGraphElement, nodes: LernaNode[], elements: IGraphElement[]) {
+    log.debug('Building node', node.name);
     this.graph = graph;
     this.name = node.name;
     this.version = node.version;
     this.private = node.private;
     this.location = node.location;
-    this._enabled = false;
+    this.nodeStatus = NodeStatus.DISABLED;
     this.compilationStatus = CompilationStatus.NOT_COMPILED;
-    this.dependencies = node.dependencies.map(d => this.isService() ? new Service(graph, d) : new Package(graph, d));
+    this.dependencies = node.dependencies.map(d => {
+      const dep = nodes.find(n => n.name === d);
+      if (dep) {
+        log.debug('Dependency is already built', d);
+        return dep;
+      }
+      log.debug('Building dependency', d);
+      const elt = elements.find(e => e.name === d);
+      return this.isService() ? new Service(graph, elt, nodes, elements) : new Package(graph, elt, nodes, elements);
+    });
+    log.debug('Node built', this.name);
   };
 
   public enable(): void {
-    this._enabled = true;
+    this.nodeStatus = NodeStatus.ENABLED;
   }
 
-  public get enabled(): boolean { return this._enabled }
+  public isEnabled(): boolean {
+    return this.nodeStatus === NodeStatus.ENABLED;
+  }
 
   public isService(): boolean {
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
@@ -70,25 +88,16 @@ export abstract class LernaNode {
   public getLocation(): string { return this.location }
 
   public getDependencies(): LernaNode[] {
+    const deps: LernaNode[] = [];
+    this._getDependencies(deps);
+    return deps;
+  }
 
-    const hasNext = (previous: LernaNode): boolean  => previous.dependencies.length > 0;
-
-    const concatNext = (deps: Set<string>, currentNode: LernaNode, depth = 0): void => {
-      if (hasNext(currentNode)) {
-        for (const node of currentNode.dependencies) {
-          if (!deps.has(node.name)) {
-            deps.add(node.name);
-          }
-          concatNext(deps, node, depth + 1);
-        }
-      }
-    };
-
-    const dependencies: Set<string> = new Set();
-    concatNext(dependencies, this);
-    const dependencyNodes = Array.from(dependencies).map(name => this.graph.get(name));
-    log.silly(`Node ${this.name} has the following dependencies`, dependencyNodes.map(d => d.name));
-    return dependencyNodes;
+  private _getDependencies(deps: LernaNode[]): void {
+    for (const dep of this.dependencies) {
+      deps.push(dep);
+      dep._getDependencies(deps);
+    }
   }
 
   /**
@@ -116,7 +125,7 @@ export abstract class LernaNode {
    * Recursively compiles this package and all its dependencies
    */
   public compile(scheduler: RecompilationScheduler): void {
-    if (!this.enabled) {
+    if (!this.isEnabled()) {
       log.debug('Node is disabled', this.name);
       return;
     }
@@ -151,7 +160,7 @@ export abstract class LernaNode {
 
   private async _recompile(scheduler: RecompilationScheduler): Promise<void> {
     scheduler.abort();
-    const dependentNodes = this.getDependent().concat(this).filter(n => n.enabled);
+    const dependentNodes = this.getDependent().concat(this).filter(n => n.isEnabled());
     log.debug(`${chalk.bold(this.name)}: Dependent nodes`, dependentNodes.map(d => d.name));
     const dependentServices = dependentNodes.filter(dep => dep instanceof Service);
     log.debug(`${chalk.bold(this.name)}: Dependent services`, dependentServices.map(d => d.name));
