@@ -47,7 +47,7 @@ export class RecompilationScheduler {
     this._reset();
   }
 
-  private _reset() {
+  private _reset(): void {
     this._queue = {
       stop: [],
       compile: [],
@@ -57,12 +57,12 @@ export class RecompilationScheduler {
     this._status = SchedulerStatus.READY;
   }
 
-  public reset() {
+  public reset(): void {
     this._abort$.next();
     this._reset();
   }
 
-  public requestStop(service: Service) {
+  public requestStop(service: Service): void {
     log.debug(`Request to add stop job`, service.getName());
     const inQueue = this._alreadyQueued(service, 'stop');
     log.debug('Already in stop queue', inQueue);
@@ -72,7 +72,7 @@ export class RecompilationScheduler {
     }
   }
 
-  public requestCompilation(node: LernaNode) {
+  public requestCompilation(node: LernaNode): void {
     log.debug(`Request to add compilation job`, node.getName());
     const inQueue = this._alreadyQueued(node, 'compile');
     const preempted = this._status === SchedulerStatus.ABORTED;
@@ -95,7 +95,7 @@ export class RecompilationScheduler {
     }
   }
 
-  public requestStart(service: Service) {
+  public requestStart(service: Service): void {
     log.debug(`Request to add start job`, service.getName());
     const inQueue = this._alreadyQueued(service, 'start');
     log.debug('Already in start queue', inQueue);
@@ -105,7 +105,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _alreadyQueued(node: LernaNode, queue: 'compile' | 'start' | 'stop') {
+  private _alreadyQueued(node: LernaNode, queue: 'compile' | 'start' | 'stop'): boolean {
     return this._queue[queue].some((n) => n.getName() === node.getName());
   }
 

@@ -15,7 +15,7 @@ export const getProjectRoot = (path?: string): string => {
         throw Error('Filesystem root reached');
       }
       log.debug('Check path', join(path, 'lerna.json'));
-      const hasLerna = () => existsSync(join(path, 'lerna.json'));
+      const hasLerna = (): boolean => existsSync(join(path, 'lerna.json'));
       log.debug('Exists', hasLerna());
       if (hasLerna()) {
         return path;

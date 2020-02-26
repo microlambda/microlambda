@@ -4,7 +4,7 @@ import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../utils/logs';
 import { log } from '../utils/logger';
 import { ServiceStatus } from './enums/service.status';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
 

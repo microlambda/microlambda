@@ -1,7 +1,17 @@
 import { blue, green, cyan, yellow, red } from 'chalk';
 
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
-export const log = {
+type LoggerFunction = (...args: any[]) => void;
+
+interface ILogger {
+  silly: LoggerFunction;
+  debug: LoggerFunction;
+  info: LoggerFunction;
+  warn: LoggerFunction;
+  error: LoggerFunction;
+}
+
+export const log: ILogger = {
   silly: (...args: any[]) => {
     if (process.env.MILA_DEBUG === '*') {
       console.debug(cyan('[SILLY]'), ...args);

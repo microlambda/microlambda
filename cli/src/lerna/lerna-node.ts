@@ -74,19 +74,19 @@ export abstract class LernaNode {
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   }
 
-  public getCompilationStatus() {
+  public getCompilationStatus(): CompilationStatus {
     return this.compilationStatus;
   }
 
-  public getChildren() {
+  public getChildren(): LernaNode[] {
     return this.dependencies;
   }
 
-  public getChild(name: string) {
+  public getChild(name: string): LernaNode {
     return this.dependencies.find((d) => d.name === name);
   }
 
-  public setStatus(status: CompilationStatus) {
+  public setStatus(status: CompilationStatus): void {
     this.compilationStatus = status;
   }
 
@@ -159,7 +159,7 @@ export abstract class LernaNode {
     scheduler.requestCompilation(this);
   }
 
-  public async watch(scheduler: RecompilationScheduler) {
+  public async watch(scheduler: RecompilationScheduler): Promise<void> {
     log.debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
     glob(`${this.location}/src/**/*.{ts,js,json}`, (err, matches) => {
       if (err) {
@@ -167,7 +167,7 @@ export abstract class LernaNode {
       }
       matches.forEach((path) => {
         log.debug('Watching', path);
-        watch(path, (event, filename) => {
+        watch(path, () => {
           log.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
           this._recompile(scheduler);
         });

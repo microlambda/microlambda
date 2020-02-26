@@ -9,7 +9,7 @@ interface IPackage {
   location: string;
 }
 
-export const getLernaGraph = async (projectRoot: string, config: IConfig, defaultPort = 3001) => {
+export const getLernaGraph = async (projectRoot: string, config: IConfig, defaultPort = 3001): Promise<LernaGraph> => {
   const packages: IPackage[] = JSON.parse(
     await execCmd('npx', ['lerna', 'la', '--json'], { cwd: projectRoot }, 'debug', 'debug'),
   );

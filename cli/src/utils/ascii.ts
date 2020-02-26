@@ -1,7 +1,7 @@
 import { magenta } from 'chalk';
 import { textSync } from 'figlet';
 
-export const showOff = () =>
+export const showOff = (): void =>
   /* eslint-disable-next-line no-console */
   console.log(
     magenta(

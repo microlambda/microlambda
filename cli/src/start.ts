@@ -15,7 +15,7 @@ interface IStartOptions {
   defaultPort: number;
 }
 
-export const start = async (scheduler: RecompilationScheduler, options: IStartOptions) => {
+export const start = async (scheduler: RecompilationScheduler, options: IStartOptions): Promise<void> => {
   showOff();
   log.info('Starting up the app');
   const projectRoot = getProjectRoot();
@@ -83,6 +83,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   log.debug(chosenServices);
   chosenServices.forEach((s) => scheduler.requestStart(s));
   await scheduler.exec().catch((err) => {
+    log.error(err);
     log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
   });
   graph.getNodes().forEach((s) => s.watch(scheduler));

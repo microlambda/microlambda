@@ -17,7 +17,7 @@ export class LernaGraph {
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
     log.debug('Building graph with', nodes);
     this.projectRoot = projectRoot;
-    const isService = (location: string) => {
+    const isService = (location: string): boolean => {
       return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
     };
     const services = nodes.filter((n) => isService(n.location));
@@ -33,7 +33,7 @@ export class LernaGraph {
     log.info(`Successfully built ${this.nodes.length} nodes`);
   }
 
-  public getPort(service: string) {
+  public getPort(service: string): number {
     return this.ports[service];
   }
 
@@ -49,7 +49,7 @@ export class LernaGraph {
       });
   }
 
-  public getProjectRoot() {
+  public getProjectRoot(): string {
     return this.projectRoot;
   }
 
