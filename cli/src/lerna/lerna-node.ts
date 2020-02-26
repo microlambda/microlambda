@@ -76,6 +76,14 @@ export abstract class LernaNode {
     return this.compilationStatus;
   }
 
+  public getChildren() {
+    return this.dependencies;
+  }
+
+  public getChild(name: string) {
+    return this.dependencies.find(d => d.name === name);
+  }
+
   public setStatus(status: CompilationStatus) {
     this.compilationStatus = status;
   }

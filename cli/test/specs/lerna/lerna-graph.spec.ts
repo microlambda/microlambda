@@ -21,17 +21,61 @@
                  /                   /     \    /
             package E------------- /       package F
  */
+import { LernaGraph } from '../../../src/lerna';
+import { graph1 } from '../../factories/graph-1';
+import { config1 } from '../../factories/config-1';
+import { SinonStub, stub } from 'sinon';
+import fs from 'fs';
+
+let graph: LernaGraph;
+let existsSync: SinonStub;
 
 describe('The LernaGraph class', () => {
+  beforeAll(() => {
+    existsSync = stub(fs, 'existsSync');
+    existsSync.withArgs('path/to/service').returns(true);
+    existsSync.withArgs('path/to/package').returns(true);
+    graph = new LernaGraph(graph1, __dirname, config1);
+  });
+  afterAll(() => {
+    existsSync.restore();
+  });
   describe('The constructor', () => {
-    test.todo('should build 7 lerna nodes');
-    test.todo('A should have children D');
-    test.todo('B should have children D');
-    test.todo('C should have children B,E,F,G');
-    test.todo('D should have children E');
-    test.todo('E should not have children');
-    test.todo('F should not have children');
-    test.todo('All nodes should be disabled');
+    test('should build 7 lerna nodes', () => {
+      expect(graph.getNodes().length).toBe(7);
+    });
+    test('A should have children D', () =>  {
+      expect(graph.get('serviceA').getChildren().length).toBe(1);
+      expect(graph.get('serviceA').getChildren()).toContain(graph.get('packageD'));
+    });
+    test('B should have children D', () =>  {
+      expect(graph.get('serviceB').getChildren().length).toBe(1);
+      expect(graph.get('serviceB').getChildren()).toContain(graph.get('packageD'));
+    });
+    test('C should have children B,E,F,G', () =>  {
+      expect(graph.get('serviceC').getChildren().length).toBe(4);
+      expect(graph.get('serviceC').getChildren()).toContain(graph.get('serviceB'));
+      expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageE'));
+      expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageF'));
+      expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageG'));
+    });
+    test('D should have children E', () =>  {
+      expect(graph.get('packageD').getChildren().length).toBe(1);
+      expect(graph.get('packageD').getChildren()).toContain(graph.get('packageE'));
+    });
+    test('E should not have children', () =>  {
+      expect(graph.get('packageE').getChildren().length).toBe(0);
+    });
+    test('F should not have children', () =>  {
+      expect(graph.get('packageF').getChildren().length).toBe(0);
+    });
+    test('G should have children F', () =>  {
+      expect(graph.get('packageG').getChildren().length).toBe(1);
+      expect(graph.get('packageG').getChildren()).toContain(graph.get('packageF'));
+    });
+    test('All nodes should be disabled', () => {
+      expect(graph.getNodes().every(n => !n.isEnabled())).toBe(true);
+    });
     test.todo('should map ports according to the config if given');
     test.todo('should map ports with default port fallback');
   });
