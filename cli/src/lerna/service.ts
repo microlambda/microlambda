@@ -14,7 +14,7 @@ export class Service extends LernaNode {
   private process: ChildProcess;
   private logStream: WriteStream;
 
-  constructor(graph: LernaGraph, node: IGraphElement, nodes: LernaNode[], elements: IGraphElement[]) {
+  constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
     super(graph, node, nodes, elements);
     this.status = ServiceStatus.STOPPED;
     this.port = graph.getPort(node.name);

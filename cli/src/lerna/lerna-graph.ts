@@ -9,6 +9,10 @@ import { spawn } from 'child_process';
 import { log } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
 
+export const isService = (location: string): boolean => {
+  return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
+};
+
 export class LernaGraph {
   private readonly projectRoot: string;
   private readonly ports: { [key: string]: number };
@@ -17,19 +21,27 @@ export class LernaGraph {
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
     log.debug('Building graph with', nodes);
     this.projectRoot = projectRoot;
-    const isService = (location: string): boolean => {
-      return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
-    };
     const services = nodes.filter((n) => isService(n.location));
     this.ports = resolvePorts(services, config, defaultPort);
-    const builtNodes: LernaNode[] = [];
+    const builtNodes: Set<LernaNode> = new Set<LernaNode>();
     for (const node of nodes) {
-      const builtNode: LernaNode = isService(node.location)
-        ? new Service(this, node, builtNodes, nodes)
-        : new Package(this, node, builtNodes, nodes);
-      builtNodes.push(builtNode);
+      if (!Array.from(builtNodes).some((n) => n.getName() === node.name)) {
+        log.debug('Building node', node.name);
+        log.debug(
+          'Already built',
+          Array.from(builtNodes).map((b) => b.getName()),
+        );
+        log.debug('Is service', isService(node.location));
+        isService(node.location)
+          ? new Service(this, node, builtNodes, nodes)
+          : new Package(this, node, builtNodes, nodes);
+      }
     }
-    this.nodes = builtNodes;
+    this.nodes = Array.from(builtNodes);
+    log.debug(
+      'Built graph',
+      this.nodes.map((n) => n.getName()),
+    );
     log.info(`Successfully built ${this.nodes.length} nodes`);
   }
 

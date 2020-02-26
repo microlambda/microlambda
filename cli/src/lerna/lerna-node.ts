@@ -1,4 +1,4 @@
-import { LernaGraph } from './lerna-graph';
+import { LernaGraph, isService } from './lerna-graph';
 import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
@@ -40,7 +40,7 @@ export abstract class LernaNode {
   protected compilationProcess: ChildProcess;
   private nodeStatus: NodeStatus;
 
-  public constructor(graph: LernaGraph, node: IGraphElement, nodes: LernaNode[], elements: IGraphElement[]) {
+  public constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
     log.debug('Building node', node.name);
     this.graph = graph;
     this.name = node.name;
@@ -50,16 +50,20 @@ export abstract class LernaNode {
     this.nodeStatus = NodeStatus.DISABLED;
     this.compilationStatus = CompilationStatus.NOT_COMPILED;
     this.dependencies = node.dependencies.map((d) => {
-      const dep = nodes.find((n) => n.name === d);
+      const dep = Array.from(nodes).find((n) => n.name === d);
       if (dep) {
         log.debug('Dependency is already built', d);
         return dep;
       }
       log.debug('Building dependency', d);
       const elt = elements.find((e) => e.name === d);
-      return this.isService() ? new Service(graph, elt, nodes, elements) : new Package(graph, elt, nodes, elements);
+      log.debug('Is service', { name: d, result: isService(elt.location) });
+      return isService(elt.location)
+        ? new Service(graph, elt, nodes, elements)
+        : new Package(graph, elt, nodes, elements);
     });
     log.debug('Node built', this.name);
+    nodes.add(this);
   }
 
   public enable(): void {

@@ -21,10 +21,10 @@
                  /                   /     \    /
             package E------------- /       package F
  */
-import { LernaGraph } from '../../../src/lerna';
+import { LernaGraph, LernaNode, Package, Service } from '../../../src/lerna';
 import { graph1 } from '../../factories/graph-1';
 import { config1 } from '../../factories/config-1';
-import { SinonStub, stub } from 'sinon';
+import { SinonSpy, SinonStub, stub, spy } from 'sinon';
 import fs from 'fs';
 
 let graph: LernaGraph;
@@ -33,16 +33,18 @@ let existsSync: SinonStub;
 describe('The LernaGraph class', () => {
   beforeAll(() => {
     existsSync = stub(fs, 'existsSync');
-    existsSync.withArgs('path/to/service').returns(true);
-    existsSync.withArgs('path/to/package').returns(true);
+    existsSync.withArgs('path/to/service/serverless.yml').returns(true);
+    existsSync.withArgs('path/to/package/serverless.yml').returns(false);
     graph = new LernaGraph(graph1, __dirname, config1);
   });
   afterAll(() => {
     existsSync.restore();
   });
   describe('The constructor', () => {
-    test('should build 7 lerna nodes', () => {
+    test('should build 7 lerna nodes including 3 services and 4 packages', () => {
       expect(graph.getNodes().length).toBe(7);
+      expect(graph.getNodes().filter((n) => n instanceof Package).length).toBe(4);
+      expect(graph.getNodes().filter((n) => n instanceof Service).length).toBe(3);
     });
     test('A should have children D', () => {
       expect(graph.get('serviceA').getChildren().length).toBe(1);
@@ -54,10 +56,10 @@ describe('The LernaGraph class', () => {
     });
     test('C should have children B,E,F,G', () => {
       expect(graph.get('serviceC').getChildren().length).toBe(4);
-      expect(graph.get('serviceC').getChildren()).toContain(graph.get('serviceB'));
-      expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageE'));
-      expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageF'));
-      expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageG'));
+      expect(graph.get('serviceC').getChild('serviceB')).toBe(graph.get('serviceB'));
+      expect(graph.get('serviceC').getChild('packageE')).toBe(graph.get('packageE'));
+      expect(graph.get('serviceC').getChild('packageF')).toBe(graph.get('packageF'));
+      expect(graph.get('serviceC').getChild('packageG')).toBe(graph.get('packageG'));
     });
     test('D should have children E', () => {
       expect(graph.get('packageD').getChildren().length).toBe(1);
