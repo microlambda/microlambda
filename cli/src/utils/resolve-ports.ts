@@ -12,7 +12,7 @@ import { log } from './logger';
  */
 export const resolvePorts = (services: IGraphElement[], config: IConfig, defaultPort = 3001) => {
   log.debug('Resolving port from config', config.ports);
-  const result: {[key: string]: number} = {};
+  const result: { [key: string]: number } = {};
   services.forEach((service) => {
     const name = service.name;
     const inConfig = config.ports[name] != null;

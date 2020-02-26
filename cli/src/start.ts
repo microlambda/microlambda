@@ -31,21 +31,24 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   });
 
   log.debug('Services excluded by config', config.noStart);
-  const enabledServices = graph.getServices().filter(s => !config.noStart.includes(s.getName()));
-  log.debug('Enabled services', enabledServices.map(s => s.getName()));
+  const enabledServices = graph.getServices().filter((s) => !config.noStart.includes(s.getName()));
+  log.debug(
+    'Enabled services',
+    enabledServices.map((s) => s.getName()),
+  );
 
   let chosenServices: Service[] = [];
 
   if (options.interactive) {
     log.debug('Interactive option chosen, prompting user');
-    const choices: {microservices: string[]} = await inquirer.prompt({
+    const choices: { microservices: string[] } = await inquirer.prompt({
       type: 'checkbox',
       name: 'microservices',
       message: 'Please select the microservices you wants to start',
       choices: enabledServices.map((service: Service) => service.getName()),
     });
     if (choices.microservices.length !== 0) {
-      chosenServices = enabledServices.filter(s => choices.microservices.includes(s.getName()));
+      chosenServices = enabledServices.filter((s) => choices.microservices.includes(s.getName()));
     } else {
       log.info('No services to start, exiting...');
       process.exit(0);
@@ -53,10 +56,19 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   } else {
     chosenServices = enabledServices;
   }
-  log.debug('Chosen services', chosenServices.map(s => s.getName()));
-  chosenServices.forEach(s => s.enable());
+  log.debug(
+    'Chosen services',
+    chosenServices.map((s) => s.getName()),
+  );
+  chosenServices.forEach((s) => s.enable());
   graph.enableNodes();
-  log.debug('Enabled nodes', graph.getNodes().filter(n => n.isEnabled()).map(n => n.getName()));
+  log.debug(
+    'Enabled nodes',
+    graph
+      .getNodes()
+      .filter((n) => n.isEnabled())
+      .map((n) => n.getName()),
+  );
 
   if (options.recompile) {
     await graph.compile(scheduler).catch(() => {
@@ -69,15 +81,15 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   log.info(`Found ${chosenServices.length} services`);
   log.info('Starting services');
   log.debug(chosenServices);
-  chosenServices.forEach(s => scheduler.requestStart(s));
+  chosenServices.forEach((s) => scheduler.requestStart(s));
   await scheduler.exec().catch((err) => {
-    log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.')
+    log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
   });
-  graph.getNodes().forEach(s => s.watch(scheduler));
+  graph.getNodes().forEach((s) => s.watch(scheduler));
   process.on('SIGINT', async () => {
     log.warn('SIGINT signal received');
     scheduler.reset();
-    chosenServices.forEach(s => scheduler.requestStop(s));
+    chosenServices.forEach((s) => scheduler.requestStop(s));
     await scheduler.exec();
     process.exit();
   });

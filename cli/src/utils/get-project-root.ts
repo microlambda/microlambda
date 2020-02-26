@@ -1,5 +1,5 @@
 import { join, parse } from 'path';
-import { existsSync } from "fs";
+import { existsSync } from 'fs';
 import { log } from './logger';
 
 export const getProjectRoot = (path?: string): string => {

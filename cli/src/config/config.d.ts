@@ -1,4 +1,4 @@
 export interface IConfig {
-  ports: {[key: string]: number};
+  ports: { [key: string]: number };
   noStart: string[];
 }

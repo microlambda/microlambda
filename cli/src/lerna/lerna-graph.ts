@@ -1,6 +1,6 @@
 import { IGraphElement, LernaNode } from './';
-import { existsSync } from "fs";
-import { join } from "path";
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { Package } from './';
 import { Service } from './';
 import { resolvePorts } from '../utils/resolve-ports';
@@ -10,9 +10,8 @@ import { log } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
 
 export class LernaGraph {
-
   private readonly projectRoot: string;
-  private readonly ports: {[key: string]: number};
+  private readonly ports: { [key: string]: number };
   private readonly nodes: LernaNode[];
 
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
@@ -21,7 +20,7 @@ export class LernaGraph {
     const isService = (location: string) => {
       return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
     };
-    const services = nodes.filter(n => isService(n.location));
+    const services = nodes.filter((n) => isService(n.location));
     this.ports = resolvePorts(services, config, defaultPort);
     const builtNodes: LernaNode[] = [];
     for (const node of nodes) {
@@ -32,7 +31,7 @@ export class LernaGraph {
     }
     this.nodes = builtNodes;
     log.info(`Successfully built ${this.nodes.length} nodes`);
-  };
+  }
 
   public getPort(service: string) {
     return this.ports[service];
@@ -40,25 +39,37 @@ export class LernaGraph {
 
   public enableNodes(): void {
     log.debug('Enabling nodes descendants');
-    this.nodes.filter(n => n.isEnabled()).forEach(n => {
-      log.debug('Enabling node descendants', n.getName());
-      const dependencies = n.getDependencies();
-      log.silly('Descendants', n.getDependencies());
-      dependencies.forEach(d => d.enable());
-    })
+    this.nodes
+      .filter((n) => n.isEnabled())
+      .forEach((n) => {
+        log.debug('Enabling node descendants', n.getName());
+        const dependencies = n.getDependencies();
+        log.silly('Descendants', n.getDependencies());
+        dependencies.forEach((d) => d.enable());
+      });
   }
 
-  public getProjectRoot() { return this.projectRoot }
+  public getProjectRoot() {
+    return this.projectRoot;
+  }
 
-  public getServices(): Service[] { return this.nodes.filter(n => n.isService()) as Service[] }
-  public getPackages(): Package[] { return this.nodes.filter(n => !n.isService()) as Package[] }
+  public getServices(): Service[] {
+    return this.nodes.filter((n) => n.isService()) as Service[];
+  }
+  public getPackages(): Package[] {
+    return this.nodes.filter((n) => !n.isService()) as Package[];
+  }
 
-  public getNodes(): LernaNode[] { return this.nodes }
+  public getNodes(): LernaNode[] {
+    return this.nodes;
+  }
 
-  private getRootNodes(): LernaNode[] { return this.nodes.filter(n => n.isRoot())}
+  private getRootNodes(): LernaNode[] {
+    return this.nodes.filter((n) => n.isRoot());
+  }
 
   public get(name: string): LernaNode {
-    return this.nodes.find(n => n.getName() === name);
+    return this.nodes.find((n) => n.getName() === name);
   }
 
   public async bootstrap(): Promise<void> {
@@ -80,9 +91,12 @@ export class LernaGraph {
   public async compile(scheduler: RecompilationScheduler): Promise<void> {
     log.info('Compiling dependency graph');
     const roots = this.getRootNodes();
-    log.debug('Roots nodes', roots.map(n => n.getName()));
+    log.debug(
+      'Roots nodes',
+      roots.map((n) => n.getName()),
+    );
     // Proceed sequentially has leaf packages have to be compiled first
-    for(const root of roots) {
+    for (const root of roots) {
       await root.compile(scheduler);
     }
     return scheduler.exec();

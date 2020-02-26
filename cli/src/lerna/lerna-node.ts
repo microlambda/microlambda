@@ -10,7 +10,9 @@ import chalk from 'chalk';
 import { ChildProcess, execSync, spawn } from 'child_process';
 import { Observable } from 'rxjs';
 
-const tsVersion = execSync('npx tsc --version').toString().match(/[0-9]\.[0-9]\.[0-9]/)[0];
+const tsVersion = execSync('npx tsc --version')
+  .toString()
+  .match(/[0-9]\.[0-9]\.[0-9]/)[0];
 
 export interface IGraphElement {
   name: string;
@@ -47,18 +49,18 @@ export abstract class LernaNode {
     this.location = node.location;
     this.nodeStatus = NodeStatus.DISABLED;
     this.compilationStatus = CompilationStatus.NOT_COMPILED;
-    this.dependencies = node.dependencies.map(d => {
-      const dep = nodes.find(n => n.name === d);
+    this.dependencies = node.dependencies.map((d) => {
+      const dep = nodes.find((n) => n.name === d);
       if (dep) {
         log.debug('Dependency is already built', d);
         return dep;
       }
       log.debug('Building dependency', d);
-      const elt = elements.find(e => e.name === d);
+      const elt = elements.find((e) => e.name === d);
       return this.isService() ? new Service(graph, elt, nodes, elements) : new Package(graph, elt, nodes, elements);
     });
     log.debug('Node built', this.name);
-  };
+  }
 
   public enable(): void {
     this.nodeStatus = NodeStatus.ENABLED;
@@ -81,7 +83,7 @@ export abstract class LernaNode {
   }
 
   public getChild(name: string) {
-    return this.dependencies.find(d => d.name === name);
+    return this.dependencies.find((d) => d.name === name);
   }
 
   public setStatus(status: CompilationStatus) {
@@ -92,8 +94,12 @@ export abstract class LernaNode {
     return this.getDependent().length === 0;
   }
 
-  public getName(): string { return this.name }
-  public getLocation(): string { return this.location }
+  public getName(): string {
+    return this.name;
+  }
+  public getLocation(): string {
+    return this.location;
+  }
 
   public getDependencies(): LernaNode[] {
     const deps: LernaNode[] = [];
@@ -112,12 +118,16 @@ export abstract class LernaNode {
    * Get all dependents nodes.
    */
   public getDependent(): LernaNode[] {
-    const dependent = this.graph.getNodes()
-      .filter(n => n
+    const dependent = this.graph.getNodes().filter((n) =>
+      n
         .getDependencies()
-        .map(n => n .name)
-        .includes(this.name));
-    log.silly(`Nodes depending upon ${this.name}`, dependent.map(d => d.name));
+        .map((n) => n.name)
+        .includes(this.name),
+    );
+    log.silly(
+      `Nodes depending upon ${this.name}`,
+      dependent.map((d) => d.name),
+    );
     return dependent;
   }
 
@@ -125,8 +135,7 @@ export abstract class LernaNode {
    * Get the direct parents in dependency tree.
    */
   public getParents(): LernaNode[] {
-    return this.graph.getNodes()
-      .filter(n => n.dependencies.some(d => d.name === this.name))
+    return this.graph.getNodes().filter((n) => n.dependencies.some((d) => d.name === this.name));
   }
 
   /**
@@ -141,7 +150,7 @@ export abstract class LernaNode {
     for (const dep of this.dependencies) {
       log.debug('Compiling dependency first', dep.name);
       try {
-        dep.compile(scheduler)
+        dep.compile(scheduler);
       } catch (e) {
         log.error(e);
         throw e;
@@ -158,25 +167,33 @@ export abstract class LernaNode {
       }
       matches.forEach((path) => {
         log.debug('Watching', path);
-        watch(path, ((event, filename) => {
-            log.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-            this._recompile(scheduler);
-        }));
-      })
-    })
+        watch(path, (event, filename) => {
+          log.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+          this._recompile(scheduler);
+        });
+      });
+    });
   }
 
   private async _recompile(scheduler: RecompilationScheduler): Promise<void> {
     scheduler.abort();
-    const dependentNodes = this.getDependent().concat(this).filter(n => n.isEnabled());
-    log.debug(`${chalk.bold(this.name)}: Dependent nodes`, dependentNodes.map(d => d.name));
-    const dependentServices = dependentNodes.filter(dep => dep instanceof Service);
-    log.debug(`${chalk.bold(this.name)}: Dependent services`, dependentServices.map(d => d.name));
+    const dependentNodes = this.getDependent()
+      .concat(this)
+      .filter((n) => n.isEnabled());
+    log.debug(
+      `${chalk.bold(this.name)}: Dependent nodes`,
+      dependentNodes.map((d) => d.name),
+    );
+    const dependentServices = dependentNodes.filter((dep) => dep instanceof Service);
+    log.debug(
+      `${chalk.bold(this.name)}: Dependent services`,
+      dependentServices.map((d) => d.name),
+    );
     log.debug(`${chalk.bold(this.name)}: Stopping dependent services`);
     dependentServices.forEach((s: Service) => scheduler.requestStop(s));
     this._recompileUpstream(scheduler);
     dependentServices.forEach((s: Service) => scheduler.requestStart(s));
-    await scheduler.exec()
+    await scheduler.exec();
   }
 
   private _recompileUpstream(scheduler: RecompilationScheduler): void {
@@ -211,7 +228,6 @@ export abstract class LernaNode {
           break;
       }
     });
-
   }
 
   private _startCompilation(): void {
@@ -220,8 +236,8 @@ export abstract class LernaNode {
       cwd: this.location,
       env: process.env,
     });
-    this.compilationProcess.stderr.on('data', data => log.error(`${chalk.bold(this.name)}: ${data}`));
-    this.compilationProcess.stdout.on('data', data => log.debug(`${chalk.bold(this.name)}: ${data}`));
+    this.compilationProcess.stderr.on('data', (data) => log.error(`${chalk.bold(this.name)}: ${data}`));
+    this.compilationProcess.stdout.on('data', (data) => log.debug(`${chalk.bold(this.name)}: ${data}`));
   }
 
   private _watchCompilation(): Observable<LernaNode> {
@@ -248,7 +264,7 @@ export abstract class LernaNode {
         log.info(`Error compiling ${this.getName()}`, err);
         // this.compilationProcess.removeAllListeners('error');
         return observer.error(err);
-      })
+      });
     });
   }
 }

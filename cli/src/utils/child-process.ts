@@ -3,8 +3,14 @@ import { log } from './logger';
 
 type Verbosity = 'silly' | 'debug' | 'info' | 'warn' | 'error';
 
-export const execCmd = async (cmd: string, args: ReadonlyArray<string> = null, options: SpawnOptions = null, stdout: Verbosity = 'debug', stderr: Verbosity = 'error') => {
-  return new Promise<string>((resolve, reject) =>{
+export const execCmd = async (
+  cmd: string,
+  args: ReadonlyArray<string> = null,
+  options: SpawnOptions = null,
+  stdout: Verbosity = 'debug',
+  stderr: Verbosity = 'error',
+) => {
+  return new Promise<string>((resolve, reject) => {
     let _stdout = '';
     const process = spawn(cmd, args, options);
     process.stdout.on('data', (data) => {
@@ -16,11 +22,11 @@ export const execCmd = async (cmd: string, args: ReadonlyArray<string> = null, o
       if (code === 0) {
         return resolve(_stdout);
       }
-      return reject('Process exited with code ' +  code);
+      return reject('Process exited with code ' + code);
     });
     process.on('error', (e) => {
       log.error(e);
       return reject(e);
-    })
+    });
   });
 };

@@ -1,5 +1,6 @@
-import { blue, green, cyan,yellow, red } from 'chalk';
+import { blue, green, cyan, yellow, red } from 'chalk';
 
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 export const log = {
   silly: (...args: any[]) => {
     if (process.env.MILA_DEBUG === '*') {
@@ -19,5 +20,5 @@ export const log = {
   },
   error: (...args: any[]) => {
     console.info(red('[ERROR]', ...args));
-  }
+  },
 };

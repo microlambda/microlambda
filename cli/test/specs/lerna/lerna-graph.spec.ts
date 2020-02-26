@@ -44,37 +44,37 @@ describe('The LernaGraph class', () => {
     test('should build 7 lerna nodes', () => {
       expect(graph.getNodes().length).toBe(7);
     });
-    test('A should have children D', () =>  {
+    test('A should have children D', () => {
       expect(graph.get('serviceA').getChildren().length).toBe(1);
       expect(graph.get('serviceA').getChildren()).toContain(graph.get('packageD'));
     });
-    test('B should have children D', () =>  {
+    test('B should have children D', () => {
       expect(graph.get('serviceB').getChildren().length).toBe(1);
       expect(graph.get('serviceB').getChildren()).toContain(graph.get('packageD'));
     });
-    test('C should have children B,E,F,G', () =>  {
+    test('C should have children B,E,F,G', () => {
       expect(graph.get('serviceC').getChildren().length).toBe(4);
       expect(graph.get('serviceC').getChildren()).toContain(graph.get('serviceB'));
       expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageE'));
       expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageF'));
       expect(graph.get('serviceC').getChildren()).toContain(graph.get('packageG'));
     });
-    test('D should have children E', () =>  {
+    test('D should have children E', () => {
       expect(graph.get('packageD').getChildren().length).toBe(1);
       expect(graph.get('packageD').getChildren()).toContain(graph.get('packageE'));
     });
-    test('E should not have children', () =>  {
+    test('E should not have children', () => {
       expect(graph.get('packageE').getChildren().length).toBe(0);
     });
-    test('F should not have children', () =>  {
+    test('F should not have children', () => {
       expect(graph.get('packageF').getChildren().length).toBe(0);
     });
-    test('G should have children F', () =>  {
+    test('G should have children F', () => {
       expect(graph.get('packageG').getChildren().length).toBe(1);
       expect(graph.get('packageG').getChildren()).toContain(graph.get('packageF'));
     });
     test('All nodes should be disabled', () => {
-      expect(graph.getNodes().every(n => !n.isEnabled())).toBe(true);
+      expect(graph.getNodes().every((n) => !n.isEnabled())).toBe(true);
     });
     test.todo('should map ports according to the config if given');
     test.todo('should map ports with default port fallback');

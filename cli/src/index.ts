@@ -27,4 +27,4 @@ program
     await start(scheduler, options);
   });
 
-(async() => program.parseAsync(process.argv))();
+(async () => program.parseAsync(process.argv))();

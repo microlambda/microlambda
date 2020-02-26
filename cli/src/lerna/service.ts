@@ -21,7 +21,7 @@ export class Service extends LernaNode {
   }
 
   public stop(): Observable<Service> {
-    return new Observable<Service>(((observer) => {
+    return new Observable<Service>((observer) => {
       log.debug('Requested to stop', this.name, 'which status is', this.status);
       switch (this.status) {
         case ServiceStatus.RUNNING:
@@ -50,7 +50,7 @@ export class Service extends LernaNode {
         observer.next(this);
         return observer.complete();
       });
-    }));
+    });
   }
 
   public start(): Observable<Service> {
@@ -68,14 +68,16 @@ export class Service extends LernaNode {
           break;
         case ServiceStatus.STOPPING:
           log.warn('Service is already stopping', this.name);
-          this.stop().pipe(
-            tap(() => this._startProcess()),
-            concatMap(() => this._watchStarted())
-          ).subscribe(
-            (next) => observer.next(next),
-            (err) => observer.error(err),
-            () => observer.complete(),
-          );
+          this.stop()
+            .pipe(
+              tap(() => this._startProcess()),
+              concatMap(() => this._watchStarted()),
+            )
+            .subscribe(
+              (next) => observer.next(next),
+              (err) => observer.error(err),
+              () => observer.complete(),
+            );
           break;
         case ServiceStatus.STARTING:
           log.warn('Service is already starting', this.name);
@@ -133,7 +135,7 @@ export class Service extends LernaNode {
         log.error(`Could not start service ${this.name}`, err);
         this.status = ServiceStatus.CRASHED;
         return started.error(err);
-      })
+      });
     });
   }
 }
