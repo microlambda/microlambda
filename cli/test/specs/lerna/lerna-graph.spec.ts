@@ -40,6 +40,7 @@ describe('The LernaGraph class', () => {
     existsSync.withArgs('path/to/service/serverless.yml').returns(true);
     existsSync.withArgs('path/to/package/serverless.yml').returns(false);
     graph = new LernaGraph(graph1, __dirname, config1);
+    graph.getProjectRoot();
   });
   afterAll(() => {
     existsSync.restore();
@@ -196,8 +197,33 @@ describe('The LernaGraph class', () => {
     });
   });
   describe('The compile method [given A, B, D, E enabled]', () => {
-    test.todo('should compile D, E');
-    test.todo('should compile E before D');
+    let requestCompilation: SinonStub;
+    beforeAll(() => {
+      requestCompilation = stub(RecompilationScheduler.prototype, 'exec');
+      graph.getNodes().forEach((n) => n.disable());
+      graph.get('serviceA').enable();
+      graph.get('serviceB').enable();
+      graph.get('packageD').enable();
+      graph.get('packageE').enable();
+    });
+    afterAll(() => {
+      requestCompilation.restore();
+    });
+    beforeEach(() => scheduler.reset());
+    test('should compile D, E', async () => {
+      await graph.compile(scheduler);
+      const compilationQueue = scheduler.getJobs().compile;
+      expect(compilationQueue).toHaveLength(2);
+      expect(compilationQueue).toContain(graph.get('packageD'));
+      expect(compilationQueue).toContain(graph.get('packageE'));
+    });
+    test('should compile E before D', async () => {
+      await graph.compile(scheduler);
+      const compilationQueue = scheduler.getJobs().compile;
+      expect(compilationQueue.indexOf(graph.get('packageE'))).toBeLessThan(
+        compilationQueue.indexOf(graph.get('packageD')),
+      );
+    });
   });
   describe('The enable nodes method', () => {
     beforeEach(() => {
