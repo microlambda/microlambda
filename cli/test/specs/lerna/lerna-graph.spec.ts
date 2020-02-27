@@ -21,11 +21,13 @@
                  /                   /     \    /
             package E------------- /       package F
  */
-import { LernaGraph, LernaNode, Package, Service } from '../../../src/lerna';
+import { LernaGraph, Package, Service } from '../../../src/lerna';
 import { graph1 } from '../../factories/graph-1';
 import { config1 } from '../../factories/config-1';
-import { SinonSpy, SinonStub, stub, spy } from 'sinon';
+import { SinonStub, stub } from 'sinon';
 import fs from 'fs';
+import { EventEmitter } from 'events';
+import child_process, { ChildProcess } from 'child_process';
 
 let graph: LernaGraph;
 let existsSync: SinonStub;
@@ -78,32 +80,76 @@ describe('The LernaGraph class', () => {
     test('All nodes should be disabled', () => {
       expect(graph.getNodes().every((n) => !n.isEnabled())).toBe(true);
     });
-    test.todo('should map ports according to the config if given');
-    test.todo('should map ports with default port fallback');
-  });
-  describe('The get root nodes method', () => {
-    test.todo('should return A, C');
-  });
-  describe('The get nodes method', () => {
-    test.todo('should return A, B, C, D, E, F');
+    test('should map ports according to the config if given', () => {
+      expect(graph.getPort('serviceA')).toBe(4598);
+      expect(graph.getPort('serviceB')).toBe(3001);
+      expect(graph.getPort('serviceC')).toBe(3002);
+    });
+    test('should map ports with default port fallback', () => {
+      const otherGraph = new LernaGraph(graph1, __dirname, { ports: {}, noStart: [] }, 4800);
+      expect(otherGraph.getPort('serviceA')).toBe(4800);
+      expect(otherGraph.getPort('serviceB')).toBe(4801);
+      expect(otherGraph.getPort('serviceC')).toBe(4802);
+    });
   });
   describe('The get packages method', () => {
-    test.todo('should return D, E, F');
+    test('should return D, E, F, G', () => {
+      const packages = graph.getPackages();
+      expect(packages).toHaveLength(4);
+      expect(packages).toContain(graph.get('packageD'));
+      expect(packages).toContain(graph.get('packageE'));
+      expect(packages).toContain(graph.get('packageF'));
+      expect(packages).toContain(graph.get('packageG'));
+    });
   });
   describe('The get services method', () => {
-    test.todo('should return A, B, C');
-  });
-  describe('The get method', () => {
-    test.todo('should return given node');
-  });
-  describe('The getPort method', () => {
-    test.todo('should return port for a given service');
+    test('should return A, B, C', () => {
+      const services = graph.getServices();
+      expect(services).toHaveLength(3);
+      expect(services).toContain(graph.get('serviceA'));
+      expect(services).toContain(graph.get('serviceB'));
+      expect(services).toContain(graph.get('serviceC'));
+    });
   });
   describe('The bootstrap method', () => {
-    test.todo('should spawn lerna bootstrap process');
-    test.todo('should resolve on close with code 0');
-    test.todo('should reject on close with code != 0');
-    test.todo('should reject on error');
+    let spawn: SinonStub;
+    beforeEach(() => {
+      spawn = stub(child_process, 'spawn');
+    });
+    afterEach(() => spawn.restore());
+    test('should resolve on close with code 0', async () => {
+      const eventEmitter = new EventEmitter();
+      setTimeout(() => {
+        eventEmitter.emit('close', 0);
+      }, 100);
+      spawn.returns(eventEmitter as ChildProcess);
+      const result = await graph.bootstrap();
+      expect(result).toEqual(undefined);
+    });
+    test('should reject on close with code != 0', async () => {
+      const eventEmitter = new EventEmitter();
+      setTimeout(() => {
+        eventEmitter.emit('close', 1);
+      }, 100);
+      spawn.returns(eventEmitter as ChildProcess);
+      try {
+        await graph.bootstrap();
+        fail('should fail');
+      } catch (e) {
+        expect(e).toMatch('Process exited with status 1');
+      }
+    });
+    test('should reject on error', async () => {
+      const eventEmitter = new EventEmitter();
+      setTimeout(() => eventEmitter.emit('error', new Error('shit happens')), 100);
+      spawn.returns(eventEmitter as ChildProcess);
+      try {
+        await graph.bootstrap();
+        fail('should fail');
+      } catch (e) {
+        expect(e.message).toMatch('shit happens');
+      }
+    });
   });
   describe('The compile method [given all nodes enabled]', () => {
     test.todo('should compile B, D, E, F, G');

@@ -105,6 +105,10 @@ export class RecompilationScheduler {
     }
   }
 
+  public getJobs() {
+    return this._queue;
+  }
+
   private _alreadyQueued(node: LernaNode, queue: 'compile' | 'start' | 'stop'): boolean {
     return this._queue[queue].some((n) => n.getName() === node.getName());
   }

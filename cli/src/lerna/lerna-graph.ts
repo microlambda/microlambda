@@ -95,7 +95,13 @@ export class LernaGraph {
         if (code === 0) {
           return resolve();
         }
-        return reject();
+        const err = `Process exited with status ${code}`;
+        log.error(err);
+        return reject(err);
+      });
+      spawnedProcess.on('error', (err) => {
+        log.error('Process errored: ', err.message);
+        return reject(err);
       });
     });
   }
