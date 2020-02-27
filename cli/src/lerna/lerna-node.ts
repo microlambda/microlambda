@@ -70,6 +70,10 @@ export abstract class LernaNode {
     this.nodeStatus = NodeStatus.ENABLED;
   }
 
+  public disable(): void {
+    this.nodeStatus = NodeStatus.DISABLED;
+  }
+
   public isEnabled(): boolean {
     return this.nodeStatus === NodeStatus.ENABLED;
   }

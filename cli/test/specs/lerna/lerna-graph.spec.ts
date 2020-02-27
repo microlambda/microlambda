@@ -200,12 +200,77 @@ describe('The LernaGraph class', () => {
     test.todo('should compile E before D');
   });
   describe('The enable nodes method', () => {
-    test.todo('given A enabled, should enable A, D, E');
-    test.todo('given B enabled, should enable B, D, E');
-    test.todo('given C enabled, should enable C, B, D, E, F, G');
-    test.todo('given A, B enabled, should enable A, B, D, E');
-    test.todo('given A, C enabled, should enable A, C, B, D, E, F, G');
-    test.todo('given B, C enabled, should enable C, B, D, E, F, G');
-    test.todo('given A, B, C enabled, should enable A, B, C, B, D, E, F, G');
+    beforeEach(() => {
+      graph.getNodes().forEach((n) => n.disable());
+    });
+    test('given A enabled, should enable A, D, E', () => {
+      graph.get('serviceA').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceA').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+    });
+    test('given B enabled, should enable B, D, E', () => {
+      graph.get('serviceB').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceB').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+    });
+    test('given C enabled, should enable C, B, D, E, F, G', () => {
+      graph.get('serviceC').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceC').isEnabled()).toBe(true);
+      expect(graph.get('serviceB').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+      expect(graph.get('packageF').isEnabled()).toBe(true);
+      expect(graph.get('packageG').isEnabled()).toBe(true);
+    });
+    test('given A, B enabled, should enable A, B, D, E', () => {
+      graph.get('serviceA').enable();
+      graph.get('serviceB').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceA').isEnabled()).toBe(true);
+      expect(graph.get('serviceB').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+    });
+    test('given A, C enabled, should enable A, C, B, D, E, F, G', () => {
+      graph.get('serviceA').enable();
+      graph.get('serviceC').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceA').isEnabled()).toBe(true);
+      expect(graph.get('serviceC').isEnabled()).toBe(true);
+      expect(graph.get('serviceB').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+      expect(graph.get('packageF').isEnabled()).toBe(true);
+      expect(graph.get('packageG').isEnabled()).toBe(true);
+    });
+    test('given B, C enabled, should enable C, B, D, E, F, G', () => {
+      graph.get('serviceB').enable();
+      graph.get('serviceC').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceC').isEnabled()).toBe(true);
+      expect(graph.get('serviceB').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+      expect(graph.get('packageF').isEnabled()).toBe(true);
+      expect(graph.get('packageG').isEnabled()).toBe(true);
+    });
+    test('given A, B, C enabled, should enable A, B, C, D, E, F, G', () => {
+      graph.get('serviceA').enable();
+      graph.get('serviceB').enable();
+      graph.get('serviceC').enable();
+      graph.enableNodes();
+      expect(graph.get('serviceA').isEnabled()).toBe(true);
+      expect(graph.get('serviceB').isEnabled()).toBe(true);
+      expect(graph.get('serviceC').isEnabled()).toBe(true);
+      expect(graph.get('packageD').isEnabled()).toBe(true);
+      expect(graph.get('packageE').isEnabled()).toBe(true);
+      expect(graph.get('packageF').isEnabled()).toBe(true);
+      expect(graph.get('packageG').isEnabled()).toBe(true);
+    });
   });
 });
