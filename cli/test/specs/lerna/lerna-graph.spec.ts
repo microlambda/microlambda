@@ -28,7 +28,9 @@ import { SinonStub, stub } from 'sinon';
 import fs from 'fs';
 import { EventEmitter } from 'events';
 import child_process, { ChildProcess } from 'child_process';
+import { RecompilationScheduler } from '../../../src/utils/scheduler';
 
+const scheduler = new RecompilationScheduler();
 let graph: LernaGraph;
 let existsSync: SinonStub;
 
@@ -152,10 +154,46 @@ describe('The LernaGraph class', () => {
     });
   });
   describe('The compile method [given all nodes enabled]', () => {
-    test.todo('should compile B, D, E, F, G');
-    test.todo('should compile E before D');
-    test.todo('should compile D before B');
-    test.todo('should compile F before G');
+    let requestCompilation: SinonStub;
+    beforeAll(() => {
+      requestCompilation = stub(RecompilationScheduler.prototype, 'exec');
+      graph.getNodes().forEach((n) => n.enable());
+    });
+    afterAll(() => {
+      requestCompilation.restore();
+    });
+    beforeEach(() => scheduler.reset());
+    test('should compile B, D, E, F, G', async () => {
+      await graph.compile(scheduler);
+      const compilationQueue = scheduler.getJobs().compile;
+      expect(compilationQueue).toHaveLength(5);
+      expect(compilationQueue).toContain(graph.get('serviceB'));
+      expect(compilationQueue).toContain(graph.get('packageD'));
+      expect(compilationQueue).toContain(graph.get('packageE'));
+      expect(compilationQueue).toContain(graph.get('packageF'));
+      expect(compilationQueue).toContain(graph.get('packageG'));
+    });
+    test('should compile E before D', async () => {
+      await graph.compile(scheduler);
+      const compilationQueue = scheduler.getJobs().compile;
+      expect(compilationQueue.indexOf(graph.get('packageE'))).toBeLessThan(
+        compilationQueue.indexOf(graph.get('packageD')),
+      );
+    });
+    test('should compile D before B', async () => {
+      await graph.compile(scheduler);
+      const compilationQueue = scheduler.getJobs().compile;
+      expect(compilationQueue.indexOf(graph.get('packageD'))).toBeLessThan(
+        compilationQueue.indexOf(graph.get('serviceB')),
+      );
+    });
+    test('should compile F before G', async () => {
+      await graph.compile(scheduler);
+      const compilationQueue = scheduler.getJobs().compile;
+      expect(compilationQueue.indexOf(graph.get('packageF'))).toBeLessThan(
+        compilationQueue.indexOf(graph.get('packageG')),
+      );
+    });
   });
   describe('The compile method [given A, B, D, E enabled]', () => {
     test.todo('should compile D, E');

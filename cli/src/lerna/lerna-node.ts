@@ -160,6 +160,7 @@ export abstract class LernaNode {
         throw e;
       }
     }
+    log.debug('Compiling', this.name);
     scheduler.requestCompilation(this);
   }
 
