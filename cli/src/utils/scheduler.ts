@@ -122,11 +122,11 @@ export class RecompilationScheduler {
     this._filesChanged$.next();
   }
 
-  private _watchFileChanges() {
+  private _watchFileChanges(): void {
     this._filesChanged$
       .asObservable()
       .pipe(debounceTime(this._debounce))
-      .subscribe(async (changes) => {
+      .subscribe(async () => {
         if (this._changes.size > 0) {
           log.info('Triggering recompilation...');
           // abort previous recompilation if any
@@ -160,7 +160,7 @@ export class RecompilationScheduler {
    * @param toCompile
    * @private
    */
-  private _recompile(toCompile: LernaNode[]) {
+  private _recompile(toCompile: LernaNode[]): void {
     log.debug(
       'Requested to compile nodes',
       toCompile.map((n) => n.getName()),

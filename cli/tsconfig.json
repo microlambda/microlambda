@@ -13,8 +13,7 @@
     "noImplicitAny": true,
     "module": "commonjs",
     "moduleResolution": "node",
-    "sourceMap": true,
-    "types": ["jest"]
+    "sourceMap": true
   },
   "include": ["./src"]
 }

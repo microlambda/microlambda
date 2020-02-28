@@ -5,6 +5,8 @@ import { start } from './start';
 import { RecompilationScheduler } from './utils/scheduler';
 import { log } from './utils/logger';
 import { tailServiceLogs } from './utils/logs';
+import { getProjectRoot } from './utils/get-project-root';
+import { SocketsManager } from './ipc/socket';
 
 // Recompilation Scheduler must be a singleton
 const scheduler = new RecompilationScheduler();
@@ -82,8 +84,13 @@ program
 program
   .command('status')
   .description('see the microservices status')
-  .action(async () => {
-    log.error('Not implemented');
+  .action(async (cmd) => {
+    log.debug(cmd);
+    const projectRoot = getProjectRoot();
+    const sockets = new SocketsManager(projectRoot);
+    await sockets.subscribeStatus().subscribe((status) => {
+      log.info(status);
+    });
   });
 
 program
@@ -101,4 +108,4 @@ program
     log.error('Not implemented');
   });
 
-(async () => program.parseAsync(process.argv))();
+(async (): Promise<void> => program.parseAsync(process.argv))();

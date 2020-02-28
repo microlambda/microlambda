@@ -20,6 +20,10 @@ export class Service extends LernaNode {
     this.port = graph.getPort(node.name);
   }
 
+  public getStatus(): ServiceStatus {
+    return this.status;
+  }
+
   public stop(): Observable<Service> {
     return new Observable<Service>((observer) => {
       log.debug('Requested to stop', this.name, 'which status is', this.status);
@@ -40,10 +44,10 @@ export class Service extends LernaNode {
       this.process.on('close', (code) => {
         if (code === 0) {
           log.info(`Service ${this.name} exited with code ${code}`);
-          this.status = ServiceStatus.STOPPED;
+          this._updateStatus(ServiceStatus.STOPPED);
         } else {
           log.error(`Service ${this.name} exited with code ${code}`);
-          this.status = ServiceStatus.CRASHED;
+          this._updateStatus(ServiceStatus.CRASHED);
         }
         // this.process.removeAllListeners('close');
         this.process = null;
@@ -96,7 +100,7 @@ export class Service extends LernaNode {
   }
 
   private _startProcess(): void {
-    this.status = ServiceStatus.STARTING;
+    this._updateStatus(ServiceStatus.STARTING);
     createLogFile(this.graph.getProjectRoot(), this.name);
     log.info(`Starting ${this.name} on localhost:${this.port}`);
     log.debug('Location:', this.location);
@@ -118,7 +122,7 @@ export class Service extends LernaNode {
         this.logStream.write(data);
         if (data.includes('listening on')) {
           log.info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
-          this.status = ServiceStatus.RUNNING;
+          this._updateStatus(ServiceStatus.RUNNING);
           started.next(this);
           return started.complete();
         }
@@ -126,16 +130,21 @@ export class Service extends LernaNode {
       this.process.on('close', (code) => {
         if (code !== 0) {
           log.error(`Service ${this.name} exited with code ${code}`);
-          this.status = ServiceStatus.CRASHED;
+          this._updateStatus(ServiceStatus.CRASHED);
           // this.process.removeAllListeners('close');
           return started.error();
         }
       });
       this.process.on('error', (err) => {
         log.error(`Could not start service ${this.name}`, err);
-        this.status = ServiceStatus.CRASHED;
+        this._updateStatus(ServiceStatus.CRASHED);
         return started.error(err);
       });
     });
+  }
+
+  private _updateStatus(status: ServiceStatus): void {
+    this.status = status;
+    this._ipc.graphUpdated();
   }
 }

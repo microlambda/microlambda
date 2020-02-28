@@ -24,7 +24,7 @@
 import { LernaGraph, Package, Service } from '../../../src/lerna';
 import { SinonStub, stub } from 'sinon';
 import { EventEmitter } from 'events';
-import child_process, { ChildProcess } from 'child_process';
+import child_process, { ChildProcess } from 'child_process'; // eslint-disable-line @typescript-eslint/camelcase
 import { generateGraph } from '../../mocks/graph-1';
 import fs from 'fs';
 

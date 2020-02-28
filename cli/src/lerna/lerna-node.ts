@@ -9,6 +9,7 @@ import chalk from 'chalk';
 import { ChildProcess, execSync, spawn } from 'child_process';
 import { Observable } from 'rxjs';
 import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
+import { SocketsManager } from '../ipc/socket';
 
 const tsVersion = execSync('npx tsc --version')
   .toString()
@@ -39,6 +40,7 @@ export abstract class LernaNode {
   protected compilationStatus: CompilationStatus;
   protected compilationProcess: ChildProcess;
   private nodeStatus: NodeStatus;
+  protected _ipc: SocketsManager;
 
   public constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
     log.debug('Building node', node.name);
@@ -74,6 +76,10 @@ export abstract class LernaNode {
     this.nodeStatus = NodeStatus.DISABLED;
   }
 
+  public registerIPCServer(sockets: SocketsManager): void {
+    this._ipc = sockets;
+  }
+
   public isEnabled(): boolean {
     return this.nodeStatus === NodeStatus.ENABLED;
   }
@@ -101,6 +107,7 @@ export abstract class LernaNode {
 
   public setStatus(status: CompilationStatus): void {
     this.compilationStatus = status;
+    this._ipc.graphUpdated();
   }
 
   public isRoot(): boolean {

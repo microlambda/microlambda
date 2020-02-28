@@ -56,7 +56,7 @@ export const tailLogs = (serviceName: string, projectRoot: string): void => {
   });
 };
 
-export const tailServiceLogs = async (cmd: { S: string }) => {
+export const tailServiceLogs = async (cmd: { S: string }): Promise<void> => {
   const projectRoot = getProjectRoot();
   const config = loadConfig();
   let services: Service[] = [];

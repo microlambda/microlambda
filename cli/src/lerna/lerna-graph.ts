@@ -7,6 +7,7 @@ import { resolvePorts } from '../utils/resolve-ports';
 import { IConfig } from '../config/config';
 import { spawn } from 'child_process';
 import { log } from '../utils/logger';
+import { SocketsManager } from '../ipc/socket';
 
 export const isService = (location: string): boolean => {
   return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
@@ -46,6 +47,10 @@ export class LernaGraph {
 
   public getPort(service: string): number {
     return this.ports[service];
+  }
+
+  public registerIPCServer(sockets: SocketsManager): void {
+    this.getNodes().forEach((n) => n.registerIPCServer(sockets));
   }
 
   public enableNodes(): void {
