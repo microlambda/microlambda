@@ -1,7 +1,10 @@
-import { closeSync, existsSync, lstatSync, mkdirSync, openSync } from 'fs';
+import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs';
 import rimraf from 'rimraf';
 import { join } from 'path';
+
 import { log } from './logger';
+import { getProjectRoot } from './get-project-root';
+import { spawn } from 'child_process';
 
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.logs');
 export const getLogsPath = (projectRoot: string, service: string): string => {
@@ -31,4 +34,23 @@ export const createLogFile = (projectRoot: string, service: string): void => {
   if (!existsSync(logsPath)) {
     closeSync(openSync(logsPath, 'w'));
   }
+};
+
+export const tailServiceLogs = (cmd: { S: string }): void => {
+  if (!cmd.S) {
+    return log.warn("error: command logs require the option '-s <service>, --service <service>'");
+  }
+
+  const projectRoot = getProjectRoot();
+  const logsDirectory = getLogsDirectory(projectRoot);
+
+  stat(`${logsDirectory}/${cmd.S}.log`, (exists) => {
+    if (exists === null) {
+      spawn('tail', ['-n', '+1', `${logsDirectory}/${cmd.S}.log`], { stdio: 'inherit' });
+    } else {
+      log.error(
+        `There is not logs for the ${cmd.S} service or the service specified does not exist.\n\tPlease run 'mila start' command first!`,
+      );
+    }
+  });
 };

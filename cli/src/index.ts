@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+
 import { start } from './start';
 import { RecompilationScheduler } from './utils/scheduler';
 import { log } from './utils/logger';
+import { tailServiceLogs } from './utils/logs';
 
 // Recompilation Scheduler must be a singleton
 const scheduler = new RecompilationScheduler();
@@ -34,7 +36,7 @@ program
   .description('print service logs')
   .action(async (cmd) => {
     log.debug(cmd);
-    log.error('Not implemented');
+    tailServiceLogs(cmd);
   });
 
 program
@@ -99,5 +101,4 @@ program
     log.error('Not implemented');
   });
 
-
-(async() => program.parseAsync(process.argv))();
+(async () => program.parseAsync(process.argv))();
