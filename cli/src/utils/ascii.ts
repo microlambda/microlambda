@@ -1,4 +1,4 @@
-import { magenta } from 'chalk';
+import { magenta, yellow } from 'chalk';
 import { textSync } from 'figlet';
 
 export const showOff = (): void =>
@@ -13,3 +13,17 @@ export const showOff = (): void =>
       }),
     ),
   );
+
+export const showOffTitle = (name: string): void => {
+  /* eslint-disable-next-line no-console */
+  console.log(
+    yellow(
+      `\n\n`,
+      textSync(name, {
+        font: 'Small',
+        horizontalLayout: 'default',
+        verticalLayout: 'default',
+      }),
+    ),
+  );
+};

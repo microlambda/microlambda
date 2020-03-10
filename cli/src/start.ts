@@ -1,10 +1,10 @@
-import inquirer from 'inquirer';
-
 import { showOff } from './utils/ascii';
 import { getProjectRoot } from './utils/get-project-root';
 import { loadConfig } from './config/load-config';
 import { getLernaGraph } from './utils/get-lerna-graph';
 import { log } from './utils/logger';
+import { interactive } from './utils/interactive';
+
 import { recreateLogDirectory } from './utils/logs';
 import { RecompilationScheduler } from './utils/scheduler';
 import { Service } from './lerna';
@@ -40,19 +40,9 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   let chosenServices: Service[] = [];
 
   if (options.interactive) {
-    log.debug('Interactive option chosen, prompting user');
-    const choices: { microservices: string[] } = await inquirer.prompt({
-      type: 'checkbox',
-      name: 'microservices',
-      message: 'Please select the microservices you wants to start',
-      choices: enabledServices.map((service: Service) => service.getName()),
-    });
-    if (choices.microservices.length !== 0) {
-      chosenServices = enabledServices.filter((s) => choices.microservices.includes(s.getName()));
-    } else {
-      log.info('No services to start, exiting...');
-      process.exit(0);
-    }
+    await interactive(enabledServices, 'Please select the microservices you wants to start').then(
+      (s) => (chosenServices = s),
+    );
   } else {
     chosenServices = enabledServices;
   }
