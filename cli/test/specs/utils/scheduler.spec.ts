@@ -60,6 +60,7 @@ describe('The RecompilationScheduler', () => {
         const compileG = compileNode.getCalls().find((c) => c.thisValue === graph.get('packageG'));
         expect(compileF.calledBefore(compileG)).toBe(true);
       });
+      test.todo('should start A, B, C');
     });
     describe('The start project method [given A, B, D, E enabled]', () => {
       beforeAll(async () => {
@@ -90,6 +91,55 @@ describe('The RecompilationScheduler', () => {
         const compileE = compileNode.getCalls().find((c) => c.thisValue === graph.get('packageE'));
         const compileD = compileNode.getCalls().find((c) => c.thisValue === graph.get('packageD'));
         expect(compileE.calledBefore(compileD)).toBe(true);
+      });
+      test.todo('should start A, B');
+    });
+    describe('The file changed method', () => {
+      describe('Files in service A changed', () => {
+        test.todo('should stop A; start A [normal]');
+        test.todo('should stop A; compile A; start A [eager]');
+      });
+      describe('Files in service B changed', () => {
+        test.todo('should stop B, C; start B, C [normal]');
+        test.todo('should stop B, C; compile B-C; start B,C [eager]');
+      });
+      describe('Files in service B, C changed', () => {
+        test.todo('should stop B,C; start B,C [normal]');
+        test.todo('should stop B,C; compile B-C; start B,C [eager]');
+      });
+      describe('Files in service A, B ,C changed', () => {
+        test.todo('should stop B,C; start B, C [normal]');
+        test.todo('should stop B,C; compile B-C; start B,C [eager]');
+      });
+      describe('Files in package D changed', () => {
+        test.todo('should stop A,B,C; compile D; start A,B,C [lazy]');
+        test.todo('should stop A,B,C; compile D-B; start A,B,C [normal]');
+        test.todo('should stop A,B,C; compile D-B-C,A; start A,B,C [eager]');
+      });
+      describe('Files in package E changed', () => {
+        test.todo('should stop A,B,C; compile E; start A,B,C [lazy]');
+        test.todo('should stop A,B,C; compile E-D-B; start A,B,C [normal]');
+        test.todo('should stop A,B,C; compile E-D-B-C,A; start A,B,C [eager]');
+      });
+      describe('Files in package F changed', () => {
+        test.todo('should stop C; compile F; start C [lazy]');
+        test.todo('should stop C; compile F-G; start C [normal]');
+        test.todo('should stop C; compile F-G,C; start C [eager]');
+      });
+      describe('Files in package G changed', () => {
+        test.todo('should stop C; compile G; start C [lazy]');
+        test.todo('should stop C; compile G; start C [normal]');
+        test.todo('should stop C; compile G-C; start C [eager]');
+      });
+      describe('Files in package G and service A changed', () => {
+        test.todo('should stop C,A; compile G; start C,A [lazy]');
+        test.todo('should stop C,A; compile G; start C,A [normal]');
+        test.todo('should stop C,A; compile G-C; start C,A [eager]');
+      });
+      describe('Files in package G and service B changed', () => {
+        test.todo('should stop C,B; compile G,B; start C,B [lazy]');
+        test.todo('should stop C,B; compile G,B; start C,B [normal]');
+        test.todo('should stop C,B; compile G,B-C; start C,B [eager]');
       });
     });
   });
