@@ -60,28 +60,21 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
       .map((n) => n.getName()),
   );
 
-  if (options.recompile) {
-    await graph.compile(scheduler).catch(() => {
-      log.error('Error compiling dependencies graph. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
-      process.exit(1);
-    });
-  }
-
   recreateLogDirectory(projectRoot);
+
   log.info(`Found ${chosenServices.length} services`);
   log.info('Starting services');
   log.debug(chosenServices);
-  chosenServices.forEach((s) => scheduler.requestStart(s));
-  await scheduler.exec().catch((err) => {
-    log.error(err);
-    log.error('Error starting services. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
-  });
-  graph.getNodes().forEach((s) => s.watch(scheduler));
+
+  await scheduler.startProject(graph, options.recompile);
+
+  graph
+    .getNodes()
+    .filter((n) => n.isEnabled())
+    .forEach((n) => n.watch(scheduler));
   process.on('SIGINT', async () => {
     log.warn('SIGINT signal received');
-    scheduler.reset();
-    chosenServices.forEach((s) => scheduler.requestStop(s));
-    await scheduler.exec();
+    await scheduler.stopProject(graph);
     process.exit();
   });
 };

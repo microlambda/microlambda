@@ -5,10 +5,10 @@ import { Package, Service } from './';
 import { CompilationStatus } from './enums/compilation.status';
 import { log } from '../utils/logger';
 import glob from 'glob';
-import { RecompilationScheduler } from '../utils/scheduler';
 import chalk from 'chalk';
 import { ChildProcess, execSync, spawn } from 'child_process';
 import { Observable } from 'rxjs';
+import { RecompilationScheduler } from '../utils/scheduler';
 
 const tsVersion = execSync('npx tsc --version')
   .toString()
@@ -79,6 +79,11 @@ export abstract class LernaNode {
   }
 
   public isService(): boolean {
+    log.debug('Is service', {
+      node: this.getName(),
+      location: join(this.location, 'serverless.yml'),
+      result: existsSync(join(this.location, 'serverless.yml')),
+    });
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   }
 
@@ -146,28 +151,6 @@ export abstract class LernaNode {
     return this.graph.getNodes().filter((n) => n.dependencies.some((d) => d.name === this.name));
   }
 
-  /**
-   * Recursively compiles this package and all its dependencies
-   */
-  public compile(scheduler: RecompilationScheduler): void {
-    if (!this.isEnabled()) {
-      log.debug('Node is disabled', this.name);
-      return;
-    }
-    log.debug('Recursively compile', this.name);
-    for (const dep of this.dependencies) {
-      log.debug('Compiling dependency first', dep.name);
-      try {
-        dep.compile(scheduler);
-      } catch (e) {
-        log.error(e);
-        throw e;
-      }
-    }
-    log.debug('Compiling', this.name);
-    scheduler.requestCompilation(this);
-  }
-
   public async watch(scheduler: RecompilationScheduler): Promise<void> {
     log.debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
     glob(`${this.location}/src/**/*.{ts,js,json}`, (err, matches) => {
@@ -178,39 +161,10 @@ export abstract class LernaNode {
         log.debug('Watching', path);
         watch(path, () => {
           log.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-          this._recompile(scheduler);
+          scheduler.fileChanged(this);
         });
       });
     });
-  }
-
-  private async _recompile(scheduler: RecompilationScheduler): Promise<void> {
-    scheduler.abort();
-    const dependentNodes = this.getDependent()
-      .concat(this)
-      .filter((n) => n.isEnabled());
-    log.debug(
-      `${chalk.bold(this.name)}: Dependent nodes`,
-      dependentNodes.map((d) => d.name),
-    );
-    const dependentServices = dependentNodes.filter((dep) => dep instanceof Service);
-    log.debug(
-      `${chalk.bold(this.name)}: Dependent services`,
-      dependentServices.map((d) => d.name),
-    );
-    log.debug(`${chalk.bold(this.name)}: Stopping dependent services`);
-    dependentServices.forEach((s: Service) => scheduler.requestStop(s));
-    this._recompileUpstream(scheduler);
-    dependentServices.forEach((s: Service) => scheduler.requestStart(s));
-    await scheduler.exec();
-  }
-
-  private _recompileUpstream(scheduler: RecompilationScheduler): void {
-    log.debug(`${chalk.bold(this.name)}: Recompiling upstream`);
-    scheduler.requestCompilation(this);
-    for (const parent of this.getParents()) {
-      parent._recompileUpstream(scheduler);
-    }
   }
 
   public compileNode(): Observable<LernaNode> {
@@ -244,9 +198,8 @@ export abstract class LernaNode {
     this.compilationProcess = spawn('npx', ['tsc'], {
       cwd: this.location,
       env: process.env,
+      stdio: 'inherit',
     });
-    this.compilationProcess.stderr.on('data', (data) => log.error(`${chalk.bold(this.name)}: ${data}`));
-    this.compilationProcess.stdout.on('data', (data) => log.debug(`${chalk.bold(this.name)}: ${data}`));
   }
 
   private _watchCompilation(): Observable<LernaNode> {

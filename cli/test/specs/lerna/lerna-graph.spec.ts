@@ -22,29 +22,16 @@
             package E------------- /       package F
  */
 import { LernaGraph, Package, Service } from '../../../src/lerna';
-import { graph1 } from '../../factories/graph-1';
-import { config1 } from '../../factories/config-1';
 import { SinonStub, stub } from 'sinon';
-import fs from 'fs';
 import { EventEmitter } from 'events';
 import child_process, { ChildProcess } from 'child_process';
-import { RecompilationScheduler } from '../../../src/utils/scheduler';
+import { generateGraph } from '../../mocks/graph-1';
+import fs from 'fs';
 
-const scheduler = new RecompilationScheduler();
-let graph: LernaGraph;
+const graph: LernaGraph = generateGraph();
 let existsSync: SinonStub;
 
 describe('The LernaGraph class', () => {
-  beforeAll(() => {
-    existsSync = stub(fs, 'existsSync');
-    existsSync.withArgs('path/to/service/serverless.yml').returns(true);
-    existsSync.withArgs('path/to/package/serverless.yml').returns(false);
-    graph = new LernaGraph(graph1, __dirname, config1);
-    graph.getProjectRoot();
-  });
-  afterAll(() => {
-    existsSync.restore();
-  });
   describe('The constructor', () => {
     test('should build 7 lerna nodes including 3 services and 4 packages', () => {
       expect(graph.getNodes().length).toBe(7);
@@ -89,13 +76,19 @@ describe('The LernaGraph class', () => {
       expect(graph.getPort('serviceC')).toBe(3002);
     });
     test('should map ports with default port fallback', () => {
-      const otherGraph = new LernaGraph(graph1, __dirname, { ports: {}, noStart: [] }, 4800);
+      const otherGraph = generateGraph({ ports: {}, noStart: [] }, 4800);
       expect(otherGraph.getPort('serviceA')).toBe(4800);
       expect(otherGraph.getPort('serviceB')).toBe(4801);
       expect(otherGraph.getPort('serviceC')).toBe(4802);
     });
   });
   describe('The get packages method', () => {
+    beforeAll(() => {
+      existsSync = stub(fs, 'existsSync');
+      existsSync.withArgs('path/to/service/serverless.yml').returns(true);
+      existsSync.withArgs('path/to/package/serverless.yml').returns(false);
+    });
+    afterAll(() => existsSync.restore());
     test('should return D, E, F, G', () => {
       const packages = graph.getPackages();
       expect(packages).toHaveLength(4);
@@ -106,6 +99,12 @@ describe('The LernaGraph class', () => {
     });
   });
   describe('The get services method', () => {
+    beforeAll(() => {
+      existsSync = stub(fs, 'existsSync');
+      existsSync.withArgs('path/to/service/serverless.yml').returns(true);
+      existsSync.withArgs('path/to/package/serverless.yml').returns(false);
+    });
+    afterAll(() => existsSync.restore());
     test('should return A, B, C', () => {
       const services = graph.getServices();
       expect(services).toHaveLength(3);
@@ -152,77 +151,6 @@ describe('The LernaGraph class', () => {
       } catch (e) {
         expect(e.message).toMatch('shit happens');
       }
-    });
-  });
-  describe('The compile method [given all nodes enabled]', () => {
-    let requestCompilation: SinonStub;
-    beforeAll(() => {
-      requestCompilation = stub(RecompilationScheduler.prototype, 'exec');
-      graph.getNodes().forEach((n) => n.enable());
-    });
-    afterAll(() => {
-      requestCompilation.restore();
-    });
-    beforeEach(() => scheduler.reset());
-    test('should compile B, D, E, F, G', async () => {
-      await graph.compile(scheduler);
-      const compilationQueue = scheduler.getJobs().compile;
-      expect(compilationQueue).toHaveLength(5);
-      expect(compilationQueue).toContain(graph.get('serviceB'));
-      expect(compilationQueue).toContain(graph.get('packageD'));
-      expect(compilationQueue).toContain(graph.get('packageE'));
-      expect(compilationQueue).toContain(graph.get('packageF'));
-      expect(compilationQueue).toContain(graph.get('packageG'));
-    });
-    test('should compile E before D', async () => {
-      await graph.compile(scheduler);
-      const compilationQueue = scheduler.getJobs().compile;
-      expect(compilationQueue.indexOf(graph.get('packageE'))).toBeLessThan(
-        compilationQueue.indexOf(graph.get('packageD')),
-      );
-    });
-    test('should compile D before B', async () => {
-      await graph.compile(scheduler);
-      const compilationQueue = scheduler.getJobs().compile;
-      expect(compilationQueue.indexOf(graph.get('packageD'))).toBeLessThan(
-        compilationQueue.indexOf(graph.get('serviceB')),
-      );
-    });
-    test('should compile F before G', async () => {
-      await graph.compile(scheduler);
-      const compilationQueue = scheduler.getJobs().compile;
-      expect(compilationQueue.indexOf(graph.get('packageF'))).toBeLessThan(
-        compilationQueue.indexOf(graph.get('packageG')),
-      );
-    });
-  });
-  describe('The compile method [given A, B, D, E enabled]', () => {
-    let requestCompilation: SinonStub;
-    beforeAll(() => {
-      requestCompilation = stub(RecompilationScheduler.prototype, 'exec');
-      graph.getNodes().forEach((n) => n.disable());
-      graph.get('serviceA').enable();
-      graph.get('serviceB').enable();
-      graph.get('packageD').enable();
-      graph.get('packageE').enable();
-    });
-    afterAll(() => {
-      requestCompilation.restore();
-    });
-    beforeEach(() => scheduler.reset());
-    test('should compile D, E', async () => {
-      await graph.compile(scheduler);
-      const compilationQueue = scheduler.getJobs().compile;
-      expect(compilationQueue).toHaveLength(2);
-      expect(compilationQueue).toContain(graph.get('packageD'));
-      expect(compilationQueue).toContain(graph.get('packageE'));
-    });
-    test('should compile E before D', async () => {
-      await graph.compile(scheduler);
-      const compilationQueue = scheduler.getJobs().compile;
-      expect(compilationQueue.indexOf(graph.get('packageE'))).toBeLessThan(
-        compilationQueue.indexOf(graph.get('packageD')),
-      );
     });
   });
   describe('The enable nodes method', () => {
