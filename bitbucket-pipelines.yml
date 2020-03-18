@@ -1,0 +1,22 @@
+image: node:lts-alpine
+
+reference:
+  steps:
+    - step: &testCLI
+        name: 'Test and build CLI'
+        script:
+          - npm i
+          - npx lerna boostrap
+          - npx lerna run lint --scope=@microlambda/cli
+          - npx lerna run test --scope=@microlambda/cli
+          - npx lerna run build --scope=@microlambda/cli
+
+pipelines:
+  pull-requests:
+    '**':
+      - step: *testCLI
+  branches:
+    master:
+      - step: *testCLI
+    next:
+      - step: *testCLI
