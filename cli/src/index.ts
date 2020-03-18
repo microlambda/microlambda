@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-
-import { start } from './start';
 import { RecompilationScheduler } from './utils/scheduler';
 import { log } from './utils/logger';
-import { tailServiceLogs } from './utils/logs';
-import { getProjectRoot } from './utils/get-project-root';
-import { SocketsManager } from './ipc/socket';
+import { start, stop } from './cmd';
+import { status } from './cmd/status';
+import { restart } from './cmd/restart';
+import { logs } from './cmd/logs';
 
 // Recompilation Scheduler must be a singleton
 const scheduler = new RecompilationScheduler();
@@ -21,10 +20,12 @@ program
   .option('-d, --discrete', 'start the app in background without logging in console', false)
   .option('-p <port>, --port <port>', 'if not specified in config, start microservices from port', 3001)
   .option('-n, --no-recompile', 'avoid recompiling dependency graph before starting microservices')
+  .option('-s <service>, --service <service>', 'the service for which you want to start', false)
   .description('start microlambda services')
   .action(async (cmd) => {
     const options = {
       recompile: cmd.recompile,
+      service: cmd.S,
       defaultPort: cmd.P || 3001,
       interactive: cmd.interactive,
     };
@@ -37,8 +38,7 @@ program
   .requiredOption('-s <service>, --service <service>', 'the service for which you want to see logs', false)
   .description('print service logs')
   .action(async (cmd) => {
-    log.debug(cmd);
-    tailServiceLogs(cmd);
+    await logs(cmd);
   });
 
 program
@@ -47,8 +47,7 @@ program
   .option('-s <service>, --service <service>', 'the service you want to stop', false)
   .description('stop microlambda services')
   .action(async (cmd) => {
-    log.debug(cmd);
-    log.error('Not implemented');
+    await stop(scheduler, cmd.S);
   });
 
 program
@@ -57,8 +56,7 @@ program
   .option('-s <service>, --service <service>', 'the service you want to restart', false)
   .description('restart microlambda services')
   .action(async (cmd) => {
-    log.debug(cmd);
-    log.error('Not implemented');
+    await restart(scheduler, cmd.S);
   });
 
 program
@@ -84,13 +82,8 @@ program
 program
   .command('status')
   .description('see the microservices status')
-  .action(async (cmd) => {
-    log.debug(cmd);
-    const projectRoot = getProjectRoot();
-    const sockets = new SocketsManager(projectRoot);
-    await sockets.subscribeStatus().subscribe((status) => {
-      log.info(status);
-    });
+  .action(async () => {
+    await status(scheduler);
   });
 
 program

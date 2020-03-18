@@ -14,11 +14,13 @@ export const isService = (location: string): boolean => {
 };
 
 export class LernaGraph {
+  private readonly _config: IConfig;
   private readonly projectRoot: string;
   private readonly ports: { [key: string]: number };
   private readonly nodes: LernaNode[];
 
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
+    this._config = config;
     log.debug('Building graph with', nodes);
     this.projectRoot = projectRoot;
     const services = nodes.filter((n) => isService(n.location));
@@ -63,6 +65,37 @@ export class LernaGraph {
         log.silly('Descendants', n.getDependencies());
         dependencies.forEach((d) => d.enable());
       });
+  }
+
+  /**
+   * Enable a given node and all his descendants
+   * @param node
+   */
+  public enableOne(node: LernaNode): void {
+    node.enable();
+    node
+      .getDependencies()
+      .filter((n) => !n.isEnabled() && !this._config.noStart.includes(n.getName()))
+      .forEach((n) => n.enable());
+  }
+
+  /**
+   * Disable a given node and all his descendants that are not used by an other enabled node
+   * @param node
+   */
+  public disableOne(node: LernaNode): void {
+    node.disable();
+    node
+      .getDependencies()
+      .filter((n) => n.isEnabled() && !n.getDependent().some((ancestors) => ancestors.isEnabled()))
+      .forEach((n) => n.disable());
+  }
+
+  /**
+   * Enables every node that are not already enabled and not excluded by config
+   */
+  public enableAll(): void {
+    this.nodes.filter((n) => !n.isEnabled() && !this._config.noStart.includes(n.getName())).forEach((n) => n.enable());
   }
 
   public getProjectRoot(): string {

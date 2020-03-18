@@ -1,7 +1,9 @@
-import { concat, forkJoin, Observable, of, Subject, throwError } from 'rxjs';
+import { concat, from, Observable, of, Subject, throwError } from 'rxjs';
 import { LernaGraph, LernaNode, Service } from '../lerna';
-import { catchError, concatAll, debounceTime, last, map, takeUntil } from 'rxjs/operators';
+import { catchError, concatAll, debounceTime, last, map, mergeMap, takeUntil, tap } from 'rxjs/operators';
 import { log } from './logger';
+import { ServiceStatus } from '../lerna/enums/service.status';
+import { CompilationStatus } from '../lerna/enums/compilation.status';
 
 enum SchedulerStatus {
   READY,
@@ -20,7 +22,7 @@ enum RecompilationStatus {
   FINISHED,
 }
 
-enum RecompilationEventType {
+export enum RecompilationEventType {
   SERVICE_STOPPED,
   NODE_COMPILED,
   SERVICE_STARTED,
@@ -32,12 +34,13 @@ export enum RecompilationMode {
   EAGER,
 }
 
-interface IRecompilationEvent {
+export interface IRecompilationEvent {
   type: RecompilationEventType;
   node: LernaNode;
 }
 
 export class RecompilationScheduler {
+  private _graph: LernaGraph;
   private _jobs: {
     stop: Service[];
     compile: LernaNode[];
@@ -59,7 +62,12 @@ export class RecompilationScheduler {
     this._watchFileChanges();
   }
 
-  public setMode(mode: 'lazy' | 'normal' | 'eager') {
+
+  public setGraph(graph: LernaGraph): void {
+    this._graph = graph;
+  }
+
+  public setMode(mode: 'lazy' | 'eager' | 'normal'): void {
     switch (mode) {
       case 'eager':
         this._mode = RecompilationMode.EAGER;
@@ -77,6 +85,78 @@ export class RecompilationScheduler {
     }
   }
 
+  public startOne(service: Service): Observable<IRecompilationEvent> {
+    // Enable service and its descendants
+    this._graph.enableOne(service);
+
+    // Compile nodes that are not compiled yet
+    this._compile([service], false);
+
+    // Start service
+    this._requestStart(service);
+    return this._exec();
+  }
+
+  public startAll(): Observable<IRecompilationEvent> {
+    // Enable nodes that not already enabled
+    this._graph.enableAll();
+
+    // Compile nodes that are not already compiled
+    const toStart = this._graph.getServices().filter((s) => s.getStatus() !== ServiceStatus.RUNNING);
+    const roots = toStart.filter((n) => n.isRoot());
+    this._compile(roots, false);
+
+    // Start services that are not already started
+    toStart.forEach((s) => this._requestStart(s));
+    return this._exec();
+  }
+
+  public stopOne(service: Service): Observable<IRecompilationEvent> {
+    // Disable "orphan" nodes i.e. nodes that are descendant of the service to stop but used by no other
+    // enabled nodes
+    this._graph.disableOne(service);
+    // Stop the service
+    this._requestStop(service);
+    return this._exec();
+  }
+
+  public stopAll(): Observable<IRecompilationEvent> {
+    // Disable all nodes
+    this._graph.getNodes().forEach((n) => n.disable());
+
+    // Stop all running services
+    this._graph
+      .getServices()
+      .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()))
+      .forEach((s) => this._requestStop(s));
+    return this._exec();
+  }
+
+  public restartOne(service: Service, recompile = false): Observable<IRecompilationEvent> {
+    this._requestStop(service);
+    this._compile([service], recompile);
+    this._requestStart(service);
+    return this._exec();
+  }
+
+  public restartAll(recompile = true): Observable<IRecompilationEvent> {
+    // Stop all running/starting services
+    const toRestart = this._graph
+      .getServices()
+      .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()));
+    toRestart.forEach((s) => this._requestStop(s));
+
+    // Recompile their dependencies tree
+    this._compile(
+      toRestart.filter((s) => s.isRoot()),
+      recompile,
+    );
+
+    // And restart them
+    toRestart.forEach((s) => this._requestStart(s));
+    return this._exec();
+  }
+
   /**
    * Compile and start the whole project
    */
@@ -85,7 +165,7 @@ export class RecompilationScheduler {
     if (compile) {
       // Compile all enabled nodes from leaves to roots
       log.debug('Building compilation queue...', graph.getNodes().filter((n) => n.isEnabled()).length);
-      this._recompile(graph.getNodes().filter((n) => n.isEnabled()));
+      this._compile(graph.getNodes().filter((n) => n.isEnabled()));
     }
     log.debug(
       'Compilation queue built',
@@ -105,10 +185,10 @@ export class RecompilationScheduler {
       this._jobs.start.map((n) => n.getName()),
     );
     log.debug('Executing tasks');
-    return this._exec();
+    return this._execPromise();
   }
 
-  public async stopProject(graph: LernaGraph): Promise<void> {
+  public stopProject(graph: LernaGraph): Observable<IRecompilationEvent> {
     this._reset();
     graph
       .getServices()
@@ -144,7 +224,7 @@ export class RecompilationScheduler {
           impactedServices.forEach((s) => this._requestStop(s));
 
           // request recompilation
-          this._recompile([...this._changes]);
+          this._compile([...this._changes]);
 
           // start the stopped services
           impactedServices.forEach((s) => this._requestStart(s));
@@ -157,10 +237,11 @@ export class RecompilationScheduler {
 
   /**
    * Recompile any array of nodes from leaves to roots
-   * @param toCompile
+   * @param toCompile: nodes to compile.
+   * @param recompile: recompile nodes that are already compiled
    * @private
    */
-  private _recompile(toCompile: LernaNode[]): void {
+  private _compile(toCompile: LernaNode[], recompile = true): void {
     log.debug(
       'Requested to compile nodes',
       toCompile.map((n) => n.getName()),
@@ -200,7 +281,8 @@ export class RecompilationScheduler {
           recursivelyCompile(dependencies, requested);
         }
         const isRootService = roots.includes(node) && node.isService();
-        const shouldBeCompiled = this._mode === RecompilationMode.EAGER || !isRootService;
+        const notAlreadyCompiled = recompile || node.getCompilationStatus() !== CompilationStatus.COMPILED;
+        const shouldBeCompiled = this._mode === RecompilationMode.EAGER || (!isRootService && notAlreadyCompiled);
         if (shouldBeCompiled && !requested.has(node)) {
           this._requestCompilation(node);
           log.debug('Added to compilation queue', node.getName());
@@ -259,7 +341,17 @@ export class RecompilationScheduler {
     return this._jobs[queue].some((n) => n.getName() === node.getName());
   }
 
-  private _exec(): Promise<void> {
+  private _execPromise(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this._exec().subscribe(
+        (event) => log.debug(event),
+        (err) => reject(err),
+        () => resolve(),
+      );
+    });
+  }
+
+  private _exec(): Observable<IRecompilationEvent> {
     if (this._status === SchedulerStatus.BUSY) {
       log.warn('Scheduler is already busy');
       this._abort$.next();
@@ -324,46 +416,50 @@ export class RecompilationScheduler {
 
     this._recompilation = RecompilationStatus.STOPPING;
 
-    const stop$: Observable<RecompilationStatus> = forkJoin(stopJobs$).pipe(map(() => RecompilationStatus.STOPPED));
-    const start$: Observable<RecompilationStatus> = forkJoin(startJobs$).pipe(map(() => RecompilationStatus.STARTED));
-    const compile$: Observable<RecompilationStatus> =
-      compilationJobs$.length > 0
-        ? concat(compilationJobs$)
-            .pipe(concatAll(), last())
-            .pipe(map(() => RecompilationStatus.COMPILED))
-        : of(RecompilationStatus.COMPILED);
+    const stop$: Observable<IRecompilationEvent> = from(stopJobs$).pipe(mergeMap((stopJob$) => stopJob$));
+    const start$: Observable<IRecompilationEvent> = from(startJobs$).pipe(mergeMap((startJob$) => startJob$));
+    const compile$: Observable<IRecompilationEvent> = concat(compilationJobs$).pipe(concatAll());
 
-    const recompilationProcess$ = concat([stop$, compile$, start$]).pipe(concatAll(), takeUntil(this._abort$));
+    stop$.pipe(
+      last(),
+      tap(() => {
+        log.debug('[scheduler] All services stopped');
+        this._recompilation = RecompilationStatus.COMPILING;
+      }),
+    );
+    start$.pipe(
+      last(),
+      tap(() => {
+        log.debug('[scheduler] All services started');
+        this._recompilation = RecompilationStatus.FINISHED;
+      }),
+    );
+    compile$.pipe(
+      last(),
+      tap(() => {
+        log.debug('[scheduler] All dependencies compiled');
+        this._recompilation = RecompilationStatus.STARTING;
+      }),
+    );
 
-    return new Promise<void>((resolve, reject) => {
-      recompilationProcess$.subscribe(
-        (status) => {
-          switch (status) {
-            case RecompilationStatus.STOPPED:
-              log.debug('[scheduler] All services stopped');
-              this._recompilation = RecompilationStatus.COMPILING;
-              break;
-            case RecompilationStatus.COMPILED:
-              log.debug('[scheduler] All dependencies compiled');
-              this._recompilation = RecompilationStatus.STARTING;
-              break;
-            case RecompilationStatus.STARTED:
-              log.debug('[scheduler] All services started');
-              this._recompilation = RecompilationStatus.FINISHED;
-              break;
-          }
-        },
-        (err) => {
-          log.error(err);
-          this._reset();
-          reject();
-        },
-        () => {
-          log.info('[scheduler] all tasks finished');
-          this._reset();
-          resolve();
-        },
-      );
-    });
+    const recompilationProcess$: Observable<IRecompilationEvent> = concat([stop$, compile$, start$]).pipe(
+      concatAll(),
+      takeUntil(this._abort$),
+    );
+    recompilationProcess$.pipe(
+      catchError((err) => {
+        log.error(err);
+        this._reset();
+        return throwError(err);
+      }),
+    );
+    recompilationProcess$.pipe(
+      last(),
+      tap(() => {
+        log.info('[scheduler] all tasks finished');
+        this._reset();
+      }),
+    );
+    return recompilationProcess$;
   }
 }

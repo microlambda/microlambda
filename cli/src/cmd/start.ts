@@ -1,14 +1,14 @@
-import { showOff } from './utils/ascii';
-import { getProjectRoot } from './utils/get-project-root';
-import { loadConfig } from './config/load-config';
-import { getLernaGraph } from './utils/get-lerna-graph';
-import { log } from './utils/logger';
-import { interactive } from './utils/interactive';
+import { showOff } from '../utils/ascii';
+import { getProjectRoot } from '../utils/get-project-root';
+import { loadConfig } from '../config/load-config';
+import { getLernaGraph } from '../utils/get-lerna-graph';
+import { log } from '../utils/logger';
+import { interactive } from '../utils/interactive';
 
-import { recreateLogDirectory } from './utils/logs';
-import { RecompilationScheduler } from './utils/scheduler';
-import { Service } from './lerna';
-import { SocketsManager } from './ipc/socket';
+import { recreateLogDirectory } from '../utils/logs';
+import { RecompilationScheduler } from '../utils/scheduler';
+import { Service } from '../lerna';
+import { SocketsManager } from '../ipc/socket';
 
 interface IStartOptions {
   interactive: boolean;
@@ -26,7 +26,8 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   log.debug(config);
   log.info('Parsing lerna dependency graph', projectRoot);
   const graph = await getLernaGraph(projectRoot, config, options.defaultPort);
-  const sockets = new SocketsManager(projectRoot, graph);
+  scheduler.setGraph(graph);
+  const sockets = new SocketsManager(projectRoot, scheduler, graph);
   await sockets.createServer();
   graph.registerIPCServer(sockets);
   await graph.bootstrap().catch((e) => {

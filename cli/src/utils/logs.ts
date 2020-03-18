@@ -55,35 +55,3 @@ export const tailLogs = (serviceName: string, projectRoot: string): void => {
     }
   });
 };
-
-export const tailServiceLogs = async (cmd: { S: string }): Promise<void> => {
-  const projectRoot = getProjectRoot();
-  const config = loadConfig();
-  let services: Service[] = [];
-  log.debug(config);
-
-  if (!cmd.S) {
-    const graph = await getLernaGraph(projectRoot, config, 3001);
-
-    await graph.bootstrap().catch((e) => {
-      log.error(e);
-      log.error(
-        'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.',
-      );
-      process.exit(1);
-    });
-
-    const enabledServices = graph.getServices().filter((s) => !config.noStart.includes(s.getName()));
-
-    await interactive(enabledServices, 'Please select the microservices for which you want to see the logs').then(
-      (s: Service[]) => (services = s),
-    );
-
-    // Here we need something more consistent to remove the first part of the service name (Depending on the variety of prefix name)
-    const servicesName = services.map((s) => s.getName().replace('@project/', ''));
-
-    servicesName.forEach((name: string) => tailLogs(name, projectRoot));
-  } else {
-    tailLogs(cmd.S, projectRoot);
-  }
-};
