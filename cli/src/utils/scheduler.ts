@@ -26,7 +26,7 @@ enum RecompilationEventType {
   SERVICE_STARTED,
 }
 
-enum RecompilationMode {
+export enum RecompilationMode {
   LAZY,
   NORMAL,
   EAGER,
@@ -283,7 +283,7 @@ export class RecompilationScheduler {
     );
 
     const compilationJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.compile.map((node) =>
-      node.compileNode().pipe(
+      node.compileNode(this._mode).pipe(
         map((node) => {
           log.debug('[scheduler] compiled', node.getName());
           return { node: node, type: RecompilationEventType.NODE_COMPILED };

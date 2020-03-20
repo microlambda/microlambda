@@ -1,4 +1,4 @@
-import { LernaGraph, isService } from './lerna-graph';
+import { isService, LernaGraph } from './lerna-graph';
 import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
@@ -8,7 +8,7 @@ import glob from 'glob';
 import chalk from 'chalk';
 import { ChildProcess, execSync, spawn } from 'child_process';
 import { Observable } from 'rxjs';
-import { RecompilationScheduler } from '../utils/scheduler';
+import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
 
 const tsVersion = execSync('npx tsc --version')
   .toString()
@@ -167,14 +167,14 @@ export abstract class LernaNode {
     });
   }
 
-  public compileNode(): Observable<LernaNode> {
+  public compileNode(mode = RecompilationMode.LAZY): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
       log.info(`Compiling package ${this.name} with typescript ${tsVersion}`);
       switch (this.compilationStatus) {
         case CompilationStatus.COMPILED:
         case CompilationStatus.ERROR_COMPILING:
         case CompilationStatus.NOT_COMPILED:
-          this._startCompilation();
+          this._startCompilation(mode);
           this._watchCompilation().subscribe(
             (next) => observer.next(next),
             (err) => observer.error(err),
@@ -193,13 +193,22 @@ export abstract class LernaNode {
     });
   }
 
-  private _startCompilation(): void {
+  private _startCompilation(mode: RecompilationMode): void {
     this.setStatus(CompilationStatus.COMPILING);
-    this.compilationProcess = spawn('npx', ['tsc'], {
-      cwd: this.location,
-      env: process.env,
-      stdio: 'inherit',
-    });
+    if (mode === RecompilationMode.LAZY) {
+      // TODO: Faire du babel webpack etc...
+      this.compilationProcess = spawn('npx', ['babel'], {
+        cwd: this.location,
+        env: process.env,
+        stdio: 'inherit',
+      });
+    } else {
+      this.compilationProcess = spawn('npx', ['tsc'], {
+        cwd: this.location,
+        env: process.env,
+        stdio: 'inherit',
+      });
+    }
   }
 
   private _watchCompilation(): Observable<LernaNode> {

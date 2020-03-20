@@ -1,4 +1,5 @@
 {
+  "compilation": "lazy",
   "ports": {},
   "noStart": []
 }
