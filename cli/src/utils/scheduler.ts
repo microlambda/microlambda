@@ -55,7 +55,7 @@ export class RecompilationScheduler {
     log.debug('New recompilation scheduler instance');
     this._reset();
     this._debounce = 300;
-    this._mode = RecompilationMode.NORMAL;
+    // this._mode = RecompilationMode.NORMAL;
     this._watchFileChanges();
   }
 
