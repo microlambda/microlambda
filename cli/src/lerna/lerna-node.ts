@@ -10,10 +10,7 @@ import { ChildProcess, execSync, spawn } from 'child_process';
 import { Observable } from 'rxjs';
 import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
 import { SocketsManager } from '../ipc/socket';
-
-const tsVersion = execSync('npx tsc --version')
-  .toString()
-  .match(/[0-9]\.[0-9]\.[0-9]/)[0];
+import { getBinary } from '../utils/external-binaries';
 
 export interface IGraphElement {
   name: string;
@@ -176,7 +173,6 @@ export abstract class LernaNode {
 
   public compileNode(mode = RecompilationMode.LAZY): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-      log('node').info(`Compiling package ${this.name} with typescript ${tsVersion}`);
       switch (this.compilationStatus) {
         case CompilationStatus.COMPILED:
         case CompilationStatus.ERROR_COMPILING:
@@ -205,8 +201,8 @@ export abstract class LernaNode {
     if (mode === RecompilationMode.LAZY) {
       log('node').info('Fast-compiling using transpile-only', this.name);
       this.compilationProcess = spawn(
-        'npx',
-        ['babel', 'src', '--out-dir', 'lib', '--extensions', '.ts', '--presets', '@babel/preset-typescript'],
+        getBinary('babel', this.graph.getProjectRoot(), this),
+        ['src', '--out-dir', 'lib', '--extensions', '.ts', '--presets', '@babel/preset-typescript'],
         {
           cwd: this.location,
           env: process.env,
@@ -215,7 +211,7 @@ export abstract class LernaNode {
       );
     } else {
       log('node').info('Safe-compiling performing type-checks', this.name);
-      this.compilationProcess = spawn('npx', ['tsc'], {
+      this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {
         cwd: this.location,
         env: process.env,
         stdio: 'inherit',

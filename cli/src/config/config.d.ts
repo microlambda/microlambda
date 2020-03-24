@@ -1,5 +1,7 @@
+export type CompilationMode = 'lazy' | 'normal' | 'eager';
+
 export interface IConfig {
-  compilationMode: 'lazy' | 'normal' | 'eager';
+  compilationMode: CompilationMode;
   ports: { [key: string]: number };
   noStart: string[];
 }

@@ -9,6 +9,7 @@ import { recreateLogDirectory } from '../utils/logs';
 import { RecompilationScheduler } from '../utils/scheduler';
 import { Service } from '../lerna';
 import { SocketsManager } from '../ipc/socket';
+import { verifyBinaries } from '../utils/external-binaries';
 
 interface IStartOptions {
   interactive: boolean;
@@ -22,6 +23,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   const projectRoot = getProjectRoot();
   log('start').debug('Loading config');
   const config = loadConfig();
+  await verifyBinaries(config.compilationMode, projectRoot);
   scheduler.setMode(config.compilationMode);
   log('start').debug(config);
   log('start').info('Parsing lerna dependency graph', projectRoot);

@@ -7,6 +7,7 @@ import { ServiceStatus } from './enums/service.status';
 import { Observable } from 'rxjs';
 import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
+import { getBinary } from '../utils/external-binaries';
 
 export class Service extends LernaNode {
   private status: ServiceStatus;
@@ -106,10 +107,14 @@ export class Service extends LernaNode {
     log('service').debug('Location:', this.location);
     log('service').debug('Env:', process.env.ENV);
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name));
-    this.process = spawn('npx', ['sls', 'offline', 'start', '--port', this.port.toString()], {
-      cwd: this.location,
-      env: process.env,
-    });
+    this.process = spawn(
+      getBinary('sls', this.graph.getProjectRoot(), this),
+      ['offline', 'start', '--port', this.port.toString()],
+      {
+        cwd: this.location,
+        env: process.env,
+      },
+    );
     this.process.stderr.on('data', (data) => {
       log('service').error(`${chalk.bold(this.name)}: ${data}`);
       this.logStream.write(data);

@@ -4,6 +4,7 @@ import { catchError, concatAll, debounceTime, last, map, mergeMap, takeUntil, ta
 import { log } from './logger';
 import { ServiceStatus } from '../lerna/enums/service.status';
 import { CompilationStatus } from '../lerna/enums/compilation.status';
+import { CompilationMode } from '../config/config';
 
 enum SchedulerStatus {
   READY,
@@ -66,7 +67,7 @@ export class RecompilationScheduler {
     this._graph = graph;
   }
 
-  public setMode(mode: 'lazy' | 'eager' | 'normal'): void {
+  public setMode(mode: CompilationMode): void {
     switch (mode) {
       case 'eager':
         this._mode = RecompilationMode.EAGER;
