@@ -194,15 +194,9 @@ export abstract class LernaNode {
   }
 
   private _startCompilation(mode: RecompilationMode): void {
-    log.info('Lets compile');
-
-    log.info(mode);
     this.setStatus(CompilationStatus.COMPILING);
     if (mode === RecompilationMode.LAZY) {
-      log.info('using lazy mode');
-      // TODO: Faire du babel webpack etc...
-      // cmd working 'npx babel src --out-dir lib --extensions .ts --presets @babel/preset-typescript'
-      // check if typecheck is applied...
+      log.info('Fast-compiling using transpile-only', this.name);
       this.compilationProcess = spawn(
         'npx',
         ['babel', 'src', '--out-dir', 'lib', '--extensions', '.ts', '--presets', '@babel/preset-typescript'],
@@ -213,8 +207,7 @@ export abstract class LernaNode {
         },
       );
     } else {
-      log.info('using normal mode');
-
+      log.info('Safe-compiling performing type-checks', this.name);
       this.compilationProcess = spawn('npx', ['tsc'], {
         cwd: this.location,
         env: process.env,

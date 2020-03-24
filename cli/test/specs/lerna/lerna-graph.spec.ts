@@ -76,7 +76,7 @@ describe('The LernaGraph class', () => {
       expect(graph.getPort('serviceC')).toBe(3002);
     });
     test('should map ports with default port fallback', () => {
-      const otherGraph = generateGraph({ ports: {}, noStart: [] }, 4800);
+      const otherGraph = generateGraph({ compilationMode: 'eager', ports: {}, noStart: [] }, 4800);
       expect(otherGraph.getPort('serviceA')).toBe(4800);
       expect(otherGraph.getPort('serviceB')).toBe(4801);
       expect(otherGraph.getPort('serviceC')).toBe(4802);
