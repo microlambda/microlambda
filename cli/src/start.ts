@@ -21,6 +21,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   const projectRoot = getProjectRoot();
   log.debug('Loading config');
   const config = loadConfig();
+  scheduler.setMode(config.compilationMode);
   log.debug(config);
   log.info('Parsing lerna dependency graph', projectRoot);
   const graph = await getLernaGraph(projectRoot, config, options.defaultPort);

@@ -55,12 +55,26 @@ export class RecompilationScheduler {
     log.debug('New recompilation scheduler instance');
     this._reset();
     this._debounce = 300;
-    // this._mode = RecompilationMode.NORMAL;
+    this._mode = RecompilationMode.LAZY;
     this._watchFileChanges();
   }
 
-  public setMode(mode: RecompilationMode) {
-    this._mode = mode;
+  public setMode(mode: 'lazy' | 'normal' | 'eager') {
+    switch (mode) {
+      case 'eager':
+        this._mode = RecompilationMode.EAGER;
+        break;
+      case 'lazy':
+        this._mode = RecompilationMode.LAZY;
+        break;
+      case 'normal':
+        this._mode = RecompilationMode.NORMAL;
+        break;
+      default:
+        log.error('Invalid compilation mode. Fallback on lazy');
+        this._mode = RecompilationMode.LAZY;
+        break;
+    }
   }
 
   /**
