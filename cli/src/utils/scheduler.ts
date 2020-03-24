@@ -342,7 +342,9 @@ export class RecompilationScheduler {
 
   private _execPromise(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this._exec().subscribe(
+      const recompilationProcess$ = this._exec();
+      log('scheduler').debug('Recompilation process', recompilationProcess$);
+      recompilationProcess$.subscribe(
         (event) => log('scheduler').debug(event),
         (err) => reject(err),
         () => resolve(),
@@ -377,7 +379,7 @@ export class RecompilationScheduler {
     const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((s) =>
       s.stop().pipe(
         map((service) => {
-          log('scheduler').debug('[scheduler] stopped', service.getName());
+          log('scheduler').debug('Stopped', service.getName());
           return { node: service, type: RecompilationEventType.SERVICE_STOPPED };
         }),
         catchError((err) => {
@@ -390,7 +392,7 @@ export class RecompilationScheduler {
     const compilationJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.compile.map((node) =>
       node.compileNode(this._mode).pipe(
         map((node) => {
-          log('scheduler').debug('[scheduler] compiled', node.getName());
+          log('scheduler').debug('Compiled', node.getName());
           return { node: node, type: RecompilationEventType.NODE_COMPILED };
         }),
         catchError((err) => {
@@ -403,7 +405,7 @@ export class RecompilationScheduler {
     const startJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.start.map((s) =>
       s.start().pipe(
         map((service) => {
-          log('scheduler').debug('[scheduler] started', service.getName());
+          log('scheduler').debug('Started', service.getName());
           return { node: service, type: RecompilationEventType.SERVICE_STARTED };
         }),
         catchError((err) => {
@@ -415,50 +417,60 @@ export class RecompilationScheduler {
 
     this._recompilation = RecompilationStatus.STOPPING;
 
-    const stop$: Observable<IRecompilationEvent> = from(stopJobs$).pipe(mergeMap((stopJob$) => stopJob$));
-    const start$: Observable<IRecompilationEvent> = from(startJobs$).pipe(mergeMap((startJob$) => startJob$));
-    const compile$: Observable<IRecompilationEvent> = concat(compilationJobs$).pipe(concatAll());
+    const afterStopped = () => {
+      log('scheduler').info('All services stopped');
+      this._recompilation = RecompilationStatus.COMPILING;
+    };
 
-    stop$.pipe(
-      last(),
-      tap(() => {
-        log('scheduler').debug('[scheduler] All services stopped');
-        this._recompilation = RecompilationStatus.COMPILING;
-      }),
-    );
-    start$.pipe(
-      last(),
-      tap(() => {
-        log('scheduler').debug('[scheduler] All services started');
-        this._recompilation = RecompilationStatus.FINISHED;
-      }),
-    );
-    compile$.pipe(
-      last(),
-      tap(() => {
-        log('scheduler').debug('[scheduler] All dependencies compiled');
-        this._recompilation = RecompilationStatus.STARTING;
-      }),
-    );
+    const stop$: Observable<IRecompilationEvent> =
+      stopJobs$.length > 0
+        ? from(stopJobs$).pipe(
+            mergeMap((stopJob$) => stopJob$),
+            last(),
+            tap(afterStopped.bind(this)),
+          )
+        : of(null).pipe(tap(afterStopped.bind(this)));
+
+    const afterCompiled = () => {
+      log('scheduler').info('All dependencies compiled');
+      this._recompilation = RecompilationStatus.STARTING;
+    };
+
+    const compile$: Observable<IRecompilationEvent> =
+      compilationJobs$.length > 0
+        ? concat(compilationJobs$).pipe(concatAll(), last(), tap(afterCompiled.bind(this)))
+        : of(null).pipe(tap(afterCompiled.bind(this)));
+
+    const afterStarted = () => {
+      log('scheduler').info('All dependencies compiled');
+      this._recompilation = RecompilationStatus.STARTING;
+    };
+
+    const start$: Observable<IRecompilationEvent> =
+      startJobs$.length > 0
+        ? from(startJobs$).pipe(
+            mergeMap((startJob$) => startJob$),
+            last(),
+            tap(afterStarted.bind(this)),
+          )
+        : of(null).pipe(tap(afterStarted.bind(this)));
 
     const recompilationProcess$: Observable<IRecompilationEvent> = concat([stop$, compile$, start$]).pipe(
       concatAll(),
       takeUntil(this._abort$),
-    );
-    recompilationProcess$.pipe(
       catchError((err) => {
         log('scheduler').error(err);
         this._reset();
         return throwError(err);
       }),
-    );
-    recompilationProcess$.pipe(
       last(),
       tap(() => {
-        log('scheduler').info('[scheduler] all tasks finished');
+        log('scheduler').info('All tasks finished');
         this._reset();
       }),
     );
+
+    log('scheduler').debug('All tasks successfully scheduled');
     return recompilationProcess$;
   }
 }
