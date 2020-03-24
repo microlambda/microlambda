@@ -18,27 +18,29 @@ interface IStartOptions {
 
 export const start = async (scheduler: RecompilationScheduler, options: IStartOptions): Promise<void> => {
   showOff();
-  log.info('Starting up the app');
+  log('start').info('Starting up the app');
   const projectRoot = getProjectRoot();
-  log.debug('Loading config');
+  log('start').debug('Loading config');
   const config = loadConfig();
   scheduler.setMode(config.compilationMode);
-  log.debug(config);
-  log.info('Parsing lerna dependency graph', projectRoot);
+  log('start').debug(config);
+  log('start').info('Parsing lerna dependency graph', projectRoot);
   const graph = await getLernaGraph(projectRoot, config, options.defaultPort);
   scheduler.setGraph(graph);
   const sockets = new SocketsManager(projectRoot, scheduler, graph);
   await sockets.createServer();
   graph.registerIPCServer(sockets);
   await graph.bootstrap().catch((e) => {
-    log.error(e);
-    log.error('Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.');
+    log('start').error(e);
+    log('start').error(
+      'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.',
+    );
     process.exit(1);
   });
 
-  log.debug('Services excluded by config', config.noStart);
+  log('start').debug('Services excluded by config', config.noStart);
   const enabledServices = graph.getServices().filter((s) => !config.noStart.includes(s.getName()));
-  log.debug(
+  log('start').debug(
     'Enabled services',
     enabledServices.map((s) => s.getName()),
   );
@@ -52,13 +54,13 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   } else {
     chosenServices = enabledServices;
   }
-  log.debug(
+  log('start').debug(
     'Chosen services',
     chosenServices.map((s) => s.getName()),
   );
   chosenServices.forEach((s) => s.enable());
   graph.enableNodes();
-  log.debug(
+  log('start').debug(
     'Enabled nodes',
     graph
       .getNodes()
@@ -68,9 +70,9 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
 
   recreateLogDirectory(projectRoot);
 
-  log.info(`Found ${chosenServices.length} services`);
-  log.info('Starting services');
-  log.debug(chosenServices);
+  log('start').info(`Found ${chosenServices.length} services`);
+  log('start').info('Starting services');
+  log('start').debug(chosenServices);
 
   await scheduler.startProject(graph, options.recompile);
 
@@ -79,7 +81,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
     .filter((n) => n.isEnabled())
     .forEach((n) => n.watch(scheduler));
   process.on('SIGINT', async () => {
-    log.warn('SIGINT signal received');
+    log('start').warn('SIGINT signal received');
     await scheduler.stopProject(graph);
     process.exit();
   });

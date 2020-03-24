@@ -7,16 +7,16 @@ export const getProjectRoot = (path?: string): string => {
     if (!path) {
       path = process.cwd();
     }
-    log.debug('Resolving project root');
+    log('project-root').debug('Resolving project root');
     const fileSystemRoot = parse(path).root;
-    log.debug('File system root', fileSystemRoot);
+    log('project-root').debug('File system root', fileSystemRoot);
     const checkDepth = (): string => {
       if (path === fileSystemRoot) {
         throw Error('Filesystem root reached');
       }
-      log.debug('Check path', join(path, 'lerna.json'));
+      log('project-root').debug('Check path', join(path, 'lerna.json'));
       const hasLerna = (): boolean => existsSync(join(path, 'lerna.json'));
-      log.debug('Exists', hasLerna());
+      log('project-root').debug('Exists', hasLerna());
       if (hasLerna()) {
         return path;
       }
@@ -28,7 +28,7 @@ export const getProjectRoot = (path?: string): string => {
     process.chdir(current);
     return projectRoot;
   } catch (e) {
-    log.error('Cannot find project root. Make sure it is a valid lerna project.');
+    log('project-root').error('Cannot find project root. Make sure it is a valid lerna project.');
     process.exit(1);
   }
 };

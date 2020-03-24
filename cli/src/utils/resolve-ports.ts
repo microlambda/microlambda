@@ -13,7 +13,7 @@ type PortMap = { [key: string]: number };
  * @param defaultPort
  */
 export const resolvePorts = (services: IGraphElement[], config: IConfig, defaultPort = 3001): PortMap => {
-  log.debug('Resolving port from config', config.ports);
+  log('port').debug('Resolving port from config', config.ports);
   const result: PortMap = {};
   services.forEach((service) => {
     const name = service.name;
@@ -24,6 +24,6 @@ export const resolvePorts = (services: IGraphElement[], config: IConfig, default
     }
     result[service.name] = port;
   });
-  log.debug('Ports resolved', result);
+  log('port').debug('Ports resolved', result);
   return result;
 };

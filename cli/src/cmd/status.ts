@@ -7,6 +7,6 @@ export const status = async (scheduler: RecompilationScheduler) => {
   const projectRoot = getProjectRoot();
   const sockets = new SocketsManager(projectRoot, scheduler);
   await sockets.subscribeStatus().subscribe((status) => {
-    log.info(status);
+    log('cmd').info(status);
   });
 };

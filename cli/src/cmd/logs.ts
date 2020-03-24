@@ -10,14 +10,14 @@ export const logs = async (cmd: { S: string }): Promise<void> => {
   const projectRoot = getProjectRoot();
   const config = loadConfig();
   let services: Service[] = [];
-  log.debug(config);
+  log('logs').debug(config);
 
   if (!cmd.S) {
     const graph = await getLernaGraph(projectRoot, config, 3001);
 
     await graph.bootstrap().catch((e) => {
-      log.error(e);
-      log.error(
+      log('logs').error(e);
+      log('logs').error(
         'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.',
       );
       process.exit(1);

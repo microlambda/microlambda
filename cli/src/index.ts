@@ -29,7 +29,7 @@ program
       defaultPort: cmd.P || 3001,
       interactive: cmd.interactive,
     };
-    log.debug(options);
+    log('cmd').debug(options);
     await start(scheduler, options);
   });
 
@@ -65,8 +65,8 @@ program
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
   .action(async (cmd) => {
-    log.debug(cmd);
-    log.error('Not implemented');
+    log('cmd').debug(cmd);
+    log('cmd').error('Not implemented');
   });
 
 program
@@ -75,8 +75,8 @@ program
   .option('-s <service>, --service <service>', 'the service you want to deploy', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
-    log.debug(cmd);
-    log.error('Not implemented');
+    log('cmd').debug(cmd);
+    log('cmd').error('Not implemented');
   });
 
 program
@@ -90,15 +90,15 @@ program
   .command('init')
   .description('initialize new project with the CLI wizard')
   .action(async () => {
-    log.error('Not implemented');
+    log('cmd').error('Not implemented');
   });
 
 program
   .command('new <service-name>')
   .description('initialize a new service with the CLI wizard')
   .action(async (cmd) => {
-    log.debug(cmd);
-    log.error('Not implemented');
+    log('cmd').debug(cmd);
+    log('cmd').error('Not implemented');
   });
 
 (async (): Promise<void> => program.parseAsync(process.argv))();

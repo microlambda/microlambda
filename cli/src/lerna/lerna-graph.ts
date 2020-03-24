@@ -21,30 +21,30 @@ export class LernaGraph {
 
   constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
     this._config = config;
-    log.debug('Building graph with', nodes);
+    log('graph').debug('Building graph with', nodes);
     this.projectRoot = projectRoot;
     const services = nodes.filter((n) => isService(n.location));
     this.ports = resolvePorts(services, config, defaultPort);
     const builtNodes: Set<LernaNode> = new Set<LernaNode>();
     for (const node of nodes) {
       if (!Array.from(builtNodes).some((n) => n.getName() === node.name)) {
-        log.debug('Building node', node.name);
-        log.debug(
+        log('graph').debug('Building node', node.name);
+        log('graph').debug(
           'Already built',
           Array.from(builtNodes).map((b) => b.getName()),
         );
-        log.debug('Is service', isService(node.location));
+        log('graph').debug('Is service', isService(node.location));
         isService(node.location)
           ? new Service(this, node, builtNodes, nodes)
           : new Package(this, node, builtNodes, nodes);
       }
     }
     this.nodes = Array.from(builtNodes);
-    log.debug(
+    log('graph').debug(
       'Built graph',
       this.nodes.map((n) => n.getName()),
     );
-    log.info(`Successfully built ${this.nodes.length} nodes`);
+    log('graph').info(`Successfully built ${this.nodes.length} nodes`);
   }
 
   public getPort(service: string): number {
@@ -56,13 +56,13 @@ export class LernaGraph {
   }
 
   public enableNodes(): void {
-    log.debug('Enabling nodes descendants');
+    log('graph').debug('Enabling nodes descendants');
     this.nodes
       .filter((n) => n.isEnabled())
       .forEach((n) => {
-        log.debug('Enabling node descendants', n.getName());
+        log('graph').debug('Enabling node descendants', n.getName());
         const dependencies = n.getDependencies();
-        log.silly('Descendants', n.getDependencies());
+        log('graph').silly('Descendants', n.getDependencies());
         dependencies.forEach((d) => d.enable());
       });
   }
@@ -118,7 +118,7 @@ export class LernaGraph {
   }
 
   public async bootstrap(): Promise<void> {
-    log.info('Bootstrapping dependencies');
+    log('graph').info('Bootstrapping dependencies');
     const spawnedProcess = spawn('npx', ['lerna', 'bootstrap'], {
       cwd: this.projectRoot,
       stdio: 'inherit',
@@ -129,11 +129,11 @@ export class LernaGraph {
           return resolve();
         }
         const err = `Process exited with status ${code}`;
-        log.error(err);
+        log('graph').error(err);
         return reject(err);
       });
       spawnedProcess.on('error', (err) => {
-        log.error('Process errored: ', err.message);
+        log('graph').error('Process errored: ', err.message);
         return reject(err);
       });
     });

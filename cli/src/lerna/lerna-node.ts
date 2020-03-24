@@ -43,7 +43,7 @@ export abstract class LernaNode {
   protected _ipc: SocketsManager;
 
   public constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
-    log.debug('Building node', node.name);
+    log('node').debug('Building node', node.name);
     this.graph = graph;
     this.name = node.name;
     this.version = node.version;
@@ -54,17 +54,17 @@ export abstract class LernaNode {
     this.dependencies = node.dependencies.map((d) => {
       const dep = Array.from(nodes).find((n) => n.name === d);
       if (dep) {
-        log.debug('Dependency is already built', d);
+        log('node').debug('Dependency is already built', d);
         return dep;
       }
-      log.debug('Building dependency', d);
+      log('node').debug('Building dependency', d);
       const elt = elements.find((e) => e.name === d);
-      log.debug('Is service', { name: d, result: isService(elt.location) });
+      log('node').debug('Is service', { name: d, result: isService(elt.location) });
       return isService(elt.location)
         ? new Service(graph, elt, nodes, elements)
         : new Package(graph, elt, nodes, elements);
     });
-    log.debug('Node built', this.name);
+    log('node').debug('Node built', this.name);
     nodes.add(this);
   }
 
@@ -85,7 +85,7 @@ export abstract class LernaNode {
   }
 
   public isService(): boolean {
-    log.debug('Is service', {
+    log('node').debug('Is service', {
       node: this.getName(),
       location: join(this.location, 'serverless.yml'),
       result: existsSync(join(this.location, 'serverless.yml')),
@@ -144,7 +144,7 @@ export abstract class LernaNode {
         .map((n) => n.name)
         .includes(this.name),
     );
-    log.silly(
+    log('node').silly(
       `Nodes depending upon ${this.name}`,
       dependent.map((d) => d.name),
     );
@@ -159,15 +159,15 @@ export abstract class LernaNode {
   }
 
   public async watch(scheduler: RecompilationScheduler): Promise<void> {
-    log.debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+    log('node').debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
     glob(`${this.location}/src/**/*.{ts,js,json}`, (err, matches) => {
       if (err) {
-        log.error('Error determining files to watch', matches);
+        log('node').error('Error determining files to watch', matches);
       }
       matches.forEach((path) => {
-        log.debug('Watching', path);
+        log('node').debug('Watching', path);
         watch(path, () => {
-          log.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+          log('node').info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
           scheduler.fileChanged(this);
         });
       });
@@ -176,7 +176,7 @@ export abstract class LernaNode {
 
   public compileNode(mode = RecompilationMode.LAZY): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-      log.info(`Compiling package ${this.name} with typescript ${tsVersion}`);
+      log('node').info(`Compiling package ${this.name} with typescript ${tsVersion}`);
       switch (this.compilationStatus) {
         case CompilationStatus.COMPILED:
         case CompilationStatus.ERROR_COMPILING:
@@ -203,7 +203,7 @@ export abstract class LernaNode {
   private _startCompilation(mode: RecompilationMode): void {
     this.setStatus(CompilationStatus.COMPILING);
     if (mode === RecompilationMode.LAZY) {
-      log.info('Fast-compiling using transpile-only', this.name);
+      log('node').info('Fast-compiling using transpile-only', this.name);
       this.compilationProcess = spawn(
         'npx',
         ['babel', 'src', '--out-dir', 'lib', '--extensions', '.ts', '--presets', '@babel/preset-typescript'],
@@ -214,7 +214,7 @@ export abstract class LernaNode {
         },
       );
     } else {
-      log.info('Safe-compiling performing type-checks', this.name);
+      log('node').info('Safe-compiling performing type-checks', this.name);
       this.compilationProcess = spawn('npx', ['tsc'], {
         cwd: this.location,
         env: process.env,
@@ -226,25 +226,25 @@ export abstract class LernaNode {
   private _watchCompilation(): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
       this.compilationProcess.on('close', (code) => {
-        log.silly('npx tsc process closed');
+        log('node').silly('npx tsc process closed');
         if (code === 0) {
           this.setStatus(CompilationStatus.COMPILED);
-          log.info(`Package compiled ${this.getName()}`);
+          log('node').info(`Package compiled ${this.getName()}`);
           observer.next(this);
           // this.compilationProcess.removeAllListeners('close');
           return observer.complete();
         } else {
           this.setStatus(CompilationStatus.ERROR_COMPILING);
-          log.info(`Error compiling ${this.getName()}`);
+          log('node').info(`Error compiling ${this.getName()}`);
           // this.compilationProcess.removeAllListeners('close');
           return observer.error();
         }
       });
       this.compilationProcess.on('error', (err) => {
-        log.silly('npx tsc process error');
-        log.error(err);
+        log('node').silly('npx tsc process error');
+        log('node').error(err);
         this.setStatus(CompilationStatus.ERROR_COMPILING);
-        log.info(`Error compiling ${this.getName()}`, err);
+        log('node').info(`Error compiling ${this.getName()}`, err);
         // this.compilationProcess.removeAllListeners('error');
         return observer.error(err);
       });

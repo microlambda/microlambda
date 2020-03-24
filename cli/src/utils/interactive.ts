@@ -6,8 +6,8 @@ import { Service } from '../lerna';
 export const interactive = async (services: Service[], message: string): Promise<Service[]> => {
   let chosenServices = [];
 
-  log.debug('Interactive option chosen, prompting user');
-  log.info(services.map((service: Service) => service.getName()));
+  log('interactive').debug('Interactive option chosen, prompting user');
+  log('interactive').info(services.map((service: Service) => service.getName()));
 
   const choices: { microservices: string[] } = await inquirer.prompt({
     type: 'checkbox',
@@ -19,7 +19,7 @@ export const interactive = async (services: Service[], message: string): Promise
   if (choices.microservices.length !== 0) {
     chosenServices = services.filter((s) => choices.microservices.includes(s.getName()));
   } else {
-    log.info('No services found, exiting...');
+    log('interactive').info('No services found, exiting...');
     process.exit(0);
   }
 

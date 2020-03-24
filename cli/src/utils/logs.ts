@@ -2,13 +2,7 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs'
 import rimraf from 'rimraf';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
-
 import { log } from './logger';
-import { getProjectRoot } from './get-project-root';
-import { interactive } from './interactive';
-import { getLernaGraph } from './get-lerna-graph';
-import { loadConfig } from '../config/load-config';
-import { Service } from '../lerna';
 import { showOffTitle } from './ascii';
 
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.logs');
@@ -27,7 +21,7 @@ export const recreateLogDirectory = (projectRoot: string): void => {
   }
   if (!lstatSync(logsDirectory).isDirectory()) {
     // Path <project-root>/.logs exists but is a file / symlink etc..=> weird => throw
-    log.error(`${logsDirectory} is not a directory`);
+    log('logs').error(`${logsDirectory} is not a directory`);
     process.exit(1);
   }
   rimraf.sync(logsDirectory);
@@ -49,7 +43,7 @@ export const tailLogs = (serviceName: string, projectRoot: string): void => {
       showOffTitle(serviceName);
       spawnSync('tail', ['-n', '+1', `${logsDirectory}/${serviceName}.log`], { stdio: 'inherit' });
     } else {
-      log.error(
+      log('logs').error(
         `There is not logs for the ${serviceName} service or the service specified does not exist.\n\tPlease run 'mila start' command first!`,
       );
     }

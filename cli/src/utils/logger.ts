@@ -1,4 +1,4 @@
-import { blue, green, cyan, yellow, red } from 'chalk';
+import { blue, green, cyan, yellow, red, bold } from 'chalk';
 
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 type LoggerFunction = (...args: any[]) => void;
@@ -11,24 +11,37 @@ interface ILogger {
   error: LoggerFunction;
 }
 
-export const log: ILogger = {
-  silly: (...args: any[]) => {
-    if (process.env.MILA_DEBUG === '*') {
-      console.debug(cyan('[SILLY]'), ...args);
-    }
-  },
-  debug: (...args: any[]) => {
-    if (process.env.MILA_DEBUG) {
-      console.debug(blue('[DEBUG]'), ...args);
-    }
-  },
-  info: (...args: any[]) => {
-    console.info(green('[INFO]'), ...args);
-  },
-  warn: (...args: any[]) => {
-    console.info(yellow('[WARNING]', ...args));
-  },
-  error: (...args: any[]) => {
-    console.info(red('[ERROR]', ...args));
-  },
+export const log = (scope?: string): ILogger => {
+  const logLevel = ['silent', 'silly', 'debug', 'info', 'warn', 'error'].includes(process.env.MILA_LOG_LEVEL)
+    ? process.env.MILA_LOG_LEVEL
+    : 'info';
+  const inScope =
+    process.env.MILA_DEBUG === '*' || (process.env.MILA_DEBUG && process.env.MILA_DEBUG.split(',').includes(scope));
+  return {
+    silly: (...args: any[]) => {
+      if (['silly'].includes(logLevel) && inScope) {
+        console.debug(cyan('[SILLY]'), bold(scope), ...args);
+      }
+    },
+    debug: (...args: any[]) => {
+      if (['silly', 'debug'].includes(logLevel) && inScope) {
+        console.debug(blue('[DEBUG]'), bold(scope), ...args);
+      }
+    },
+    info: (...args: any[]) => {
+      if (['silly', 'debug', 'info'].includes(logLevel)) {
+        console.info(green('[INFO]'), ...args);
+      }
+    },
+    warn: (...args: any[]) => {
+      if (['silly', 'debug', 'info', 'warn'].includes(logLevel)) {
+        console.info(yellow('[WARNING]', ...args));
+      }
+    },
+    error: (...args: any[]) => {
+      if (['silly', 'debug', 'info', 'warn', 'error'].includes(logLevel)) {
+        console.info(red('[ERROR]', ...args));
+      }
+    },
+  };
 };

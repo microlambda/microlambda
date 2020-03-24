@@ -14,10 +14,10 @@ export const execCmd = async (
     let _stdout = '';
     const process = spawn(cmd, args, options);
     process.stdout.on('data', (data) => {
-      log[stdout](data.toString());
+      log('child_process')[stdout](data.toString());
       _stdout += data.toString();
     });
-    process.stderr.on('data', (data) => log[stderr](data.toString()));
+    process.stderr.on('data', (data) => log('child_process')[stderr](data.toString()));
     process.on('close', (code) => {
       if (code === 0) {
         return resolve(_stdout);
@@ -25,7 +25,7 @@ export const execCmd = async (
       return reject('Process exited with code ' + code);
     });
     process.on('error', (e) => {
-      log.error(e);
+      log('child_process').error(e);
       return reject(e);
     });
   });
