@@ -3,7 +3,7 @@ import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
 import { CompilationStatus } from './enums/compilation.status';
-import { log } from '../utils/logger';
+import { log, prefix } from '../utils/logger';
 import glob from 'glob';
 import chalk from 'chalk';
 import { ChildProcess, execSync, spawn } from 'child_process';
@@ -206,9 +206,9 @@ export abstract class LernaNode {
         {
           cwd: this.location,
           env: process.env,
-          stdio: 'inherit',
         },
       );
+      this.compilationProcess.stdout.on('data', (data) => process.stdout.write(prefix.info + ' ' + data.toString()));
     } else {
       log('node').info('Safe-compiling performing type-checks', this.name);
       this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {

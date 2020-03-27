@@ -11,6 +11,10 @@ interface ILogger {
   error: LoggerFunction;
 }
 
+export const prefix = {
+  info: green('[INFO]'),
+};
+
 export const log = (scope?: string): ILogger => {
   const logLevel = ['silent', 'silly', 'debug', 'info', 'warn', 'error'].includes(process.env.MILA_LOG_LEVEL)
     ? process.env.MILA_LOG_LEVEL
@@ -30,7 +34,7 @@ export const log = (scope?: string): ILogger => {
     },
     info: (...args: any[]) => {
       if (['silly', 'debug', 'info'].includes(logLevel)) {
-        console.info(green('[INFO]'), ...args);
+        console.info(prefix.info, ...args);
       }
     },
     warn: (...args: any[]) => {
