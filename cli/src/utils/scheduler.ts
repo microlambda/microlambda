@@ -188,13 +188,13 @@ export class RecompilationScheduler {
     return this._execPromise();
   }
 
-  public stopProject(graph: LernaGraph): Observable<IRecompilationEvent> {
+  public stopProject(graph: LernaGraph): Promise<void> {
     this._reset();
     graph
       .getServices()
       .filter((s) => s.isEnabled())
       .forEach((s) => this._requestStop(s));
-    return this._exec();
+    return this._execPromise();
   }
 
   public fileChanged(node: LernaNode): void {
