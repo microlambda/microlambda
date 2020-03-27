@@ -6,7 +6,7 @@ reference:
         name: 'Test and build CLI'
         script:
           - npm i
-          - npx lerna boostrap
+          - npx lerna bootstrap
           - npx lerna run lint --scope=@microlambda/cli
           - npx lerna run test --scope=@microlambda/cli
           - npx lerna run build --scope=@microlambda/cli
