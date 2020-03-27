@@ -418,7 +418,7 @@ export class RecompilationScheduler {
 
     this._recompilation = RecompilationStatus.STOPPING;
 
-    const afterStopped = () => {
+    const afterStopped = (): void => {
       log('scheduler').info('All services stopped');
       this._recompilation = RecompilationStatus.COMPILING;
     };
@@ -432,7 +432,7 @@ export class RecompilationScheduler {
           )
         : of(null).pipe(tap(afterStopped.bind(this)));
 
-    const afterCompiled = () => {
+    const afterCompiled = (): void => {
       log('scheduler').info('All dependencies compiled');
       this._recompilation = RecompilationStatus.STARTING;
     };
@@ -442,7 +442,7 @@ export class RecompilationScheduler {
         ? concat(compilationJobs$).pipe(concatAll(), last(), tap(afterCompiled.bind(this)))
         : of(null).pipe(tap(afterCompiled.bind(this)));
 
-    const afterStarted = () => {
+    const afterStarted = (): void => {
       log('scheduler').info('All dependencies compiled');
       this._recompilation = RecompilationStatus.STARTING;
     };

@@ -6,7 +6,7 @@ import { CompilationStatus } from './enums/compilation.status';
 import { log, prefix } from '../utils/logger';
 import glob from 'glob';
 import chalk from 'chalk';
-import { ChildProcess, execSync, spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import { Observable } from 'rxjs';
 import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
 import { SocketsManager } from '../ipc/socket';

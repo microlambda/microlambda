@@ -110,7 +110,7 @@ export class SocketsManager {
     return service;
   }
 
-  private _emitEvent(recompilationEvent: IRecompilationEvent) {
+  private _emitEvent(recompilationEvent: IRecompilationEvent): void {
     switch (recompilationEvent.type) {
       case RecompilationEventType.SERVICE_STARTED:
         this._ipc.server.emit(SocketsManager._responseEvent('start'), {
@@ -126,11 +126,11 @@ export class SocketsManager {
     }
   }
 
-  private _emitSuccess(execId: string) {
+  private _emitSuccess(execId: string): void {
     this._ipc.server.emit(`succeed-${execId}`, {});
   }
 
-  private _emitFailure(execId: string, err: Error) {
+  private _emitFailure(execId: string, err: Error): void {
     this._ipc.server.emit(`failed-${execId}`, err);
   }
 

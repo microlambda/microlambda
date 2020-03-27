@@ -3,10 +3,10 @@ import { SocketsManager } from '../ipc/socket';
 import { log } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
 
-export const status = async (scheduler: RecompilationScheduler) => {
+export const status = (scheduler: RecompilationScheduler): void => {
   const projectRoot = getProjectRoot();
   const sockets = new SocketsManager(projectRoot, scheduler);
-  await sockets.subscribeStatus().subscribe((status) => {
+  sockets.subscribeStatus().subscribe((status) => {
     log('cmd').info(status);
   });
 };

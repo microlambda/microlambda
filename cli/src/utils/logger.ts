@@ -22,27 +22,27 @@ export const log = (scope?: string): ILogger => {
   const inScope =
     process.env.MILA_DEBUG === '*' || (process.env.MILA_DEBUG && process.env.MILA_DEBUG.split(',').includes(scope));
   return {
-    silly: (...args: any[]) => {
+    silly: (...args: any[]): void => {
       if (['silly'].includes(logLevel) && inScope) {
         console.debug(cyan('[SILLY]'), bold(scope), ...args);
       }
     },
-    debug: (...args: any[]) => {
+    debug: (...args: any[]): void => {
       if (['silly', 'debug'].includes(logLevel) && inScope) {
         console.debug(blue('[DEBUG]'), bold(scope), ...args);
       }
     },
-    info: (...args: any[]) => {
+    info: (...args: any[]): void => {
       if (['silly', 'debug', 'info'].includes(logLevel)) {
         console.info(prefix.info, ...args);
       }
     },
-    warn: (...args: any[]) => {
+    warn: (...args: any[]): void => {
       if (['silly', 'debug', 'info', 'warn'].includes(logLevel)) {
         console.info(yellow('[WARNING]', ...args));
       }
     },
-    error: (...args: any[]) => {
+    error: (...args: any[]): void => {
       if (['silly', 'debug', 'info', 'warn', 'error'].includes(logLevel)) {
         console.info(red('[ERROR]', ...args));
       }
