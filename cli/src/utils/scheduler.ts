@@ -79,7 +79,7 @@ export class RecompilationScheduler {
         this._mode = RecompilationMode.NORMAL;
         break;
       default:
-        log('scheduler').error('Invalid compilation mode. Fallback on lazy');
+        log('scheduler').warn('Invalid compilation mode. Fallback on lazy');
         this._mode = RecompilationMode.LAZY;
         break;
     }
