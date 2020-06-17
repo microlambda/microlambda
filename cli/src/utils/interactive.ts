@@ -4,7 +4,7 @@ import { log } from './logger';
 import { Service } from '../lerna';
 
 export const interactive = async (services: Service[], message: string): Promise<Service[]> => {
-  let chosenServices = [];
+  let chosenServices: Service[] = [];
 
   log('interactive').debug('Interactive option chosen, prompting user');
   log('interactive').info(services.map((service: Service) => service.getName()));
