@@ -230,7 +230,7 @@ export class RecompilationScheduler {
           impactedServices.forEach((s) => this._requestStart(s));
 
           // rerun recompilation
-          this._exec();
+          this._exec().subscribe();
         }
       });
   }
