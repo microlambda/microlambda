@@ -196,19 +196,34 @@ export abstract class LernaNode {
     });
   }
 
+  public clear() {
+    const lib = join(this.location, 'lib');
+  }
+
   private _startCompilation(mode: RecompilationMode): void {
     this.setStatus(CompilationStatus.COMPILING);
     if (mode === RecompilationMode.LAZY) {
       log('node').info('Fast-compiling using transpile-only', this.name);
       this.compilationProcess = spawn(
         getBinary('babel', this.graph.getProjectRoot(), this),
-        ['src', '--out-dir', 'lib', '--extensions', '.ts', '--presets', '@babel/preset-typescript'],
+        [
+          'src',
+          '--out-dir',
+          'lib/src',
+          '--extensions',
+          '.ts',
+          '--presets',
+          '@babel/preset-typescript',
+          '--plugins',
+          '@babel/plugin-transform-modules-commonjs',
+        ],
         {
           cwd: this.location,
           env: process.env,
+          stdio: 'inherit',
         },
       );
-      this.compilationProcess.stdout.on('data', (data) => process.stdout.write(prefix.info + ' ' + data.toString()));
+      // this.compilationProcess.stdout.on('data', (data) => process.stdout.write(prefix.info + ' ' + data.toString()));
     } else {
       log('node').info('Safe-compiling performing type-checks', this.name);
       this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {
