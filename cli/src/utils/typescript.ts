@@ -2,6 +2,7 @@ import {
   CompilerOptions,
   findConfigFile,
   ParseConfigHost,
+  ParsedCommandLine,
   parseJsonConfigFileContent,
   readConfigFile,
   sys,
@@ -11,7 +12,7 @@ import { access, constants, mkdir, readFile, writeFile } from 'fs';
 import { join, relative, dirname } from 'path';
 import { log } from './logger';
 
-const getTsConfig = (cwd: string) => {
+const getTsConfig = (cwd: string): ParsedCommandLine => {
   const parseConfigHost: ParseConfigHost = {
     fileExists: sys.fileExists,
     readFile: sys.readFile,
@@ -79,7 +80,7 @@ const compileFile = (cwd: string, absolutePath: string, compilerOptions: Compile
   });
 };
 
-export const compileFiles = async (cwd: string) => {
+export const compileFiles = async (cwd: string): Promise<void> => {
   log('ts').debug('compiling files in directory', cwd);
   const config = getTsConfig(cwd);
   log('ts').debug('config read', config);
