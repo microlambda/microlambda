@@ -5,7 +5,7 @@ import { log } from './logger';
 import { LernaNode } from '../lerna';
 import { CompilationMode } from '../config/config';
 
-type Cmd = 'tsc' | 'babel' | 'sls' | 'lerna';
+type Cmd = 'tsc' | 'sls' | 'lerna';
 
 const logger = log('binaries');
 
@@ -75,11 +75,7 @@ export const verifyBinaries = async (mode: CompilationMode, projectRoot: string)
   binaryPackages.set('lerna', ['lerna']);
   binaryPackages.set('tsc', ['typescript']);
   binaryPackages.set('sls', ['serverless']);
-  binaryPackages.set('babel', ['@babel/cli', '@babel/core', '@babel/preset-typescript']);
   const binariesToTest: Cmd[] = ['tsc', 'sls'];
-  if (mode === 'lazy') {
-    binariesToTest.push('babel');
-  }
   const deps: string[] = [];
   for (const cmd of binariesToTest) {
     if (!testBinary(cmd, projectRoot)) {

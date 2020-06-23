@@ -13,6 +13,7 @@ interface ILogger {
 
 export const prefix = {
   info: green('[INFO]'),
+  error: red('[ERROR]'),
 };
 
 export const log = (scope?: string): ILogger => {
@@ -44,7 +45,7 @@ export const log = (scope?: string): ILogger => {
     },
     error: (...args: any[]): void => {
       if (['silly', 'debug', 'info', 'warn', 'error'].includes(logLevel)) {
-        console.info(red('[ERROR]', ...args));
+        console.info(prefix.error, ...args);
       }
     },
   };

@@ -3,7 +3,7 @@ import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
 import { CompilationStatus } from './enums/compilation.status';
-import { log, prefix } from '../utils/logger';
+import { log } from '../utils/logger';
 import glob from 'glob';
 import chalk from 'chalk';
 import { ChildProcess, spawn } from 'child_process';
@@ -11,6 +11,7 @@ import { Observable } from 'rxjs';
 import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
 import { SocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
+import { compileFiles } from '../utils/typescript';
 
 export interface IGraphElement {
   name: string;
@@ -36,6 +37,7 @@ export abstract class LernaNode {
 
   protected compilationStatus: CompilationStatus;
   protected compilationProcess: ChildProcess;
+  protected compilationPromise: Promise<void>;
   private nodeStatus: NodeStatus;
   protected _ipc: SocketsManager;
 
@@ -178,7 +180,7 @@ export abstract class LernaNode {
         case CompilationStatus.ERROR_COMPILING:
         case CompilationStatus.NOT_COMPILED:
           this._startCompilation(mode);
-          this._watchCompilation().subscribe(
+          this._watchCompilation(mode).subscribe(
             (next) => observer.next(next),
             (err) => observer.error(err),
             () => observer.complete(),
@@ -186,7 +188,7 @@ export abstract class LernaNode {
           break;
         case CompilationStatus.COMPILING:
           // Already compiling, just wait for it to complete
-          this._watchCompilation().subscribe(
+          this._watchCompilation(mode).subscribe(
             (next) => observer.next(next),
             (err) => observer.error(err),
             () => observer.complete(),
@@ -196,34 +198,12 @@ export abstract class LernaNode {
     });
   }
 
-  public clear() {
-    const lib = join(this.location, 'lib');
-  }
-
   private _startCompilation(mode: RecompilationMode): void {
     this.setStatus(CompilationStatus.COMPILING);
     if (mode === RecompilationMode.LAZY) {
+      // Using directly typescript API
       log('node').info('Fast-compiling using transpile-only', this.name);
-      this.compilationProcess = spawn(
-        getBinary('babel', this.graph.getProjectRoot(), this),
-        [
-          'src',
-          '--out-dir',
-          'lib/src',
-          '--extensions',
-          '.ts',
-          '--presets',
-          '@babel/preset-typescript',
-          '--plugins',
-          '@babel/plugin-transform-modules-commonjs',
-        ],
-        {
-          cwd: this.location,
-          env: process.env,
-          stdio: 'inherit',
-        },
-      );
-      // this.compilationProcess.stdout.on('data', (data) => process.stdout.write(prefix.info + ' ' + data.toString()));
+      this.compilationPromise = compileFiles(this.location);
     } else {
       log('node').info('Safe-compiling performing type-checks', this.name);
       this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {
@@ -234,31 +214,44 @@ export abstract class LernaNode {
     }
   }
 
-  private _watchCompilation(): Observable<LernaNode> {
+  private _watchCompilation(mode: RecompilationMode): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-      this.compilationProcess.on('close', (code) => {
-        log('node').silly('npx tsc process closed');
-        if (code === 0) {
-          this.setStatus(CompilationStatus.COMPILED);
-          log('node').info(`Package compiled ${this.getName()}`);
-          observer.next(this);
-          // this.compilationProcess.removeAllListeners('close');
-          return observer.complete();
-        } else {
+      if (mode === RecompilationMode.LAZY) {
+        this.compilationPromise
+          .then(() => {
+            log('node').info('Package compiled', this.name);
+            observer.next(this);
+            return observer.complete();
+          })
+          .catch((err) => {
+            log('node').info(`Error compiling ${this.getName()}`, err);
+            return observer.error(err);
+          });
+      } else {
+        this.compilationProcess.on('close', (code) => {
+          log('node').silly('npx tsc process closed');
+          if (code === 0) {
+            this.setStatus(CompilationStatus.COMPILED);
+            log('node').info(`Package compiled ${this.getName()}`);
+            observer.next(this);
+            // this.compilationProcess.removeAllListeners('close');
+            return observer.complete();
+          } else {
+            this.setStatus(CompilationStatus.ERROR_COMPILING);
+            log('node').info(`Error compiling ${this.getName()}`);
+            // this.compilationProcess.removeAllListeners('close');
+            return observer.error();
+          }
+        });
+        this.compilationProcess.on('error', (err) => {
+          log('node').silly('npx tsc process error');
+          log('node').error(err);
           this.setStatus(CompilationStatus.ERROR_COMPILING);
-          log('node').info(`Error compiling ${this.getName()}`);
-          // this.compilationProcess.removeAllListeners('close');
-          return observer.error();
-        }
-      });
-      this.compilationProcess.on('error', (err) => {
-        log('node').silly('npx tsc process error');
-        log('node').error(err);
-        this.setStatus(CompilationStatus.ERROR_COMPILING);
-        log('node').info(`Error compiling ${this.getName()}`, err);
-        // this.compilationProcess.removeAllListeners('error');
-        return observer.error(err);
-      });
+          log('node').info(`Error compiling ${this.getName()}`, err);
+          // this.compilationProcess.removeAllListeners('error');
+          return observer.error(err);
+        });
+      }
     });
   }
 }
