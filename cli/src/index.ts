@@ -12,7 +12,7 @@ const scheduler = new RecompilationScheduler();
 
 const program = new Command();
 
-program.version('0.0.4alpha');
+program.version('0.0.5alpha');
 
 program
   .command('start')
