@@ -12,6 +12,7 @@ import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
 import { SocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
+import { checksums, IChecksums } from '../utils/checksums';
 
 export interface IGraphElement {
   name: string;
@@ -100,13 +101,20 @@ export abstract class LernaNode {
     return this.dependencies;
   }
 
+  public getGraph(): LernaGraph {
+    return this.graph;
+  }
+
   public getChild(name: string): LernaNode {
     return this.dependencies.find((d) => d.name === name);
   }
 
   public setStatus(status: CompilationStatus): void {
     this.compilationStatus = status;
-    this._ipc.graphUpdated();
+    if (this._ipc) {
+      log('node').debug('Notifying IPC server of graph update');
+      this._ipc.graphUpdated();
+    }
   }
 
   public isRoot(): boolean {
@@ -173,18 +181,44 @@ export abstract class LernaNode {
     });
   }
 
-  public compileNode(mode = RecompilationMode.LAZY): Observable<LernaNode> {
+  public compileNode(mode = RecompilationMode.FAST): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
       switch (this.compilationStatus) {
         case CompilationStatus.COMPILED:
         case CompilationStatus.ERROR_COMPILING:
         case CompilationStatus.NOT_COMPILED:
-          this._startCompilation(mode);
-          this._watchCompilation(mode).subscribe(
-            (next) => observer.next(next),
-            (err) => observer.error(err),
-            () => observer.complete(),
-          );
+          this._startCompilation(mode).then((action) => {
+            if (action.recompile) {
+              this._watchCompilation(mode).subscribe(
+                (next) => observer.next(next),
+                (err) => observer.error(err),
+                () => {
+                  // Update checksums
+                  if (action.checksums != null) {
+                    checksums(this)
+                      .write(action.checksums)
+                      .then(() => {
+                        log('node').info('Checksum written', this.name);
+                        observer.complete();
+                      })
+                      .catch((e) => {
+                        log('node').debug(e);
+                        log('node').warn(
+                          `Error caching checksum for node ${this.name}. Next time node will be recompiled event if source does not change`,
+                        );
+                        observer.complete();
+                      });
+                  } else {
+                    observer.complete();
+                  }
+                },
+              );
+            } else {
+              log('node').info(`Skipped recompilation of ${this.name}: sources did not change`);
+              observer.next(this);
+              observer.complete();
+            }
+          });
           break;
         case CompilationStatus.COMPILING:
           // Already compiling, just wait for it to complete
@@ -198,25 +232,43 @@ export abstract class LernaNode {
     });
   }
 
-  private _startCompilation(mode: RecompilationMode): void {
+  private async _startCompilation(mode: RecompilationMode): Promise<{ recompile: boolean; checksums: IChecksums }> {
     this.setStatus(CompilationStatus.COMPILING);
-    if (mode === RecompilationMode.LAZY) {
+    if (mode === RecompilationMode.FAST) {
       // Using directly typescript API
       log('node').info('Fast-compiling using transpile-only', this.name);
       this.compilationPromise = compileFiles(this.location);
+      return { recompile: true, checksums: null };
     } else {
+      let recompile = true;
+      let currentChecksums: IChecksums = null;
+      const checksumUtils = checksums(this);
+      try {
+        const oldChecksums = await checksumUtils.read();
+        currentChecksums = await checksumUtils.calculate();
+        recompile = checksumUtils.compare(oldChecksums, currentChecksums);
+      } catch (e) {
+        currentChecksums = await checksumUtils.calculate().catch(() => {
+          return null;
+        });
+        log('node').warn('Error evaluating checksums for node', this.name);
+        log('node').debug(e);
+      }
       log('node').info('Safe-compiling performing type-checks', this.name);
-      this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {
-        cwd: this.location,
-        env: process.env,
-        stdio: 'inherit',
-      });
+      if (recompile) {
+        this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {
+          cwd: this.location,
+          env: process.env,
+          stdio: 'inherit',
+        });
+      }
+      return { recompile, checksums: currentChecksums };
     }
   }
 
   private _watchCompilation(mode: RecompilationMode): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-      if (mode === RecompilationMode.LAZY) {
+      if (mode === RecompilationMode.FAST) {
         this.compilationPromise
           .then(() => {
             log('node').info('Package compiled', this.name);

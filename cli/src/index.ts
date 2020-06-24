@@ -6,6 +6,7 @@ import { start, stop } from './cmd';
 import { status } from './cmd/status';
 import { restart } from './cmd/restart';
 import { logs } from './cmd/logs';
+import { runTests } from './cmd/test';
 
 // Recompilation Scheduler must be a singleton
 const scheduler = new RecompilationScheduler();
@@ -84,6 +85,26 @@ program
   .description('see the microservices status')
   .action(async () => {
     await status(scheduler);
+  });
+
+program
+  .command('test')
+  .description('test microlambda services')
+  .option('--no-bootstrap', 'skip reinstalling dependencies before starting microservices', false)
+  .option('--no-recompile', 'skip recompiling dependency graph before starting microservices', false)
+  .option('--unit', 'only run unit tests', false)
+  .option('--functional', 'only run functional tests', false)
+  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
+  .option('-s <service>, --service <service>', 'the service for which you want to test', null)
+  .action(async (cmd) => {
+    await runTests(scheduler, {
+      bootstrap: cmd.bootstrap,
+      recompile: cmd.recompile,
+      unit: cmd.unit,
+      functional: cmd.functional,
+      concurrency: cmd.C,
+      service: cmd.S,
+    });
   });
 
 program

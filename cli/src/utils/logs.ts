@@ -5,11 +5,11 @@ import { spawnSync } from 'child_process';
 import { log } from './logger';
 import { showOffTitle } from './ascii';
 
-export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.logs');
+export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.mila', 'logs');
 export const getLogsPath = (projectRoot: string, service: string): string => {
   const segments = service.split('/');
   const name = segments[segments.length - 1];
-  return join(projectRoot, '.logs', `${name}.log`);
+  return join(getLogsDirectory(projectRoot), `${name}.log`);
 };
 
 export const recreateLogDirectory = (projectRoot: string): void => {

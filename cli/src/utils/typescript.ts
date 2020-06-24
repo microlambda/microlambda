@@ -12,7 +12,7 @@ import { access, constants, mkdir, readFile, writeFile } from 'fs';
 import { join, relative, dirname } from 'path';
 import { log } from './logger';
 
-const getTsConfig = (cwd: string): ParsedCommandLine => {
+export const getTsConfig = (cwd: string): ParsedCommandLine => {
   const parseConfigHost: ParseConfigHost = {
     fileExists: sys.fileExists,
     readFile: sys.readFile,

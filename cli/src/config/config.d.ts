@@ -1,4 +1,4 @@
-export type CompilationMode = 'lazy' | 'normal' | 'eager';
+export type CompilationMode = 'safe' | 'fast';
 
 export interface IConfig {
   compilationMode: CompilationMode;

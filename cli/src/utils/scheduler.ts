@@ -30,9 +30,8 @@ export enum RecompilationEventType {
 }
 
 export enum RecompilationMode {
-  LAZY,
-  NORMAL,
-  EAGER,
+  FAST,
+  SAFE,
 }
 
 export interface IRecompilationEvent {
@@ -59,7 +58,7 @@ export class RecompilationScheduler {
     log('scheduler').debug('New recompilation scheduler instance');
     this._reset();
     this._debounce = 300;
-    this._mode = RecompilationMode.LAZY;
+    this._mode = RecompilationMode.FAST;
     this._watchFileChanges();
   }
 
@@ -69,18 +68,15 @@ export class RecompilationScheduler {
 
   public setMode(mode: CompilationMode): void {
     switch (mode) {
-      case 'eager':
-        this._mode = RecompilationMode.EAGER;
+      case 'safe':
+        this._mode = RecompilationMode.SAFE;
         break;
-      case 'lazy':
-        this._mode = RecompilationMode.LAZY;
-        break;
-      case 'normal':
-        this._mode = RecompilationMode.NORMAL;
+      case 'fast':
+        this._mode = RecompilationMode.FAST;
         break;
       default:
-        log('scheduler').warn('Invalid compilation mode. Fallback on lazy');
-        this._mode = RecompilationMode.LAZY;
+        log('scheduler').warn('Invalid compilation mode. Fallback on fast');
+        this._mode = RecompilationMode.FAST;
         break;
     }
   }
@@ -188,6 +184,28 @@ export class RecompilationScheduler {
     return this._execPromise();
   }
 
+  public async compile(graph: LernaNode): Promise<void>;
+  public async compile(node: LernaGraph): Promise<void>;
+  public async compile(target: LernaGraph | LernaNode): Promise<void>;
+  public async compile(target: LernaGraph | LernaNode): Promise<void> {
+    const isGraph = (target: LernaGraph | LernaNode): target is LernaGraph => {
+      return target instanceof LernaGraph;
+    };
+    if (isGraph(target)) {
+      target.getNodes().forEach((n) => n.enable());
+      this._compile(target.getNodes());
+    } else if (this._mode === RecompilationMode.FAST) {
+      target.enable();
+      this._compile([target]);
+    } else {
+      const descendants = target.getDependencies();
+      const toCompile = [...descendants, target];
+      toCompile.forEach((n) => n.enable());
+      this._compile(toCompile);
+    }
+    return this._execPromise();
+  }
+
   public stopProject(graph: LernaGraph): Promise<void> {
     this._reset();
     graph
@@ -239,9 +257,10 @@ export class RecompilationScheduler {
    * Recompile any array of nodes from leaves to roots
    * @param toCompile: nodes to compile.
    * @param recompile: recompile nodes that are already compiled
+   * @param compileServices
    * @private
    */
-  private _compile(toCompile: LernaNode[], recompile = true): void {
+  private _compile(toCompile: LernaNode[], recompile = true, compileServices = false): void {
     log('scheduler').debug(
       'Requested to compile nodes',
       toCompile.map((n) => n.getName()),
@@ -259,7 +278,7 @@ export class RecompilationScheduler {
         // For each node get his children and compile them before him
         const dependencies = node.getChildren().filter((d) => {
           const inRequest = toCompile.includes(d);
-          if (this._mode > RecompilationMode.LAZY) {
+          if (this._mode === RecompilationMode.SAFE) {
             const hasDescendantInRequest = d.getDependencies().some((descendant) => toCompile.includes(descendant));
             log('scheduler').debug('should compile ?', {
               name: d.getName(),
@@ -282,7 +301,7 @@ export class RecompilationScheduler {
         }
         const isRootService = roots.includes(node) && node.isService();
         const notAlreadyCompiled = recompile || node.getCompilationStatus() !== CompilationStatus.COMPILED;
-        const shouldBeCompiled = this._mode === RecompilationMode.EAGER || (!isRootService && notAlreadyCompiled);
+        const shouldBeCompiled = compileServices || (!isRootService && notAlreadyCompiled);
         if (shouldBeCompiled && !requested.has(node)) {
           this._requestCompilation(node);
           log('scheduler').debug('Added to compilation queue', node.getName());
