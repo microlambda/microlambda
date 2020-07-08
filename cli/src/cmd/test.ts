@@ -13,7 +13,7 @@ interface ITestOptions {
   service?: string;
 }
 
-export const runTests = async (scheduler: RecompilationScheduler, options: ITestOptions) => {
+export const runTests = async (scheduler: RecompilationScheduler, options: ITestOptions): Promise<void> => {
   log('test-runner').debug('Launching tests', options);
   log('test-runner').info('Running tests for', options.service || 'all services');
   const projectRoot = getProjectRoot();

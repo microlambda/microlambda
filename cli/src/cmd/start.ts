@@ -10,6 +10,7 @@ import { RecompilationScheduler } from '../utils/scheduler';
 import { Service } from '../lerna';
 import { SocketsManager } from '../ipc/socket';
 import { verifyBinaries } from '../utils/external-binaries';
+import { doRender, setGraph } from '../ui';
 
 interface IStartOptions {
   interactive: boolean;
@@ -75,7 +76,8 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   log('start').info(`Found ${chosenServices.length} services`);
   log('start').info('Starting services');
   log('start').debug(chosenServices);
-
+  doRender();
+  setGraph(graph);
   await scheduler.startProject(graph, options.recompile);
 
   graph

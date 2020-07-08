@@ -19,7 +19,7 @@ export const prefix = {
 export const log = (scope?: string): ILogger => {
   const logLevel = ['silent', 'silly', 'debug', 'info', 'warn', 'error'].includes(process.env.MILA_LOG_LEVEL)
     ? process.env.MILA_LOG_LEVEL
-    : 'info';
+    : 'silent';
   const inScope =
     process.env.MILA_DEBUG === '*' || (process.env.MILA_DEBUG && process.env.MILA_DEBUG.split(',').includes(scope));
   return {

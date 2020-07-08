@@ -9,7 +9,14 @@ export interface IChecksums {
   [file: string]: string;
 }
 
-export const checksums = (node: LernaNode) => {
+export const checksums = (
+  node: LernaNode,
+): {
+  calculate: () => Promise<IChecksums>;
+  read: () => Promise<IChecksums>;
+  write: (data: IChecksums) => Promise<void>;
+  compare: (old: IChecksums, current: IChecksums) => boolean;
+} => {
   const projectRoot = node.getGraph().getProjectRoot();
   const hashesDir = join(projectRoot, '.mila', 'hashes');
   const segments = node.getName().split('/');

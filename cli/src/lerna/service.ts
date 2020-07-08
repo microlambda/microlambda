@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
 import { getBinary } from '../utils/external-binaries';
+import { updateServiceStatus } from '../ui';
 
 export class Service extends LernaNode {
   private status: ServiceStatus;
@@ -151,5 +152,6 @@ export class Service extends LernaNode {
   private _updateStatus(status: ServiceStatus): void {
     this.status = status;
     this._ipc.graphUpdated();
+    updateServiceStatus(this);
   }
 }

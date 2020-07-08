@@ -13,6 +13,7 @@ import { SocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
 import { checksums, IChecksums } from '../utils/checksums';
+import { updateCompilationStatus } from '../ui';
 
 export interface IGraphElement {
   name: string;
@@ -115,6 +116,7 @@ export abstract class LernaNode {
       log('node').debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
+    updateCompilationStatus(this);
   }
 
   public isRoot(): boolean {
@@ -273,10 +275,12 @@ export abstract class LernaNode {
           .then(() => {
             log('node').info('Package compiled', this.name);
             observer.next(this);
+            this.setStatus(CompilationStatus.COMPILED);
             return observer.complete();
           })
           .catch((err) => {
             log('node').info(`Error compiling ${this.getName()}`, err);
+            this.setStatus(CompilationStatus.ERROR_COMPILING);
             return observer.error(err);
           });
       } else {
