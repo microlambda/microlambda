@@ -5,7 +5,12 @@ import chalk from 'chalk';
 import { IService } from '../state/store';
 import { PackagesList } from './packages-list';
 
-export class ServicesList extends Component<{ services: IService[] }> {
+export interface IServiceListProps {
+  services: IService[];
+  selected: string;
+}
+
+export class ServicesList extends Component<IServiceListProps> {
   private static _formatService(service: IService): string {
     const getStatus = (): string => {
       if (!service.enabled) {
@@ -31,6 +36,7 @@ export class ServicesList extends Component<{ services: IService[] }> {
     return this.props.services
       ? this.props.services.map((service) => (
           <Box key={service.name} flexDirection={'row'} justifyContent={'space-between'}>
+            <Text bold={true}>{service.name === this.props.selected ? '->' : ''}</Text>
             <Text bold={true}>{service.name}</Text>
             <Text> {ServicesList._formatService(service)}</Text>
           </Box>

@@ -14,9 +14,31 @@ export interface IService extends IPackage {
   port: number;
 }
 
+export type PackageAction =
+  | 'start'
+  | 'stop'
+  | 'restart'
+  | 'enable'
+  | 'disable'
+  | 'logs'
+  | 'test'
+  | 'package'
+  | 'deploy';
+
 export interface IState {
   services: IService[];
   packages: IPackage[];
+  nodeSelected: string;
+  actionPanelOpen: boolean;
+  actionSelected: PackageAction;
 }
+
+export const defaultState: IState = {
+  services: [],
+  packages: [],
+  nodeSelected: null,
+  actionSelected: null,
+  actionPanelOpen: false,
+};
 
 export const store = createStore(rootReducer);

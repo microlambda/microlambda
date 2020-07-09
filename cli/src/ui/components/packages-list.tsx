@@ -4,7 +4,12 @@ import chalk from 'chalk';
 import { CompilationStatus } from '../../lerna/enums/compilation.status';
 import { IPackage } from '../state/store';
 
-export class PackagesList extends Component<{ packages: IPackage[] }> {
+export interface IPackageListProps {
+  packages: IPackage[];
+  selected: string;
+}
+
+export class PackagesList extends Component<IPackageListProps> {
   static getCompilationStatus(node: IPackage): string {
     if (!node.enabled) {
       return chalk.grey('[Disabled]');
@@ -26,6 +31,7 @@ export class PackagesList extends Component<{ packages: IPackage[] }> {
     return this.props.packages
       ? this.props.packages.map((pkg) => (
           <Box key={pkg.name} flexDirection={'row'} justifyContent={'space-between'}>
+            <Text bold={true}>{pkg.name === this.props.selected ? '->' : ''}</Text>
             <Text bold={true}>{pkg.name}</Text>
             <Text> {PackagesList.getCompilationStatus(pkg)}</Text>
           </Box>
