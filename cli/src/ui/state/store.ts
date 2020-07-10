@@ -2,6 +2,7 @@ import { CompilationStatus } from '../../lerna/enums/compilation.status';
 import { ServiceStatus } from '../../lerna/enums/service.status';
 import { createStore } from 'redux';
 import rootReducer from './reducers';
+import { RecompilationScheduler } from '../../utils/scheduler';
 
 export enum BootstrapStatus {
   READY,
@@ -38,6 +39,7 @@ export interface ILernaState {
 }
 
 export interface IGraphState {
+  scheduler: RecompilationScheduler;
   services: IService[];
   nodeSelected: string;
   packages: IPackage[];

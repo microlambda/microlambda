@@ -3,6 +3,7 @@ import { Text, Box } from 'ink';
 import Divider from 'ink-divider';
 import { IPackageListProps } from './packages-list';
 import { IServiceListProps } from './services-list';
+import { IPackage, IService } from '../state/store';
 
 export interface IActionPanelProps extends IPackageListProps, IServiceListProps {}
 
@@ -24,23 +25,44 @@ export class ActionPanel extends Component<IActionPanelProps> {
     const selectedNode = isPackage
       ? this.props.packages.find((p) => p.name === this.props.selected)
       : this.props.services.find((p) => p.name === this.props.selected);
+    if (isPackage) {
+      const pkg = selectedNode as IPackage;
+      return (
+        <Box flexDirection={'column'}>
+          <Text bold={true}>{pkg.name}</Text>
+          <Divider />
+          <Text>version: {pkg.version}</Text>
+          <Text>compilation status: {pkg.compilationStatus} </Text>
+          <Text>last compilation took: </Text>
+          <Text>using typescript version: 3.7.5</Text>
+          <Divider />
+          <Text>(e): show compilation errors</Text>
+          <Text>(b): recompile package</Text>
+          <Text>(t): run packages tests</Text>
+          <Text>(escape): close menu</Text>
+        </Box>
+      );
+    }
+    const service = selectedNode as IService;
     return (
       <Box flexDirection={'column'}>
-        <Text bold={true}>{selectedNode.name}</Text>
+        <Text bold={true}>{service.name}</Text>
         <Divider />
-        <Text>version: {selectedNode.version}</Text>
-        <Text>allocated port: {selectedNode.version}</Text>
-        <Text>compilation status: {selectedNode.version}</Text>
-        <Text>start status: {selectedNode.version}</Text>
-        <Text>last compilation took: {selectedNode.version}</Text>
-        <Text>last start took: {selectedNode.version}</Text>
+        <Text>version: {service.version}</Text>
+        <Text>allocated port: {service.port}</Text>
+        <Text>compilation status: {service.compilationStatus}</Text>
+        <Text>start status: {service.status}</Text>
+        <Text>last compilation took:</Text>
+        <Text>using typescript version: 3.7.5</Text>
+        <Text>last start took: </Text>
+        <Text>using serverless version: 1.61.1</Text>
         <Divider />
-        <Text>(l): display service logs</Text>
+        <Text>(l): show service logs</Text>
+        <Text>(e): show compilation errors</Text>
         <Text>(s): stop service</Text>
         <Text>(r): restart service</Text>
         <Text>(b): recompile service</Text>
-        <Text>(e): enable service</Text>
-        <Text>(d): disable service</Text>
+        <Text>(d): enable/disable service</Text>
         <Text>(t): run service tests</Text>
         <Text>(p): package service</Text>
         <Text>($): deploy service</Text>

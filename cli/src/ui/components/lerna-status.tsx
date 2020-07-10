@@ -31,6 +31,8 @@ export class LernaStatus extends Component<ILernaState> {
               <Spinner type={'dots'} />
               <Text> </Text>
               <Text>Bootstrapping dependencies 📦</Text>
+              <Text> </Text>
+              <Color grey>{lerna.version ? 'using lerna ' + lerna.version : ''}</Color>
             </Text>
           </Box>
         );
@@ -46,6 +48,8 @@ export class LernaStatus extends Component<ILernaState> {
               <Color green>✓</Color>
               <Text> </Text>
               <Text>Dependencies installed 📦</Text>
+              <Text> </Text>
+              <Color grey>{lerna.version ? 'using lerna ' + lerna.version : ''}</Color>
             </Text>
           </Box>
         );

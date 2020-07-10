@@ -1,6 +1,6 @@
 import { IGraphState, IService } from '../store';
 import { Action } from 'redux';
-import { DOWN_ARROW_PRESSED, ENTER_PRESSED, ESCAPE_PRESSED, UP_ARROW_PRESSED } from '../actions/user-input';
+import { DOWN_ARROW_PRESSED, ENTER_PRESSED, ESCAPE_PRESSED, Q_PRESSED, UP_ARROW_PRESSED } from '../actions/user-input';
 
 export const userInputs = (state: IGraphState, action: Action): IGraphState => {
   const noServices = !state.services || state.services.length === 0;
@@ -33,6 +33,7 @@ export const userInputs = (state: IGraphState, action: Action): IGraphState => {
         services: [...state.services],
         packages: [...state.packages],
         nodeSelected: firstPackageSelected ? firstPackage.name : getPreviousNode(),
+        scheduler: state.scheduler,
       };
     case DOWN_ARROW_PRESSED:
       if (noNodes) {
@@ -58,9 +59,27 @@ export const userInputs = (state: IGraphState, action: Action): IGraphState => {
         services: [...state.services],
         packages: [...state.packages],
         nodeSelected: lastServiceSelected ? lastService.name : getNextNode(),
+        scheduler: state.scheduler,
+      };
+    case Q_PRESSED:
+      if (state.scheduler && !state.nodeSelected) {
+        state.scheduler.gracefulShutdown().subscribe(() => {
+          setTimeout(() => process.exit(0), 200);
+        });
+      }
+      return state;
+    case ESCAPE_PRESSED:
+      if (!state.nodeSelected) {
+        // TODO: Put process in background
+        return state;
+      }
+      return {
+        services: [...state.services],
+        packages: [...state.packages],
+        nodeSelected: null,
+        scheduler: state.scheduler,
       };
     case ENTER_PRESSED:
-    case ESCAPE_PRESSED:
     default:
       return state;
   }

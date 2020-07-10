@@ -4,8 +4,9 @@ import { Instance, render } from 'ink';
 import { App } from './components/main';
 import { store } from './state/store';
 import { LernaGraph, LernaNode, Service } from '../lerna';
-import { setGraph, updateCompilationStatus, updateServiceStatus } from './state/actions/graph-updated';
+import { setGraph, setScheduler, updateCompilationStatus, updateServiceStatus } from './state/actions/graph-updated';
 import { graphBootstrapped, graphParsed, lernaErrored, parsingGraph, updateLernaVersion } from './state/actions/lerna';
+import { RecompilationScheduler } from '../utils/scheduler';
 
 export const doRender = (): Instance =>
   render(
@@ -15,6 +16,7 @@ export const doRender = (): Instance =>
   );
 
 export const actions = {
+  setScheduler: (scheduler: RecompilationScheduler) => store.dispatch(setScheduler(scheduler)),
   setGraph: (graph: LernaGraph) => store.dispatch(setGraph(graph)),
   updateCompilationStatus: (node: LernaNode) => store.dispatch(updateCompilationStatus(node)),
   updateServiceStatus: (service: Service) => store.dispatch(updateServiceStatus(service)),

@@ -116,16 +116,20 @@ export class RecompilationScheduler {
     return this._exec();
   }
 
-  public stopAll(): Observable<IRecompilationEvent> {
-    // Disable all nodes
-    this._graph.getNodes().forEach((n) => n.disable());
-
-    // Stop all running services
+  public gracefulShutdown(): Observable<IRecompilationEvent> {
     this._graph
       .getServices()
       .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()))
       .forEach((s) => this._requestStop(s));
     return this._exec();
+  }
+
+  public stopAll(): Observable<IRecompilationEvent> {
+    // Disable all nodes
+    this._graph.getNodes().forEach((n) => n.disable());
+
+    // Stop all running services
+    return this.gracefulShutdown();
   }
 
   public restartOne(service: Service, recompile = false): Observable<IRecompilationEvent> {

@@ -9,6 +9,7 @@ import { Service } from '../lerna';
 import { SocketsManager } from '../ipc/socket';
 import { verifyBinaries } from '../utils/external-binaries';
 import { actions, doRender } from '../ui';
+import { execSync } from 'child_process';
 
 interface IStartOptions {
   interactive: boolean;
@@ -25,8 +26,15 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   scheduler.setMode(config.compilationMode);
   log('start').debug(config);
   log('start').info('Parsing lerna dependency graph', projectRoot);
+  try {
+    const lernaVersion = execSync('npx lerna -v').toString();
+    actions.updateLernaVersion(lernaVersion);
+  } catch (e) {
+    log('start').warn('cannot determine lerna version');
+  }
   doRender();
   actions.parsingGraph();
+  actions.setScheduler(scheduler);
   const graph = await getLernaGraph(projectRoot, config, options.defaultPort);
   scheduler.setGraph(graph);
   actions.graphParsed();
@@ -34,6 +42,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
   const sockets = new SocketsManager(projectRoot, scheduler, graph);
   await sockets.createServer();
   graph.registerIPCServer(sockets);
+
   await graph.bootstrap().catch((e) => {
     const message =
       'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.';

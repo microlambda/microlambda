@@ -3,6 +3,13 @@ import { IGraphAction } from '../actions/graph-updated';
 
 export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphState => {
   switch (action.type) {
+    case 'SET_SCHEDULER':
+      return {
+        services: [...state.services],
+        packages: [...state.packages],
+        nodeSelected: state.nodeSelected,
+        scheduler: action.scheduler,
+      };
     case 'SET_GRAPH':
       return {
         packages: action.graph.getPackages().map((pkg) => ({
@@ -20,6 +27,7 @@ export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphSta
           port: action.graph.getPort(pkg.getName()),
         })),
         nodeSelected: state.nodeSelected,
+        scheduler: state.scheduler,
       };
     case 'UPDATE_PACKAGE_STATUS':
       const packages = [...state.packages];
@@ -32,6 +40,7 @@ export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphSta
         services: [...state.services],
         packages,
         nodeSelected: state.nodeSelected,
+        scheduler: state.scheduler,
       };
     case 'UPDATE_SERVICE_STATUS':
       const services = [...state.services];
@@ -45,6 +54,7 @@ export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphSta
         packages: [...state.packages],
         services,
         nodeSelected: state.nodeSelected,
+        scheduler: state.scheduler,
       };
     default:
       return state;

@@ -23,5 +23,5 @@ export const lernaErrored = (): Action => {
 };
 
 export const updateLernaVersion = (version: string): Action & { version: string } => {
-  return { type: LERNA_ERRORED, version };
+  return { type: UPDATE_LERNA_VERSION, version };
 };
