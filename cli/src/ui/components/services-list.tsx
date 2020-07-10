@@ -37,7 +37,7 @@ export class ServicesList extends Component<IServiceListProps> {
       ? this.props.services.map((service) => (
           <Box key={service.name} flexDirection={'row'} justifyContent={'space-between'}>
             <Text bold={true}>{service.name === this.props.selected ? '->' : ''}</Text>
-            <Text bold={true}>{service.name}</Text>
+            <Text bold={false}>{service.name}</Text>
             <Text> {ServicesList._formatService(service)}</Text>
           </Box>
         ))

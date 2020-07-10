@@ -3,10 +3,26 @@ import { ServiceStatus } from '../../lerna/enums/service.status';
 import { createStore } from 'redux';
 import rootReducer from './reducers';
 
+export enum BootstrapStatus {
+  READY,
+  BUILDING_GRAPH,
+  BOOTSTRAPPING,
+  SUCCEED,
+  ERRORED,
+}
+
+// TODO: Display used ts + sls versions in side panel
+export interface IBinariesVersion {
+  typescript: string;
+  serverless: string;
+}
+
 export interface IPackage {
   enabled: boolean;
   name: string;
+  version: string;
   compilationStatus: CompilationStatus;
+  binaries?: IBinariesVersion;
 }
 
 export interface IService extends IPackage {
@@ -14,31 +30,19 @@ export interface IService extends IPackage {
   port: number;
 }
 
-export type PackageAction =
-  | 'start'
-  | 'stop'
-  | 'restart'
-  | 'enable'
-  | 'disable'
-  | 'logs'
-  | 'test'
-  | 'package'
-  | 'deploy';
-
-export interface IState {
-  services: IService[];
-  packages: IPackage[];
-  nodeSelected: string;
-  actionPanelOpen: boolean;
-  actionSelected: PackageAction;
+export interface ILernaState {
+  lerna: {
+    version: string;
+    status: BootstrapStatus;
+  };
 }
 
-export const defaultState: IState = {
-  services: [],
-  packages: [],
-  nodeSelected: null,
-  actionSelected: null,
-  actionPanelOpen: false,
-};
+export interface IGraphState {
+  services: IService[];
+  nodeSelected: string;
+  packages: IPackage[];
+}
+
+export type IState = ILernaState & IGraphState;
 
 export const store = createStore(rootReducer);

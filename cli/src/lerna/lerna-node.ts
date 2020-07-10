@@ -13,7 +13,7 @@ import { SocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
 import { checksums, IChecksums } from '../utils/checksums';
-import { updateCompilationStatus } from '../ui';
+import { actions } from '../ui';
 
 export interface IGraphElement {
   name: string;
@@ -106,6 +106,10 @@ export abstract class LernaNode {
     return this.graph;
   }
 
+  public getVersion(): string {
+    return this.version;
+  }
+
   public getChild(name: string): LernaNode {
     return this.dependencies.find((d) => d.name === name);
   }
@@ -116,7 +120,7 @@ export abstract class LernaNode {
       log('node').debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
-    updateCompilationStatus(this);
+    actions.updateCompilationStatus(this);
   }
 
   public isRoot(): boolean {

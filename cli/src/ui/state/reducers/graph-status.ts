@@ -1,25 +1,25 @@
-import { IState } from '../store';
+import { IGraphState } from '../store';
 import { IGraphAction } from '../actions/graph-updated';
 
-export const graphStatus = (state: IState, action: IGraphAction): IState => {
+export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphState => {
   switch (action.type) {
     case 'SET_GRAPH':
       return {
         packages: action.graph.getPackages().map((pkg) => ({
           enabled: pkg.isEnabled(),
+          version: pkg.getVersion(),
           name: pkg.getName(),
           compilationStatus: pkg.getCompilationStatus(),
         })),
         services: action.graph.getServices().map((pkg) => ({
           enabled: pkg.isEnabled(),
           name: pkg.getName(),
+          version: pkg.getVersion(),
           compilationStatus: pkg.getCompilationStatus(),
           status: pkg.getStatus(),
           port: action.graph.getPort(pkg.getName()),
         })),
         nodeSelected: state.nodeSelected,
-        actionPanelOpen: state.actionPanelOpen,
-        actionSelected: state.actionSelected,
       };
     case 'UPDATE_PACKAGE_STATUS':
       const packages = [...state.packages];
@@ -32,8 +32,6 @@ export const graphStatus = (state: IState, action: IGraphAction): IState => {
         services: [...state.services],
         packages,
         nodeSelected: state.nodeSelected,
-        actionPanelOpen: state.actionPanelOpen,
-        actionSelected: state.actionSelected,
       };
     case 'UPDATE_SERVICE_STATUS':
       const services = [...state.services];
@@ -47,8 +45,6 @@ export const graphStatus = (state: IState, action: IGraphAction): IState => {
         packages: [...state.packages],
         services,
         nodeSelected: state.nodeSelected,
-        actionPanelOpen: state.actionPanelOpen,
-        actionSelected: state.actionSelected,
       };
     default:
       return state;

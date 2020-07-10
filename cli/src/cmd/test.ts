@@ -14,6 +14,8 @@ interface ITestOptions {
 }
 
 export const runTests = async (scheduler: RecompilationScheduler, options: ITestOptions): Promise<void> => {
+  // TODO: Display UI with spinners for build safe + test (concurrency in option)
+  // TODO: Display errored test case
   log('test-runner').debug('Launching tests', options);
   log('test-runner').info('Running tests for', options.service || 'all services');
   const projectRoot = getProjectRoot();

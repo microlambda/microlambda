@@ -6,6 +6,8 @@ import { getLernaGraph } from '../utils/get-lerna-graph';
 import { interactive } from '../utils/interactive';
 import { tailLogs } from '../utils/logs';
 
+// TODO: make a ink scrollable logs component instead tail (which is not supported in windows)
+// TODO: use in memory logs instead files and try to preserve colors
 export const logs = async (cmd: { S: string }): Promise<void> => {
   const projectRoot = getProjectRoot();
   const config = loadConfig();

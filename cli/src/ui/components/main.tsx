@@ -1,38 +1,37 @@
 import React from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, useInput, Text } from 'ink';
 import Divider from 'ink-divider';
 import ServicesList from '../containers/services-list';
 import PackagesList from '../containers/packages-list';
-import { store } from '../state/store';
-import { pressArrowDown, pressArrowUp } from '../state/actions/user-input';
+import ActionPanel from '../containers/action-panel';
+import terminalSize from 'term-size';
+import { showOff } from '../../utils/ascii';
+import { handleUserInput } from '../inputs/handle';
+import LernaStatus from '../containers/lerna-status';
 
 export const App = () => {
-  useInput((input, key) => {
-    if (input === 'q') {
-      // TODO: graceful shutdown
-    }
+  useInput(handleUserInput);
 
-    if (key.upArrow) {
-      store.dispatch(pressArrowUp());
-    }
-
-    if (key.downArrow) {
-      store.dispatch(pressArrowDown());
-    }
-  });
-
+  // FIXME: Error message in non-lerna project
+  // TODO: support resize
+  const termSize = terminalSize();
   return (
-    <Box height="100%" width="100%">
-      <Box height="100%" width="50%" flexDirection={'column'}>
-        <Divider title={'Packages'} />
-        <PackagesList />
-        <Divider title={'Services'} />
-        <ServicesList />
-      </Box>
-      <Box height="100%" width="50%" flexDirection={'column'}>
-        <Divider title={'Logs'} />
-        <Text>✓|✗</Text>
-        Les logs iront là
+    <Box height={termSize.rows - 5} width="100%" flexDirection={'column'} padding={1}>
+      <Box>{showOff()}</Box>
+      <LernaStatus />
+      <Box>
+        <Box height="100%" width="50%" flexDirection={'column'}>
+          <Text bold={true}>Packages</Text>
+          <Divider />
+          <PackagesList />
+          <Text> </Text>
+          <Text bold={true}>Services</Text>
+          <Divider />
+          <ServicesList />
+        </Box>
+        <Box height="100%" width="50%" flexDirection={'column'}>
+          <ActionPanel />
+        </Box>
       </Box>
     </Box>
   );

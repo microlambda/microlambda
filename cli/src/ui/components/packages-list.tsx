@@ -32,7 +32,7 @@ export class PackagesList extends Component<IPackageListProps> {
       ? this.props.packages.map((pkg) => (
           <Box key={pkg.name} flexDirection={'row'} justifyContent={'space-between'}>
             <Text bold={true}>{pkg.name === this.props.selected ? '->' : ''}</Text>
-            <Text bold={true}>{pkg.name}</Text>
+            <Text bold={false}>{pkg.name}</Text>
             <Text> {PackagesList.getCompilationStatus(pkg)}</Text>
           </Box>
         ))

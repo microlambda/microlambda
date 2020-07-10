@@ -1,10 +1,10 @@
 import { connect } from 'react-redux';
 import { IServiceListProps, ServicesList } from '../components/services-list';
-import { IState } from '../state/store';
+import { IReducersOutput } from '../state/reducers';
 
-const mapStateToProps = (state: IState): IServiceListProps => ({
-  services: state.services,
-  selected: state.nodeSelected,
+const mapStateToProps = (state: IReducersOutput): IServiceListProps => ({
+  services: state.graphReducer.services,
+  selected: state.graphReducer.nodeSelected,
 });
 
 export default connect(mapStateToProps)(ServicesList);
