@@ -1,4 +1,10 @@
-import { APIGatewayEvent, APIGatewayEventRequestContextWithAuthorizer,APIGatewayEventDefaultAuthorizerContext, Context, Handler } from 'aws-lambda';
+import {
+  APIGatewayEvent,
+  APIGatewayEventRequestContextWithAuthorizer,
+  APIGatewayEventDefaultAuthorizerContext,
+  Context,
+  Handler,
+} from 'aws-lambda';
 
 interface ITestBedOptions<TRequest = unknown, TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext> {
   body: TRequest | null;
@@ -18,16 +24,20 @@ interface ITestBedOptions<TRequest = unknown, TAuthorizerContext = APIGatewayEve
 interface IHandlerResponse<TResponse = unknown> {
   statusCode: TResponse;
   headers?: {
-      [header: string]: boolean | number | string;
+    [header: string]: boolean | number | string;
   };
   multiValueHeaders?: {
-      [header: string]: Array<boolean | number | string>;
+    [header: string]: Array<boolean | number | string>;
   };
   body: string;
   isBase64Encoded?: boolean;
 }
 
-export class TestBed<TRequest = unknown, TResponse = unknown, TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext> {
+export class TestBed<
+  TRequest = unknown,
+  TResponse = unknown,
+  TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext
+> {
   private readonly _handler: Handler;
 
   private _event: APIGatewayEvent;
@@ -40,7 +50,7 @@ export class TestBed<TRequest = unknown, TResponse = unknown, TAuthorizerContext
       this._event = {
         ...options,
         body: JSON.stringify(options.body),
-      }
+      };
     }
   }
 
@@ -71,7 +81,7 @@ export class TestBed<TRequest = unknown, TResponse = unknown, TAuthorizerContext
         requestTimeEpoch: Date.now(),
       },
       resource: null,
-    }
+    };
   }
 
   public pathParameters(params: { [name: string]: string }): TestBed<TRequest, TResponse, TAuthorizerContext> {
@@ -90,7 +100,9 @@ export class TestBed<TRequest = unknown, TResponse = unknown, TAuthorizerContext
     return this;
   }
 
-  public multiValueQueryParameters(params: { [name: string]: string[] }): TestBed<TRequest, TResponse, TAuthorizerContext> {
+  public multiValueQueryParameters(params: {
+    [name: string]: string[];
+  }): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.multiValueQueryStringParameters = {
       ...this._event.multiValueQueryStringParameters,
       ...params,
@@ -124,7 +136,6 @@ export class TestBed<TRequest = unknown, TResponse = unknown, TAuthorizerContext
     return this;
   }
 
-
   public path(path: string): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.path = path;
     return this;
@@ -143,11 +154,14 @@ export class TestBed<TRequest = unknown, TResponse = unknown, TAuthorizerContext
     return this;
   }
 
-  public context(context: Context) {
+  public context(context: Context): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._context = context;
+    return this;
   }
 
-  public requestContext(context: Partial<APIGatewayEventRequestContextWithAuthorizer<TAuthorizerContext>>): TestBed<TRequest, TResponse, TAuthorizerContext> {
+  public requestContext(
+    context: Partial<APIGatewayEventRequestContextWithAuthorizer<TAuthorizerContext>>,
+  ): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.requestContext = {
       ...this._event.requestContext,
       ...context,

@@ -1,0 +1,10 @@
+coverage/
+src/
+test/
+.eslintrc
+.gitignore
+.prettierrc
+jest.config.json
+package-lock.json
+tsconfig.json
+.npmignore
