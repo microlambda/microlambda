@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/cli",
-  "version": "0.0.5-alpha",
+  "version": "0.0.6-alpha",
   "description": "µlambda framework CLI ",
   "author": "Mario Arnautou & Arthur Brunck",
   "repository": {
@@ -13,11 +13,11 @@
     "mila": "lib/src/index.js"
   },
   "scripts": {
-    "test": "npx jest",
+    "test": "../node_modules/.bin/jest",
     "build": "tsc --build",
     "start": "node lib/src/start.js start",
-    "prettier": "npx prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "npx eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
+    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   },
   "keywords": [
     "serverless",
@@ -39,7 +39,7 @@
     "is-port-reachable": "^3.0.0",
     "lodash": "^4.17.19",
     "node-ipc": "^9.1.1",
-    "npm": "^6.14.6",
+    "npm": "^6.14.8",
     "rc": "^1.2.8",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -68,32 +68,11 @@
     "@types/sinon": "^7.5.2",
     "@types/uuid": "^7.0.2",
     "@types/yargs": "^15.0.3",
-    "@typescript-eslint/eslint-plugin": "^2.21.0",
-    "@typescript-eslint/parser": "^2.21.0",
-    "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.10.0",
-    "eslint-plugin-prettier": "^3.1.2",
-    "eslint-plugin-react": "^7.20.3",
-    "husky": "^4.2.3",
-    "jest": "^25.1.0",
-    "lint-staged": "^10.0.8",
+    "jest": "^26.4.0",
     "madge": "^3.7.0",
-    "prettier": "^1.19.1",
     "sinon": "^9.0.0",
-    "ts-jest": "^25.2.1",
+    "ts-jest": "^26.2.0",
     "ts-node": "^8.6.2",
-    "typescript": "^3.7.5"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "npm run lint"
-    }
-  },
-  "lint-staged": {
-    "*.{js,ts,tsx}": [
-      "eslint --fix",
-      "git add"
-    ]
+    "typescript": "^3.9.7"
   }
 }

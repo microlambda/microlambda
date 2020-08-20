@@ -8,32 +8,12 @@
   },
   "license": "MIT",
   "scripts": {
-    "prettier": "npx prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "npx eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
+    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.61",
-    "@typescript-eslint/eslint-plugin": "^2.21.0",
-    "@typescript-eslint/parser": "^2.21.0",
     "aws-lambda": "^1.0.6",
-    "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.10.0",
-    "eslint-plugin-prettier": "^3.1.2",
-    "husky": "^4.2.3",
-    "lint-staged": "^10.0.8",
-    "prettier": "^1.19.1",
     "typescript": "^3.7.5"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "npm run lint"
-    }
-  },
-  "lint-staged": {
-    "*.{js,ts,tsx}": [
-      "eslint --fix",
-      "git add"
-    ]
   }
 }

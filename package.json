@@ -1,14 +1,39 @@
 {
-  "name": "microlambdamicrolambda",
-  "version": "1.0.0",
+  "name": "microlambda",
+  "version": "0.0.1-alpha",
   "description": "Microlambda framework (a.k.a µlambda or mila) monorepo main package",
   "author": "Mario Arnautou & Arthur Brunck",
   "repository": {
-    "url": "https://bitbucket.org/MarioArnt/microlambda"
+    "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "license": "MIT",
+  "dependencies": {},
   "devDependencies": {
-    "lerna": "^3.20.2"
+    "@typescript-eslint/eslint-plugin": "^2.21.0",
+    "@typescript-eslint/parser": "^2.21.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-react": "^7.20.6",
+    "husky": "^4.2.3",
+    "jest": "^26.4.1",
+    "jest-extended": "^0.11.5",
+    "lerna": "^3.20.2",
+    "lint-staged": "^10.0.8",
+    "prettier": "^1.19.1",
+    "ts-jest": "^26.2.0",
+    "typescript": "^3.9.7"
   },
-  "dependencies": {}
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npx lerna run lint"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "npx eslint --fix",
+      "git add"
+    ]
+  }
 }

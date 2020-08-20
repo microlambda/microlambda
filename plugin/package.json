@@ -1,0 +1,41 @@
+{
+  "name": "@microlambda/plugin",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=8.0"
+  },
+  "description": "Serverless plugin for microservices architecture.",
+  "author": "Mario Arnautou",
+  "license": "MIT",
+  "keywords": [
+    "serverless plugin microservices",
+    "microlambda",
+    "serverless plugins",
+    "api gateway",
+    "lambda",
+    "aws",
+    "aws lambda",
+    "amazon",
+    "microservices",
+    "amazon web services",
+    "serverless.com"
+  ],
+  "main": "dist/index.js",
+  "bin": {},
+  "scripts": {
+    "test": "tsc --project . && nyc mocha -r ts-node/register test/unit-tests/index.test.ts && nyc report --reporter=text-summary",
+    "integration-test": "node ./node_modules/istanbul/lib/cli.js test _mocha test/integration-tests -- -R spec",
+    "build": "tsc --project ."
+  },
+  "files": [
+    "*.js",
+    "*.ts",
+    "*.json",
+    "dist/*.js"
+  ],
+  "nyc": {
+    "extension": [
+      ".ts"
+    ]
+  }
+}

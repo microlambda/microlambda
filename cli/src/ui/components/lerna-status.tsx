@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { Component, ReactNode } from 'react';
 import { Text, Box, Color } from 'ink';
 import { BootstrapStatus, ILernaState } from '../state/store';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Spinner = require('ink-spinner'); // FIXME: Wrong type declaration shipped by package
 
 export class LernaStatus extends Component<ILernaState> {
-  render() {
+  render(): ReactNode {
     const lerna = this.props.lerna;
     switch (lerna.status) {
       case BootstrapStatus.READY:

@@ -1,0 +1,12 @@
+.idea
+.travis.yml
+.git
+.gitignore
+jest.config.js
+tslint.json
+tsconfig.json
+src/**/*.spec.ts
+node_modules
+coverage
+src
+examples
