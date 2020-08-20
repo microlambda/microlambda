@@ -1,7 +1,7 @@
-import { SchemaLike, validate as joi } from 'joi';
+import { Schema } from '@hapi/joi';
 
-export const validate = async <T>(data: T, schema: SchemaLike): Promise<T> => {
-  const result = joi(data, schema);
+export const validate = async <T>(data: T, schema: Schema): Promise<T> => {
+  const result = schema.validate(data);
   if (result.error) {
     throw result.error;
   }

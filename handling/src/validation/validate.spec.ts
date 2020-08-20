@@ -1,4 +1,4 @@
-import { string } from 'joi';
+import { string, object } from '@hapi/joi';
 import { validate } from './validate';
 
 describe('validation', () => {
@@ -8,12 +8,12 @@ describe('validation', () => {
         {
           email: '  foo@example.com  ',
         },
-        {
+        object({
           email: string()
             .required()
             .email()
             .trim(),
-        },
+        }),
       );
 
       expect(result).toStrictEqual({
@@ -26,9 +26,9 @@ describe('validation', () => {
       try {
         await validate(
           {},
-          {
+          object({
             email: string().required(),
-          },
+          }),
         );
       } catch (e) {
         expect(e.name).toBe('ValidationError');

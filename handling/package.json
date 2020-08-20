@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/handling",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Helpers to simplify nodejs code on FASS environments",
   "author": "Thomas Ruiz <contact@thomasruiz.eu>",
   "license": "ISC",
@@ -8,12 +8,8 @@
   "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/thomasruiz/node-serverless-helpers"
+    "url": "https://bitbucket.org/MarioArnt/microlambda/src/master/handling/"
   },
-  "bugs": {
-    "url": "https://github.com/thomasruiz/node-serverless-helpers/issues"
-  },
-  "homepage": "https://github.com/thomasruiz/node-serverless-helpers#readme",
   "keywords": [
     "node",
     "serverless",
@@ -28,7 +24,6 @@
     "error-handling",
     "json"
   ],
-  "readme": "readme.md",
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json",
     "test": "../node_modules/.bin/jest",
@@ -37,13 +32,13 @@
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   },
   "dependencies": {
-    "deepmerge": "^3.3.0",
-    "joi": "^14.3.1"
+    "@hapi/joi": "^17.1.1",
+    "deepmerge": "^3.3.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.33",
+    "@types/hapi__joi": "^17.1.4",
     "@types/jest": "^24.0.18",
-    "@types/joi": "^14.3.3",
     "@types/node": "^10.14.21",
     "ts-node": "^8.4.1",
     "typescript": "^3.9.7"
