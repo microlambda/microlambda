@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { Box, useInput, Text } from 'ink';
 import Divider from 'ink-divider';
 import ServicesList from '../containers/services-list';
@@ -9,7 +9,7 @@ import { showOff } from '../../utils/ascii';
 import { handleUserInput } from '../inputs/handle';
 import LernaStatus from '../containers/lerna-status';
 
-export const App = (): ReactNode => {
+export const App = (): JSX.Element => {
   useInput(handleUserInput);
 
   // FIXME: Error message in non-lerna project

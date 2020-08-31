@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from 'react';
+import React, { Component } from 'react';
 import { Text, Box } from 'ink';
 import Divider from 'ink-divider';
 import { IPackageListProps } from './packages-list';
@@ -8,7 +8,7 @@ import { IPackage, IService } from '../state/store';
 export interface IActionPanelProps extends IPackageListProps, IServiceListProps {}
 
 export class ActionPanel extends Component<IActionPanelProps> {
-  render(): ReactNode {
+  render(): JSX.Element {
     if (!this.props.selected) {
       return (
         <Box flexDirection={'column'}>
