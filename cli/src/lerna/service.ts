@@ -110,7 +110,7 @@ export class Service extends LernaNode {
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name));
     this.process = spawn(
       getBinary('sls', this.graph.getProjectRoot(), this),
-      ['offline', 'start', '--port', this.port.toString(), '--region', 'localhost'],
+      ['offline', 'start', '--port', this.port.toString(), '--region', process.env.AWS_REGION],
       {
         cwd: this.location,
         env: process.env,
