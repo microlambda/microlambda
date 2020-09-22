@@ -6,63 +6,74 @@ import { Service } from './';
 import { resolvePorts } from '../utils/resolve-ports';
 import { IConfig } from '../config/config';
 import { spawn } from 'child_process';
-import { log } from '../utils/logger';
-import { SocketsManager } from '../ipc/socket';
+import { Logger } from '../utils/logger';
+import { IPCSocketsManager } from '../ipc/socket';
+import { IOSocketManager } from '../server/socket';
 
 export const isService = (location: string): boolean => {
   return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
 };
 
 export class LernaGraph {
+  private _io: IOSocketManager;
+
   private readonly _config: IConfig;
   private readonly projectRoot: string;
   private readonly ports: { [key: string]: number };
   private readonly nodes: LernaNode[];
+  private readonly _logger: Logger;
+  get logger(): Logger {
+    return this._logger;
+  }
+  get io(): IOSocketManager {
+    return this._io;
+  }
 
-  constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, defaultPort?: number) {
+  constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, logger: Logger, defaultPort?: number) {
+    this._logger = logger;
     this._config = config;
-    log('graph').debug('Building graph with', nodes);
+    this._logger.log('graph').debug('Building graph with', nodes);
     this.projectRoot = projectRoot;
     const services = nodes.filter((n) => isService(n.location));
-    this.ports = resolvePorts(services, config, defaultPort);
+    this.ports = resolvePorts(services, config, this._logger, defaultPort);
     const builtNodes: Set<LernaNode> = new Set<LernaNode>();
     for (const node of nodes) {
       if (!Array.from(builtNodes).some((n) => n.getName() === node.name)) {
-        log('graph').debug('Building node', node.name);
-        log('graph').debug(
+        this._logger.log('graph').debug('Building node', node.name);
+        this._logger.log('graph').debug(
           'Already built',
           Array.from(builtNodes).map((b) => b.getName()),
         );
-        log('graph').debug('Is service', isService(node.location));
+        this._logger.log('graph').debug('Is service', isService(node.location));
         isService(node.location)
           ? new Service(this, node, builtNodes, nodes)
           : new Package(this, node, builtNodes, nodes);
       }
     }
     this.nodes = Array.from(builtNodes);
-    log('graph').debug(
+    this._logger.log('graph').debug(
       'Built graph',
       this.nodes.map((n) => n.getName()),
     );
-    log('graph').info(`Successfully built ${this.nodes.length} nodes`);
+    this._logger.log('graph').info(`Successfully built ${this.nodes.length} nodes`);
   }
 
   public getPort(service: string): number {
     return this.ports[service];
   }
 
-  public registerIPCServer(sockets: SocketsManager): void {
+  public registerIPCServer(sockets: IPCSocketsManager): void {
     this.getNodes().forEach((n) => n.registerIPCServer(sockets));
   }
 
   public enableNodes(): void {
-    log('graph').debug('Enabling nodes descendants');
+    this._logger.log('graph').debug('Enabling nodes descendants');
     this.nodes
       .filter((n) => n.isEnabled())
       .forEach((n) => {
-        log('graph').debug('Enabling node descendants', n.getName());
+        this._logger.log('graph').debug('Enabling node descendants', n.getName());
         const dependencies = n.getDependencies();
-        log('graph').silly('Descendants', n.getDependencies());
+        this._logger.log('graph').silly('Descendants', n.getDependencies());
         dependencies.forEach((d) => d.enable());
       });
   }
@@ -118,7 +129,7 @@ export class LernaGraph {
   }
 
   public async bootstrap(): Promise<void> {
-    log('graph').info('Bootstrapping dependencies');
+    this._logger.log('graph').info('Bootstrapping dependencies');
     const spawnedProcess = spawn('npx', ['lerna', 'bootstrap'], {
       cwd: this.projectRoot,
       stdio: 'ignore',
@@ -129,13 +140,17 @@ export class LernaGraph {
           return resolve();
         }
         const err = `Process exited with status ${code}`;
-        log('graph').error(err);
+        this._logger.log('graph').error(err);
         return reject(err);
       });
       spawnedProcess.on('error', (err) => {
-        log('graph').error('Process errored: ', err.message);
+        this._logger.log('graph').error('Process errored: ', err.message);
         return reject(err);
       });
     });
+  }
+
+  registerIOSockets(io: IOSocketManager) {
+    this._io = io;
   }
 }

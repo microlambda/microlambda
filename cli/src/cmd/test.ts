@@ -1,4 +1,4 @@
-import { log } from '../utils/logger';
+import { Logger } from '../utils/logger';
 import { getProjectRoot } from '../utils/get-project-root';
 import { loadConfig } from '../config/load-config';
 import { getLernaGraph } from '../utils/get-lerna-graph';
@@ -13,24 +13,30 @@ interface ITestOptions {
   service?: string;
 }
 
-export const runTests = async (scheduler: RecompilationScheduler, options: ITestOptions): Promise<void> => {
+export const runTests = async (
+  scheduler: RecompilationScheduler,
+  options: ITestOptions,
+  logger: Logger,
+): Promise<void> => {
   // TODO: Display UI with spinners for build safe + test (concurrency in option)
   // TODO: Display errored test case
-  log('test-runner').debug('Launching tests', options);
-  log('test-runner').info('Running tests for', options.service || 'all services');
-  const projectRoot = getProjectRoot();
-  log('test-runner').debug('Loading config');
+  logger.log('test-runner').debug('Launching tests', options);
+  logger.log('test-runner').info('Running tests for', options.service || 'all services');
+  const projectRoot = getProjectRoot(logger);
+  logger.log('test-runner').debug('Loading config');
   const config = loadConfig();
   scheduler.setMode('safe');
-  log('start').debug(config);
-  log('start').info('Parsing lerna dependency graph', projectRoot);
-  const graph = await getLernaGraph(projectRoot, config);
+  logger.log('start').debug(config);
+  logger.log('start').info('Parsing lerna dependency graph', projectRoot);
+  const graph = await getLernaGraph(projectRoot, config, logger);
   if (options.bootstrap) {
     await graph.bootstrap().catch((e) => {
-      log('test-runner').error(e);
-      log('test-runner').error(
-        'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.',
-      );
+      logger.log('test-runner').error(e);
+      logger
+        .log('test-runner')
+        .error(
+          'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.',
+        );
       process.exit(1);
     });
   }

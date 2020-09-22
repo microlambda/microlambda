@@ -1,12 +1,12 @@
 import { IPC } from 'node-ipc';
 import { LernaGraph, Service } from '../lerna';
-import { log } from '../utils/logger';
 import { Socket } from 'net';
 import { CompilationStatus } from '../lerna/enums/compilation.status';
 import { ServiceStatus } from '../lerna/enums/service.status';
 import { Observable, Subject } from 'rxjs';
 import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../utils/scheduler';
 import { v4 as uuid } from 'uuid';
+import { Logger } from '../utils/logger';
 
 interface IGraphStatus {
   name: string;
@@ -24,22 +24,24 @@ type RequestEvent = 'requestStop' | 'requestStart' | 'requestRestart';
 type ResponseEvent = 'stopped' | 'started' | 'restarted';
 type ErrorEvent = 'errorStopping' | 'errorStarting' | 'errorRestarting';
 
-export class SocketsManager {
+export class IPCSocketsManager {
   private _ipc = new IPC();
   private _graph: LernaGraph;
   private readonly _id: string;
   private _sockets: Socket[] = [];
   private readonly _scheduler: RecompilationScheduler;
+  private readonly _logger: Logger;
 
-  constructor(projectRoot: string, scheduler: RecompilationScheduler, graph?: LernaGraph) {
-    log('ipc').debug('Creating socket', projectRoot);
+  constructor(projectRoot: string, scheduler: RecompilationScheduler, logger: Logger, graph?: LernaGraph) {
+    this._logger = logger;
+    this._logger.log('ipc').debug('Creating socket', projectRoot);
     this._ipc.config.silent = !process.env.MILA_DEBUG;
     this._ipc.config.appspace = 'mila.';
     this._graph = graph;
     const projectPathSegments = projectRoot.split('/');
-    log('ipc').debug('Path', projectPathSegments);
+    this._logger.log('ipc').debug('Path', projectPathSegments);
     this._id = projectPathSegments[projectPathSegments.length - 1];
-    log('ipc').debug('ID', this._id);
+    this._logger.log('ipc').debug('ID', this._id);
     this._ipc.config.id = this._id;
     this._scheduler = scheduler;
   }
@@ -47,7 +49,7 @@ export class SocketsManager {
   public async createServer(): Promise<void> {
     return new Promise((resolve) => {
       this._ipc.serve(() => {
-        log('ipc').debug('socket created');
+        this._logger.log('ipc').debug('socket created');
         resolve();
       });
       this._ipc.server.on('connect', (socket) => {
@@ -101,7 +103,7 @@ export class SocketsManager {
   private _findService(name: string, action: Action): Service {
     const service = this._graph.getServices().find((s) => s.getName() === name);
     if (!service) {
-      this._ipc.server.emit(SocketsManager._errorEvent(action), {
+      this._ipc.server.emit(IPCSocketsManager._errorEvent(action), {
         name,
         error: 'Cannot find service ' + name,
       });
@@ -113,13 +115,13 @@ export class SocketsManager {
   private _emitEvent(recompilationEvent: IRecompilationEvent): void {
     switch (recompilationEvent.type) {
       case RecompilationEventType.SERVICE_STARTED:
-        this._ipc.server.emit(SocketsManager._responseEvent('start'), {
+        this._ipc.server.emit(IPCSocketsManager._responseEvent('start'), {
           node: recompilationEvent.node.getName(),
           port: this._graph.getPort(recompilationEvent.node.getName()),
         });
         break;
       case RecompilationEventType.SERVICE_STOPPED:
-        this._ipc.server.emit(SocketsManager._responseEvent('stop'), {
+        this._ipc.server.emit(IPCSocketsManager._responseEvent('stop'), {
           node: recompilationEvent.node.getName(),
         });
         break;
@@ -175,7 +177,7 @@ export class SocketsManager {
   public subscribeStatus(): Observable<IGraphStatus> {
     const graphStatus: Subject<IGraphStatus> = new Subject<IGraphStatus>();
     this._ipc.connectTo(this._id, () => {
-      log('ipc').debug('socket connected');
+      this._logger.log('ipc').debug('socket connected');
       this._ipc.of[this._id].on('status', (data: IGraphStatus) => {
         graphStatus.next(data);
       });
@@ -203,42 +205,48 @@ export class SocketsManager {
     const execId = uuid();
     return new Promise((resolve, reject) => {
       this._ipc.connectTo(this._id, () => {
-        log('ipc').debug('socket connected');
-        this._ipc.of[this._id].emit(SocketsManager._requestEvent(action), {
+        this._logger.log('ipc').debug('socket connected');
+        this._ipc.of[this._id].emit(IPCSocketsManager._requestEvent(action), {
           service,
           execId,
         });
-        this._ipc.of[this._id].on(SocketsManager._responseEvent(action), (data: { service: string; port?: number }) => {
-          if (!service || service === data.service) {
-            switch (action) {
-              case 'start':
-                log('ipc').info(`${data.service} started on port ${data.port}`);
-                break;
-              case 'stop':
-                log('ipc').info(`${data.service} stopped`);
-                break;
-              case 'restart':
-                log('ipc').info(`${data.service} restarted on port ${data.port}`);
-                break;
+        this._ipc.of[this._id].on(
+          IPCSocketsManager._responseEvent(action),
+          (data: { service: string; port?: number }) => {
+            if (!service || service === data.service) {
+              switch (action) {
+                case 'start':
+                  this._logger.log('ipc').info(`${data.service} started on port ${data.port}`);
+                  break;
+                case 'stop':
+                  this._logger.log('ipc').info(`${data.service} stopped`);
+                  break;
+                case 'restart':
+                  this._logger.log('ipc').info(`${data.service} restarted on port ${data.port}`);
+                  break;
+              }
             }
-          }
-        });
-        this._ipc.of[this._id].on(SocketsManager._errorEvent(action), (data: { service?: string; error?: Error }) => {
-          if (!service || service === data.service) {
-            switch (action) {
-              case 'start':
-                log('ipc').error(`Error starting ${data.service}`);
-                break;
-              case 'stop':
-                log('ipc').error(`Error stopping ${data.service}`);
-                break;
-              case 'restart':
-                log('ipc').error(`Error restarting ${data.service}`);
-                break;
+          },
+        );
+        this._ipc.of[this._id].on(
+          IPCSocketsManager._errorEvent(action),
+          (data: { service?: string; error?: Error }) => {
+            if (!service || service === data.service) {
+              switch (action) {
+                case 'start':
+                  this._logger.log('ipc').error(`Error starting ${data.service}`);
+                  break;
+                case 'stop':
+                  this._logger.log('ipc').error(`Error stopping ${data.service}`);
+                  break;
+                case 'restart':
+                  this._logger.log('ipc').error(`Error restarting ${data.service}`);
+                  break;
+              }
+              this._logger.log('ipc').error(data.error);
             }
-            log('ipc').error(data.error);
-          }
-        });
+          },
+        );
         this._ipc.of[this._id].on(`succeed-${execId}`, () => resolve());
         this._ipc.of[this._id].on(`failed-${execId}`, () => reject());
       });

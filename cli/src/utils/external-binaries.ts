@@ -1,13 +1,11 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
-import { log } from './logger';
 import { LernaNode } from '../lerna';
 import { CompilationMode } from '../config/config';
+import { Logger } from './logger';
 
 type Cmd = 'tsc' | 'sls' | 'lerna';
-
-const logger = log('binaries');
 
 const versions: Map<string, string> = new Map();
 
@@ -30,7 +28,7 @@ const getVersion = (binary: string): string => {
  * @param projectRoot
  * @param node
  */
-export const getBinary = (cmd: Cmd, projectRoot: string, node?: LernaNode): string => {
+export const getBinary = (cmd: Cmd, projectRoot: string, logger: Logger, node?: LernaNode): string => {
   const cmdPath = ['node_modules', '.bin', cmd];
   const projectBinary = join(projectRoot, ...cmdPath);
   if (!node) {
@@ -39,13 +37,13 @@ export const getBinary = (cmd: Cmd, projectRoot: string, node?: LernaNode): stri
   const localBinary = join(node.getLocation(), ...cmdPath);
   const hasLocal = existsSync(localBinary);
   const binary = hasLocal ? localBinary : projectBinary;
-  logger.debug(`Using ${hasLocal ? 'local' : 'project'} ${cmd}`, getVersion(binary));
-  logger.debug('Path to binary', hasLocal ? localBinary : projectBinary);
+  logger.log('binaries').debug(`Using ${hasLocal ? 'local' : 'project'} ${cmd}`, getVersion(binary));
+  logger.log('binaries').debug('Path to binary', hasLocal ? localBinary : projectBinary);
   return binary;
 };
 
-const testBinary = (cmd: Cmd, projectRoot: string): boolean => {
-  return existsSync(getBinary(cmd, projectRoot));
+const testBinary = (cmd: Cmd, projectRoot: string, logger: Logger): boolean => {
+  return existsSync(getBinary(cmd, projectRoot, logger));
 };
 
 const installBinary = async (deps: string[], projectRoot: string): Promise<void> => {
@@ -70,7 +68,7 @@ const installBinary = async (deps: string[], projectRoot: string): Promise<void>
  * @param mode
  * @param projectRoot
  */
-export const verifyBinaries = async (mode: CompilationMode, projectRoot: string): Promise<void> => {
+export const verifyBinaries = async (mode: CompilationMode, projectRoot: string, logger: Logger): Promise<void> => {
   const binaryPackages: Map<Cmd, string[]> = new Map();
   binaryPackages.set('lerna', ['lerna']);
   binaryPackages.set('tsc', ['typescript']);
@@ -78,16 +76,16 @@ export const verifyBinaries = async (mode: CompilationMode, projectRoot: string)
   const binariesToTest: Cmd[] = ['tsc', 'sls'];
   const deps: string[] = [];
   for (const cmd of binariesToTest) {
-    if (!testBinary(cmd, projectRoot)) {
+    if (!testBinary(cmd, projectRoot, logger)) {
       const packagesToInstall = binaryPackages.get(cmd);
       packagesToInstall.forEach((pkg) => {
-        logger.warn(`Missing peer dependency ${pkg}`);
+        logger.log('binaries').warn(`Missing peer dependency ${pkg}`);
         deps.push(pkg);
       });
     }
   }
   if (deps.length > 0) {
-    logger.info('Installing missing peer dependencies');
+    logger.log('binaries').info('Installing missing peer dependencies');
     await installBinary(deps, projectRoot);
   }
 };

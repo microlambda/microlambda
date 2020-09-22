@@ -1,13 +1,12 @@
 import inquirer from 'inquirer';
-
-import { log } from './logger';
 import { Service } from '../lerna';
+import { Logger } from './logger';
 
-export const interactive = async (services: Service[], message: string): Promise<Service[]> => {
+export const interactive = async (services: Service[], message: string, logger: Logger): Promise<Service[]> => {
   let chosenServices: Service[] = [];
 
-  log('interactive').debug('Interactive option chosen, prompting user');
-  log('interactive').info(services.map((service: Service) => service.getName()));
+  logger.log('interactive').debug('Interactive option chosen, prompting user');
+  logger.log('interactive').info(services.map((service: Service) => service.getName()));
 
   const choices: { microservices: string[] } = await inquirer.prompt({
     type: 'checkbox',
@@ -19,7 +18,7 @@ export const interactive = async (services: Service[], message: string): Promise
   if (choices.microservices.length !== 0) {
     chosenServices = services.filter((s) => choices.microservices.includes(s.getName()));
   } else {
-    log('interactive').info('No services found, exiting...');
+    logger.log('interactive').info('No services found, exiting...');
     process.exit(0);
   }
 

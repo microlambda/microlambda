@@ -2,8 +2,8 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs'
 import rimraf from 'rimraf';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
-import { log } from './logger';
 import { showOffTitle } from './ascii';
+import { Logger } from './logger';
 
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.mila', 'logs');
 export const getLogsPath = (projectRoot: string, service: string): string => {
@@ -12,7 +12,7 @@ export const getLogsPath = (projectRoot: string, service: string): string => {
   return join(getLogsDirectory(projectRoot), `${name}.log`);
 };
 
-export const recreateLogDirectory = (projectRoot: string): void => {
+export const recreateLogDirectory = (projectRoot: string, logger: Logger): void => {
   const logsDirectory = getLogsDirectory(projectRoot);
   if (!existsSync(logsDirectory)) {
     // Logs directory does not exists => create it
@@ -21,7 +21,7 @@ export const recreateLogDirectory = (projectRoot: string): void => {
   }
   if (!lstatSync(logsDirectory).isDirectory()) {
     // Path <project-root>/.logs exists but is a file / symlink etc..=> weird => throw
-    log('logs').error(`${logsDirectory} is not a directory`);
+    logger.log('logs').error(`${logsDirectory} is not a directory`);
     process.exit(1);
   }
   rimraf.sync(logsDirectory);
@@ -35,7 +35,7 @@ export const createLogFile = (projectRoot: string, service: string): void => {
   }
 };
 
-export const tailLogs = (serviceName: string, projectRoot: string): void => {
+export const tailLogs = (serviceName: string, projectRoot: string, logger: Logger): void => {
   const logsDirectory = getLogsDirectory(projectRoot);
 
   stat(`${logsDirectory}/${serviceName}.log`, (exists) => {
@@ -43,9 +43,11 @@ export const tailLogs = (serviceName: string, projectRoot: string): void => {
       showOffTitle(serviceName);
       spawnSync('tail', ['-n', '+1', `${logsDirectory}/${serviceName}.log`], { stdio: 'inherit' });
     } else {
-      log('logs').error(
-        `There is not logs for the ${serviceName} service or the service specified does not exist.\n\tPlease run 'mila start' command first!`,
-      );
+      logger
+        .log('logs')
+        .error(
+          `There is not logs for the ${serviceName} service or the service specified does not exist.\n\tPlease run 'mila start' command first!`,
+        );
     }
   });
 };

@@ -1,6 +1,6 @@
 import { IGraphElement } from '../lerna';
 import { IConfig } from '../config/config';
-import { log } from './logger';
+import { Logger } from './logger';
 
 type PortMap = { [key: string]: number };
 
@@ -12,8 +12,13 @@ type PortMap = { [key: string]: number };
  * @param config
  * @param defaultPort
  */
-export const resolvePorts = (services: IGraphElement[], config: IConfig, defaultPort = 3001): PortMap => {
-  log('port').debug('Resolving port from config', config.ports);
+export const resolvePorts = (
+  services: IGraphElement[],
+  config: IConfig,
+  logger: Logger,
+  defaultPort = 3001,
+): PortMap => {
+  logger.log('port').debug('Resolving port from config', config.ports);
   const result: PortMap = {};
   services.forEach((service) => {
     const name = service.name;
@@ -24,6 +29,6 @@ export const resolvePorts = (services: IGraphElement[], config: IConfig, default
     }
     result[service.name] = port;
   });
-  log('port').debug('Ports resolved', result);
+  logger.log('port').debug('Ports resolved', result);
   return result;
 };

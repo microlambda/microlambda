@@ -25,4 +25,4 @@ The project is separated in 4 different packages:
 
 1. Clone [example repo](https://bitbucket.org/MarioArnt/mila-example/src)
 2. Install its dependencies
-3. Run the project using `mila start` 
+3. Run the project using `mila star

@@ -3,13 +3,12 @@ import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
 import { CompilationStatus } from './enums/compilation.status';
-import { log } from '../utils/logger';
 import glob from 'glob';
 import chalk from 'chalk';
 import { ChildProcess, spawn } from 'child_process';
 import { Observable } from 'rxjs';
 import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
-import { SocketsManager } from '../ipc/socket';
+import { IPCSocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
 import { checksums, IChecksums } from '../utils/checksums';
@@ -41,10 +40,10 @@ export abstract class LernaNode {
   protected compilationProcess: ChildProcess;
   protected compilationPromise: Promise<void>;
   private nodeStatus: NodeStatus;
-  protected _ipc: SocketsManager;
+  protected _ipc: IPCSocketsManager;
 
   public constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
-    log('node').debug('Building node', node.name);
+    graph.logger.log('node').debug('Building node', node.name);
     this.graph = graph;
     this.name = node.name;
     this.version = node.version;
@@ -55,17 +54,25 @@ export abstract class LernaNode {
     this.dependencies = node.dependencies.map((d) => {
       const dep = Array.from(nodes).find((n) => n.name === d);
       if (dep) {
-        log('node').debug('Dependency is already built', d);
+        this.getGraph()
+          .logger.log('node')
+          .debug('Dependency is already built', d);
         return dep;
       }
-      log('node').debug('Building dependency', d);
+      this.getGraph()
+        .logger.log('node')
+        .debug('Building dependency', d);
       const elt = elements.find((e) => e.name === d);
-      log('node').debug('Is service', { name: d, result: isService(elt.location) });
+      this.getGraph()
+        .logger.log('node')
+        .debug('Is service', { name: d, result: isService(elt.location) });
       return isService(elt.location)
         ? new Service(graph, elt, nodes, elements)
         : new Package(graph, elt, nodes, elements);
     });
-    log('node').debug('Node built', this.name);
+    this.getGraph()
+      .logger.log('node')
+      .debug('Node built', this.name);
     nodes.add(this);
   }
 
@@ -77,7 +84,7 @@ export abstract class LernaNode {
     this.nodeStatus = NodeStatus.DISABLED;
   }
 
-  public registerIPCServer(sockets: SocketsManager): void {
+  public registerIPCServer(sockets: IPCSocketsManager): void {
     this._ipc = sockets;
   }
 
@@ -86,11 +93,13 @@ export abstract class LernaNode {
   }
 
   public isService(): boolean {
-    log('node').debug('Is service', {
-      node: this.getName(),
-      location: join(this.location, 'serverless.yml'),
-      result: existsSync(join(this.location, 'serverless.yml')),
-    });
+    this.getGraph()
+      .logger.log('node')
+      .debug('Is service', {
+        node: this.getName(),
+        location: join(this.location, 'serverless.yml'),
+        result: existsSync(join(this.location, 'serverless.yml')),
+      });
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   }
 
@@ -117,9 +126,12 @@ export abstract class LernaNode {
   public setStatus(status: CompilationStatus): void {
     this.compilationStatus = status;
     if (this._ipc) {
-      log('node').debug('Notifying IPC server of graph update');
+      this.getGraph()
+        .logger.log('node')
+        .debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
+    this.getGraph().io.compilationStatusUpdated(this, this.compilationStatus);
     actions.updateCompilationStatus(this);
   }
 
@@ -157,10 +169,12 @@ export abstract class LernaNode {
         .map((n) => n.name)
         .includes(this.name),
     );
-    log('node').silly(
-      `Nodes depending upon ${this.name}`,
-      dependent.map((d) => d.name),
-    );
+    this.getGraph()
+      .logger.log('node')
+      .silly(
+        `Nodes depending upon ${this.name}`,
+        dependent.map((d) => d.name),
+      );
     return dependent;
   }
 
@@ -172,15 +186,26 @@ export abstract class LernaNode {
   }
 
   public async watch(scheduler: RecompilationScheduler): Promise<void> {
-    log('node').debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+    this.getGraph()
+      .logger.log('node')
+      .debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+    // TODO: Don't restart service on change, webpack plugin will auto-update
+    // FIXME: newly added files are not watched
+    // TODO: Restart service on sls.yaml change
     glob(`${this.location}/src/**/*.{ts,js,json}`, (err, matches) => {
       if (err) {
-        log('node').error('Error determining files to watch', matches);
+        this.getGraph()
+          .logger.log('node')
+          .error('Error determining files to watch', matches);
       }
       matches.forEach((path) => {
-        log('node').debug('Watching', path);
+        this.getGraph()
+          .logger.log('node')
+          .debug('Watching', path);
         watch(path, () => {
-          log('node').info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+          this.getGraph()
+            .logger.log('node')
+            .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
           scheduler.fileChanged(this);
         });
       });
@@ -201,17 +226,23 @@ export abstract class LernaNode {
                 () => {
                   // Update checksums
                   if (action.checksums != null) {
-                    checksums(this)
+                    checksums(this, this.getGraph().logger)
                       .write(action.checksums)
                       .then(() => {
-                        log('node').info('Checksum written', this.name);
+                        this.getGraph()
+                          .logger.log('node')
+                          .info('Checksum written', this.name);
                         observer.complete();
                       })
                       .catch((e) => {
-                        log('node').debug(e);
-                        log('node').warn(
-                          `Error caching checksum for node ${this.name}. Next time node will be recompiled event if source does not change`,
-                        );
+                        this.getGraph()
+                          .logger.log('node')
+                          .debug(e);
+                        this.getGraph()
+                          .logger.log('node')
+                          .warn(
+                            `Error caching checksum for node ${this.name}. Next time node will be recompiled event if source does not change`,
+                          );
                         observer.complete();
                       });
                   } else {
@@ -220,7 +251,9 @@ export abstract class LernaNode {
                 },
               );
             } else {
-              log('node').info(`Skipped recompilation of ${this.name}: sources did not change`);
+              this.getGraph()
+                .logger.log('node')
+                .info(`Skipped recompilation of ${this.name}: sources did not change`);
               observer.next(this);
               observer.complete();
             }
@@ -242,13 +275,15 @@ export abstract class LernaNode {
     this.setStatus(CompilationStatus.COMPILING);
     if (mode === RecompilationMode.FAST) {
       // Using directly typescript API
-      log('node').info('Fast-compiling using transpile-only', this.name);
-      this.compilationPromise = compileFiles(this.location);
+      this.getGraph()
+        .logger.log('node')
+        .info('Fast-compiling using transpile-only', this.name);
+      this.compilationPromise = compileFiles(this.location, this.getGraph().logger);
       return { recompile: true, checksums: null };
     } else {
       let recompile = true;
       let currentChecksums: IChecksums = null;
-      const checksumUtils = checksums(this);
+      const checksumUtils = checksums(this, this.getGraph().logger);
       try {
         const oldChecksums = await checksumUtils.read();
         currentChecksums = await checksumUtils.calculate();
@@ -257,12 +292,18 @@ export abstract class LernaNode {
         currentChecksums = await checksumUtils.calculate().catch(() => {
           return null;
         });
-        log('node').warn('Error evaluating checksums for node', this.name);
-        log('node').debug(e);
+        this.getGraph()
+          .logger.log('node')
+          .warn('Error evaluating checksums for node', this.name);
+        this.getGraph()
+          .logger.log('node')
+          .debug(e);
       }
-      log('node').info('Safe-compiling performing type-checks', this.name);
+      this.getGraph()
+        .logger.log('node')
+        .info('Safe-compiling performing type-checks', this.name);
       if (recompile) {
-        this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this), {
+        this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.getGraph().logger, this), {
           cwd: this.location,
           env: process.env,
           stdio: 'inherit',
@@ -277,37 +318,53 @@ export abstract class LernaNode {
       if (mode === RecompilationMode.FAST) {
         this.compilationPromise
           .then(() => {
-            log('node').info('Package compiled', this.name);
+            this.getGraph()
+              .logger.log('node')
+              .info('Package compiled', this.name);
             observer.next(this);
             this.setStatus(CompilationStatus.COMPILED);
             return observer.complete();
           })
           .catch((err) => {
-            log('node').info(`Error compiling ${this.getName()}`, err);
+            this.getGraph()
+              .logger.log('node')
+              .info(`Error compiling ${this.getName()}`, err);
             this.setStatus(CompilationStatus.ERROR_COMPILING);
             return observer.error(err);
           });
       } else {
         this.compilationProcess.on('close', (code) => {
-          log('node').silly('npx tsc process closed');
+          this.getGraph()
+            .logger.log('node')
+            .silly('npx tsc process closed');
           if (code === 0) {
             this.setStatus(CompilationStatus.COMPILED);
-            log('node').info(`Package compiled ${this.getName()}`);
+            this.getGraph()
+              .logger.log('node')
+              .info(`Package compiled ${this.getName()}`);
             observer.next(this);
             // this.compilationProcess.removeAllListeners('close');
             return observer.complete();
           } else {
             this.setStatus(CompilationStatus.ERROR_COMPILING);
-            log('node').info(`Error compiling ${this.getName()}`);
+            this.getGraph()
+              .logger.log('node')
+              .info(`Error compiling ${this.getName()}`);
             // this.compilationProcess.removeAllListeners('close');
             return observer.error();
           }
         });
         this.compilationProcess.on('error', (err) => {
-          log('node').silly('npx tsc process error');
-          log('node').error(err);
+          this.getGraph()
+            .logger.log('node')
+            .silly('npx tsc process error');
+          this.getGraph()
+            .logger.log('node')
+            .error(err);
           this.setStatus(CompilationStatus.ERROR_COMPILING);
-          log('node').info(`Error compiling ${this.getName()}`, err);
+          this.getGraph()
+            .logger.log('node')
+            .info(`Error compiling ${this.getName()}`, err);
           // this.compilationProcess.removeAllListeners('error');
           return observer.error(err);
         });

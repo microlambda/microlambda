@@ -1,0 +1,44 @@
+<section>
+  <div class="heading">
+    <h3>Events log</h3>
+    <div class="filters">
+      <div class="trigger" (click)="showOptions=!showOptions">
+        <span><fa-icon [icon]="faFilter"></fa-icon>Filters</span>
+        <fa-icon [icon]="faChevron"></fa-icon>
+      </div>
+      <div class="options" *ngIf="showOptions">
+        <ul>
+          <li (click)="toggleLevel('silly')">
+            <span><fa-icon class="silly" [icon]="faSilly"></fa-icon>Silly</span>
+            <fa-icon *ngIf="levels.includes('silly')" class="check" [icon]="faCheck"></fa-icon>
+          </li>
+          <li (click)="toggleLevel('debug')">
+            <span><fa-icon class="debug" [icon]="faBug"></fa-icon>Debug</span>
+            <fa-icon *ngIf="levels.includes('debug')" class="check" [icon]="faCheck"></fa-icon>
+          </li>
+          <li (click)="toggleLevel('info')">
+            <span><fa-icon class="info" [icon]="faInfo"></fa-icon>Info</span>
+            <fa-icon *ngIf="levels.includes('info')" class="check" [icon]="faCheck"></fa-icon>
+          </li>
+          <li (click)="toggleLevel('warn')">
+            <span><fa-icon class="warn" [icon]="faAlert"></fa-icon>Warn</span>
+            <fa-icon *ngIf="levels.includes('warn')" class="check" [icon]="faCheck"></fa-icon>
+          </li>
+          <li (click)="toggleLevel('error')">
+            <span><fa-icon class="error" [icon]="faCross"></fa-icon>Error</span>
+            <fa-icon *ngIf="levels.includes('error')" class="check" [icon]="faCheck"></fa-icon>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <ul id="events-log" class="mono">
+    <li *ngFor="let log of logs">
+      <span [ngClass]="log.class" class="level">[{{log.level}}]</span>
+      <span class="date">{{log.date}}</span>
+      <span class="scope">({{log.scope}})</span>
+      <span class="args" [innerHTML]="log.args | safeHtml"></span>
+    </li>
+  </ul>
+</section>

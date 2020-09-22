@@ -1,6 +1,7 @@
 import { IConfig } from '../config/config';
 import { IGraphElement, LernaGraph } from '../lerna';
 import { execCmd } from './child-process';
+import { Logger } from './logger';
 
 interface IPackage {
   name: string;
@@ -9,12 +10,17 @@ interface IPackage {
   location: string;
 }
 
-export const getLernaGraph = async (projectRoot: string, config: IConfig, defaultPort = 3001): Promise<LernaGraph> => {
+export const getLernaGraph = async (
+  projectRoot: string,
+  config: IConfig,
+  logger: Logger,
+  defaultPort = 3001,
+): Promise<LernaGraph> => {
   const packages: IPackage[] = JSON.parse(
-    await execCmd('npx', ['lerna', 'la', '--json'], { cwd: projectRoot }, 'debug', 'debug'),
+    await execCmd('npx', ['lerna', 'la', '--json'], { cwd: projectRoot }, 'debug', 'debug', logger),
   );
   const rawGraph: { [key: string]: string[] } = JSON.parse(
-    await execCmd('npx', ['lerna', 'la', '--graph'], { cwd: projectRoot }, 'debug', 'debug'),
+    await execCmd('npx', ['lerna', 'la', '--graph'], { cwd: projectRoot }, 'debug', 'debug', logger),
   );
 
   const names: Set<string> = new Set(packages.map((p) => p.name));
@@ -34,6 +40,7 @@ export const getLernaGraph = async (projectRoot: string, config: IConfig, defaul
       .map((n) => resolvePackage(n)),
     projectRoot,
     config,
+    logger,
     defaultPort,
   );
 };

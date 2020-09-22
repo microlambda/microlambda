@@ -2,7 +2,6 @@ import { IGraphElement, LernaGraph, LernaNode } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../utils/logs';
-import { log } from '../utils/logger';
 import { ServiceStatus } from './enums/service.status';
 import { Observable } from 'rxjs';
 import chalk from 'chalk';
@@ -12,43 +11,62 @@ import { actions } from '../ui';
 
 export class Service extends LernaNode {
   private status: ServiceStatus;
-  private readonly port: number;
+  private readonly _port: number;
   private process: ChildProcess;
   private logStream: WriteStream;
+  private _inMemoryLogs: string[] = [];
 
   constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
     super(graph, node, nodes, elements);
     this.status = ServiceStatus.STOPPED;
-    this.port = graph.getPort(node.name);
+    this._port = graph.getPort(node.name);
   }
 
   public getStatus(): ServiceStatus {
     return this.status;
   }
 
+  get logs(): string[] {
+    return this._inMemoryLogs;
+  }
+
+  get port(): number {
+    return this._port;
+  }
+
   public stop(): Observable<Service> {
     return new Observable<Service>((observer) => {
-      log('service').debug('Requested to stop', this.name, 'which status is', this.status);
+      this.getGraph()
+        .logger.log('service')
+        .debug('Requested to stop', this.name, 'which status is', this.status);
       switch (this.status) {
         case ServiceStatus.RUNNING:
         case ServiceStatus.STARTING:
           this.process.kill();
           break;
         case ServiceStatus.STOPPING:
-          log('service').warn('Requested to stop a service that already stopping', this.name);
+          this.getGraph()
+            .logger.log('service')
+            .warn('Requested to stop a service that already stopping', this.name);
           break;
         case ServiceStatus.CRASHED:
         case ServiceStatus.STOPPED:
-          log('service').warn('Requested to stop a service that is not running', this.name);
+          this.getGraph()
+            .logger.log('service')
+            .warn('Requested to stop a service that is not running', this.name);
           observer.next(this);
           return observer.complete();
       }
       this.process.on('close', (code) => {
         if (code === 0) {
-          log('service').info(`Service ${this.name} exited with code ${code}`);
+          this.getGraph()
+            .logger.log('service')
+            .info(`Service ${this.name} exited with code ${code}`);
           this._updateStatus(ServiceStatus.STOPPED);
         } else {
-          log('service').error(`Service ${this.name} exited with code ${code}`);
+          this.getGraph()
+            .logger.log('service')
+            .error(`Service ${this.name} exited with code ${code}`);
           this._updateStatus(ServiceStatus.CRASHED);
         }
         // this.process.removeAllListeners('close');
@@ -61,7 +79,9 @@ export class Service extends LernaNode {
 
   public start(): Observable<Service> {
     return new Observable<Service>((observer) => {
-      log('service').debug('Requested to start', this.name, 'which status is', this.status);
+      this.getGraph()
+        .logger.log('service')
+        .debug('Requested to start', this.name, 'which status is', this.status);
       switch (this.status) {
         case ServiceStatus.CRASHED:
         case ServiceStatus.STOPPED:
@@ -73,7 +93,9 @@ export class Service extends LernaNode {
           );
           break;
         case ServiceStatus.STOPPING:
-          log('service').warn('Service is already stopping', this.name);
+          this.getGraph()
+            .logger.log('service')
+            .warn('Service is already stopping', this.name);
           this.stop()
             .pipe(
               tap(() => this._startProcess()),
@@ -86,7 +108,9 @@ export class Service extends LernaNode {
             );
           break;
         case ServiceStatus.STARTING:
-          log('service').warn('Service is already starting', this.name);
+          this.getGraph()
+            .logger.log('service')
+            .warn('Service is already starting', this.name);
           this._watchStarted().subscribe(
             (next) => observer.next(next),
             (err) => observer.error(err),
@@ -94,7 +118,9 @@ export class Service extends LernaNode {
           );
           break;
         case ServiceStatus.RUNNING:
-          log('service').warn('Service is already running', this.name);
+          this.getGraph()
+            .logger.log('service')
+            .warn('Service is already running', this.name);
           observer.next(this);
           return observer.complete();
       }
@@ -104,30 +130,40 @@ export class Service extends LernaNode {
   private _startProcess(): void {
     this._updateStatus(ServiceStatus.STARTING);
     createLogFile(this.graph.getProjectRoot(), this.name);
-    log('service').info(`Starting ${this.name} on localhost:${this.port}`);
-    log('service').debug('Location:', this.location);
-    log('service').debug('Env:', process.env.ENV);
+    this.getGraph()
+      .logger.log('service')
+      .info(`Starting ${this.name} on localhost:${this.port}`);
+    this.getGraph()
+      .logger.log('service')
+      .debug('Location:', this.location);
+    this.getGraph()
+      .logger.log('service')
+      .debug('Env:', process.env.ENV);
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name));
     this.process = spawn(
-      getBinary('sls', this.graph.getProjectRoot(), this),
+      getBinary('sls', this.graph.getProjectRoot(), this.getGraph().logger, this),
       ['offline', 'start', '--port', this.port.toString(), '--region', process.env.AWS_REGION],
       {
         cwd: this.location,
-        env: process.env,
+        env: { ...process.env, FORCE_COLOR: '2' },
       },
     );
     this.process.stderr.on('data', (data) => {
-      log('service').error(`${chalk.bold(this.name)}: ${data}`);
-      this.logStream.write(data);
+      this.getGraph()
+        .logger.log('service')
+        .error(`${chalk.bold(this.name)}: ${data}`);
+      this._handleLogs(data);
     });
   }
 
   private _watchStarted(): Observable<Service> {
     return new Observable<Service>((started) => {
       this.process.stdout.on('data', (data) => {
-        this.logStream.write(data);
+        this._handleLogs(data);
         if (data.includes('listening on')) {
-          log('service').info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
+          this.getGraph()
+            .logger.log('service')
+            .info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
           this._updateStatus(ServiceStatus.RUNNING);
           started.next(this);
           return started.complete();
@@ -135,23 +171,34 @@ export class Service extends LernaNode {
       });
       this.process.on('close', (code) => {
         if (code !== 0) {
-          log('service').error(`Service ${this.name} exited with code ${code}`);
+          this.getGraph()
+            .logger.log('service')
+            .error(`Service ${this.name} exited with code ${code}`);
           this._updateStatus(ServiceStatus.CRASHED);
           // this.process.removeAllListeners('close');
           return started.error();
         }
       });
       this.process.on('error', (err) => {
-        log('service').error(`Could not start service ${this.name}`, err);
+        this.getGraph()
+          .logger.log('service')
+          .error(`Could not start service ${this.name}`, err);
         this._updateStatus(ServiceStatus.CRASHED);
         return started.error(err);
       });
     });
   }
 
+  private _handleLogs(data: any): void {
+    this.logStream.write(data);
+    this._inMemoryLogs.push(data.toString());
+    this.getGraph().io.handleServiceLog(this.name, data.toString());
+  }
+
   private _updateStatus(status: ServiceStatus): void {
     this.status = status;
     this._ipc.graphUpdated();
+    this.getGraph().io.statusUpdated(this, this.status);
     actions.updateServiceStatus(this);
   }
 }

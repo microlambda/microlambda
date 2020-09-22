@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { RecompilationScheduler } from './utils/scheduler';
-import { log } from './utils/logger';
 import { start, stop } from './cmd';
 import { status } from './cmd/status';
 import { restart } from './cmd/restart';
 import { logs } from './cmd/logs';
 import { runTests } from './cmd/test';
+import { Logger } from './utils/logger';
 
+// Logger must be a singleton
+const logger = new Logger();
 // Recompilation Scheduler must be a singleton
-const scheduler = new RecompilationScheduler();
+const scheduler = new RecompilationScheduler(logger);
 
 const program = new Command();
 
-program.version('0.0.5alpha');
+program.version('0.0.8alpha');
 
 program
   .command('start')
@@ -30,8 +32,8 @@ program
       defaultPort: cmd.P || 3001,
       interactive: cmd.interactive,
     };
-    log('cmd').debug(options);
-    await start(scheduler, options);
+    logger.log('cmd').debug(options);
+    await start(scheduler, options, logger);
   });
 
 program
@@ -39,7 +41,7 @@ program
   .requiredOption('-s <service>, --service <service>', 'the service for which you want to see logs', false)
   .description('print service logs')
   .action(async (cmd) => {
-    await logs(cmd);
+    await logs(cmd, logger);
   });
 
 program
@@ -66,8 +68,8 @@ program
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
   .action(async (cmd) => {
-    log('cmd').debug(cmd);
-    log('cmd').error('Not implemented');
+    logger.log('cmd').debug(cmd);
+    logger.log('cmd').error('Not implemented');
   });
 
 program
@@ -76,15 +78,15 @@ program
   .option('-s <service>, --service <service>', 'the service you want to deploy', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
-    log('cmd').debug(cmd);
-    log('cmd').error('Not implemented');
+    logger.log('cmd').debug(cmd);
+    logger.log('cmd').error('Not implemented');
   });
 
 program
   .command('status')
   .description('see the microservices status')
   .action(async () => {
-    await status(scheduler);
+    await status(scheduler, logger);
   });
 
 program
@@ -97,29 +99,33 @@ program
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
   .option('-s <service>, --service <service>', 'the service for which you want to test', null)
   .action(async (cmd) => {
-    await runTests(scheduler, {
-      bootstrap: cmd.bootstrap,
-      recompile: cmd.recompile,
-      unit: cmd.unit,
-      functional: cmd.functional,
-      concurrency: cmd.C,
-      service: cmd.S,
-    });
+    await runTests(
+      scheduler,
+      {
+        bootstrap: cmd.bootstrap,
+        recompile: cmd.recompile,
+        unit: cmd.unit,
+        functional: cmd.functional,
+        concurrency: cmd.C,
+        service: cmd.S,
+      },
+      logger,
+    );
   });
 
 program
   .command('init')
   .description('initialize new project with the CLI wizard')
   .action(async () => {
-    log('cmd').error('Not implemented');
+    logger.log('cmd').error('Not implemented');
   });
 
 program
   .command('new <service-name>')
   .description('initialize a new service with the CLI wizard')
   .action(async (cmd) => {
-    log('cmd').debug(cmd);
-    log('cmd').error('Not implemented');
+    logger.log('cmd').debug(cmd);
+    logger.log('cmd').error('Not implemented');
   });
 
 (async (): Promise<void> => program.parseAsync(process.argv))();

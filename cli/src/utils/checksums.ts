@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFile, writeFile } from 'fs';
 import { join } from 'path';
 import { getTsConfig } from './typescript';
 import { fromFile } from 'hasha';
-import { log } from './logger';
+import { Logger } from './logger';
 
 export interface IChecksums {
   [file: string]: string;
@@ -11,6 +11,7 @@ export interface IChecksums {
 
 export const checksums = (
   node: LernaNode,
+  logger: Logger,
 ): {
   calculate: () => Promise<IChecksums>;
   read: () => Promise<IChecksums>;
@@ -38,7 +39,7 @@ export const checksums = (
           hashes[src] = await fromFile(src, { algorithm: 'sha256' });
         }),
       );
-      log('checksum').debug(`Calculated checksum for ${node.getName()}`, hashes);
+      logger.log('checksum').debug(`Calculated checksum for ${node.getName()}`, hashes);
       return hashes;
     },
     read: async (): Promise<IChecksums> => {
@@ -48,22 +49,22 @@ export const checksums = (
       return new Promise<IChecksums>((resolve, reject) => {
         readFile(hashPath, (err, data) => {
           if (err) {
-            log('checksum').debug('cannot read', err);
+            logger.log('checksum').debug('cannot read', err);
             return reject(err);
           }
           try {
             const hashes = JSON.parse(data.toString());
-            log('checksum').debug(`Read checksum for ${node.getName()}`, hashes);
+            logger.log('checksum').debug(`Read checksum for ${node.getName()}`, hashes);
             return resolve(hashes);
           } catch (e) {
-            log('checksum').debug('cannot parse', e);
+            logger.log('checksum').debug('cannot parse', e);
             return reject(e);
           }
         });
       });
     },
     compare: (old: IChecksums, current: IChecksums): boolean => {
-      log('checksum').debug(`Comparing checksums for ${node.getName()}`, { old, current });
+      logger.log('checksum').debug(`Comparing checksums for ${node.getName()}`, { old, current });
       if (!old) {
         return true;
       }
@@ -72,20 +73,20 @@ export const checksums = (
         current: Object.keys(current),
       };
       if (keys.old.length !== keys.current.length) {
-        log('checksum').debug('Different # keys');
+        logger.log('checksum').debug('Different # keys');
         return true;
       }
       for (const key of keys.current) {
         if (!keys.old.includes(key)) {
-          log('checksum').debug('New key');
+          logger.log('checksum').debug('New key');
           return true;
         }
         if (old[key] !== current[key]) {
-          log('checksum').debug('New value');
+          logger.log('checksum').debug('New value');
           return true;
         }
       }
-      log('checksum').debug('Same hashes');
+      logger.log('checksum').debug('Same hashes');
       return false;
     },
     write: async (data: IChecksums): Promise<void> => {
@@ -93,7 +94,7 @@ export const checksums = (
       return new Promise((resolve, reject) => {
         writeFile(hashPath, JSON.stringify(data), { encoding: 'utf-8', flag: 'w' }, (err) => {
           if (err) {
-            log('checksum').error(err);
+            logger.log('checksum').error(err);
             return reject(err);
           }
           return resolve();

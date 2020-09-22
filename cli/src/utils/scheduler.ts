@@ -1,10 +1,10 @@
 import { concat, from, Observable, of, Subject, throwError } from 'rxjs';
 import { LernaGraph, LernaNode, Service } from '../lerna';
 import { catchError, concatAll, debounceTime, last, map, mergeMap, takeUntil, tap } from 'rxjs/operators';
-import { log } from './logger';
 import { ServiceStatus } from '../lerna/enums/service.status';
 import { CompilationStatus } from '../lerna/enums/compilation.status';
 import { CompilationMode } from '../config/config';
+import { Logger } from './logger';
 
 enum SchedulerStatus {
   READY,
@@ -53,9 +53,11 @@ export class RecompilationScheduler {
   private _filesChanged$: Subject<void> = new Subject<void>();
   private _changes: Set<LernaNode>;
   private _debounce: number;
+  private _logger: Logger;
 
-  constructor() {
-    log('scheduler').debug('New recompilation scheduler instance');
+  constructor(logger: Logger) {
+    this._logger = logger;
+    this._logger.log('scheduler').debug('New recompilation scheduler instance');
     this._reset();
     this._debounce = 300;
     this._mode = RecompilationMode.FAST;
@@ -75,7 +77,7 @@ export class RecompilationScheduler {
         this._mode = RecompilationMode.FAST;
         break;
       default:
-        log('scheduler').warn('Invalid compilation mode. Fallback on fast');
+        this._logger.log('scheduler').warn('Invalid compilation mode. Fallback on fast');
         this._mode = RecompilationMode.FAST;
         break;
     }
@@ -161,30 +163,32 @@ export class RecompilationScheduler {
    * Compile and start the whole project
    */
   public async startProject(graph: LernaGraph, compile = true): Promise<void> {
-    log('scheduler').debug('Starting project');
+    this._logger.log('scheduler').debug('Starting project');
     if (compile) {
       // Compile all enabled nodes from leaves to roots
-      log('scheduler').debug('Building compilation queue...', graph.getNodes().filter((n) => n.isEnabled()).length);
+      this._logger
+        .log('scheduler')
+        .debug('Building compilation queue...', graph.getNodes().filter((n) => n.isEnabled()).length);
       this._compile(graph.getNodes().filter((n) => n.isEnabled()));
     }
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug(
       'Compilation queue built',
       this._jobs.compile.map((n) => n.getName()),
     );
 
     // Start all services
-    log('scheduler').debug('Building start queue...');
+    this._logger.log('scheduler').debug('Building start queue...');
     graph
       .getServices()
       .filter((s) => s.isEnabled())
       .forEach((service) => {
         this._requestStart(service);
       });
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug(
       'Start queue built',
       this._jobs.start.map((n) => n.getName()),
     );
-    log('scheduler').debug('Executing tasks');
+    this._logger.log('scheduler').debug('Executing tasks');
     return this._execPromise();
   }
 
@@ -230,7 +234,7 @@ export class RecompilationScheduler {
       .pipe(debounceTime(this._debounce))
       .subscribe(async () => {
         if (this._changes.size > 0) {
-          log('scheduler').info('Triggering recompilation...');
+          this._logger.log('scheduler').info('Triggering recompilation...');
           // abort previous recompilation if any
           this._abort$.next();
           // find all services that are impacted
@@ -265,26 +269,26 @@ export class RecompilationScheduler {
    * @private
    */
   private _compile(toCompile: LernaNode[], recompile = true, compileServices = false): void {
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug(
       'Requested to compile nodes',
       toCompile.map((n) => n.getName()),
     );
-    log('scheduler').debug('Recompilation mode', this._mode);
+    this._logger.log('scheduler').debug('Recompilation mode', this._mode);
     // Find roots
     const roots = toCompile.filter((n) => !n.getDependent().some((dep) => toCompile.includes(dep)));
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug(
       'Root nodes',
       roots.map((n) => n.getName()),
     );
     const recursivelyCompile = (nodes: LernaNode[], requested: Set<LernaNode>): void => {
       for (const node of nodes) {
-        log('scheduler').debug('Request to compile', node.getName());
+        this._logger.log('scheduler').debug('Request to compile', node.getName());
         // For each node get his children and compile them before him
         const dependencies = node.getChildren().filter((d) => {
           const inRequest = toCompile.includes(d);
           if (this._mode === RecompilationMode.SAFE) {
             const hasDescendantInRequest = d.getDependencies().some((descendant) => toCompile.includes(descendant));
-            log('scheduler').debug('should compile ?', {
+            this._logger.log('scheduler').debug('should compile ?', {
               name: d.getName(),
               enabled: d.isEnabled(),
               inRequest,
@@ -292,14 +296,14 @@ export class RecompilationScheduler {
             });
             return d.isEnabled() && (hasDescendantInRequest || inRequest);
           }
-          log('scheduler').debug('should compile ?', {
+          this._logger.log('scheduler').debug('should compile ?', {
             name: d.getName(),
             enabled: d.isEnabled(),
             inRequest,
           });
           return d.isEnabled() && inRequest;
         });
-        log('scheduler').debug('Has dependencies', dependencies.length);
+        this._logger.log('scheduler').debug('Has dependencies', dependencies.length);
         if (dependencies.length > 0) {
           recursivelyCompile(dependencies, requested);
         }
@@ -308,10 +312,10 @@ export class RecompilationScheduler {
         const shouldBeCompiled = compileServices || (!isRootService && notAlreadyCompiled);
         if (shouldBeCompiled && !requested.has(node)) {
           this._requestCompilation(node);
-          log('scheduler').debug('Added to compilation queue', node.getName());
+          this._logger.log('scheduler').debug('Added to compilation queue', node.getName());
           requested.add(node);
         } else {
-          log('scheduler').debug('Already in compilation queue', node.getName());
+          this._logger.log('scheduler').debug('Already in compilation queue', node.getName());
         }
       }
     };
@@ -331,31 +335,31 @@ export class RecompilationScheduler {
   }
 
   private _requestStop(service: Service): void {
-    log('scheduler').debug(`Request to add stop job`, service.getName());
+    this._logger.log('scheduler').debug(`Request to add stop job`, service.getName());
     const inQueue = this._alreadyQueued(service, 'stop');
-    log('scheduler').debug('Already in stop queue', inQueue);
+    this._logger.log('scheduler').debug('Already in stop queue', inQueue);
     if (!inQueue) {
-      log('scheduler').debug('Adding service in stop job queue', service.getName());
+      this._logger.log('scheduler').debug('Adding service in stop job queue', service.getName());
       this._jobs.stop.push(service);
     }
   }
 
   private _requestCompilation(node: LernaNode): void {
-    log('scheduler').debug(`Request to add compilation job`, node.getName());
+    this._logger.log('scheduler').debug(`Request to add compilation job`, node.getName());
     const inQueue = this._alreadyQueued(node, 'compile');
-    log('scheduler').debug('Already in compilation queue', inQueue);
+    this._logger.log('scheduler').debug('Already in compilation queue', inQueue);
     if (!inQueue) {
-      log('scheduler').debug('Adding node in start compilation queue', node.getName());
+      this._logger.log('scheduler').debug('Adding node in start compilation queue', node.getName());
       this._jobs.compile.push(node);
     }
   }
 
   private _requestStart(service: Service): void {
-    log('scheduler').debug(`Request to add start job`, service.getName());
+    this._logger.log('scheduler').debug(`Request to add start job`, service.getName());
     const inQueue = this._alreadyQueued(service, 'start');
-    log('scheduler').debug('Already in start queue', inQueue);
+    this._logger.log('scheduler').debug('Already in start queue', inQueue);
     if (!inQueue) {
-      log('scheduler').debug('Adding service in start job queue', service.getName());
+      this._logger.log('scheduler').debug('Adding service in start job queue', service.getName());
       this._jobs.start.push(service);
     }
   }
@@ -367,9 +371,9 @@ export class RecompilationScheduler {
   private _execPromise(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const recompilationProcess$ = this._exec();
-      log('scheduler').debug('Recompilation process', recompilationProcess$);
+      this._logger.log('scheduler').debug('Recompilation process', recompilationProcess$);
       recompilationProcess$.subscribe(
-        (event) => log('scheduler').debug(event),
+        (event) => this._logger.log('scheduler').debug(event),
         (err) => reject(err),
         () => resolve(),
       );
@@ -378,24 +382,24 @@ export class RecompilationScheduler {
 
   private _exec(): Observable<IRecompilationEvent> {
     if (this._status === SchedulerStatus.BUSY) {
-      log('scheduler').warn('Scheduler is already busy');
+      this._logger.log('scheduler').warn('Scheduler is already busy');
       this._abort$.next();
       return;
     }
     if (this._status === SchedulerStatus.ABORTED) {
-      log('scheduler').info('Previous recompilation has been preempted');
+      this._logger.log('scheduler').info('Previous recompilation has been preempted');
     }
     this._status = SchedulerStatus.BUSY;
-    log('scheduler').debug('Executing recompilation task');
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug('Executing recompilation task');
+    this._logger.log('scheduler').debug(
       'To stop',
       this._jobs.stop.map((n) => n.getName()),
     );
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug(
       'To compile',
       this._jobs.compile.map((n) => n.getName()),
     );
-    log('scheduler').debug(
+    this._logger.log('scheduler').debug(
       'To start',
       this._jobs.start.map((n) => n.getName()),
     );
@@ -403,11 +407,11 @@ export class RecompilationScheduler {
     const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((s) =>
       s.stop().pipe(
         map((service) => {
-          log('scheduler').debug('Stopped', service.getName());
+          this._logger.log('scheduler').debug('Stopped', service.getName());
           return { node: service, type: RecompilationEventType.SERVICE_STOPPED };
         }),
         catchError((err) => {
-          log('scheduler').error(err);
+          this._logger.log('scheduler').error(err);
           return throwError(err);
         }),
       ),
@@ -416,11 +420,11 @@ export class RecompilationScheduler {
     const compilationJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.compile.map((node) =>
       node.compileNode(this._mode).pipe(
         map((node) => {
-          log('scheduler').debug('Compiled', node.getName());
+          this._logger.log('scheduler').debug('Compiled', node.getName());
           return { node: node, type: RecompilationEventType.NODE_COMPILED };
         }),
         catchError((err) => {
-          log('scheduler').error(err);
+          this._logger.log('scheduler').error(err);
           return throwError(err);
         }),
       ),
@@ -429,11 +433,11 @@ export class RecompilationScheduler {
     const startJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.start.map((s) =>
       s.start().pipe(
         map((service) => {
-          log('scheduler').debug('Started', service.getName());
+          this._logger.log('scheduler').debug('Started', service.getName());
           return { node: service, type: RecompilationEventType.SERVICE_STARTED };
         }),
         catchError((err) => {
-          log('scheduler').error(err);
+          this._logger.log('scheduler').error(err);
           return throwError(err);
         }),
       ),
@@ -442,7 +446,7 @@ export class RecompilationScheduler {
     this._recompilation = RecompilationStatus.STOPPING;
 
     const afterStopped = (): void => {
-      log('scheduler').info('All services stopped');
+      this._logger.log('scheduler').info('All services stopped');
       this._recompilation = RecompilationStatus.COMPILING;
     };
 
@@ -456,7 +460,7 @@ export class RecompilationScheduler {
         : of(null).pipe(tap(afterStopped.bind(this)));
 
     const afterCompiled = (): void => {
-      log('scheduler').info('All dependencies compiled');
+      this._logger.log('scheduler').info('All dependencies compiled');
       this._recompilation = RecompilationStatus.STARTING;
     };
 
@@ -466,7 +470,7 @@ export class RecompilationScheduler {
         : of(null).pipe(tap(afterCompiled.bind(this)));
 
     const afterStarted = (): void => {
-      log('scheduler').info('All dependencies compiled');
+      this._logger.log('scheduler').info('All dependencies compiled');
       this._recompilation = RecompilationStatus.STARTING;
     };
 
@@ -483,18 +487,18 @@ export class RecompilationScheduler {
       concatAll(),
       takeUntil(this._abort$),
       catchError((err) => {
-        log('scheduler').error(err);
+        this._logger.log('scheduler').error(err);
         this._reset();
         return throwError(err);
       }),
       last(),
       tap(() => {
-        log('scheduler').info('All tasks finished');
+        this._logger.log('scheduler').info('All tasks finished');
         this._reset();
       }),
     );
 
-    log('scheduler').debug('All tasks successfully scheduled');
+    this._logger.log('scheduler').debug('All tasks successfully scheduled');
     return recompilationProcess$;
   }
 }

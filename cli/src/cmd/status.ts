@@ -1,13 +1,13 @@
 import { getProjectRoot } from '../utils/get-project-root';
-import { SocketsManager } from '../ipc/socket';
-import { log } from '../utils/logger';
+import { IPCSocketsManager } from '../ipc/socket';
 import { RecompilationScheduler } from '../utils/scheduler';
+import { Logger } from '../utils/logger';
 
-export const status = (scheduler: RecompilationScheduler): void => {
+export const status = (scheduler: RecompilationScheduler, logger: Logger): void => {
   // TODO: Subscribe status from IPC socket and use same UI than start
-  const projectRoot = getProjectRoot();
-  const sockets = new SocketsManager(projectRoot, scheduler);
+  const projectRoot = getProjectRoot(logger);
+  const sockets = new IPCSocketsManager(projectRoot, scheduler, logger);
   sockets.subscribeStatus().subscribe((status) => {
-    log('cmd').info(status);
+    logger.log('cmd').info(status);
   });
 };

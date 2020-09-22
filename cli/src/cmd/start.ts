@@ -1,15 +1,18 @@
 import { getProjectRoot } from '../utils/get-project-root';
 import { loadConfig } from '../config/load-config';
 import { getLernaGraph } from '../utils/get-lerna-graph';
-import { log } from '../utils/logger';
 import { interactive } from '../utils/interactive';
 import { recreateLogDirectory } from '../utils/logs';
 import { RecompilationScheduler } from '../utils/scheduler';
 import { Service } from '../lerna';
-import { SocketsManager } from '../ipc/socket';
+import { IPCSocketsManager } from '../ipc/socket';
 import { verifyBinaries } from '../utils/external-binaries';
-import { actions, doRender } from '../ui';
+import { actions } from '../ui';
 import { execSync } from 'child_process';
+import { startServer } from '../server';
+import { IOSocketManager } from '../server/socket';
+import { Logger } from '../utils/logger';
+import { launch } from 'chrome-launcher';
 
 interface IStartOptions {
   interactive: boolean;
@@ -17,46 +20,58 @@ interface IStartOptions {
   defaultPort: number;
 }
 
-export const start = async (scheduler: RecompilationScheduler, options: IStartOptions): Promise<void> => {
-  log('start').info('Starting up the app');
-  const projectRoot = getProjectRoot();
-  log('start').debug('Loading config');
+export const start = async (
+  scheduler: RecompilationScheduler,
+  options: IStartOptions,
+  logger: Logger,
+): Promise<void> => {
+  logger.log('start').info('Starting up the app');
+  const projectRoot = getProjectRoot(logger);
+  logger.log('start').debug('Loading config');
   const config = loadConfig();
-  await verifyBinaries(config.compilationMode, projectRoot);
+  await verifyBinaries(config.compilationMode, projectRoot, logger);
   scheduler.setMode(config.compilationMode);
-  log('start').debug(config);
-  log('start').info('Parsing lerna dependency graph', projectRoot);
+  logger.log('start').debug(config);
+  logger.log('start').info('Parsing lerna dependency graph', projectRoot);
   try {
     const lernaVersion = execSync('npx lerna -v').toString();
     actions.updateLernaVersion(lernaVersion);
   } catch (e) {
-    log('start').warn('cannot determine lerna version');
+    logger.log('start').warn('cannot determine lerna version');
   }
-  doRender();
   actions.parsingGraph();
   actions.setScheduler(scheduler);
-  const graph = await getLernaGraph(projectRoot, config, options.defaultPort);
+  const graph = await getLernaGraph(projectRoot, config, logger, options.defaultPort);
+  const server = startServer(graph);
+
+  const io = new IOSocketManager(server, scheduler, logger, graph);
+  logger.setIO(io);
   scheduler.setGraph(graph);
   actions.graphParsed();
   actions.setGraph(graph);
-  const sockets = new SocketsManager(projectRoot, scheduler, graph);
+  const sockets = new IPCSocketsManager(projectRoot, scheduler, logger, graph);
   await sockets.createServer();
   graph.registerIPCServer(sockets);
-
+  graph.registerIOSockets(io);
+  launch({
+    startingUrl: 'http://localhost:' + 4545,
+  }).then((chrome) => {
+    console.log(`Chrome debugging port running on ${chrome.port}`);
+  });
   await graph.bootstrap().catch((e) => {
     const message =
       'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.';
-    log('start').error(e);
-    log('start').error(message);
+    logger.log('start').error(e);
+    logger.log('start').error(message);
     actions.lernaErrored();
     // eslint-disable-next-line no-console
     console.error(message);
     process.exit(1);
   });
   actions.graphBootstrapped();
-  log('start').debug('Services excluded by config', config.noStart);
+  logger.log('start').debug('Services excluded by config', config.noStart);
   const enabledServices = graph.getServices().filter((s) => !config.noStart.includes(s.getName()));
-  log('start').debug(
+  logger.log('start').debug(
     'Enabled services',
     enabledServices.map((s) => s.getName()),
   );
@@ -65,22 +80,20 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
 
   // TODO: Implement my own service selector in react
   if (options.interactive) {
-    await interactive(enabledServices, 'Please select the microservices you wants to start').then(
+    await interactive(enabledServices, 'Please select the microservices you wants to start', logger).then(
       (s) => (chosenServices = s),
     );
   } else {
     chosenServices = enabledServices;
   }
-  log('start').debug(
+  logger.log('start').debug(
     'Chosen services',
     chosenServices.map((s) => s.getName()),
   );
   chosenServices.forEach((s) => s.enable());
   graph.enableNodes();
 
-  // TODO: Create a file events.log at .mila root for these logs
-  // TODO: Also persist them in memory to be shown with (l) command
-  log('start').debug(
+  logger.log('start').debug(
     'Enabled nodes',
     graph
       .getNodes()
@@ -88,12 +101,11 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
       .map((n) => n.getName()),
   );
 
-  // TODO: Also create a in-memory map to persist services logs
-  recreateLogDirectory(projectRoot);
+  recreateLogDirectory(projectRoot, logger);
 
-  log('start').info(`Found ${chosenServices.length} services`);
-  log('start').info('Starting services');
-  log('start').debug(chosenServices);
+  logger.log('start').info(`Found ${chosenServices.length} services`);
+  logger.log('start').info('Starting services');
+  logger.log('start').debug(chosenServices);
   await scheduler.startProject(graph, options.recompile);
 
   graph
@@ -101,7 +113,7 @@ export const start = async (scheduler: RecompilationScheduler, options: IStartOp
     .filter((n) => n.isEnabled())
     .forEach((n) => n.watch(scheduler));
   process.on('SIGINT', async () => {
-    log('start').warn('SIGINT signal received');
+    logger.log('start').warn('SIGINT signal received');
     await scheduler.stopProject(graph);
     process.exit();
   });
