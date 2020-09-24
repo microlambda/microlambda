@@ -10,6 +10,7 @@ import { NodeDetailsComponent } from './node-details/node-details.component';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ServiceLogsComponent } from './service-logs/service-logs.component';
 import { SafeHtmlPipe } from './safe-html.pipe';
+import { TscLogsComponent } from './tsc-logs/tsc-logs.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +19,8 @@ import { SafeHtmlPipe } from './safe-html.pipe';
     EventsLogComponent,
     NodeDetailsComponent,
     ServiceLogsComponent,
-    SafeHtmlPipe
+    SafeHtmlPipe,
+    TscLogsComponent,
   ],
   imports: [
     BrowserModule,

@@ -3,7 +3,8 @@
   <ul *ngIf="!filter || filter === 'packages'" class="packages">
     <li *ngFor="let pkg of packages" (click)="tabs.openTab('node-details', pkg.name)">
       <span class="name">{{pkg.name}}</span>
-      <span [ngClass]="pkg.compilationClass" class="status">{{pkg.compilationStatus}}</span>
+      <span [ngClass]="pkg.transpiledClass" class="status">{{pkg.transpiled}}</span>
+      <span [ngClass]="pkg.typeCheckClass" class="status">{{pkg.typeChecked}}</span>
     </li>
   </ul>
   <h3 *ngIf="!filter || filter === 'services'">Services</h3>
@@ -11,7 +12,7 @@
     <li *ngFor="let service of services" (click)="tabs.openTab('node-details', service.name)">
       <span class="name">{{service.name}}</span>
       <span *ngIf="service.disabled" class="status">Disabled</span>
-      <span *ngIf="!service.disabled" [ngClass]="service.compilationClass" class="status">{{service.compilationStatus}}</span>
+      <span *ngIf="!service.disabled" [ngClass]="service.typeCheckClass" class="status">{{service.typeChecked}}</span>
       <span *ngIf="!service.disabled" [ngClass]="service.statusClass" class="status">{{service.status}}</span>
     </li>
   </ul>

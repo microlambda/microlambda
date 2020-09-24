@@ -1,16 +1,21 @@
-import { CompilationStatus } from './compilation.status.enum';
+import { TranspilingStatus, TypeCheckStatus } from './compilation.status.enum';
 import { INode } from './node.interface';
 
 export class Package {
   private readonly _name: string;
   private readonly _version: string;
   private readonly _enabled: boolean;
-  private _compilationStatus: CompilationStatus;
+  private _transpiled: TranspilingStatus;
+  private _typeChecked: TypeCheckStatus;
+  private _lastTypeCheck: string;
+
   constructor(node: INode) {
     this._name = node.name;
     this._version = node.version;
     this._enabled = node.enabled;
-    this._compilationStatus = node.compiled;
+    this._transpiled = node.transpiled;
+    this._typeChecked = node.typeChecked;
+    this._lastTypeCheck = node.lastTypeCheck;
   }
 
   get name(): string {
@@ -25,41 +30,75 @@ export class Package {
     return this._version;
   }
 
-  get compilationStatus(): string {
-    switch (this._compilationStatus) {
-      case CompilationStatus.COMPILED:
-        return 'Compiled';
-      case CompilationStatus.COMPILING:
-        return 'Compiling';
-      case CompilationStatus.ERROR_COMPILING:
-        return 'Error compiling';
-      case CompilationStatus.NOT_COMPILED:
-        return 'Not compiled';
+  get lastTypeCheck(): string {
+    return this._lastTypeCheck;
+  }
+
+  get transpiled(): string {
+    switch (this._transpiled) {
+      case TranspilingStatus.TRANSPILED:
+        return 'Transpiled';
+      case TranspilingStatus.TRANSPILING:
+        return 'Transpiling';
+      case TranspilingStatus.ERROR_TRANSPILING:
+        return 'Error transpiling';
+      case TranspilingStatus.NOT_TRANSPILED:
+        return 'Not transpiled';
     }
   }
 
-  get compilationClass(): string {
-    switch (this._compilationStatus) {
-      case CompilationStatus.COMPILED:
+  get typeChecked(): string {
+    switch (this._typeChecked) {
+      case TypeCheckStatus.CHECKING:
+        return 'Typechecking';
+      case TypeCheckStatus.NOT_CHECKED:
+        return 'Only transpiled';
+      case TypeCheckStatus.ERROR:
+        return 'Type errors';
+      case TypeCheckStatus.SUCCESS:
+        return 'Type checked';
+    }
+  }
+
+  get transpiledClass(): string {
+    switch (this._transpiled) {
+      case TranspilingStatus.TRANSPILED:
         return 'green';
-      case CompilationStatus.COMPILING:
+      case TranspilingStatus.TRANSPILING:
         return 'blue';
-      case CompilationStatus.ERROR_COMPILING:
+      case TranspilingStatus.ERROR_TRANSPILING:
         return 'bright-red';
-      case CompilationStatus.NOT_COMPILED:
+      case TranspilingStatus.NOT_TRANSPILED:
         return 'grey';
     }
   }
 
-  get notCompiled(): boolean {
-    return this._compilationStatus === CompilationStatus.NOT_COMPILED;
+  get typeCheckClass(): string {
+    switch (this._typeChecked) {
+      case TypeCheckStatus.CHECKING:
+        return 'blue';
+      case TypeCheckStatus.NOT_CHECKED:
+        return 'grey';
+      case TypeCheckStatus.ERROR:
+        return 'bright-red';
+      case TypeCheckStatus.SUCCESS:
+        return 'green';
+    }
   }
 
-  get compiling(): boolean {
-    return this._compilationStatus === CompilationStatus.COMPILING;
+  get notChecked(): boolean {
+    return this._typeChecked === TypeCheckStatus.NOT_CHECKED;
   }
 
-  setCompilationStatus(status: CompilationStatus): void {
-    this._compilationStatus = status;
+  get checking(): boolean {
+    return this._typeChecked === TypeCheckStatus.CHECKING;
+  }
+
+  setTranspilingStatus(status: TranspilingStatus): void {
+    this._transpiled = status;
+  }
+
+  setTypeCheckStatus(status: TypeCheckStatus): void {
+    this._typeChecked = status;
   }
 }

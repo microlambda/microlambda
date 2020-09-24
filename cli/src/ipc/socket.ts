@@ -1,7 +1,7 @@
 import { IPC } from 'node-ipc';
 import { LernaGraph, Service } from '../lerna';
 import { Socket } from 'net';
-import { CompilationStatus } from '../lerna/enums/compilation.status';
+import { TranspilingStatus } from '../lerna/enums/compilation.status';
 import { ServiceStatus } from '../lerna/enums/service.status';
 import { Observable, Subject } from 'rxjs';
 import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../utils/scheduler';
@@ -10,7 +10,7 @@ import { Logger } from '../utils/logger';
 
 interface IGraphStatus {
   name: string;
-  compiled: CompilationStatus;
+  compiled: TranspilingStatus;
   status: ServiceStatus;
 }
 
@@ -298,7 +298,7 @@ export class IPCSocketsManager {
       'status',
       this._graph.getNodes().map((n) => ({
         name: n.getName(),
-        compiled: n.getCompilationStatus(),
+        compiled: n.getTranspilingStatus(),
         status: n.isService() ? (n as Service).getStatus() : null,
       })),
     );

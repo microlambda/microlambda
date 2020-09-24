@@ -1,15 +1,18 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import * as io from 'socket.io-client';
 import { Service } from './service';
 import { Package } from './package';
 import { IEventLog, Log } from './log';
-import { CompilationStatus } from './compilation.status.enum';
+import { TranspilingStatus, TypeCheckStatus } from './compilation.status.enum';
 import { ServiceStatus } from './service.status.enum';
 import { INode } from './node.interface';
+import { map } from 'rxjs/operators';
+import * as Convert from 'ansi-to-html';
 
+const convert = new Convert();
 /**
  * TODO:
  * - Filterable events log => DONE but perf issue: see how to mitigate it (lazy-load elt in DOM with infinite scroll)
@@ -65,16 +68,27 @@ export class MilaService{
       console.debug('disconnected to mila server');
       this._connected$.next(false);
     });
-    this._socket.on('compilation.status.updated', (data: { node: string, status: CompilationStatus}) => {
-      console.debug('received compilation event', data);
-      const isService = this._services$.getValue().some(s => s.name === data.node);
+    const findNode = (node: string) => {
+      const isService = this._services$.getValue().some(s => s.name === node);
       const obs = isService ? this._services$ : this._packages$;
       const nodes = [...obs.getValue()];
-      const toUpdate = nodes.find(s => s.name === data.node);
+      const toUpdate = nodes.find(s => s.name === node);
       if (!toUpdate) {
         throw Error('No node found');
       }
-      toUpdate.setCompilationStatus(data.status);
+      return { obs, toUpdate, nodes };
+    }
+    this._socket.on('transpiling.status.updated', (data: { node: string, status: TranspilingStatus}) => {
+      console.debug('received transpiling event', data);
+      const { obs, toUpdate, nodes } = findNode(data.node);
+      toUpdate.setTranspilingStatus(data.status);
+      obs.next(nodes);
+      console.debug('nodes updated', nodes);
+    });
+    this._socket.on('type.checking.status.updated', (data: { node: string, status: TypeCheckStatus}) => {
+      console.debug('received type check event', data);
+      const { obs, toUpdate, nodes } = findNode(data.node);
+      toUpdate.setTypeCheckStatus(data.status);
       obs.next(nodes);
       console.debug('nodes updated', nodes);
     });
@@ -143,6 +157,18 @@ export class MilaService{
         this._serviceLogs$.next(logs);
       });
     });
+  }
+
+  private _currentNode: string;
+
+  setCurrentNode(node: string) { this._currentNode = node }
+
+  get currentNode(): string { return  this._currentNode }
+
+  getTscLogs(): Observable<string> {
+    return this.http.get<string[]>(`${BASE_URL}/api/nodes/${encodeURIComponent(this._currentNode)}/tsc/logs`).pipe(map((data) => {
+      return convert.toHtml(data.join('').replace(/(\r\n|\n|\r)/gm, "<br />"));
+    }));
   }
 
   start(service: string) {

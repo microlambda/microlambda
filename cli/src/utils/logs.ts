@@ -16,7 +16,7 @@ export const recreateLogDirectory = (projectRoot: string, logger: Logger): void 
   const logsDirectory = getLogsDirectory(projectRoot);
   if (!existsSync(logsDirectory)) {
     // Logs directory does not exists => create it
-    mkdirSync(logsDirectory);
+    mkdirSync(logsDirectory, { recursive: true });
     return;
   }
   if (!lstatSync(logsDirectory).isDirectory()) {

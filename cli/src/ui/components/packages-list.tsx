@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Box, Text } from 'ink';
 import chalk from 'chalk';
-import { CompilationStatus } from '../../lerna/enums/compilation.status';
+import { TranspilingStatus } from '../../lerna/enums/compilation.status';
 import { IPackage } from '../state/store';
 
 export interface IPackageListProps {
@@ -16,13 +16,13 @@ export class PackagesList extends Component<IPackageListProps> {
     }
     // TODO: Transpiled + Type checked in lazy mode
     switch (node.compilationStatus) {
-      case CompilationStatus.COMPILED:
+      case TranspilingStatus.TRANSPILED:
         return chalk.green('[Compiled]');
-      case CompilationStatus.COMPILING:
+      case TranspilingStatus.TRANSPILING:
         return chalk.cyan('[Compiling]');
-      case CompilationStatus.ERROR_COMPILING:
+      case TranspilingStatus.ERROR_TRANSPILING:
         return chalk.red('[Error compiling]');
-      case CompilationStatus.NOT_COMPILED:
+      case TranspilingStatus.NOT_TRANSPILED:
         return chalk.grey('[Not compiled]');
     }
   }

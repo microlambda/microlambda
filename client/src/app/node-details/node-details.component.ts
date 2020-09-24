@@ -3,7 +3,7 @@ import { TabsService } from '../tabs.service';
 import { MilaService } from '../mila.service';
 import { Package } from '../package';
 import { Service } from '../service';
-import { faFileAlt, faHammer, faPlay, faRedo, faStop } from '@fortawesome/free-solid-svg-icons';
+import { faClipboard, faFileAlt, faHammer, faPlay, faRedo, faStop } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'app-node-details',
@@ -19,6 +19,7 @@ export class NodeDetailsComponent implements OnInit {
     start: faPlay,
     stop: faStop,
     logs: faFileAlt,
+    tsc: faClipboard,
   }
 
   constructor(
@@ -36,5 +37,10 @@ export class NodeDetailsComponent implements OnInit {
   openLogs() {
     this.mila.selectService(this.node.name);
     this.tabs.openTab('service-logs', `Logs | ${this.node.name}`)
+  }
+
+  openTscLogs() {
+    this.mila.setCurrentNode(this.node.name);
+    this.tabs.openTab('tsc-logs', `${this.node.name} | tsc`);
   }
 }

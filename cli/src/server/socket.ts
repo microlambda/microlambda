@@ -2,7 +2,7 @@ import ws from 'socket.io';
 import { Server } from 'http';
 import { LernaGraph, LernaNode, Service } from '../lerna';
 import { ServiceStatus } from '../lerna/enums/service.status';
-import { CompilationStatus } from '../lerna/enums/compilation.status';
+import { TypeCheckStatus, TranspilingStatus } from '../lerna/enums/compilation.status';
 import { IEventLog, Logger } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
 
@@ -73,9 +73,14 @@ export class IOSocketManager {
     this._io.emit('node.status.updated', { node: node.getName(), status });
   }
 
-  compilationStatusUpdated(node: LernaNode, status: CompilationStatus) {
-    this._io.emit('compilation.status.updated', { node: node.getName(), status });
+  transpilingStatusUpdated(node: LernaNode, status: TranspilingStatus) {
+    this._io.emit('transpiling.status.updated', { node: node.getName(), status });
   }
+
+  typeCheckStatusUpdated(node: LernaNode, status: TypeCheckStatus) {
+    this._io.emit('type.checking.status.updated', { node: node.getName(), status });
+  }
+
 
   eventLogAdded(log: IEventLog) {
     this._io.emit('event.log.added', log);
@@ -85,5 +90,9 @@ export class IOSocketManager {
     if (this._serviceToListen === service) {
       this._io.emit(service + '.log.added', data);
     }
+  }
+
+  handleTscLogs(node: string, data: any) {
+    this._io.emit('tsc.log.emitted', {node, data});
   }
 }

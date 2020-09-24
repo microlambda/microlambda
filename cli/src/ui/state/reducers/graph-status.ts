@@ -16,13 +16,13 @@ export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphSta
           enabled: pkg.isEnabled(),
           version: pkg.getVersion(),
           name: pkg.getName(),
-          compilationStatus: pkg.getCompilationStatus(),
+          compilationStatus: pkg.getTranspilingStatus(),
         })),
         services: action.graph.getServices().map((pkg) => ({
           enabled: pkg.isEnabled(),
           name: pkg.getName(),
           version: pkg.getVersion(),
-          compilationStatus: pkg.getCompilationStatus(),
+          compilationStatus: pkg.getTranspilingStatus(),
           status: pkg.getStatus(),
           port: action.graph.getPort(pkg.getName()),
         })),
@@ -33,7 +33,7 @@ export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphSta
       const packages = [...state.packages];
       const toUpdate = packages.find((pkg) => pkg.name === action.node.getName());
       if (toUpdate) {
-        toUpdate.compilationStatus = action.node.getCompilationStatus();
+        toUpdate.compilationStatus = action.node.getTranspilingStatus();
         toUpdate.enabled = action.node.isEnabled();
       }
       return {
@@ -46,7 +46,7 @@ export const graphStatus = (state: IGraphState, action: IGraphAction): IGraphSta
       const services = [...state.services];
       const serviceToUpdate = services.find((pkg) => pkg.name === action.service.getName());
       if (serviceToUpdate) {
-        serviceToUpdate.compilationStatus = action.service.getCompilationStatus();
+        serviceToUpdate.compilationStatus = action.service.getTranspilingStatus();
         serviceToUpdate.status = action.service.getStatus();
         serviceToUpdate.enabled = action.service.isEnabled();
       }

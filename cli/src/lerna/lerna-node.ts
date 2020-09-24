@@ -2,12 +2,12 @@ import { isService, LernaGraph } from './lerna-graph';
 import { existsSync, watch } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
-import { CompilationStatus } from './enums/compilation.status';
+import { TranspilingStatus, TypeCheckStatus } from './enums/compilation.status';
 import glob from 'glob';
 import chalk from 'chalk';
 import { ChildProcess, spawn } from 'child_process';
 import { Observable } from 'rxjs';
-import { RecompilationMode, RecompilationScheduler } from '../utils/scheduler';
+import { RecompilationScheduler } from '../utils/scheduler';
 import { IPCSocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
@@ -36,9 +36,16 @@ export abstract class LernaNode {
   private readonly version: string;
   private readonly private: boolean;
 
-  protected compilationStatus: CompilationStatus;
-  protected compilationProcess: ChildProcess;
-  protected compilationPromise: Promise<void>;
+  protected transpilingStatus: TranspilingStatus;
+  protected transpilingPromise: Promise<void>;
+
+  protected typeCheckStatus: TypeCheckStatus;
+  protected typeCheckProcess: ChildProcess;
+  private _typeCheckLogs: string[];
+
+  private _checksums: IChecksums;
+  private _lastTypeCheck: string;
+
   private nodeStatus: NodeStatus;
   protected _ipc: IPCSocketsManager;
 
@@ -50,7 +57,8 @@ export abstract class LernaNode {
     this.private = node.private;
     this.location = node.location;
     this.nodeStatus = NodeStatus.DISABLED;
-    this.compilationStatus = CompilationStatus.NOT_COMPILED;
+    this.transpilingStatus = TranspilingStatus.NOT_TRANSPILED;
+    this.typeCheckStatus = TypeCheckStatus.NOT_CHECKED;
     this.dependencies = node.dependencies.map((d) => {
       const dep = Array.from(nodes).find((n) => n.name === d);
       if (dep) {
@@ -75,6 +83,10 @@ export abstract class LernaNode {
       .debug('Node built', this.name);
     nodes.add(this);
   }
+
+  get tscLogs() { return this._typeCheckLogs };
+
+  get lastTypeCheck() { return this._lastTypeCheck };
 
   public enable(): void {
     this.nodeStatus = NodeStatus.ENABLED;
@@ -103,8 +115,12 @@ export abstract class LernaNode {
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   }
 
-  public getCompilationStatus(): CompilationStatus {
-    return this.compilationStatus;
+  public getTranspilingStatus(): TranspilingStatus {
+    return this.transpilingStatus;
+  }
+
+  public getTypeCheckStatus(): TypeCheckStatus {
+    return this.typeCheckStatus;
   }
 
   public getChildren(): LernaNode[] {
@@ -123,16 +139,21 @@ export abstract class LernaNode {
     return this.dependencies.find((d) => d.name === name);
   }
 
-  public setStatus(status: CompilationStatus): void {
-    this.compilationStatus = status;
+  public setTranspilingStatus(status: TranspilingStatus): void {
+    this.transpilingStatus = status;
     if (this._ipc) {
       this.getGraph()
         .logger.log('node')
         .debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
-    this.getGraph().io.compilationStatusUpdated(this, this.compilationStatus);
+    this.getGraph().io.transpilingStatusUpdated(this, this.transpilingStatus);
     actions.updateCompilationStatus(this);
+  }
+
+  public setTypeCheckingStatus(status: TypeCheckStatus): void {
+    this.typeCheckStatus = status;
+    this.getGraph().io.typeCheckStatusUpdated(this, this.typeCheckStatus);
   }
 
   public isRoot(): boolean {
@@ -212,15 +233,46 @@ export abstract class LernaNode {
     });
   }
 
-  public compileNode(mode = RecompilationMode.FAST): Observable<LernaNode> {
+  public transpile(): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-      switch (this.compilationStatus) {
-        case CompilationStatus.COMPILED:
-        case CompilationStatus.ERROR_COMPILING:
-        case CompilationStatus.NOT_COMPILED:
-          this._startCompilation(mode).then((action) => {
+      switch (this.transpilingStatus) {
+        case TranspilingStatus.TRANSPILED:
+        case TranspilingStatus.ERROR_TRANSPILING:
+        case TranspilingStatus.NOT_TRANSPILED:
+          this.transpilingPromise = this._startTranspiling();
+          break;
+        case TranspilingStatus.TRANSPILING:
+          this.getGraph()
+            .logger.log('node')
+            .info('Package already transpiling', this.name);
+          break;
+      }
+      this.transpilingPromise.then(() => {
+        this.getGraph()
+          .logger.log('node')
+          .info('Package transpiled', this.name);
+        observer.next(this);
+        this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
+        return observer.complete();
+      }).catch((err) => {
+        this.getGraph()
+          .logger.log('node')
+          .info(`Error transpiling ${this.getName()}`, err);
+        this.setTranspilingStatus(TranspilingStatus.ERROR_TRANSPILING);
+        return observer.error(err);
+      });
+    });
+  }
+
+  public performTypeChecking(force = false): Observable<LernaNode> {
+    return new Observable<LernaNode>((observer) => {
+      switch (this.typeCheckStatus) {
+        case TypeCheckStatus.SUCCESS:
+        case TypeCheckStatus.ERROR:
+        case TypeCheckStatus.NOT_CHECKED:
+          this._startTypeChecking(force).then((action) => {
             if (action.recompile) {
-              this._watchCompilation(mode).subscribe(
+              this._watchTypeChecking().subscribe(
                 (next) => observer.next(next),
                 (err) => observer.error(err),
                 () => {
@@ -232,6 +284,7 @@ export abstract class LernaNode {
                         this.getGraph()
                           .logger.log('node')
                           .info('Checksum written', this.name);
+                        this._checksums = action.checksums;
                         observer.complete();
                       })
                       .catch((e) => {
@@ -253,15 +306,15 @@ export abstract class LernaNode {
             } else {
               this.getGraph()
                 .logger.log('node')
-                .info(`Skipped recompilation of ${this.name}: sources did not change`);
+                .info(`Skipped type-checking of ${this.name}: sources did not change`);
               observer.next(this);
               observer.complete();
             }
           });
           break;
-        case CompilationStatus.COMPILING:
+        case TypeCheckStatus.CHECKING:
           // Already compiling, just wait for it to complete
-          this._watchCompilation(mode).subscribe(
+          this._watchTypeChecking().subscribe(
             (next) => observer.next(next),
             (err) => observer.error(err),
             () => observer.complete(),
@@ -271,18 +324,20 @@ export abstract class LernaNode {
     });
   }
 
-  private async _startCompilation(mode: RecompilationMode): Promise<{ recompile: boolean; checksums: IChecksums }> {
-    this.setStatus(CompilationStatus.COMPILING);
-    if (mode === RecompilationMode.FAST) {
-      // Using directly typescript API
-      this.getGraph()
-        .logger.log('node')
-        .info('Fast-compiling using transpile-only', this.name);
-      this.compilationPromise = compileFiles(this.location, this.getGraph().logger);
-      return { recompile: true, checksums: null };
-    } else {
-      let recompile = true;
-      let currentChecksums: IChecksums = null;
+  private async _startTranspiling(): Promise<void> {
+    this.setTranspilingStatus(TranspilingStatus.TRANSPILING);
+    // Using directly typescript API
+    this.getGraph()
+      .logger.log('node')
+      .info('Fast-compiling using transpile-only', this.name);
+    return compileFiles(this.location, this.getGraph().logger);
+  }
+
+  private async _startTypeChecking(force = false): Promise<{ recompile: boolean; checksums: IChecksums }> {
+    this.setTypeCheckingStatus(TypeCheckStatus.CHECKING);
+    let recompile = true;
+    let currentChecksums: IChecksums = null;
+    if (!force) {
       const checksumUtils = checksums(this, this.getGraph().logger);
       try {
         const oldChecksums = await checksumUtils.read();
@@ -302,73 +357,71 @@ export abstract class LernaNode {
       this.getGraph()
         .logger.log('node')
         .info('Safe-compiling performing type-checks', this.name);
-      if (recompile) {
-        this.compilationProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.getGraph().logger, this), {
-          cwd: this.location,
-          env: process.env,
-          stdio: 'inherit',
-        });
-      }
-      return { recompile, checksums: currentChecksums };
     }
+    if (recompile) {
+      this.typeCheckProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.getGraph().logger, this), {
+        cwd: this.location,
+        env: { ...process.env, FORCE_COLOR: '2' },
+      });
+      this.typeCheckProcess.stderr.on('data', (data) => {
+        this.getGraph()
+          .logger.log('tsc')
+          .error(`${chalk.bold(this.name)}: ${data}`);
+        this._handleTscLogs(data);
+      });
+      this.typeCheckProcess.stdout.on('data', (data) => {
+        this.getGraph()
+          .logger.log('tsc')
+          .info(`${chalk.bold(this.name)}: ${data}`);
+        this._handleTscLogs(data);
+      });
+    }
+    return { recompile, checksums: currentChecksums };
   }
 
-  private _watchCompilation(mode: RecompilationMode): Observable<LernaNode> {
+  private _handleTscLogs(data: any): void {
+    this._typeCheckLogs.push(data.toString());
+    this.getGraph().io.handleTscLogs(this.name, data.toString());
+  }
+
+  private _watchTypeChecking(): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-      if (mode === RecompilationMode.FAST) {
-        this.compilationPromise
-          .then(() => {
-            this.getGraph()
-              .logger.log('node')
-              .info('Package compiled', this.name);
-            observer.next(this);
-            this.setStatus(CompilationStatus.COMPILED);
-            return observer.complete();
-          })
-          .catch((err) => {
-            this.getGraph()
-              .logger.log('node')
-              .info(`Error compiling ${this.getName()}`, err);
-            this.setStatus(CompilationStatus.ERROR_COMPILING);
-            return observer.error(err);
-          });
-      } else {
-        this.compilationProcess.on('close', (code) => {
+        this.typeCheckProcess.on('close', (code) => {
           this.getGraph()
             .logger.log('node')
             .silly('npx tsc process closed');
           if (code === 0) {
-            this.setStatus(CompilationStatus.COMPILED);
+            this.setTypeCheckingStatus(TypeCheckStatus.SUCCESS);
             this.getGraph()
               .logger.log('node')
-              .info(`Package compiled ${this.getName()}`);
+              .info(`Package safe-compiled ${this.getName()}`);
             observer.next(this);
+            this._lastTypeCheck = new Date().toISOString();
             // this.compilationProcess.removeAllListeners('close');
             return observer.complete();
           } else {
-            this.setStatus(CompilationStatus.ERROR_COMPILING);
+            this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
             this.getGraph()
               .logger.log('node')
-              .info(`Error compiling ${this.getName()}`);
+              .info(`Error safe-compiling ${this.getName()}`);
             // this.compilationProcess.removeAllListeners('close');
             return observer.error();
           }
         });
-        this.compilationProcess.on('error', (err) => {
+        this.typeCheckProcess.on('error', (err) => {
           this.getGraph()
             .logger.log('node')
             .silly('npx tsc process error');
           this.getGraph()
             .logger.log('node')
             .error(err);
-          this.setStatus(CompilationStatus.ERROR_COMPILING);
+          this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
           this.getGraph()
             .logger.log('node')
-            .info(`Error compiling ${this.getName()}`, err);
+            .info(`Error safe-compiling ${this.getName()}`, err);
           // this.compilationProcess.removeAllListeners('error');
           return observer.error(err);
         });
-      }
     });
   }
 }

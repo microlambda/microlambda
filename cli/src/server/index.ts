@@ -17,7 +17,9 @@ export const startServer = (graph: LernaGraph): Server => {
         version: n.getVersion(),
         port: n.isService() ? graph.getPort(n.getName()) : null,
         enabled: n.isEnabled(),
-        compiled: n.getCompilationStatus(),
+        transpiled: n.getTranspilingStatus(),
+        typeChecked: n.getTypeCheckStatus(),
+        lastTypeCheck: n.lastTypeCheck,
         status: n.isService() ? (n as Service).getStatus() : null,
       })),
     );
@@ -34,6 +36,15 @@ export const startServer = (graph: LernaGraph): Server => {
       return res.status(404);
     }
     return res.json(service.logs);
+  });
+
+  app.get('/api/nodes/:node/tsc/logs', (req, res) => {
+    const nodeName = req.params.node;
+    const node = graph.getNodes().find(s => s.getName() === nodeName);
+    if (!node) {
+      return res.status(404);
+    }
+    return res.json(node.tscLogs);
   });
 
   const http = createServer(app);

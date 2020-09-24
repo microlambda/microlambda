@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { MilaService } from './mila.service';
 
-type TabType = 'events-log' | 'node-details' | 'service-logs' | 'binaries' | 'lerna-graph';
+type TabType = 'events-log' | 'node-details' | 'service-logs' | 'binaries' | 'lerna-graph' | 'tsc-logs';
 
 interface ITab {
   // TODO: Add type (details, sls logs, resource etc..)
@@ -65,6 +65,9 @@ export class TabsService {
     this._currentTab$.next(tab);
     if (tab.type === 'service-logs') {
       this.mila.selectService(tab.name.match(/^Logs \| (.+)$/)[1]);
+    }
+    if (tab.type === 'tsc-logs') {
+      this.mila.setCurrentNode(tab.name.match(/^(.+) | tsc$/)[1]);
     }
   }
 

@@ -1,4 +1,4 @@
-import { CompilationStatus } from '../../lerna/enums/compilation.status';
+import { TranspilingStatus } from '../../lerna/enums/compilation.status';
 import { ServiceStatus } from '../../lerna/enums/service.status';
 import { createStore } from 'redux';
 import rootReducer from './reducers';
@@ -22,7 +22,7 @@ export interface IPackage {
   enabled: boolean;
   name: string;
   version: string;
-  compilationStatus: CompilationStatus;
+  compilationStatus: TranspilingStatus;
   binaries?: IBinariesVersion;
 }
 
