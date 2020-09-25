@@ -33,7 +33,14 @@
     </div>
   </div>
 
-  <ul id="events-log" class="mono">
+  <ul
+    id="events-log"
+    class="mono"
+    infiniteScroll
+    [infiniteScrollUpDistance]="1.5"
+    [infiniteScrollThrottle]="50"
+    (scrolledUp)="onScrollUp()"
+  >
     <li *ngFor="let log of logs">
       <span [ngClass]="log.class" class="level">[{{log.level}}]</span>
       <span class="date">{{log.date}}</span>

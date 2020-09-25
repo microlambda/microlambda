@@ -26,8 +26,8 @@ export class IOSocketManager {
         if (!service) {
           this._logger.log('io').error('unknown service', serviceName);
         } else {
-          this._scheduler.startOne(service).subscribe((evt) => {
-            this._logger.log('io').info('service started', evt);
+          this._scheduler.startOne(service).subscribe(() => {
+            this._logger.log('io').info('service started');
           });
         }
       });
@@ -37,8 +37,8 @@ export class IOSocketManager {
         if (!service) {
           this._logger.log('io').error('unknown service', serviceName);
         } else {
-          this._scheduler.restartOne(service).subscribe((evt) => {
-            this._logger.log('io').info('service restarted', evt);
+          this._scheduler.restartOne(service).subscribe(() => {
+            this._logger.log('io').info('service restarted');
           });
         }
       });
@@ -48,19 +48,18 @@ export class IOSocketManager {
         if (!service) {
           this._logger.log('io').error('unknown service', serviceName);
         } else {
-          this._scheduler.stopOne(service).subscribe((evt) => {
-            this._logger.log('io').info('service stopped', evt);
+          this._scheduler.stopOne(service).subscribe(() => {
+            this._logger.log('io').info('service stopped');
           });
         }
       });
-      socket.on('node.compile', (nodeName: string) => {
-        this._logger.log('io').info('received node.compile request', nodeName);
-        const node = this._graph.getNodes().find(s => s.getName() === nodeName);
+      socket.on('node.compile', (data: {node: string, force: boolean}) => {
+        this._logger.log('io').info('received node.compile request', data.node);
+        const node = this._graph.getNodes().find(s => s.getName() === data.node);
         if (!node) {
-          this._logger.log('io').error('unknown node', nodeName);
+          this._logger.log('io').error('unknown node', data.node);
         } else {
-          // TODO: Recompilation
-          this._logger.log('io').warn('TODO');
+          this._scheduler.recompileSafe(node, data.force);
         }
       });
       socket.on('send.service.logs', (service: string) => {

@@ -1,5 +1,6 @@
 import { TranspilingStatus, TypeCheckStatus } from './compilation.status.enum';
 import { INode } from './node.interface';
+import { Service } from './service';
 
 export class Package {
   private readonly _name: string;
@@ -52,7 +53,7 @@ export class Package {
       case TypeCheckStatus.CHECKING:
         return 'Typechecking';
       case TypeCheckStatus.NOT_CHECKED:
-        return 'Only transpiled';
+        return 'No type-checking';
       case TypeCheckStatus.ERROR:
         return 'Type errors';
       case TypeCheckStatus.SUCCESS:
@@ -84,6 +85,10 @@ export class Package {
       case TypeCheckStatus.SUCCESS:
         return 'green';
     }
+  }
+
+  get isService(): boolean {
+    return false;
   }
 
   get notChecked(): boolean {

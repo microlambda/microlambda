@@ -27,6 +27,7 @@
   "dependencies": {
     "@types/inquirer": "^6.5.0",
     "chalk": "^3.0.0",
+    "chokidar": "^3.4.2",
     "chrome-launcher": "^0.13.4",
     "commander": "^4.1.1",
     "express": "^4.17.1",
@@ -42,6 +43,7 @@
     "lodash": "^4.17.19",
     "node-ipc": "^9.1.1",
     "npm": "^6.14.8",
+    "ora": "^5.1.0",
     "rc": "^1.2.8",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",

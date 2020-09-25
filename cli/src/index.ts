@@ -41,7 +41,7 @@ program
   .requiredOption('-s <service>, --service <service>', 'the service for which you want to see logs', false)
   .description('print service logs')
   .action(async (cmd) => {
-    await logs(cmd, logger);
+    await logs(cmd, logger, scheduler);
   });
 
 program

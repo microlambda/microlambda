@@ -1,9 +1,8 @@
 import { isService, LernaGraph } from './lerna-graph';
-import { existsSync, watch } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
 import { TranspilingStatus, TypeCheckStatus } from './enums/compilation.status';
-import glob from 'glob';
 import chalk from 'chalk';
 import { ChildProcess, spawn } from 'child_process';
 import { Observable } from 'rxjs';
@@ -13,6 +12,7 @@ import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
 import { checksums, IChecksums } from '../utils/checksums';
 import { actions } from '../ui';
+import { FSWatcher, watch } from 'chokidar';
 
 export interface IGraphElement {
   name: string;
@@ -49,7 +49,10 @@ export abstract class LernaNode {
   private nodeStatus: NodeStatus;
   protected _ipc: IPCSocketsManager;
 
-  public constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
+  protected _scheduler: RecompilationScheduler;
+  private _watchers: FSWatcher[] = [];
+
+  public constructor(scheduler: RecompilationScheduler, graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
     graph.logger.log('node').debug('Building node', node.name);
     this.graph = graph;
     this.name = node.name;
@@ -59,6 +62,7 @@ export abstract class LernaNode {
     this.nodeStatus = NodeStatus.DISABLED;
     this.transpilingStatus = TranspilingStatus.NOT_TRANSPILED;
     this.typeCheckStatus = TypeCheckStatus.NOT_CHECKED;
+    this._scheduler = scheduler;
     this.dependencies = node.dependencies.map((d) => {
       const dep = Array.from(nodes).find((n) => n.name === d);
       if (dep) {
@@ -75,8 +79,8 @@ export abstract class LernaNode {
         .logger.log('node')
         .debug('Is service', { name: d, result: isService(elt.location) });
       return isService(elt.location)
-        ? new Service(graph, elt, nodes, elements)
-        : new Package(graph, elt, nodes, elements);
+        ? new Service(scheduler, graph, elt, nodes, elements)
+        : new Package(scheduler, graph, elt, nodes, elements);
     });
     this.getGraph()
       .logger.log('node')
@@ -206,33 +210,6 @@ export abstract class LernaNode {
     return this.graph.getNodes().filter((n) => n.dependencies.some((d) => d.name === this.name));
   }
 
-  public async watch(scheduler: RecompilationScheduler): Promise<void> {
-    this.getGraph()
-      .logger.log('node')
-      .debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
-    // TODO: Don't restart service on change, webpack plugin will auto-update
-    // FIXME: newly added files are not watched
-    // TODO: Restart service on sls.yaml change
-    glob(`${this.location}/src/**/*.{ts,js,json}`, (err, matches) => {
-      if (err) {
-        this.getGraph()
-          .logger.log('node')
-          .error('Error determining files to watch', matches);
-      }
-      matches.forEach((path) => {
-        this.getGraph()
-          .logger.log('node')
-          .debug('Watching', path);
-        watch(path, () => {
-          this.getGraph()
-            .logger.log('node')
-            .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-          scheduler.fileChanged(this);
-        });
-      });
-    });
-  }
-
   public transpile(): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
       switch (this.transpilingStatus) {
@@ -251,6 +228,7 @@ export abstract class LernaNode {
         this.getGraph()
           .logger.log('node')
           .info('Package transpiled', this.name);
+        this.watch();
         observer.next(this);
         this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
         return observer.complete();
@@ -307,6 +285,11 @@ export abstract class LernaNode {
               this.getGraph()
                 .logger.log('node')
                 .info(`Skipped type-checking of ${this.name}: sources did not change`);
+              this.setTypeCheckingStatus(TypeCheckStatus.SUCCESS);
+              this._typeCheckLogs = [
+                'Safe-compilation skipped, sources did not change since last type check. Checksums:',
+                JSON.stringify(this._checksums, null, 2),
+              ]
               observer.next(this);
               observer.complete();
             }
@@ -342,6 +325,7 @@ export abstract class LernaNode {
       try {
         const oldChecksums = await checksumUtils.read();
         currentChecksums = await checksumUtils.calculate();
+        this._checksums = currentChecksums;
         recompile = checksumUtils.compare(oldChecksums, currentChecksums);
       } catch (e) {
         currentChecksums = await checksumUtils.calculate().catch(() => {
@@ -423,5 +407,26 @@ export abstract class LernaNode {
           return observer.error(err);
         });
     });
+  }
+
+  protected watch() {
+    this.getGraph()
+      .logger.log('node')
+      .debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+    const watcher = watch(`${this.location}/src/**/*.{ts,js,json}`);
+    watcher.on('change', (path) => {
+      this.getGraph()
+        .logger.log('node')
+        .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+      const isFinalLeaf = this.isService() && this.getDependent().length === 0;
+      if (!isFinalLeaf) {
+        this._scheduler.fileChanged(this);
+      }
+    })
+    this._watchers.push(watcher);
+  }
+
+  protected unwatch() {
+    this._watchers.forEach(w => w.close());
   }
 }

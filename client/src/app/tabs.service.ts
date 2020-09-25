@@ -67,7 +67,7 @@ export class TabsService {
       this.mila.selectService(tab.name.match(/^Logs \| (.+)$/)[1]);
     }
     if (tab.type === 'tsc-logs') {
-      this.mila.setCurrentNode(tab.name.match(/^(.+) | tsc$/)[1]);
+      this.mila.setCurrentNode(tab.name.match(/^(.+) \| tsc$/)[1]);
     }
   }
 

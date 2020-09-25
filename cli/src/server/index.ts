@@ -1,16 +1,18 @@
 import express from 'express';
 import { createServer, Server } from 'http';
 import { LernaGraph, Service } from '../lerna';
+import { Logger } from '../utils/logger';
 
-export const startServer = (graph: LernaGraph): Server => {
-  // TODO: Resolve port from config, env, argv
+export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> => {
+
+  const log = logger.log('api');
   const port = 4545;
   const app = express();
 
-  console.log(__dirname + '/static');
   app.use('/', express.static(__dirname + '/static'));
 
   app.get('/api/graph', (req, res) => {
+    log.debug('GET /api/graph');
     res.json(
       graph.getNodes().map((n) => ({
         name: n.getName(),
@@ -26,13 +28,16 @@ export const startServer = (graph: LernaGraph): Server => {
   });
 
   app.get('/api/logs', (req, res) => {
+    log.debug('GET /api/logs');
     res.json(graph.logger.logs);
   });
 
   app.get('/api/services/:service/logs', (req, res) => {
     const serviceName = req.params.service;
+    log.debug('GET /api/services/:service/logs', serviceName);
     const service = graph.getServices().find(s => s.getName() === serviceName);
     if (!service) {
+      log.error('GET /api/services/:service/logs - 404: No such service');
       return res.status(404);
     }
     return res.json(service.logs);
@@ -40,16 +45,19 @@ export const startServer = (graph: LernaGraph): Server => {
 
   app.get('/api/nodes/:node/tsc/logs', (req, res) => {
     const nodeName = req.params.node;
+    log.debug('GET /api/nodes/:node/tsc/logs', nodeName);
     const node = graph.getNodes().find(s => s.getName() === nodeName);
     if (!node) {
-      return res.status(404);
+      log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
+      return res.status(404).send();
     }
     return res.json(node.tscLogs);
   });
 
   const http = createServer(app);
-  http.listen(port, () => {
-    console.log('Mila server running on port 4545');
-  });
-  return http;
+  return new Promise<Server>((resolve => {
+    http.listen(port, () => {
+      resolve(http);
+    });
+  }));
 };

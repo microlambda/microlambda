@@ -5,17 +5,18 @@ import { getLernaGraph } from '../utils/get-lerna-graph';
 import { interactive } from '../utils/interactive';
 import { tailLogs } from '../utils/logs';
 import { Logger } from '../utils/logger';
+import { RecompilationScheduler } from '../utils/scheduler';
 
 // TODO: make a ink scrollable logs component instead tail (which is not supported in windows)
 // TODO: use in memory logs instead files and try to preserve colors
-export const logs = async (cmd: { S: string }, logger: Logger): Promise<void> => {
+export const logs = async (cmd: { S: string }, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
   const projectRoot = getProjectRoot(logger);
   const config = loadConfig();
   let services: Service[] = [];
   logger.log('logs').debug(config);
 
   if (!cmd.S) {
-    const graph = await getLernaGraph(projectRoot, config, logger, 3001);
+    const graph = await getLernaGraph(projectRoot, scheduler, config, logger, 3001);
 
     await graph.bootstrap().catch((e) => {
       logger.log('logs').error(e);

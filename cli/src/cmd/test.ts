@@ -28,7 +28,7 @@ export const runTests = async (
   scheduler.setMode('safe');
   logger.log('start').debug(config);
   logger.log('start').info('Parsing lerna dependency graph', projectRoot);
-  const graph = await getLernaGraph(projectRoot, config, logger);
+  const graph = await getLernaGraph(projectRoot, scheduler, config, logger);
   if (options.bootstrap) {
     await graph.bootstrap().catch((e) => {
       logger.log('test-runner').error(e);

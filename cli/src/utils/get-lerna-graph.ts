@@ -2,6 +2,7 @@ import { IConfig } from '../config/config';
 import { IGraphElement, LernaGraph } from '../lerna';
 import { execCmd } from './child-process';
 import { Logger } from './logger';
+import { RecompilationScheduler } from './scheduler';
 
 interface IPackage {
   name: string;
@@ -12,6 +13,7 @@ interface IPackage {
 
 export const getLernaGraph = async (
   projectRoot: string,
+  scheduler: RecompilationScheduler,
   config: IConfig,
   logger: Logger,
   defaultPort = 3001,
@@ -35,6 +37,7 @@ export const getLernaGraph = async (
   };
 
   return new LernaGraph(
+    scheduler,
     Object.keys(rawGraph)
       .filter((n) => names.has(n))
       .map((n) => resolvePackage(n)),

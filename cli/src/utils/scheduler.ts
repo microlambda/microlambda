@@ -45,7 +45,7 @@ export class RecompilationScheduler {
   private _jobs: {
     stop: Service[];
     transpile: LernaNode[];
-    typeCheck: LernaNode[];
+    typeCheck: { node: LernaNode, force: boolean }[];
     start: Service[];
   };
   private _status: SchedulerStatus;
@@ -86,11 +86,8 @@ export class RecompilationScheduler {
   }
 
   public startOne(service: Service): Observable<IRecompilationEvent> {
-    // Enable service and its descendants
-    this._graph.enableOne(service);
-
     // Compile nodes that are not compiled yet
-    this._compile([service], false);
+    this._compile(service.getDependencies(), false);
 
     // Start service
     this._requestStart(service);
@@ -240,14 +237,22 @@ export class RecompilationScheduler {
           // abort previous recompilation if any
           this._abort$.next();
           // find all services that are impacted
+          this._logger.log('scheduler').info('Changed nodes', Array.from(this._changes).map(n => n.getName()));
           const impactedServices: Set<Service> = new Set<Service>();
           for (const node of this._changes) {
-            if (node.isService() && node.isEnabled()) {
+            const isRunningService = (n: LernaNode): boolean => {
+              if (n.isService()) {
+                const s = n as Service;
+                return s.isRunning();
+              }
+            }
+            if (isRunningService(node)) {
               impactedServices.add(node as Service);
             }
-            const dependantServices = node.getDependent().filter((n) => n.isService() && n.isEnabled());
+            const dependantServices = node.getDependent().filter((n) => isRunningService(n));
             dependantServices.forEach((s) => impactedServices.add(s as Service));
           }
+          this._logger.log('scheduler').info('Restarting impacted running services', Array.from(impactedServices).map(n => n.getName()));
           // stop them
           impactedServices.forEach((s) => this._requestStop(s));
 
@@ -264,17 +269,18 @@ export class RecompilationScheduler {
   }
 
   recompileSafe(node: LernaNode, force = false) {
-    // TODO: Recursively compile from this node to its ascendants
+    this._compile([node], true, false, force);
   }
 
   /**
-   * Recompile any array of nodes from leaves to roots
+   * Recompile any array of nodes from roots to leaves
    * @param toCompile: nodes to compile.
    * @param recompile: recompile nodes that are already compiled
-   * @param compileServices
+   * @param compileServices: also compile service
+   * @param force: perform type checking even if checksums are up-to-date
    * @private
    */
-  private _compile(toCompile: LernaNode[], recompile = true, compileServices = false): void {
+  private _compile(toCompile: LernaNode[], recompile = true, compileServices = false, force = false): void {
     this._logger.log('scheduler').debug(
       'Requested to compile nodes',
       toCompile.map((n) => n.getName()),
@@ -318,7 +324,7 @@ export class RecompilationScheduler {
         const shouldBeCompiled = compileServices || (!isRootService && notAlreadyCompiled);
         if (shouldBeCompiled && !requested.has(node)) {
           this._requestTranspile(node);
-          this._requestTypeCheck(node);
+          this._requestTypeCheck(node, force);
           this._logger.log('scheduler').debug('Added to compilation queue', node.getName());
           requested.add(node);
         } else {
@@ -352,13 +358,13 @@ export class RecompilationScheduler {
     }
   }
 
-  private _requestTypeCheck(node: LernaNode): void {
+  private _requestTypeCheck(node: LernaNode, force : boolean): void {
     this._logger.log('scheduler').debug(`Request to add typeCheck job`, node.getName());
-    const inQueue = this._alreadyQueued(node, 'typeCheck');
+    const inQueue = this._jobs.typeCheck.some((n) => n.node.getName() === node.getName());
     this._logger.log('scheduler').debug('Already in typeCheck queue', inQueue);
     if (!inQueue) {
       this._logger.log('scheduler').debug('Adding node in typeCheck queue', node.getName());
-      this._jobs.typeCheck.push(node);
+      this._jobs.typeCheck.push({ node, force });
     }
   }
 
@@ -382,7 +388,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _alreadyQueued(node: LernaNode, queue: 'transpile' | 'start' | 'stop' |  'typeCheck'): boolean {
+  private _alreadyQueued(node: LernaNode, queue: 'transpile' | 'start' | 'stop'): boolean {
     return this._jobs[queue].some((n) => n.getName() === node.getName());
   }
 
@@ -461,10 +467,10 @@ export class RecompilationScheduler {
       ),
     );
 
-    const typeCheckJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.typeCheck.map((node) =>
-      node.performTypeChecking().pipe(
+    const typeCheckJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.typeCheck.map((job) =>
+      job.node.performTypeChecking(job.force).pipe(
         map((node) => {
-          this._logger.log('scheduler').debug('Type checked', node.getName());
+          this._logger.log('scheduler').debug('Type checked', job.node.getName());
           return { node: node, type: RecompilationEventType.TYPE_CHECKED };
         }),
         catchError((err) => {

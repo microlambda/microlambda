@@ -11,6 +11,7 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { ServiceLogsComponent } from './service-logs/service-logs.component';
 import { SafeHtmlPipe } from './safe-html.pipe';
 import { TscLogsComponent } from './tsc-logs/tsc-logs.component';
+import { InfiniteScrollModule } from 'ngx-infinite-scroll';
 
 @NgModule({
   declarations: [
@@ -27,6 +28,7 @@ import { TscLogsComponent } from './tsc-logs/tsc-logs.component';
     HttpClientModule,
     NgxResizableModule,
     FontAwesomeModule,
+    InfiniteScrollModule,
   ],
   providers: [],
   bootstrap: [AppComponent]

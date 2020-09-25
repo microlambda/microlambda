@@ -9,6 +9,7 @@ import { spawn } from 'child_process';
 import { Logger } from '../utils/logger';
 import { IPCSocketsManager } from '../ipc/socket';
 import { IOSocketManager } from '../server/socket';
+import { RecompilationScheduler } from '../utils/scheduler';
 
 export const isService = (location: string): boolean => {
   return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
@@ -29,7 +30,7 @@ export class LernaGraph {
     return this._io;
   }
 
-  constructor(nodes: IGraphElement[], projectRoot: string, config: IConfig, logger: Logger, defaultPort?: number) {
+  constructor(scheduler: RecompilationScheduler, nodes: IGraphElement[], projectRoot: string, config: IConfig, logger: Logger, defaultPort?: number) {
     this._logger = logger;
     this._config = config;
     this._logger.log('graph').debug('Building graph with', nodes);
@@ -46,8 +47,8 @@ export class LernaGraph {
         );
         this._logger.log('graph').debug('Is service', isService(node.location));
         isService(node.location)
-          ? new Service(this, node, builtNodes, nodes)
-          : new Package(this, node, builtNodes, nodes);
+          ? new Service(scheduler, this, node, builtNodes, nodes)
+          : new Package(scheduler, this, node, builtNodes, nodes);
       }
     }
     this.nodes = Array.from(builtNodes);
@@ -82,6 +83,7 @@ export class LernaGraph {
    * Enable a given node and all his descendants
    * @param node
    */
+  // FIXME: Enabled status should only be used to discard node excluded by config, not for partial run
   public enableOne(node: LernaNode): void {
     node.enable();
     node
@@ -94,6 +96,7 @@ export class LernaGraph {
    * Disable a given node and all his descendants that are not used by an other enabled node
    * @param node
    */
+  // FIXME: Enabled status should only be used to discard node excluded by config, not for partial run
   public disableOne(node: LernaNode): void {
     node.disable();
     node

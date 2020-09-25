@@ -72,4 +72,8 @@ export class EventsLogComponent implements OnInit {
     this.filterLogs();
     setTimeout(() => this.showOptions = false, 100);
   }
+
+  onScrollUp() {
+    console.log('yolo');
+  }
 }

@@ -47,6 +47,14 @@ export class Service extends Package {
     return this._status === ServiceStatus.RUNNING;
   }
 
+  get isStarting(): boolean {
+    return this._status === ServiceStatus.STARTING;
+  }
+
+  get isService(): boolean {
+    return true;
+  }
+
   get canBeStarted(): boolean {
     return this._status === ServiceStatus.STOPPED || this._status === ServiceStatus.CRASHED;
   }

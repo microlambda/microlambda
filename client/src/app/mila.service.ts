@@ -14,20 +14,17 @@ import * as Convert from 'ansi-to-html';
 
 const convert = new Convert();
 /**
- * TODO:
- * - Filterable events log => DONE but perf issue: see how to mitigate it (lazy-load elt in DOM with infinite scroll)
- * - Details (port etc...) => DONE but need styling and so on
+ * - Filterable events log => TODO perf issue: see how to mitigate it (lazy-load elt in DOM with infinite scroll)
  * - Compilation Logs => TODO In CLI put the compilation logs in memory maps that can be queryable from client. Try to preserve ANSI colors and convert to HTML
- * - SLS logs (with search) => TODO Same than above, but also use a websocket for real-time update
- * - Start / Stop / Restart => TODO Emit socket event that are caught in CLI and perform desired operation
+ * - Start / Stop / Restart => TODO possibility to stop in starting state
  * - Change port => TODO: Same, also create a socket event to update service port in client
- * - Test => TODO Run tests (unit, functional or both) and print output in a web TTY
+ * - Test => TODO Run tests (unit, functional or both) and print output in a web TTY (https://xtermjs.org/)
  * - Package tree => TODO put packagr v2 in codebase and use script and tree-shaking on demand (on HTTP call) to return tree-shaken deps
  * - Package / Deploy => TODO create UI to easily package and deploy services (input aws-region etc...)
  * - Default region / AWS credentials => TODO: Create a screen to see which key pair / profile and default region is currently used
  * - Binaries Versions => TODO: Create a endpoint to see binary path and version (tsc, sls, jest)
- * - Lerna Graph => TODO: Use a graph lib (D3 ?) to print graph in a Airflow DAG way
- * - Resources consumption => TODO Use https://www.npmjs.com/package/pidusage to send resource usage too the front and print them in beatiful D3 charts
+ * - Lerna Graph => TODO: Use a graph lib (D3 cola.js ?) to print graph in a Airflow DAG way
+ * - Resources consumption => TODO Use https://www.npmjs.com/package/pidusage to send resource usage too the front and print them in beautiful D3 charts
  * - Make closable + button add => TODO: Make generic tab (event logs, binary versions etc...) closable and add a button add at the end of toolbar to re-open them
  * - Tab Config used => TODO create a tab printing the currently used .microlambdarc config
  * - Improve terminal based tasks with https://xtermjs.org/
@@ -181,5 +178,9 @@ export class MilaService{
 
   restart(service: string) {
     this._socket.emit('service.restart', service);
+  }
+
+  compile(node: string, force: boolean) {
+    this._socket.emit('node.compile', {node, force});
   }
 }

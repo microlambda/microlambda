@@ -3,7 +3,7 @@ import { textSync } from 'figlet';
 
 export const showOff = (): string =>
   magenta(
-    'v0.0.6-alpha',
+    'v0.1.0-alpha',
     `\n\n`,
     textSync('MicroLambda', {
       font: 'Big Money-ne',

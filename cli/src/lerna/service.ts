@@ -8,6 +8,8 @@ import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
 import { getBinary } from '../utils/external-binaries';
 import { actions } from '../ui';
+import { FSWatcher, watch } from 'chokidar';
+import { RecompilationScheduler } from '../utils/scheduler';
 
 export class Service extends LernaNode {
   private status: ServiceStatus;
@@ -15,9 +17,10 @@ export class Service extends LernaNode {
   private process: ChildProcess;
   private logStream: WriteStream;
   private _inMemoryLogs: string[] = [];
+  private _slsYamlWatcher: FSWatcher;
 
-  constructor(graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
-    super(graph, node, nodes, elements);
+  constructor(scheduler: RecompilationScheduler, graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
+    super(scheduler, graph, node, nodes, elements);
     this.status = ServiceStatus.STOPPED;
     this._port = graph.getPort(node.name);
   }
@@ -127,6 +130,22 @@ export class Service extends LernaNode {
     });
   }
 
+  private _watchServerlessYaml() {
+    this._slsYamlWatcher = watch(`${this.location}/serverless.{yml,yaml}`);
+    this._slsYamlWatcher.on('change', (path) => {
+      this.getGraph()
+        .logger.log('node')
+        .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+      this._scheduler.restartOne(this);
+    });
+  }
+
+  protected async _unwatchServerlessYaml() {
+    if (this._slsYamlWatcher) {
+      await this._slsYamlWatcher.close();
+    }
+  }
+
   private _startProcess(): void {
     this._updateStatus(ServiceStatus.STARTING);
     createLogFile(this.graph.getProjectRoot(), this.name);
@@ -196,9 +215,22 @@ export class Service extends LernaNode {
   }
 
   private _updateStatus(status: ServiceStatus): void {
+    if (status === ServiceStatus.RUNNING) {
+      this._watchServerlessYaml();
+    } else {
+      this._unwatchServerlessYaml().then(() => {
+        this.getGraph()
+          .logger.log('service')
+          .debug(`${this.name}: Unwatched serverless.yml`);
+      });
+    }
     this.status = status;
     this._ipc.graphUpdated();
     this.getGraph().io.statusUpdated(this, this.status);
     actions.updateServiceStatus(this);
+  }
+
+  isRunning() {
+    return this.status === ServiceStatus.RUNNING;
   }
 }
