@@ -54,6 +54,17 @@ export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> 
     return res.json(node.tscLogs);
   });
 
+  app.get('/api/nodes/:node/tree', (req, res) => {
+    const nodeName = req.params.node;
+    log.debug('GET /api/nodes/:node/tree', nodeName);
+    const node = graph.getNodes().find(s => s.getName() === nodeName);
+    if (!node) {
+      log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
+      return res.status(404).send();
+    }
+    return res.json(node.tscLogs);
+  });
+
   const http = createServer(app);
   return new Promise<Server>((resolve => {
     http.listen(port, () => {

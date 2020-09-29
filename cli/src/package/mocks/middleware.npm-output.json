@@ -1,0 +1,912 @@
+{
+  "name": "@project/middleware",
+  "version": "0.0.1",
+  "private": true,
+  "main": "lib/src/index.js",
+  "typings": "lib/src/index.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib"
+  ],
+  "dependencies": {
+    "node-serverless-helpers": {
+      "_args": [
+        [
+          "node-serverless-helpers@3.0.6",
+          "/path/to/project/packages/middleware"
+        ],
+        [
+          "node-serverless-helpers@3.0.6",
+          "/path/to/project/packages/middleware"
+        ]
+      ],
+      "_from": "node-serverless-helpers@3.0.6",
+      "_id": "node-serverless-helpers@3.0.6",
+      "_integrity": "sha512-PXPS5+rvik8/16Xq6QSPXDqp60fpcqWIQlPOMgMzPYFGhZGGDYeuco/T1W1yI82zKaYjBAn+5PfHTNk3i4jDxA==",
+      "_location": "/node-serverless-helpers",
+      "_phantomChildren": {},
+      "_requested": {
+        "type": "version",
+        "registry": true,
+        "raw": "node-serverless-helpers@3.0.6",
+        "name": "node-serverless-helpers",
+        "escapedName": "node-serverless-helpers",
+        "rawSpec": "3.0.6",
+        "saveSpec": null,
+        "fetchSpec": "3.0.6"
+      },
+      "_requiredBy": [
+        "/"
+      ],
+      "_resolved": "https://registry.npmjs.org/node-serverless-helpers/-/node-serverless-helpers-3.0.6.tgz",
+      "_spec": "3.0.6",
+      "_where": "/path/to/project/packages/middleware",
+      "author": {
+        "name": "Thomas Ruiz",
+        "email": "contact@thomasruiz.eu"
+      },
+      "bugs": {
+        "url": "https://github.com/thomasruiz/node-serverless-helpers/issues"
+      },
+      "dependencies": {
+        "deepmerge": {
+          "_args": [
+            [
+              "deepmerge@3.3.0",
+              "/path/to/project/packages/middleware"
+            ],
+            [
+              "deepmerge@3.3.0",
+              "/path/to/project/packages/middleware"
+            ]
+          ],
+          "_from": "deepmerge@3.3.0",
+          "_id": "deepmerge@3.3.0",
+          "_integrity": "sha512-GRQOafGHwMHpjPx9iCvTgpu9NojZ49q794EEL94JVEw6VaeA8XTUyBKvAkOOjBX9oJNiV6G3P+T+tihFjo2TqA==",
+          "_location": "/deepmerge",
+          "_phantomChildren": {},
+          "_requested": {
+            "type": "version",
+            "registry": true,
+            "raw": "deepmerge@3.3.0",
+            "name": "deepmerge",
+            "escapedName": "deepmerge",
+            "rawSpec": "3.3.0",
+            "saveSpec": "[Circular]",
+            "fetchSpec": "3.3.0"
+          },
+          "_requiredBy": [
+            "/node-serverless-helpers"
+          ],
+          "_resolved": "https://registry.npmjs.org/deepmerge/-/deepmerge-3.3.0.tgz",
+          "_spec": "3.3.0",
+          "_where": "/path/to/project/packages/middleware",
+          "bugs": {
+            "url": "https://github.com/TehShrike/deepmerge/issues"
+          },
+          "dependencies": {},
+          "description": "A library for deep (recursive) merging of Javascript objects",
+          "devDependencies": {
+            "@types/node": "^8.10.49",
+            "is-mergeable-object": "1.1.0",
+            "is-plain-object": "^2.0.4",
+            "jsmd": "^1.0.1",
+            "rollup": "^1.15.5",
+            "rollup-plugin-commonjs": "^10.0.0",
+            "rollup-plugin-node-resolve": "^5.0.2",
+            "tape": "^4.10.2",
+            "ts-node": "7.0.1",
+            "typescript": "=2.2.2",
+            "uglify-js": "^3.6.0"
+          },
+          "engines": {
+            "node": ">=0.10.0"
+          },
+          "homepage": "https://github.com/TehShrike/deepmerge",
+          "keywords": [
+            "merge",
+            "deep",
+            "extend",
+            "copy",
+            "clone",
+            "recursive"
+          ],
+          "license": "MIT",
+          "main": "dist/umd.js",
+          "name": "deepmerge",
+          "repository": {
+            "type": "git",
+            "url": "git://github.com/TehShrike/deepmerge.git"
+          },
+          "scripts": {
+            "build": "rollup -c",
+            "size": "npm run build && uglifyjs --compress --mangle -- ./dist/umd.js | gzip -c | wc -c",
+            "test": "npm run build && tape test/*.js && jsmd readme.md && npm run test:typescript",
+            "test:typescript": "tsc --noEmit test/typescript.ts && ts-node test/typescript.ts"
+          },
+          "version": "3.3.0",
+          "readme": "# deepmerge\n\nMerges the enumerable properties of two or more objects deeply.\n\n> UMD bundle is 646B minified+gzipped\n\n## Getting Started\n\n### Example Usage\n<!--js\nconst merge = require('./')\n-->\n\n```js\nconst x = {\n\tfoo: { bar: 3 },\n\tarray: [{\n\t\tdoes: 'work',\n\t\ttoo: [ 1, 2, 3 ]\n\t}]\n}\n\nconst y = {\n\tfoo: { baz: 4 },\n\tquux: 5,\n\tarray: [{\n\t\tdoes: 'work',\n\t\ttoo: [ 4, 5, 6 ]\n\t}, {\n\t\treally: 'yes'\n\t}]\n}\n\nconst output = {\n\tfoo: {\n\t\tbar: 3,\n\t\tbaz: 4\n\t},\n\tarray: [{\n\t\tdoes: 'work',\n\t\ttoo: [ 1, 2, 3 ]\n\t}, {\n\t\tdoes: 'work',\n\t\ttoo: [ 4, 5, 6 ]\n\t}, {\n\t\treally: 'yes'\n\t}],\n\tquux: 5\n}\n\nmerge(x, y) // => output\n```\n\n\n### Installation\n\nWith [npm](http://npmjs.org) do:\n\n```sh\nnpm install deepmerge\n```\n\ndeepmerge can be used directly in the browser without the use of package managers/bundlers as well:  [UMD version from unpkg.com](https://unpkg.com/deepmerge/dist/umd.js).\n\n\n### Include\n\ndeepmerge exposes a CommonJS entry point:\n\n```\nconst merge = require('deepmerge')\n```\n\nThe ESM entry point was dropped due to a [Webpack bug](https://github.com/webpack/webpack/issues/6584).\n\n# API\n\n\n## `merge(x, y, [options])`\n\nMerge two objects `x` and `y` deeply, returning a new merged object with the\nelements from both `x` and `y`.\n\nIf an element at the same key is present for both `x` and `y`, the value from\n`y` will appear in the result.\n\nMerging creates a new object, so that neither `x` or `y` is modified.\n\n**Note:** By default, arrays are merged by concatenating them.\n\n## `merge.all(arrayOfObjects, [options])`\n\nMerges any number of objects into a single result object.\n\n```js\nconst foobar = { foo: { bar: 3 } }\nconst foobaz = { foo: { baz: 4 } }\nconst bar = { bar: 'yay!' }\n\nmerge.all([ foobar, foobaz, bar ]) // => { foo: { bar: 3, baz: 4 }, bar: 'yay!' }\n```\n\n\n## Options\n\n### `arrayMerge`\n\nThere are multiple ways to merge two arrays, below are a few examples but you can also create your own custom function.\n\n#### Overwrite Array\n\nOverwrites the existing array values completely rather than concatenating them\n\n```js\nconst overwriteMerge = (destinationArray, sourceArray, options) => sourceArray\n\nmerge(\n\t[1, 2, 3],\n\t[3, 2, 1],\n\t{ arrayMerge: overwriteMerge }\n) // => [3, 2, 1]\n```\n\n#### Combine Array\n\nCombine arrays, such as overwriting existing defaults while also adding/keeping values that are different names\n\nTo use the legacy (pre-version-2.0.0) array merging algorithm, use the following:\n\n```js\nconst emptyTarget = value => Array.isArray(value) ? [] : {}\nconst clone = (value, options) => merge(emptyTarget(value), value, options)\n\nconst combineMerge = (target, source, options) => {\n\tconst destination = target.slice()\n\n\tsource.forEach((item, index) => {\n\t\tif (typeof destination[index] === 'undefined') {\n\t\t\tconst cloneRequested = options.clone !== false\n\t\t\tconst shouldClone = cloneRequested && options.isMergeableObject(item)\n\t\t\tdestination[index] = shouldClone ? clone(item, options) : item\n\t\t} else if (options.isMergeableObject(item)) {\n\t\t\tdestination[index] = merge(target[index], item, options)\n\t\t} else if (target.indexOf(item) === -1) {\n\t\t\tdestination.push(item)\n\t\t}\n\t})\n\treturn destination\n}\n\nmerge(\n\t[{ a: true }],\n\t[{ b: true }, 'ah yup'],\n\t{ arrayMerge: combineMerge }\n) // => [{ a: true, b: true }, 'ah yup']\n```\n\n### `isMergeableObject`\n\nBy default, deepmerge clones every property from almost every kind of object.\n\nYou may not want this, if your objects are of special types, and you want to copy the whole object instead of just copying its properties.\n\nYou can accomplish this by passing in a function for the `isMergeableObject` option.\n\nIf you only want to clone properties of plain objects, and ignore all \"special\" kinds of instantiated objects, you probably want to drop in [`is-plain-object`](https://github.com/jonschlinkert/is-plain-object).\n\n```js\nconst isPlainObject = require('is-plain-object')\n\nfunction SuperSpecial() {\n\tthis.special = 'oh yeah man totally'\n}\n\nconst instantiatedSpecialObject = new SuperSpecial()\n\nconst target = {\n\tsomeProperty: {\n\t\tcool: 'oh for sure'\n\t}\n}\n\nconst source = {\n\tsomeProperty: instantiatedSpecialObject\n}\n\nconst defaultOutput = merge(target, source)\n\ndefaultOutput.someProperty.cool // => 'oh for sure'\ndefaultOutput.someProperty.special // => 'oh yeah man totally'\ndefaultOutput.someProperty instanceof SuperSpecial // => false\n\nconst customMergeOutput = merge(target, source, {\n\tisMergeableObject: isPlainObject\n})\n\ncustomMergeOutput.someProperty.cool // => undefined\ncustomMergeOutput.someProperty.special // => 'oh yeah man totally'\ncustomMergeOutput.someProperty instanceof SuperSpecial // => true\n```\n\n### `customMerge`\n\nSpecifies a function which can be used to override the default merge behavior for a property, based on the property name.\n\nThe `customMerge` function will be passed the key for each property, and should return the function which should be used to merge the values for that property.\n\nIt may also return undefined, in which case the default merge behaviour will be used.\n\n```js\nconst alex = {\n    name: {\n        first: 'Alex',\n        last: 'Alexson'\n    },\n    pets: ['Cat', 'Parrot']\n}\n\nconst tony = {\n    name: {\n        first: 'Tony',\n        last: 'Tonison'\n    },\n    pets: ['Dog']\n}\n\nconst mergeNames = (nameA, nameB) => `${nameA.first} and ${nameB.first}`\n\nconst options = {\n    customMerge: (key) => {\n        if (key === 'name') {\n            return mergeNames\n        }\n    }\n}\n\nconst result = merge(alex, tony, options)\n\nresult.name // => 'Alex and Tony'\nresult.pets // => ['Cat', 'Parrot', 'Dog']\n```\n\n\n### `clone`\n\n*Deprecated.*\n\nDefaults to `true`.\n\nIf `clone` is `false` then child objects will be copied directly instead of being cloned.  This was the default behavior before version 2.x.\n\n\n# Testing\n\nWith [npm](http://npmjs.org) do:\n\n```sh\nnpm test\n```\n\n\n# License\n\nMIT\n",
+          "readmeFilename": "readme.md",
+          "optionalDependencies": {},
+          "_dependencies": {},
+          "path": "/path/to/project/packages/middleware/node_modules/deepmerge",
+          "error": "[Circular]",
+          "extraneous": false
+        },
+        "joi": {
+          "_args": [
+            [
+              "joi@14.3.1",
+              "/path/to/project/packages/middleware"
+            ],
+            [
+              "joi@14.3.1",
+              "/path/to/project/packages/middleware"
+            ]
+          ],
+          "_from": "joi@14.3.1",
+          "_id": "joi@14.3.1",
+          "_integrity": "sha512-LQDdM+pkOrpAn4Lp+neNIFV3axv1Vna3j38bisbQhETPMANYRbFJFUyOZcOClYvM/hppMhGWuKSFEK9vjrB+bQ==",
+          "_location": "/joi",
+          "_phantomChildren": {},
+          "_requested": {
+            "type": "version",
+            "registry": true,
+            "raw": "joi@14.3.1",
+            "name": "joi",
+            "escapedName": "joi",
+            "rawSpec": "14.3.1",
+            "saveSpec": "[Circular]",
+            "fetchSpec": "14.3.1"
+          },
+          "_requiredBy": [
+            "/node-serverless-helpers"
+          ],
+          "_resolved": "https://registry.npmjs.org/joi/-/joi-14.3.1.tgz",
+          "_spec": "14.3.1",
+          "_where": "/path/to/project/packages/middleware",
+          "bugs": {
+            "url": "https://github.com/hapijs/joi/issues"
+          },
+          "dependencies": {
+            "hoek": {
+              "_args": [
+                [
+                  "hoek@6.1.3",
+                  "/path/to/project/packages/middleware"
+                ],
+                [
+                  "hoek@6.1.3",
+                  "/path/to/project/packages/middleware"
+                ]
+              ],
+              "_from": "hoek@6.1.3",
+              "_id": "hoek@6.1.3",
+              "_integrity": "sha512-YXXAAhmF9zpQbC7LEcREFtXfGq5K1fmd+4PHkBq8NUqmzW3G+Dq10bI/i0KucLRwss3YYFQ0fSfoxBZYiGUqtQ==",
+              "_location": "/hoek",
+              "_phantomChildren": {},
+              "_requested": {
+                "type": "version",
+                "registry": true,
+                "raw": "hoek@6.1.3",
+                "name": "hoek",
+                "escapedName": "hoek",
+                "rawSpec": "6.1.3",
+                "saveSpec": "[Circular]",
+                "fetchSpec": "6.1.3"
+              },
+              "_requiredBy": [
+                "/joi",
+                "/topo"
+              ],
+              "_resolved": "https://registry.npmjs.org/hoek/-/hoek-6.1.3.tgz",
+              "_spec": "6.1.3",
+              "_where": "/path/to/project/packages/middleware",
+              "bugs": {
+                "url": "https://github.com/hapijs/hoek/issues"
+              },
+              "dependencies": {},
+              "description": "General purpose node utilities",
+              "devDependencies": {
+                "code": "5.x.x",
+                "lab": "18.x.x"
+              },
+              "homepage": "https://github.com/hapijs/hoek#readme",
+              "keywords": [
+                "utilities"
+              ],
+              "license": "BSD-3-Clause",
+              "main": "lib/index.js",
+              "name": "hoek",
+              "repository": {
+                "type": "git",
+                "url": "git://github.com/hapijs/hoek.git"
+              },
+              "scripts": {
+                "test": "lab -a code -t 100 -L",
+                "test-cov-html": "lab -a code -t 100 -L -r html -o coverage.html"
+              },
+              "version": "6.1.3",
+              "readme": "![hoek Logo](https://raw.github.com/hapijs/hoek/master/images/hoek.png)\n\nUtility methods for the hapi ecosystem. This module is not intended to solve every problem for\neveryone, but rather as a central place to store hapi-specific methods. If you're looking for a\ngeneral purpose utility module, check out [lodash](https://github.com/lodash/lodash) or\n[underscore](https://github.com/jashkenas/underscore).\n\n[![Build Status](https://secure.travis-ci.org/hapijs/hoek.svg)](http://travis-ci.org/hapijs/hoek)\n\nLead Maintainer: [Gil Pedersen](https://github.com/kanongil)\n\n\n## Documentation\n\n[**API Reference**](API.md)\n",
+              "readmeFilename": "README.md",
+              "optionalDependencies": {},
+              "_dependencies": {},
+              "path": "/path/to/project/packages/middleware/node_modules/hoek",
+              "error": "[Circular]",
+              "extraneous": false
+            },
+            "isemail": {
+              "_args": [
+                [
+                  "isemail@3.2.0",
+                  "/path/to/project/packages/middleware"
+                ],
+                [
+                  "isemail@3.2.0",
+                  "/path/to/project/packages/middleware"
+                ]
+              ],
+              "_from": "isemail@3.2.0",
+              "_id": "isemail@3.2.0",
+              "_integrity": "sha512-zKqkK+O+dGqevc93KNsbZ/TqTUFd46MwWjYOoMrjIMZ51eU7DtQG3Wmd9SQQT7i7RVnuTPEiYEWHU3MSbxC1Tg==",
+              "_location": "/isemail",
+              "_phantomChildren": {},
+              "_requested": {
+                "type": "version",
+                "registry": true,
+                "raw": "isemail@3.2.0",
+                "name": "isemail",
+                "escapedName": "isemail",
+                "rawSpec": "3.2.0",
+                "saveSpec": "[Circular]",
+                "fetchSpec": "3.2.0"
+              },
+              "_requiredBy": [
+                "/joi"
+              ],
+              "_resolved": "https://registry.npmjs.org/isemail/-/isemail-3.2.0.tgz",
+              "_spec": "3.2.0",
+              "_where": "/path/to/project/packages/middleware",
+              "bugs": {
+                "url": "https://github.com/hapijs/isemail/issues"
+              },
+              "dependencies": {
+                "punycode": {
+                  "_args": [
+                    [
+                      "punycode@2.1.1",
+                      "/path/to/project/packages/middleware"
+                    ],
+                    [
+                      "punycode@2.1.1",
+                      "/path/to/project/packages/middleware"
+                    ]
+                  ],
+                  "_from": "punycode@2.1.1",
+                  "_id": "punycode@2.1.1",
+                  "_integrity": "sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==",
+                  "_location": "/punycode",
+                  "_phantomChildren": {},
+                  "_requested": {
+                    "type": "version",
+                    "registry": true,
+                    "raw": "punycode@2.1.1",
+                    "name": "punycode",
+                    "escapedName": "punycode",
+                    "rawSpec": "2.1.1",
+                    "saveSpec": "[Circular]",
+                    "fetchSpec": "2.1.1"
+                  },
+                  "_requiredBy": [
+                    "/isemail"
+                  ],
+                  "_resolved": "https://registry.npmjs.org/punycode/-/punycode-2.1.1.tgz",
+                  "_spec": "2.1.1",
+                  "_where": "/path/to/project/packages/middleware",
+                  "author": {
+                    "name": "Mathias Bynens",
+                    "url": "https://mathiasbynens.be/"
+                  },
+                  "bugs": {
+                    "url": "https://github.com/bestiejs/punycode.js/issues"
+                  },
+                  "contributors": [
+                    {
+                      "name": "Mathias Bynens",
+                      "url": "https://mathiasbynens.be/"
+                    }
+                  ],
+                  "description": "A robust Punycode converter that fully complies to RFC 3492 and RFC 5891, and works on nearly all JavaScript platforms.",
+                  "devDependencies": {
+                    "codecov": "^1.0.1",
+                    "istanbul": "^0.4.1",
+                    "mocha": "^2.5.3"
+                  },
+                  "engines": {
+                    "node": ">=6"
+                  },
+                  "files": [
+                    "LICENSE-MIT.txt",
+                    "punycode.js",
+                    "punycode.es6.js"
+                  ],
+                  "homepage": "https://mths.be/punycode",
+                  "jsnext:main": "punycode.es6.js",
+                  "jspm": {
+                    "map": {
+                      "./punycode.js": {
+                        "node": "@node/punycode"
+                      }
+                    }
+                  },
+                  "keywords": [
+                    "punycode",
+                    "unicode",
+                    "idn",
+                    "idna",
+                    "dns",
+                    "url",
+                    "domain"
+                  ],
+                  "license": "MIT",
+                  "main": "punycode.js",
+                  "module": "punycode.es6.js",
+                  "name": "punycode",
+                  "repository": {
+                    "type": "git",
+                    "url": "git+https://github.com/bestiejs/punycode.js.git"
+                  },
+                  "scripts": {
+                    "prepublish": "node scripts/prepublish.js",
+                    "test": "mocha tests"
+                  },
+                  "version": "2.1.1",
+                  "readme": "# Punycode.js [![Build status](https://travis-ci.org/bestiejs/punycode.js.svg?branch=master)](https://travis-ci.org/bestiejs/punycode.js) [![Code coverage status](http://img.shields.io/codecov/c/github/bestiejs/punycode.js.svg)](https://codecov.io/gh/bestiejs/punycode.js) [![Dependency status](https://gemnasium.com/bestiejs/punycode.js.svg)](https://gemnasium.com/bestiejs/punycode.js)\n\nPunycode.js is a robust Punycode converter that fully complies to [RFC 3492](https://tools.ietf.org/html/rfc3492) and [RFC 5891](https://tools.ietf.org/html/rfc5891).\n\nThis JavaScript library is the result of comparing, optimizing and documenting different open-source implementations of the Punycode algorithm:\n\n* [The C example code from RFC 3492](https://tools.ietf.org/html/rfc3492#appendix-C)\n* [`punycode.c` by _Markus W. Scherer_ (IBM)](http://opensource.apple.com/source/ICU/ICU-400.42/icuSources/common/punycode.c)\n* [`punycode.c` by _Ben Noordhuis_](https://github.com/bnoordhuis/punycode/blob/master/punycode.c)\n* [JavaScript implementation by _some_](http://stackoverflow.com/questions/183485/can-anyone-recommend-a-good-free-javascript-for-punycode-to-unicode-conversion/301287#301287)\n* [`punycode.js` by _Ben Noordhuis_](https://github.com/joyent/node/blob/426298c8c1c0d5b5224ac3658c41e7c2a3fe9377/lib/punycode.js) (note: [not fully compliant](https://github.com/joyent/node/issues/2072))\n\nThis project was [bundled](https://github.com/joyent/node/blob/master/lib/punycode.js) with Node.js from [v0.6.2+](https://github.com/joyent/node/compare/975f1930b1...61e796decc) until [v7](https://github.com/nodejs/node/pull/7941) (soft-deprecated).\n\nThe current version supports recent versions of Node.js only. It provides a CommonJS module and an ES6 module. For the old version that offers the same functionality with broader support, including Rhino, Ringo, Narwhal, and web browsers, see [v1.4.1](https://github.com/bestiejs/punycode.js/releases/tag/v1.4.1).\n\n## Installation\n\nVia [npm](https://www.npmjs.com/):\n\n```bash\nnpm install punycode --save\n```\n\nIn [Node.js](https://nodejs.org/):\n\n```js\nconst punycode = require('punycode');\n```\n\n## API\n\n### `punycode.decode(string)`\n\nConverts a Punycode string of ASCII symbols to a string of Unicode symbols.\n\n```js\n// decode domain name parts\npunycode.decode('maana-pta'); // 'mañana'\npunycode.decode('--dqo34k'); // '☃-⌘'\n```\n\n### `punycode.encode(string)`\n\nConverts a string of Unicode symbols to a Punycode string of ASCII symbols.\n\n```js\n// encode domain name parts\npunycode.encode('mañana'); // 'maana-pta'\npunycode.encode('☃-⌘'); // '--dqo34k'\n```\n\n### `punycode.toUnicode(input)`\n\nConverts a Punycode string representing a domain name or an email address to Unicode. Only the Punycoded parts of the input will be converted, i.e. it doesn’t matter if you call it on a string that has already been converted to Unicode.\n\n```js\n// decode domain names\npunycode.toUnicode('xn--maana-pta.com');\n// → 'mañana.com'\npunycode.toUnicode('xn----dqo34k.com');\n// → '☃-⌘.com'\n\n// decode email addresses\npunycode.toUnicode('джумла@xn--p-8sbkgc5ag7bhce.xn--ba-lmcq');\n// → 'джумла@джpумлатест.bрфa'\n```\n\n### `punycode.toASCII(input)`\n\nConverts a lowercased Unicode string representing a domain name or an email address to Punycode. Only the non-ASCII parts of the input will be converted, i.e. it doesn’t matter if you call it with a domain that’s already in ASCII.\n\n```js\n// encode domain names\npunycode.toASCII('mañana.com');\n// → 'xn--maana-pta.com'\npunycode.toASCII('☃-⌘.com');\n// → 'xn----dqo34k.com'\n\n// encode email addresses\npunycode.toASCII('джумла@джpумлатест.bрфa');\n// → 'джумла@xn--p-8sbkgc5ag7bhce.xn--ba-lmcq'\n```\n\n### `punycode.ucs2`\n\n#### `punycode.ucs2.decode(string)`\n\nCreates an array containing the numeric code point values of each Unicode symbol in the string. While [JavaScript uses UCS-2 internally](https://mathiasbynens.be/notes/javascript-encoding), this function will convert a pair of surrogate halves (each of which UCS-2 exposes as separate characters) into a single code point, matching UTF-16.\n\n```js\npunycode.ucs2.decode('abc');\n// → [0x61, 0x62, 0x63]\n// surrogate pair for U+1D306 TETRAGRAM FOR CENTRE:\npunycode.ucs2.decode('\\uD834\\uDF06');\n// → [0x1D306]\n```\n\n#### `punycode.ucs2.encode(codePoints)`\n\nCreates a string based on an array of numeric code point values.\n\n```js\npunycode.ucs2.encode([0x61, 0x62, 0x63]);\n// → 'abc'\npunycode.ucs2.encode([0x1D306]);\n// → '\\uD834\\uDF06'\n```\n\n### `punycode.version`\n\nA string representing the current Punycode.js version number.\n\n## Author\n\n| [![twitter/mathias](https://gravatar.com/avatar/24e08a9ea84deb17ae121074d0f17125?s=70)](https://twitter.com/mathias \"Follow @mathias on Twitter\") |\n|---|\n| [Mathias Bynens](https://mathiasbynens.be/) |\n\n## License\n\nPunycode.js is available under the [MIT](https://mths.be/mit) license.\n",
+                  "readmeFilename": "README.md",
+                  "dependencies": {},
+                  "optionalDependencies": {},
+                  "_dependencies": {},
+                  "path": "/path/to/project/packages/middleware/node_modules/punycode",
+                  "error": "[Circular]",
+                  "extraneous": false
+                }
+              },
+              "description": "Validate an email address according to RFCs 5321, 5322, and others",
+              "devDependencies": {
+                "code": "^5.2.0",
+                "lab": "^16.1.0"
+              },
+              "engines": {
+                "node": ">=4.0.0"
+              },
+              "files": [
+                "lib/"
+              ],
+              "homepage": "https://github.com/hapijs/isemail#readme",
+              "keywords": [
+                "isemail",
+                "validation",
+                "check",
+                "checking",
+                "verification",
+                "email",
+                "address",
+                "email address"
+              ],
+              "license": "BSD-3-Clause",
+              "main": "lib/index.js",
+              "name": "isemail",
+              "repository": {
+                "type": "git",
+                "url": "git://github.com/hapijs/isemail.git"
+              },
+              "scripts": {
+                "test": "lab -a code -t 100 -L -m 5000",
+                "test-cov-html": "lab -a code -r html -o coverage.html -m 5000"
+              },
+              "types": "lib/index.d.ts",
+              "version": "3.2.0",
+              "readme": "# isemail\n\nNode email address validation library\n\n[![Build Status](https://travis-ci.org/hapijs/isemail.svg?branch=master)](https://travis-ci.org/hapijs/isemail)<a href=\"#footnote-1\"><sup>&#91;1&#93;</sup></a>\n\nLead Maintainer: [Eli Skeggs][skeggse]\n\nThis library is a port of the PHP `is_email` function by Dominic Sayers.\n\nInstall\n=======\n\n```sh\n$ npm install isemail\n```\n\nTest\n====\n\nThe tests were pulled from `is_email`'s extensive [test suite][tests] on October 15, 2013. Many thanks to the contributors! Additional tests have been added to increase code coverage and verify edge-cases.\n\nRun any of the following.\n\n```sh\n$ lab\n$ npm test\n$ make test\n```\n\n_remember to_ `npm install` to get the development dependencies!\n\nAPI\n===\n\nvalidate(email, [options])\n--------------------------\n\nDetermines whether the `email` is valid or not, for various definitions thereof. Optionally accepts an `options` object. Options may include `errorLevel`.\n\nUse `errorLevel` to specify the type of result for `validate()`. Passing a `false` literal will result in a true or false boolean indicating whether the email address is sufficiently defined for use in sending an email. Passing a `true` literal will result in a more granular numeric status, with zero being a perfectly valid email address. Passing a number will return `0` if the numeric status is below the `errorLevel` and the numeric status otherwise.\n\nThe `tldBlacklist` option can be either an object lookup table or an array of invalid top-level domains. If the email address has a top-level domain that is in the whitelist, the email will be marked as invalid.\n\nThe `tldWhitelist` option can be either an object lookup table or an array of valid top-level domains. If the email address has a top-level domain that is not in the whitelist, the email will be marked as invalid.\n\nThe `allowUnicode` option governs whether non-ASCII characters are allowed. Defaults to `true` per RFC 6530.\n\nOnly one of `tldBlacklist` and `tldWhitelist` will be consulted for TLD validity.\n\nThe `minDomainAtoms` option is an optional positive integer that specifies the minimum number of domain atoms that must be included for the email address to be considered valid. Be careful with the option, as some top-level domains, like `io`, directly support email addresses.\n\nAs of `3.1.1`, the `callback` parameter is deprecated, and will be removed in `4.0.0`.\n\n### Examples\n\n```js\n$ node\n> var Isemail = require('isemail');\nundefined\n> Isemail.validate('test@iana.org');\ntrue\n> Isemail.validate('test@iana.123');\ntrue\n> Isemail.validate('test@iana.org', {errorLevel: true});\n0\n> Isemail.validate('test@iana.123', {errorLevel: true});\n10\n> Isemail.validate('test@iana.123', {errorLevel: 17});\n0\n> Isemail.validate('test@iana.123', {errorLevel: 10});\n10\n> Isemail.validate('test@iana&12');\nfalse\n> Isemail.validate('test@iana&12', {errorLevel: true});\n65\n> Isemail.validate('test@', {errorLevel: true});\n131\n```\n\n<sup name=\"footnote-1\">&#91;1&#93;</sup>: if this badge indicates the build is passing, then isemail has 100% code coverage.\n\n[skeggse]: https://github.com/skeggse \"Eli Skeggs\"\n[tests]: http://isemail.info/_system/is_email/test/?all‎ \"is_email test suite\"\n",
+              "readmeFilename": "README.md",
+              "optionalDependencies": {},
+              "_dependencies": {
+                "punycode": "2.x.x"
+              },
+              "path": "/path/to/project/packages/middleware/node_modules/isemail",
+              "error": "[Circular]",
+              "extraneous": false
+            },
+            "topo": {
+              "_args": [
+                [
+                  "topo@3.0.3",
+                  "/path/to/project/packages/middleware"
+                ],
+                [
+                  "topo@3.0.3",
+                  "/path/to/project/packages/middleware"
+                ]
+              ],
+              "_from": "topo@3.0.3",
+              "_id": "topo@3.0.3",
+              "_integrity": "sha512-IgpPtvD4kjrJ7CRA3ov2FhWQADwv+Tdqbsf1ZnPUSAtCJ9e1Z44MmoSGDXGk4IppoZA7jd/QRkNddlLJWlUZsQ==",
+              "_location": "/topo",
+              "_phantomChildren": {},
+              "_requested": {
+                "type": "version",
+                "registry": true,
+                "raw": "topo@3.0.3",
+                "name": "topo",
+                "escapedName": "topo",
+                "rawSpec": "3.0.3",
+                "saveSpec": "[Circular]",
+                "fetchSpec": "3.0.3"
+              },
+              "_requiredBy": [
+                "/joi"
+              ],
+              "_resolved": "https://registry.npmjs.org/topo/-/topo-3.0.3.tgz",
+              "_spec": "3.0.3",
+              "_where": "/path/to/project/packages/middleware",
+              "bugs": {
+                "url": "https://github.com/hapijs/topo/issues"
+              },
+              "dependencies": {
+                "hoek": {
+                  "_args": "[Circular]",
+                  "_from": "hoek@6.1.3",
+                  "_id": "hoek@6.1.3",
+                  "_integrity": "sha512-YXXAAhmF9zpQbC7LEcREFtXfGq5K1fmd+4PHkBq8NUqmzW3G+Dq10bI/i0KucLRwss3YYFQ0fSfoxBZYiGUqtQ==",
+                  "_location": "/hoek",
+                  "_phantomChildren": "[Circular]",
+                  "_requested": {
+                    "type": "version",
+                    "registry": true,
+                    "raw": "hoek@6.1.3",
+                    "name": "hoek",
+                    "escapedName": "hoek",
+                    "rawSpec": "6.1.3",
+                    "saveSpec": "[Circular]",
+                    "fetchSpec": "6.1.3"
+                  },
+                  "_requiredBy": "[Circular]",
+                  "_resolved": "https://registry.npmjs.org/hoek/-/hoek-6.1.3.tgz",
+                  "_spec": "6.1.3",
+                  "_where": "/path/to/project/packages/middleware",
+                  "bugs": "[Circular]",
+                  "dependencies": {},
+                  "description": "General purpose node utilities",
+                  "devDependencies": "[Circular]",
+                  "homepage": "https://github.com/hapijs/hoek#readme",
+                  "keywords": "[Circular]",
+                  "license": "BSD-3-Clause",
+                  "main": "lib/index.js",
+                  "name": "hoek",
+                  "repository": "[Circular]",
+                  "scripts": "[Circular]",
+                  "version": "6.1.3",
+                  "readme": "![hoek Logo](https://raw.github.com/hapijs/hoek/master/images/hoek.png)\n\nUtility methods for the hapi ecosystem. This module is not intended to solve every problem for\neveryone, but rather as a central place to store hapi-specific methods. If you're looking for a\ngeneral purpose utility module, check out [lodash](https://github.com/lodash/lodash) or\n[underscore](https://github.com/jashkenas/underscore).\n\n[![Build Status](https://secure.travis-ci.org/hapijs/hoek.svg)](http://travis-ci.org/hapijs/hoek)\n\nLead Maintainer: [Gil Pedersen](https://github.com/kanongil)\n\n\n## Documentation\n\n[**API Reference**](API.md)\n",
+                  "readmeFilename": "README.md",
+                  "optionalDependencies": "[Circular]",
+                  "_dependencies": "[Circular]",
+                  "path": "/path/to/project/packages/middleware/node_modules/hoek",
+                  "error": "[Circular]",
+                  "extraneous": false,
+                  "_deduped": "hoek"
+                }
+              },
+              "description": "Topological sorting with grouping support",
+              "devDependencies": {
+                "code": "5.x.x",
+                "lab": "17.x.x"
+              },
+              "homepage": "https://github.com/hapijs/topo#readme",
+              "keywords": [
+                "topological",
+                "sort",
+                "toposort",
+                "topsort"
+              ],
+              "license": "BSD-3-Clause",
+              "main": "lib/index.js",
+              "name": "topo",
+              "repository": {
+                "type": "git",
+                "url": "git://github.com/hapijs/topo.git"
+              },
+              "scripts": {
+                "test": "lab -a code -t 100 -L",
+                "test-cov-html": "lab -a code -t 100 -L -r html -o coverage.html"
+              },
+              "version": "3.0.3",
+              "readme": "# topo\n\nTopological sorting with grouping support.\n\n[![Build Status](https://secure.travis-ci.org/hapijs/topo.svg?branch=master)](http://travis-ci.org/hapijs/topo)\n\nLead Maintainer: [Devin Ivy](https://github.com/devinivy)\n\n## Usage\n\nSee the [API Reference](API.md)\n\n**Example**\n```js\nconst Topo = require('topo');\n\nconst morning = new Topo();\n\nmorning.add('Nap', { after: ['breakfast', 'prep'] });\n\nmorning.add([\n    'Make toast',\n    'Pour juice'\n], { before: 'breakfast', group: 'prep' });\n\nmorning.add('Eat breakfast', { group: 'breakfast' });\n\nmorning.nodes;        // ['Make toast', 'Pour juice', 'Eat breakfast', 'Nap']\n```\n",
+              "readmeFilename": "README.md",
+              "optionalDependencies": {},
+              "_dependencies": {
+                "hoek": "6.x.x"
+              },
+              "path": "/path/to/project/packages/middleware/node_modules/topo",
+              "error": "[Circular]",
+              "extraneous": false
+            }
+          },
+          "description": "Object schema validation",
+          "devDependencies": {
+            "code": "5.x.x",
+            "hapitoc": "1.x.x",
+            "lab": "18.x.x"
+          },
+          "homepage": "https://github.com/hapijs/joi",
+          "keywords": [
+            "hapi",
+            "schema",
+            "validation"
+          ],
+          "license": "BSD-3-Clause",
+          "main": "lib/index.js",
+          "name": "joi",
+          "repository": {
+            "type": "git",
+            "url": "git://github.com/hapijs/joi.git"
+          },
+          "scripts": {
+            "test": "lab -t 100 -a code -L",
+            "test-cov-html": "lab -r html -o coverage.html -a code",
+            "test-debug": "lab -a code",
+            "toc": "hapitoc && node docs/check-errors-list.js",
+            "version": "npm run toc && git add API.md README.md"
+          },
+          "version": "14.3.1",
+          "readme": "![joi Logo](https://raw.github.com/hapijs/joi/master/images/joi.png)\n\nObject schema description language and validator for JavaScript objects.\n\n[![npm version](https://badge.fury.io/js/joi.svg)](http://badge.fury.io/js/joi)\n[![Build Status](https://travis-ci.org/hapijs/joi.svg?branch=master)](https://travis-ci.org/hapijs/joi)\n[![NSP Status](https://nodesecurity.io/orgs/hapijs/projects/0394bf83-b5bc-410b-878c-e8cf1b92033e/badge)](https://nodesecurity.io/orgs/hapijs/projects/0394bf83-b5bc-410b-878c-e8cf1b92033e)\n[![Known Vulnerabilities](https://snyk.io/test/github/hapijs/joi/badge.svg)](https://snyk.io/test/github/hapijs/joi)\n\nLead Maintainer: [Nicolas Morel](https://github.com/marsup)\n\n# Introduction\n\nImagine you run facebook and you want visitors to sign up on the website with real names and not something like `l337_p@nda` in the first name field. How would you define the limitations of what can be inputted and validate it against the set rules?\n\nThis is joi, joi allows you to create *blueprints* or *schemas* for JavaScript objects (an object that stores information) to ensure *validation* of key information.\n\n# API\nSee the detailed [API Reference](https://github.com/hapijs/joi/blob/v14.3.1/API.md).\n\n# Example\n\n```javascript\nconst Joi = require('joi');\n\nconst schema = Joi.object().keys({\n    username: Joi.string().alphanum().min(3).max(30).required(),\n    password: Joi.string().regex(/^[a-zA-Z0-9]{3,30}$/),\n    access_token: [Joi.string(), Joi.number()],\n    birthyear: Joi.number().integer().min(1900).max(2013),\n    email: Joi.string().email({ minDomainAtoms: 2 })\n}).with('username', 'birthyear').without('password', 'access_token');\n\n// Return result.\nconst result = Joi.validate({ username: 'abc', birthyear: 1994 }, schema);\n// result.error === null -> valid\n\n// You can also pass a callback which will be called synchronously with the validation result.\nJoi.validate({ username: 'abc', birthyear: 1994 }, schema, function (err, value) { });  // err === null -> valid\n\n```\n\nThe above schema defines the following constraints:\n* `username`\n    * a required string\n    * must contain only alphanumeric characters\n    * at least 3 characters long but no more than 30\n    * must be accompanied by `birthyear`\n* `password`\n    * an optional string\n    * must satisfy the custom regex\n    * cannot appear together with `access_token`\n* `access_token`\n    * an optional, unconstrained string or number\n* `birthyear`\n    * an integer between 1900 and 2013\n* `email`\n    * a valid email address string\n    * must have two domain parts e.g. `example.com`\n\n# Usage\n\nUsage is a two steps process. First, a schema is constructed using the provided types and constraints:\n\n```javascript\nconst schema = {\n    a: Joi.string()\n};\n```\n\nNote that **joi** schema objects are immutable which means every additional rule added (e.g. `.min(5)`) will return a\nnew schema object.\n\nSecond, the value is validated against the defined schema:\n\n```javascript\nconst {error, value} = Joi.validate({ a: 'a string' }, schema);\n\n// or\n\nJoi.validate({ a: 'a string' }, schema, function (error, value) { });\n```\n\nIf the input is valid, then the `error` will be `null`, otherwise it will be an `Error` object providing more information.\n\nThe schema can be a plain JavaScript object where every key is assigned a **joi** type, or it can be a **joi** type directly:\n\n```javascript\nconst schema = Joi.string().min(10);\n```\n\nIf the schema is a **joi** type, the `schema.validate(value, callback)` can be called directly on the type. When passing a non-type schema object,\nthe module converts it internally to an object() type equivalent to:\n\n```javascript\nconst schema = Joi.object().keys({\n    a: Joi.string()\n});\n```\n\nWhen validating a schema:\n\n* Values (or keys in case of objects) are optional by default.\n\n    ```javascript\n    Joi.validate(undefined, Joi.string()); // validates fine\n    ```\n\n    To disallow this behavior, you can either set the schema as `required()`, or set `presence` to `\"required\"` when passing `options`:\n\n    ```javascript\n    Joi.validate(undefined, Joi.string().required());\n    // or\n    Joi.validate(undefined, Joi.string(), /* options */ { presence: \"required\" });\n    ```\n\n* Strings are utf-8 encoded by default.\n* Rules are defined in an additive fashion and evaluated in order, first the inclusive rules, then the exclusive rules.\n\n# Browsers\n\nJoi doesn't directly support browsers, but you could use [joi-browser](https://github.com/jeffbski/joi-browser) for an ES5 build of Joi that works in browsers, or as a source of inspiration for your own builds.\n",
+          "readmeFilename": "README.md",
+          "optionalDependencies": {},
+          "_dependencies": {
+            "hoek": "6.x.x",
+            "isemail": "3.x.x",
+            "topo": "3.x.x"
+          },
+          "path": "/path/to/project/packages/middleware/node_modules/joi",
+          "error": "[Circular]",
+          "extraneous": false
+        }
+      },
+      "description": "Helpers to simplify nodejs code on FASS environments",
+      "devDependencies": {
+        "@types/aws-lambda": "^8.10.33",
+        "@types/jest": "^24.0.18",
+        "@types/joi": "^14.3.3",
+        "@types/node": "^10.14.21",
+        "jest": "^24.9.0",
+        "jest-extended": "^0.11.2",
+        "ts-jest": "^24.1.0",
+        "ts-node": "^8.4.1",
+        "tslint": "^5.20.0",
+        "typescript": "^3.6.4"
+      },
+      "homepage": "https://github.com/thomasruiz/node-serverless-helpers#readme",
+      "keywords": [
+        "node",
+        "serverless",
+        "helpers",
+        "lambda",
+        "apigateway",
+        "aws",
+        "http",
+        "handler",
+        "framework",
+        "validation",
+        "error-handling",
+        "json"
+      ],
+      "license": "ISC",
+      "main": "dist/index.js",
+      "name": "node-serverless-helpers",
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thomasruiz/node-serverless-helpers.git"
+      },
+      "scripts": {
+        "build": "rm -rf dist && tsc -p tsconfig.json",
+        "prepare": "npm run build",
+        "prepublishOnly": "npm test",
+        "test": "jest --silent",
+        "test:coverage": "jest --coverage"
+      },
+      "types": "dist/index.d.ts",
+      "version": "3.0.6",
+      "readme": "# Node Serverless Helpers\n\n[![build](https://travis-ci.org/thomasruiz/node-serverless-helpers.svg?branch=master)](https://travis-ci.org/thomasruiz/node-serverless-helpers.svg?branch=master)\n[![codecov](https://codecov.io/gh/thomasruiz/node-serverless-helpers/branch/master/graph/badge.svg)](https://codecov.io/gh/thomasruiz/node-serverless-helpers)\n[![dependencies](https://david-dm.org/thomasruiz/node-serverless-helpers.svg)](https://david-dm.org/thomasruiz/node-serverless-helpers.svg)\n\nNode Serverless Helpers is a package meant to make your life easier when \ndeveloping lambda functions in NodeJS. It handles events seamlessly and adds \nuseful defaults, helpers and functions to your project.\n\n## Documentation\n\nThe documentation can be found [in the Wiki](https://github.com/thomasruiz/node-serverless-helpers/wiki).\n\n## Usage\n\nInstall the package with npm or yarn.\n\n```bash\nnpm install node-serverless-helpers\n# or \nyarn add node-serverless-helpers\n```\n\nHere is a sample working code.\n\n```javascript\n// handler.js\n'use strict';\n\nconst handle = require('node-serverless-helpers').handle;\n\nmodule.exports.helloWorld = handle(async (event) => {\n    return 'hello lambda world!';\n});\n```\n\n```yaml\n# serverless.yaml\nservice: hello-world\n\nprovider:\n  name: aws\n  runtime: nodejs8.10\n  region: us-east-1\n\nfunctions:\n  hello:\n    handler: handler.helloWorld\n    events:\n      - http:\n          path: ''\n          method: get\n```\n\nThe important part is the `handle` function that does 3 things.\n\n 1. Run the `init` function. You can register init handlers by calling\n  the `register` function.\n 2. Run the front controller. Its job is to figure out what source the \n  event comes from, and add useful middlewares to it.\n 3. Run your function, and wrap the result to the expected format.\n\n## Debug\n\nTo print useful debug logs `export NODE_SLS_HELPERS_DEBUG=*`.\n\n## TODO\n\n - Global logging system\n - Implement more handlers\n - Remove all console.logs\n\n## Licence\n\n[ISC - Copyright 2018 Thomas Ruiz](https://github.com/thomasruiz/node-serverless-helpers/blob/master/LICENCE)\n",
+      "readmeFilename": "readme.md",
+      "optionalDependencies": {},
+      "_dependencies": {
+        "deepmerge": "^3.3.0",
+        "joi": "^14.3.1"
+      },
+      "path": "/path/to/project/packages/middleware/node_modules/node-serverless-helpers",
+      "error": "[Circular]",
+      "extraneous": false
+    },
+    "@project/shared": {
+      "requiredBy": "^0.0.1",
+      "missing": true,
+      "optional": false
+    }
+  },
+  "scripts": {
+    "clear": "npm run clear:modules && npm run clear:lib && npm run clear:package",
+    "clear:all": "npm run clear && npm run clear:lock",
+    "clear:modules": "rm -rf ./node_modules",
+    "clear:lock": "rm -f ./package-lock.json",
+    "clear:lib": "rm -rf ./lib",
+    "clear:package": "rm -rf ./.package",
+    "tsc": "npx tsc -v && npx tsc"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.41",
+    "@types/joi": "^14.3.4",
+    "aws-lambda": "^1.0.5",
+    "aws-sdk": "^2.620.0"
+  },
+  "readme": "ERROR: No README data found!",
+  "_id": "@project/middleware@0.0.1",
+  "_shrinkwrap": {
+    "name": "@project/middleware",
+    "version": "0.0.1",
+    "lockfileVersion": 1,
+    "requires": true,
+    "dependencies": {
+      "@types/aws-lambda": {
+        "version": "8.10.41",
+        "resolved": "https://registry.npmjs.org/@types/aws-lambda/-/aws-lambda-8.10.41.tgz",
+        "integrity": "sha512-TEmQ6RjtcL0VojmOzMS6uv1KgWK4hExAOZofBiOnbOp0pdiDi6VRlMrxsoC0BXfev8OjoS/QlwLXFbFJoNhgJg==",
+        "dev": true
+      },
+      "@types/joi": {
+        "version": "14.3.4",
+        "resolved": "https://registry.npmjs.org/@types/joi/-/joi-14.3.4.tgz",
+        "integrity": "sha512-1TQNDJvIKlgYXGNIABfgFp9y0FziDpuGrd799Q5RcnsDu+krD+eeW/0Fs5PHARvWWFelOhIG2OPCo6KbadBM4A==",
+        "dev": true
+      },
+      "argparse": {
+        "version": "1.0.10",
+        "resolved": "https://registry.npmjs.org/argparse/-/argparse-1.0.10.tgz",
+        "integrity": "sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==",
+        "dev": true,
+        "requires": {
+          "sprintf-js": "~1.0.2"
+        }
+      },
+      "aws-lambda": {
+        "version": "1.0.5",
+        "resolved": "https://registry.npmjs.org/aws-lambda/-/aws-lambda-1.0.5.tgz",
+        "integrity": "sha512-rRBZT5mitbeb/qdqHrFiymFQ8k+uc8WlN2Y16OhsCEZzYHKRqFzRirO7gIozDohNuu7T27S6w88KBFpI0cS1NQ==",
+        "dev": true,
+        "requires": {
+          "aws-sdk": "*",
+          "commander": "^3.0.2",
+          "js-yaml": "^3.13.1",
+          "watchpack": "^2.0.0-beta.10"
+        }
+      },
+      "aws-sdk": {
+        "version": "2.620.0",
+        "resolved": "https://registry.npmjs.org/aws-sdk/-/aws-sdk-2.620.0.tgz",
+        "integrity": "sha512-j+PGKbYwk5OjzbCFbxzRkcJVEvfdn9YFkrU8dJdjleYf9AzUSUpTjMyZsyUPOKxJxdNdA9FYTs43WdtSKHZa0A==",
+        "dev": true,
+        "requires": {
+          "buffer": "4.9.1",
+          "events": "1.1.1",
+          "ieee754": "1.1.13",
+          "jmespath": "0.15.0",
+          "querystring": "0.2.0",
+          "sax": "1.2.1",
+          "url": "0.10.3",
+          "uuid": "3.3.2",
+          "xml2js": "0.4.19"
+        }
+      },
+      "base64-js": {
+        "version": "1.3.1",
+        "resolved": "https://registry.npmjs.org/base64-js/-/base64-js-1.3.1.tgz",
+        "integrity": "sha512-mLQ4i2QO1ytvGWFWmcngKO//JXAQueZvwEKtjgQFM4jIK0kU+ytMfplL8j+n5mspOfjHwoAg+9yhb7BwAHm36g==",
+        "dev": true
+      },
+      "buffer": {
+        "version": "4.9.1",
+        "resolved": "https://registry.npmjs.org/buffer/-/buffer-4.9.1.tgz",
+        "integrity": "sha1-bRu2AbB6TvztlwlBMgkwJ8lbwpg=",
+        "dev": true,
+        "requires": {
+          "base64-js": "^1.0.2",
+          "ieee754": "^1.1.4",
+          "isarray": "^1.0.0"
+        }
+      },
+      "commander": {
+        "version": "3.0.2",
+        "resolved": "https://registry.npmjs.org/commander/-/commander-3.0.2.tgz",
+        "integrity": "sha512-Gar0ASD4BDyKC4hl4DwHqDrmvjoxWKZigVnAbn5H1owvm4CxCPdb0HQDehwNYMJpla5+M2tPmPARzhtYuwpHow==",
+        "dev": true
+      },
+      "deepmerge": {
+        "version": "3.3.0",
+        "resolved": "https://registry.npmjs.org/deepmerge/-/deepmerge-3.3.0.tgz",
+        "integrity": "sha512-GRQOafGHwMHpjPx9iCvTgpu9NojZ49q794EEL94JVEw6VaeA8XTUyBKvAkOOjBX9oJNiV6G3P+T+tihFjo2TqA=="
+      },
+      "esprima": {
+        "version": "4.0.1",
+        "resolved": "https://registry.npmjs.org/esprima/-/esprima-4.0.1.tgz",
+        "integrity": "sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A==",
+        "dev": true
+      },
+      "events": {
+        "version": "1.1.1",
+        "resolved": "https://registry.npmjs.org/events/-/events-1.1.1.tgz",
+        "integrity": "sha1-nr23Y1rQmccNzEwqH1AEKI6L2SQ=",
+        "dev": true
+      },
+      "glob-to-regexp": {
+        "version": "0.4.1",
+        "resolved": "https://registry.npmjs.org/glob-to-regexp/-/glob-to-regexp-0.4.1.tgz",
+        "integrity": "sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==",
+        "dev": true
+      },
+      "graceful-fs": {
+        "version": "4.2.3",
+        "resolved": "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.3.tgz",
+        "integrity": "sha512-a30VEBm4PEdx1dRB7MFK7BejejvCvBronbLjht+sHuGYj8PHs7M/5Z+rt5lw551vZ7yfTCj4Vuyy3mSJytDWRQ==",
+        "dev": true
+      },
+      "hoek": {
+        "version": "6.1.3",
+        "resolved": "https://registry.npmjs.org/hoek/-/hoek-6.1.3.tgz",
+        "integrity": "sha512-YXXAAhmF9zpQbC7LEcREFtXfGq5K1fmd+4PHkBq8NUqmzW3G+Dq10bI/i0KucLRwss3YYFQ0fSfoxBZYiGUqtQ=="
+      },
+      "ieee754": {
+        "version": "1.1.13",
+        "resolved": "https://registry.npmjs.org/ieee754/-/ieee754-1.1.13.tgz",
+        "integrity": "sha512-4vf7I2LYV/HaWerSo3XmlMkp5eZ83i+/CDluXi/IGTs/O1sejBNhTtnxzmRZfvOUqj7lZjqHkeTvpgSFDlWZTg==",
+        "dev": true
+      },
+      "isarray": {
+        "version": "1.0.0",
+        "resolved": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
+        "integrity": "sha1-u5NdSFgsuhaMBoNJV6VKPgcSTxE=",
+        "dev": true
+      },
+      "isemail": {
+        "version": "3.2.0",
+        "resolved": "https://registry.npmjs.org/isemail/-/isemail-3.2.0.tgz",
+        "integrity": "sha512-zKqkK+O+dGqevc93KNsbZ/TqTUFd46MwWjYOoMrjIMZ51eU7DtQG3Wmd9SQQT7i7RVnuTPEiYEWHU3MSbxC1Tg==",
+        "requires": {
+          "punycode": "2.x.x"
+        }
+      },
+      "jmespath": {
+        "version": "0.15.0",
+        "resolved": "https://registry.npmjs.org/jmespath/-/jmespath-0.15.0.tgz",
+        "integrity": "sha1-o/Iiqarp+Wb10nx5ZRDigJF2Qhc=",
+        "dev": true
+      },
+      "joi": {
+        "version": "14.3.1",
+        "resolved": "https://registry.npmjs.org/joi/-/joi-14.3.1.tgz",
+        "integrity": "sha512-LQDdM+pkOrpAn4Lp+neNIFV3axv1Vna3j38bisbQhETPMANYRbFJFUyOZcOClYvM/hppMhGWuKSFEK9vjrB+bQ==",
+        "requires": {
+          "hoek": "6.x.x",
+          "isemail": "3.x.x",
+          "topo": "3.x.x"
+        }
+      },
+      "js-yaml": {
+        "version": "3.13.1",
+        "resolved": "https://registry.npmjs.org/js-yaml/-/js-yaml-3.13.1.tgz",
+        "integrity": "sha512-YfbcO7jXDdyj0DGxYVSlSeQNHbD7XPWvrVWeVUujrQEoZzWJIRrCPoyk6kL6IAjAG2IolMK4T0hNUe0HOUs5Jw==",
+        "dev": true,
+        "requires": {
+          "argparse": "^1.0.7",
+          "esprima": "^4.0.0"
+        }
+      },
+      "node-serverless-helpers": {
+        "version": "3.0.6",
+        "resolved": "https://registry.npmjs.org/node-serverless-helpers/-/node-serverless-helpers-3.0.6.tgz",
+        "integrity": "sha512-PXPS5+rvik8/16Xq6QSPXDqp60fpcqWIQlPOMgMzPYFGhZGGDYeuco/T1W1yI82zKaYjBAn+5PfHTNk3i4jDxA==",
+        "requires": {
+          "deepmerge": "^3.3.0",
+          "joi": "^14.3.1"
+        }
+      },
+      "punycode": {
+        "version": "2.1.1",
+        "resolved": "https://registry.npmjs.org/punycode/-/punycode-2.1.1.tgz",
+        "integrity": "sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A=="
+      },
+      "querystring": {
+        "version": "0.2.0",
+        "resolved": "https://registry.npmjs.org/querystring/-/querystring-0.2.0.tgz",
+        "integrity": "sha1-sgmEkgO7Jd+CDadW50cAWHhSFiA=",
+        "dev": true
+      },
+      "sax": {
+        "version": "1.2.1",
+        "resolved": "https://registry.npmjs.org/sax/-/sax-1.2.1.tgz",
+        "integrity": "sha1-e45lYZCyKOgaZq6nSEgNgozS03o=",
+        "dev": true
+      },
+      "sprintf-js": {
+        "version": "1.0.3",
+        "resolved": "https://registry.npmjs.org/sprintf-js/-/sprintf-js-1.0.3.tgz",
+        "integrity": "sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=",
+        "dev": true
+      },
+      "topo": {
+        "version": "3.0.3",
+        "resolved": "https://registry.npmjs.org/topo/-/topo-3.0.3.tgz",
+        "integrity": "sha512-IgpPtvD4kjrJ7CRA3ov2FhWQADwv+Tdqbsf1ZnPUSAtCJ9e1Z44MmoSGDXGk4IppoZA7jd/QRkNddlLJWlUZsQ==",
+        "requires": {
+          "hoek": "6.x.x"
+        }
+      },
+      "url": {
+        "version": "0.10.3",
+        "resolved": "https://registry.npmjs.org/url/-/url-0.10.3.tgz",
+        "integrity": "sha1-Ah5NnHcF8hu/N9A861h2dAJ3TGQ=",
+        "dev": true,
+        "requires": {
+          "punycode": "1.3.2",
+          "querystring": "0.2.0"
+        },
+        "dependencies": {
+          "punycode": {
+            "version": "1.3.2",
+            "resolved": "https://registry.npmjs.org/punycode/-/punycode-1.3.2.tgz",
+            "integrity": "sha1-llOgNvt8HuQjQvIyXM7v6jkmxI0=",
+            "dev": true
+          }
+        }
+      },
+      "uuid": {
+        "version": "3.3.2",
+        "resolved": "https://registry.npmjs.org/uuid/-/uuid-3.3.2.tgz",
+        "integrity": "sha512-yXJmeNaw3DnnKAOKJE51sL/ZaYfWJRl1pK9dr19YFCu0ObS231AB1/LbqTKRAQ5kw8A90rA6fr4riOUpTZvQZA==",
+        "dev": true
+      },
+      "watchpack": {
+        "version": "2.0.0-beta.12",
+        "resolved": "https://registry.npmjs.org/watchpack/-/watchpack-2.0.0-beta.12.tgz",
+        "integrity": "sha512-vUJN6XQCBqrUkyX74WNopUvASMLqgicYGA5nO/FwSfdmLQgrfy44Z+Jl2YHHHXy/gDO6RlbArR26YQGeIWfoAg==",
+        "dev": true,
+        "requires": {
+          "glob-to-regexp": "^0.4.1",
+          "graceful-fs": "^4.1.2"
+        }
+      },
+      "xml2js": {
+        "version": "0.4.19",
+        "resolved": "https://registry.npmjs.org/xml2js/-/xml2js-0.4.19.tgz",
+        "integrity": "sha512-esZnJZJOiJR9wWKMyuvSE1y6Dq5LCuJanqhxslH2bxM6duahNZ+HMpCLhBQGZkbX6xRf8x1Y2eJlgt2q3qo49Q==",
+        "dev": true,
+        "requires": {
+          "sax": ">=0.6.0",
+          "xmlbuilder": "~9.0.1"
+        }
+      },
+      "xmlbuilder": {
+        "version": "9.0.7",
+        "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-9.0.7.tgz",
+        "integrity": "sha1-Ey7mPS7FVlxVfiD0wi35rKaGsQ0=",
+        "dev": true
+      }
+    }
+  },
+  "optionalDependencies": {},
+  "_dependencies": {
+    "@project/shared": "^0.0.1",
+    "node-serverless-helpers": "^3.0.6"
+  },
+  "path": "/path/to/project/packages/middleware",
+  "error": "[Circular]",
+  "extraneous": false
+}

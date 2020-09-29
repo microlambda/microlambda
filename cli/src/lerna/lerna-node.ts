@@ -41,7 +41,7 @@ export abstract class LernaNode {
 
   protected typeCheckStatus: TypeCheckStatus;
   protected typeCheckProcess: ChildProcess;
-  private _typeCheckLogs: string[];
+  private _typeCheckLogs: string[] = [];
 
   private _checksums: IChecksums;
   private _lastTypeCheck: string;
@@ -151,13 +151,17 @@ export abstract class LernaNode {
         .debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
-    this.getGraph().io.transpilingStatusUpdated(this, this.transpilingStatus);
+    if (this.getGraph().io) {
+      this.getGraph().io.transpilingStatusUpdated(this, this.transpilingStatus);
+    }
     actions.updateCompilationStatus(this);
   }
 
   public setTypeCheckingStatus(status: TypeCheckStatus): void {
     this.typeCheckStatus = status;
-    this.getGraph().io.typeCheckStatusUpdated(this, this.typeCheckStatus);
+    if (this.getGraph().io) {
+      this.getGraph().io.typeCheckStatusUpdated(this, this.typeCheckStatus);
+    }
   }
 
   public isRoot(): boolean {
@@ -365,7 +369,9 @@ export abstract class LernaNode {
 
   private _handleTscLogs(data: any): void {
     this._typeCheckLogs.push(data.toString());
-    this.getGraph().io.handleTscLogs(this.name, data.toString());
+    if(this.getGraph().io) {
+      this.getGraph().io.handleTscLogs(this.name, data.toString());
+    }
   }
 
   private _watchTypeChecking(): Observable<LernaNode> {

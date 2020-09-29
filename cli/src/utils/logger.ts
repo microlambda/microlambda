@@ -5,7 +5,7 @@ import { inspect } from 'util';
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 type LoggerFunction = (...args: any[]) => void;
 
-interface ILogger {
+export interface ILogger {
   silly: LoggerFunction;
   debug: LoggerFunction;
   info: LoggerFunction;

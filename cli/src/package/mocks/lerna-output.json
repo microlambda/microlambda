@@ -1,0 +1,170 @@
+[
+  {
+    "name": "@project/azure-multilake",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/azure-multilake"
+  },
+  {
+    "name": "@project/azure",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/azure"
+  },
+  {
+    "name": "@project/middleware",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/middleware"
+  },
+  {
+    "name": "@project/models",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/models"
+  },
+  {
+    "name": "@project/powerbi",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/powerbi"
+  },
+  {
+    "name": "@project/s3",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/s3"
+  },
+  {
+    "name": "@project/shared",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/shared"
+  },
+  {
+    "name": "@project/test-helpers",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/test-helpers"
+  },
+  {
+    "name": "@project/types",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/packages/types"
+  },
+  {
+    "name": "@project/access-requests",
+    "version": "1.0.0",
+    "private": true,
+    "location": "/path/to/project/services/access-requests"
+  },
+  {
+    "name": "@project/auth",
+    "version": "1.0.0",
+    "private": true,
+    "location": "/path/to/project/services/auth"
+  },
+  {
+    "name": "@project/categories",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/categories"
+  },
+  {
+    "name": "@project/companies",
+    "version": "1.0.0",
+    "private": true,
+    "location": "/path/to/project/services/companies"
+  },
+  {
+    "name": "@project/configurations",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/configurations"
+  },
+  {
+    "name": "@project/dashboards",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/dashboards"
+  },
+  {
+    "name": "@project/datalake",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/datalake"
+  },
+  {
+    "name": "@project/dynamodb-mass-update",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/dynamodb-mass-update"
+  },
+  {
+    "name": "@project/dynamodb-stream",
+    "version": "1.0.0",
+    "private": true,
+    "location": "/path/to/project/services/dynamodb-stream"
+  },
+  {
+    "name": "@project/groups",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/groups"
+  },
+  {
+    "name": "@project/logs",
+    "version": "1.0.0",
+    "private": true,
+    "location": "/path/to/project/services/logs"
+  },
+  {
+    "name": "@project/permissions",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/permissions"
+  },
+  {
+    "name": "@project/portals",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/portals"
+  },
+  {
+    "name": "@project/publications",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/publications"
+  },
+  {
+    "name": "@project/recommendations",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/recommendations"
+  },
+  {
+    "name": "@project/sources",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/sources"
+  },
+  {
+    "name": "@project/sync-ad",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/sync-ad"
+  },
+  {
+    "name": "@project/sync-db",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/sync-db"
+  },
+  {
+    "name": "@project/users",
+    "version": "0.0.1",
+    "private": true,
+    "location": "/path/to/project/services/users"
+  }
+]

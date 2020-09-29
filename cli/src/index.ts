@@ -2,11 +2,11 @@
 import { Command } from 'commander';
 import { RecompilationScheduler } from './utils/scheduler';
 import { start, stop } from './cmd';
-import { status } from './cmd/status';
-import { restart } from './cmd/restart';
-import { logs } from './cmd/logs';
-import { runTests } from './cmd/test';
 import { Logger } from './utils/logger';
+import { checkStage } from './cmd/check-stage';
+import { checkService } from './cmd/check-service';
+import { build } from './cmd/build';
+import chalk from 'chalk';
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -15,35 +15,68 @@ const scheduler = new RecompilationScheduler(logger);
 
 const program = new Command();
 
-program.version('0.0.8alpha');
+program.version('0.1.0-alpha');
 
 program
   .command('start')
   .option('-i, --interactive', 'interactively choose microservices', false)
   .option('-d, --discrete', 'start the app in background without logging in console', false)
-  .option('-p <port>, --port <port>', 'if not specified in config, start microservices from port', 3001)
+  .option('-p <port>, --port <port>', 'start mila server on given port', 4545)
   .option('-n, --no-recompile', 'avoid recompiling dependency graph before starting microservices')
   .option('-s <service>, --service <service>', 'the service for which you want to start', false)
   .description('start microlambda services')
   .action(async (cmd) => {
-    const options = {
-      recompile: cmd.recompile,
-      service: cmd.S,
-      defaultPort: cmd.P || 3001,
-      interactive: cmd.interactive,
-    };
-    logger.log('cmd').debug(options);
-    await start(scheduler, options, logger);
+    try {
+      const options = {
+        recompile: cmd.recompile,
+        service: cmd.S,
+        defaultPort: cmd.P || 3001,
+        interactive: cmd.interactive,
+      };
+      logger.log('cmd').debug(options);
+      await start(scheduler, options, logger);
+    } catch (e) {
+      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
+      process.exit(1);
+    }
   });
 
+/*
+// TODO: IPC and background mode
 program
   .command('logs')
   .requiredOption('-s <service>, --service <service>', 'the service for which you want to see logs', false)
   .description('print service logs')
   .action(async (cmd) => {
     await logs(cmd, logger, scheduler);
+  });*/
+
+program
+  .command('check-stage <stage>')
+  .description('check if stage is allowed')
+  .action(async (cmd) => {
+    try {
+      await checkStage(cmd);
+    } catch (e) {
+      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
+      process.exit(1);
+    }
   });
 
+program
+  .command('check-service <service>')
+  .description('check if service is valid')
+  .action(async (cmd) => {
+    try {
+      await checkService(cmd);
+    } catch (e) {
+      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
+      process.exit(1);
+    }
+  });
+
+/*
+// TODO: IPC and background mode
 program
   .command('stop')
   .option('-i, --interactive', 'interactively choose microservices', false)
@@ -61,34 +94,59 @@ program
   .action(async (cmd) => {
     await restart(scheduler, cmd.S);
   });
+*/
+
+program
+  .command('build')
+  // .option('-i, --interactive', 'interactively choose microservices', false)
+  .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option( '--only-self', 'skip compiling service dependencies', false)
+  .option('-s <service>, --service <service>', 'the service you want to build', false)
+  .description('compile packages and services')
+  .action(async (cmd) => {
+    try {
+      await build(cmd, scheduler, logger);
+    } catch (e) {
+      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
+      process.exit(1);
+    }
+  });
 
 program
   .command('package')
-  .option('-i, --interactive', 'interactively choose microservices', false)
+  // .option('-i, --interactive', 'interactively choose microservices', false)
+  .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option( '--no-recompile', 'skip package and service recompilation', false)
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
   .action(async (cmd) => {
-    logger.log('cmd').debug(cmd);
-    logger.log('cmd').error('Not implemented');
+
   });
 
 program
   .command('deploy')
-  .option('-i, --interactive', 'interactively choose microservices', false)
+  // .option('-i, --interactive', 'interactively choose microservices', false)
+  .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option( '--no-recompile', 'skip package and service recompilation', false)
+  .option( '--no-package', 'skip bundling service deployment package', false)
   .option('-s <service>, --service <service>', 'the service you want to deploy', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
-    logger.log('cmd').debug(cmd);
-    logger.log('cmd').error('Not implemented');
+
   });
 
+/*
+// TODO: IPC and background mode
 program
   .command('status')
   .description('see the microservices status')
   .action(async () => {
     await status(scheduler, logger);
   });
+*/
 
+/*
+// TODO: Test runner
 program
   .command('test')
   .description('test microlambda services')
@@ -112,7 +170,10 @@ program
       logger,
     );
   });
+*/
 
+/*
+// TODO: Generator
 program
   .command('init')
   .description('initialize new project with the CLI wizard')
@@ -127,5 +188,6 @@ program
     logger.log('cmd').debug(cmd);
     logger.log('cmd').error('Not implemented');
   });
+*/
 
 (async (): Promise<void> => program.parseAsync(process.argv))();

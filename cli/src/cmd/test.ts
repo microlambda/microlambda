@@ -20,7 +20,7 @@ export const runTests = async (
 ): Promise<void> => {
   // TODO: Display UI with spinners for build safe + test (concurrency in option)
   // TODO: Display errored test case
-  logger.log('test-runner').debug('Launching tests', options);
+  /*logger.log('test-runner').debug('Launching tests', options);
   logger.log('test-runner').info('Running tests for', options.service || 'all services');
   const projectRoot = getProjectRoot(logger);
   logger.log('test-runner').debug('Loading config');
@@ -43,5 +43,5 @@ export const runTests = async (
   if (options.recompile) {
     const toCompile = options.service ? graph.getNodes().find((n) => n.getName() === options.service) : graph;
     await scheduler.compile(toCompile);
-  }
+  }*/
 };
