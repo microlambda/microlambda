@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
-import { backupYaml, reformatYaml, restoreYaml } from './utils/reformat-yaml';
+/*import { backupYaml, reformatYaml, restoreYaml } from './utils/reformat-yaml';
 import { ConfigReader } from './utils/read-config';
 import { CertificateManager } from './utils/generate-certificates';
 import { RecordsManager } from './utils/create-cname-records';
 import { command } from 'execa';
-import { LernaHelper, ILernaPackage } from '../utils/lerna';
 import { Packager } from '../package/packagr';
+import { LernaGraph, Service } from '../lerna';
 
 export interface IDeployOptions {
   bootstrap: boolean;
@@ -26,7 +26,7 @@ export class RocketLauncher {
   private readonly _service: string;
   private readonly _options: IDeployOptions;
   private readonly _configReader: ConfigReader;
-  private _toDeploy: ILernaPackage[];
+  private readonly _toDeploy: Service[];
 
   constructor(stage: string, service?: string, options?: Partial<IDeployOptions>) {
     this._stage = stage;
@@ -43,7 +43,6 @@ export class RocketLauncher {
 
   public async deploy(): Promise<void> {
     console.info('Deploying micro-services to', this._stage);
-    await this._resolveServices();
     await this._bootstrap();
     await this._compilePackages();
     await this._compileServices();
@@ -51,22 +50,6 @@ export class RocketLauncher {
     await this._generateCertificates();
     await this._deployServices();
     await this._createRecordDNS();
-  }
-
-  private async _resolveServices(): Promise<void> {
-    const lernaHelper = new LernaHelper();
-    const allServices = await lernaHelper.getServices();
-    if (!this._service) {
-      this._toDeploy = allServices;
-      return;
-    }
-    const service = allServices.find((s) => s.name === this._service);
-    if (!service) {
-      const err = `Unknown service ${this._service}`;
-      console.error(err);
-      throw Error(err);
-    }
-    this._toDeploy = [allServices.find((s) => s.name === this._service)];
   }
 
   private async _bootstrap(): Promise<void> {
@@ -104,7 +87,7 @@ export class RocketLauncher {
   private async _packageServices(): Promise<void> {
     if (this._options.package) {
       console.info('Packaging microservices');
-      const packagerV2 = new Packager(this._toDeploy.map((s) => s.name));
+      const packagerV2 = new Packager(this._toDeploy.map((s) => s));
       await packagerV2.bundle();
     } else {
       console.info('Skipped package');
@@ -139,7 +122,8 @@ export class RocketLauncher {
   private static async _deployServices(services: string[], region: string, env: string): Promise<void> {
     console.info(`Deploying services to ${region}`, services);
     backupYaml(services);
-    reformatYaml(services, region, env);
+    try {
+        reformatYaml(services, region, env);
     await LernaHelper.runCommand('print', services, null, 1);
     const servicesWithCustomDomain = await RocketLauncher._servicesWithCustomDomain();
     const toCreateDomain = servicesWithCustomDomain.map((s) => s.name).filter((s) => services.includes(s));
@@ -152,6 +136,8 @@ export class RocketLauncher {
     }
     await LernaHelper.runCommand('deploy', services, region, 1);
     restoreYaml(services);
+    } catch { restoreYam }
+
   }
 
   private static async _servicesWithCustomDomain(): Promise<ILernaPackage[]> {
@@ -160,3 +146,4 @@ export class RocketLauncher {
     return services.filter((service) => LernaHelper.hasCustomDomain(service));
   }
 }
+*/

@@ -18,7 +18,7 @@ export const resolvePorts = (
   logger: Logger,
   defaultPort = 3001,
 ): PortMap => {
-  logger.log('port').debug('Resolving port from config', config.ports);
+  logger.log('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {
     const name = service.name;

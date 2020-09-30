@@ -1,5 +1,4 @@
 import { getProjectRoot } from '../utils/get-project-root';
-import { loadConfig } from '../config/load-config';
 import { getLernaGraph } from '../utils/get-lerna-graph';
 import { recreateLogDirectory } from '../utils/logs';
 import { RecompilationScheduler } from '../utils/scheduler';
@@ -13,6 +12,8 @@ import { showOff } from '../utils/ascii';
 import ora from 'ora';
 import { LernaGraph } from '../lerna';
 import { IConfig } from '../config/config';
+import { ConfigReader } from '../config/read-config';
+import chalk from 'chalk';
 
 interface IStartOptions {
   interactive: boolean;
@@ -27,13 +28,8 @@ export const start = async (
 ): Promise<void> => {
 
   console.log(showOff());
-  const log = logger.log('start');
-  const projectRoot = getProjectRoot(logger);
-  log.info('Project root resolved', projectRoot)
 
-  const config = await readConfig(projectRoot, logger);
-
-  const graph = await parseGraph(projectRoot, scheduler, config, logger, options.defaultPort);
+  const { projectRoot, config, graph } = await init(logger, scheduler, options.defaultPort);
 
   await lernaBootstrap(graph, logger);
 
@@ -92,17 +88,45 @@ export const start = async (
   });
 };
 
-export const resolveProjectRoot = () => {
-
+export const init = async (logger: Logger, scheduler: RecompilationScheduler, defaultPort?: number) => {
+  const log = logger.log('start');
+  const projectRoot = getProjectRoot(logger);
+  log.info('Project root resolved', projectRoot);
+  const config = await readConfig(projectRoot, logger);
+  const graph = await parseGraph(projectRoot, scheduler, config.config, logger, defaultPort);
+  validateConfig(config, graph);
+  return { projectRoot, config: config.config, graph };
 };
 
-export const readConfig = async (projectRoot: string, logger: Logger): Promise<IConfig> => {
+export const validateConfig = (config: ConfigReader, graph: LernaGraph): IConfig => {
+  const validating = ora('Validating config 🔧').start();
+  try {
+    config.validate(graph);
+  } catch (e) {
+    validating.fail('Invalid microlambda config file');
+    console.error(chalk.red('Please check the docs and provide a valid configuration.'));
+    console.error(chalk.red(e));
+    process.exit(1);
+  }
+  validating.succeed('Config valid');
+  return config.config;
+}
+
+export const readConfig = async (projectRoot: string, logger: Logger): Promise<ConfigReader> => {
   const loadingConfig = ora('Loading config ⚙️').start();
-  const config = loadConfig();
+  const reader = new ConfigReader(logger);
+  let config: IConfig;
+  try {
+    config = reader.readConfig();
+  } catch(e) {
+    loadingConfig.fail('Cannot read microlambda config file');
+    console.error(chalk.red(e));
+    process.exit(1);
+  }
   await verifyBinaries(config.compilationMode, projectRoot, logger);
   logger.log('start').debug(config);
   loadingConfig.succeed();
-  return config;
+  return reader;
 }
 
 export const parseGraph = async (projectRoot: string, scheduler: RecompilationScheduler, config: IConfig, logger: Logger, defaultPort?: number) => {

@@ -1,22 +1,9 @@
-/* eslint-disable no-console */
-import { readJSONSync, existsSync } from 'fs-extra';
-import { join } from 'path';
 import Joi from '@hapi/joi';
-import { ILernaPackage, LernaHelper } from '../../utils/lerna';
-
-interface IRegionConfig {
-  [stage: string]: string | string[];
-}
-
-type RegionConfig = string | string[] | IRegionConfig;
-
-export interface IDeployConfig {
-  defaultRegions?: RegionConfig;
-  regions?: {
-    [serviceName: string]: RegionConfig;
-  };
-  steps?: Array<string[] | '*'>;
-}
+import { LernaGraph, Service } from '../lerna';
+import { IConfig, RegionConfig } from './config';
+import rc from 'rc';
+import fallback from './default.json';
+import { ILogger, Logger } from '../utils/logger';
 
 type Step = Map<Region, Set<Microservice>>;
 type Region = string;
@@ -46,32 +33,42 @@ export class ConfigReader {
     'me-south-1',
     'ap-south-1',
   ];
-
-  private _services: ILernaPackage[];
-  private _config: IDeployConfig;
+  private _services: Service[];
+  private _config: IConfig;
   private _schema: Joi.ObjectSchema;
+  private readonly _logger: ILogger;
 
-  public async readConfig(): Promise<IDeployConfig> {
-    if (!this._config) {
-      await this._buildConfigSchema();
-      const configPath = join(__dirname, '..', '..', '..', '.deployrc');
-      if (!existsSync(configPath)) {
-        this._config = {};
-        return {};
-      }
-      const output: IDeployConfig = readJSONSync(configPath);
-      const { error, value } = this._schema.validate(output);
-      if (error) {
-        throw error;
-      }
-      this._config = value;
-    }
+  constructor(logger: Logger) {
+    this._logger = logger.log('config');
+  }
+
+  get config(): IConfig { return this._config }
+
+  public readConfig(): IConfig {
+    this._config = rc('microlambda', fallback) as IConfig;
     return this._config;
   }
 
-  public async getRegions(service: string, stage: string): Promise<string[]> {
+  public validate(graph: LernaGraph): IConfig {
+    this._services = graph.getServices();
+    this._buildConfigSchema();
+    if (!this._config) {
+      this._config = this.readConfig();
+    }
+    this._logger.debug('raw config', this._config);
+    const { error, value } = this._schema.validate(this._config);
+    if (error) {
+      this._logger.error('validation errors', error);
+      throw error;
+    }
+    this._logger.info('config valid');
+    this._config = value;
+    return this._config;
+  }
+
+  public getRegions(service: string, stage: string): string[] {
     // console.debug('Resolving regions', { service, stage });
-    const config = await this.readConfig();
+    const config = this.readConfig();
     const formatRegion = (config: string | string[]): string[] => {
       if (Array.isArray(config)) {
         return config;
@@ -88,6 +85,7 @@ export class ConfigReader {
       return null;
     };
     if (config.regions && config.regions[service]) {
+      // FIXME: Use mila logger with config scope
       // console.debug('Regions specified at service-level', config.regions[service]);
       const regions = getRegion(config.regions[service]);
       // console.debug('Should be deployed @', regions);
@@ -110,10 +108,10 @@ export class ConfigReader {
     throw Error('Default region is not set. No fallback available');
   }
 
-  public async getAllRegions(stage: string): Promise<string[]> {
+  public getAllRegions(stage: string): string[] {
     console.debug('Finding all region in config for stage', stage);
     const allRegions: Set<string> = new Set();
-    const schedule = await this.scheduleDeployments(stage);
+    const schedule = this.scheduleDeployments(stage);
     for (const step of schedule) {
       for (const region of step.keys()) {
         allRegions.add(region);
@@ -123,29 +121,27 @@ export class ConfigReader {
     return [...allRegions];
   }
 
-  public async scheduleDeployments(stage: string): Promise<Step[]> {
+  public scheduleDeployments(stage: string): Step[] {
     console.info('Scheduling deployment steps', { stage });
-    const steps = (await this.readConfig()).steps;
+    const steps = this.readConfig().steps;
     console.info('From config', steps);
-    const schedule = async (services: string[]): Promise<Step> => {
+    const schedule = (services: string[]): Step => {
       const step: Step = new Map();
-      await Promise.all(
-        services.map(async (s) => {
-          const regions = await this.getRegions(s, stage);
-          regions.forEach((r) => {
-            if (step.has(r)) {
-              step.get(r).add(s);
-            } else {
-              step.set(r, new Set([s]));
-            }
-          });
-        }),
-      );
+      services.forEach((s) => {
+        const regions = this.getRegions(s, stage);
+        regions.forEach((r) => {
+          if (step.has(r)) {
+            step.get(r).add(s);
+          } else {
+            step.set(r, new Set([s]));
+          }
+        });
+      });
       return step;
     };
     if (!steps) {
-      console.debug('No specific config for steps. Using default', schedule(this._services.map((s) => s.name)));
-      const step = await schedule(this._services.map((s) => s.name));
+      console.debug('No specific config for steps. Using default', schedule(this._services.map((s) => s.getName())));
+      const step = schedule(this._services.map((s) => s.getName()));
       return [step];
     }
     const builtSteps: Step[] = [];
@@ -154,27 +150,21 @@ export class ConfigReader {
       let toSchedule: string[];
       if (step === '*') {
         toSchedule = this._services
-          .map((s) => s.name)
+          .map((s) => s.getName())
           .filter((s) => !steps.filter((step) => Array.isArray(step)).some((step) => step.includes(s)));
         console.debug('Is wildcard. Resolving all other services', toSchedule);
       } else {
         toSchedule = step;
       }
-      const scheduled = await schedule(toSchedule);
+      const scheduled = schedule(toSchedule);
       builtSteps.push(scheduled);
     }
     console.debug('Steps scheduled', builtSteps);
     return builtSteps;
   }
 
-  private async _resolveAllServices(): Promise<void> {
-    const lerna = new LernaHelper();
-    this._services = await lerna.getServices();
-  }
-
-  private async _buildConfigSchema(): Promise<void> {
-    await this._resolveAllServices();
-    const services = Joi.string().valid(...this._services.map((s) => s.name));
+  private _buildConfigSchema(): void {
+    const services = Joi.string().valid(...this._services.map((s) => s.getName()));
     const regionSchema = Joi.alternatives([
       Joi.string().valid(...ConfigReader.regions),
       Joi.array().items(Joi.string().valid(...ConfigReader.regions)),
@@ -187,13 +177,19 @@ export class ConfigReader {
       ),
     ]);
     this._schema = Joi.object().keys({
-      defaultRegions: regionSchema.optional(),
+      stages: Joi.array().items(Joi.string()).optional().allow(null),
+      compilationMode: Joi.string().valid('safe', 'fast'),
+      ports: Joi.object().pattern(services, Joi.number().integer().greater(0).less(64738)),
+      noStart: Joi.array().items(services).optional(),
+      defaultRegions: regionSchema.optional().allow(null),
       regions: Joi.object()
         .pattern(services, regionSchema)
         .optional(),
       steps: Joi.array()
         .items(Joi.alternatives([Joi.string().valid('*'), Joi.array().items(services)]))
         .optional(),
-    });
+      // TODO: Validate domains
+      domains: Joi.any(),
+    }).unknown(true);
   }
 }

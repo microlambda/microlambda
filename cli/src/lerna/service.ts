@@ -3,13 +3,14 @@ import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../utils/logs';
 import { ServiceStatus } from './enums/service.status';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
 import { getBinary } from '../utils/external-binaries';
 import { actions } from '../ui';
 import { FSWatcher, watch } from 'chokidar';
 import { RecompilationScheduler } from '../utils/scheduler';
+import { Packager } from '../package/packagr';
 
 export class Service extends LernaNode {
   private status: ServiceStatus;
@@ -232,5 +233,20 @@ export class Service extends LernaNode {
 
   isRunning() {
     return this.status === ServiceStatus.RUNNING;
+  }
+
+  package(level = 4): Observable<{ service: Service, megabytes: number }> {
+    return new Observable<{ service: Service, megabytes: number }>((obs) => {
+      const packagr = new Packager(this.graph, this, this.graph.logger);
+      packagr.generateZip(this, level).then((megabytes) => {
+        obs.next({ service: this, megabytes });
+        obs.complete();
+      }).catch((err) => obs.error(err));
+    });
+  }
+
+  deploy(): Observable<Service> {
+    console.warn('Not implemented');
+    return of(this);
   }
 }

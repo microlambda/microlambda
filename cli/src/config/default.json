@@ -1,6 +1,10 @@
 {
   "stages": null,
-  "compilation": "fast",
+  "compilationMode": "safe",
   "ports": {},
-  "noStart": []
+  "noStart": [],
+  "defaultRegions": null,
+  "regions": {},
+  "steps": ["*"],
+  "domains": {}
 }

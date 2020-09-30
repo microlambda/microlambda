@@ -1,6 +1,7 @@
 import { join, parse } from 'path';
 import { existsSync } from 'fs';
 import { Logger } from './logger';
+import chalk from 'chalk';
 
 export const getProjectRoot = (logger: Logger, path?: string): string => {
   try {
@@ -29,6 +30,8 @@ export const getProjectRoot = (logger: Logger, path?: string): string => {
     return projectRoot;
   } catch (e) {
     logger.log('project-root').error('Cannot find project root. Make sure it is a valid lerna project.');
+    console.error(chalk.red('Error: It seems you are not running this command in a valid microlambda project.'));
+    console.error(chalk.red('Please check your current directory and try again'));
     process.exit(1);
   }
 };

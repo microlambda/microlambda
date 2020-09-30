@@ -1,6 +1,5 @@
 import { Logger } from '../utils/logger';
 import { getProjectRoot } from '../utils/get-project-root';
-import { loadConfig } from '../config/load-config';
 import { getLernaGraph } from '../utils/get-lerna-graph';
 import { RecompilationScheduler } from '../utils/scheduler';
 

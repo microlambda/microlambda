@@ -1,17 +1,16 @@
 import { getProjectRoot } from '../utils/get-project-root';
-import { loadConfig } from '../config/load-config';
 import { Service } from '../lerna';
 import { getLernaGraph } from '../utils/get-lerna-graph';
 import { interactive } from '../utils/interactive';
 import { tailLogs } from '../utils/logs';
 import { Logger } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
+import { init } from './start';
 
 // TODO: make a ink scrollable logs component instead tail (which is not supported in windows)
 // TODO: use in memory logs instead files and try to preserve colors
 export const logs = async (cmd: { S: string }, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
-  const projectRoot = getProjectRoot(logger);
-  const config = loadConfig();
+  const { projectRoot, config } = await init(logger, scheduler);
   let services: Service[] = [];
   logger.log('logs').debug(config);
 

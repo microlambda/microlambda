@@ -7,6 +7,8 @@ import { checkStage } from './cmd/check-stage';
 import { checkService } from './cmd/check-service';
 import { build } from './cmd/build';
 import chalk from 'chalk';
+import { getDefaultThreads } from './utils/platform';
+import { packagr } from './cmd/package';
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -117,10 +119,11 @@ program
   // .option('-i, --interactive', 'interactively choose microservices', false)
   .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
   .option( '--no-recompile', 'skip package and service recompilation', false)
+  .option( '-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
   .action(async (cmd) => {
-
+    await packagr(cmd, logger, scheduler);
   });
 
 program
@@ -128,11 +131,11 @@ program
   // .option('-i, --interactive', 'interactively choose microservices', false)
   .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
   .option( '--no-recompile', 'skip package and service recompilation', false)
+  .option( '-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option( '--no-package', 'skip bundling service deployment package', false)
   .option('-s <service>, --service <service>', 'the service you want to deploy', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
-
   });
 
 /*

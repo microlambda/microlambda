@@ -1,15 +1,22 @@
 import { Logger } from '../utils/logger';
-import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../utils/scheduler';
-import { getProjectRoot } from '../utils/get-project-root';
-import { lernaBootstrap, parseGraph, readConfig } from './start';
+import {
+  IRecompilationError,
+  IRecompilationEvent,
+  RecompilationEventType,
+  RecompilationScheduler,
+} from '../utils/scheduler';
+import { init, lernaBootstrap } from './start';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
-import { LernaNode } from '../lerna';
 
-export const build = async (cmd: {S?: string, bootstrap: boolean, onlySelf: boolean}, scheduler: RecompilationScheduler, logger: Logger) => {
-  const projectRoot = getProjectRoot(logger);
-  const config = await readConfig(projectRoot, logger);
-  const graph = await parseGraph(projectRoot, scheduler, config, logger);
+export interface IBuildCmd {
+  S?: string;
+  bootstrap: boolean;
+  onlySelf: boolean;
+}
+
+export const beforeBuild = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger) => {
+  const { graph } = await init(logger, scheduler);
   graph.enableAll();
   const service = graph.getServices().find(s => s.getName() === cmd.S)
   if (cmd.S && !service) {
@@ -19,6 +26,11 @@ export const build = async (cmd: {S?: string, bootstrap: boolean, onlySelf: bool
   if (cmd.bootstrap) {
     await lernaBootstrap(graph, logger);
   }
+  return { graph, service }
+}
+
+export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger) => {
+  const { graph, service } = await beforeBuild(cmd, scheduler, logger);
   const spinners: Map<string, Ora> = new Map();
   const onNext = (evt: IRecompilationEvent) => {
     if (evt.type === RecompilationEventType.TYPE_CHECKING) {
@@ -31,13 +43,14 @@ export const build = async (cmd: {S?: string, bootstrap: boolean, onlySelf: bool
       spinner.succeed();
     }
   };
-  const onError = (evt: {node: LernaNode, logs: string[]}) => {
+  const onError = (evt: IRecompilationError) => {
     const spinner = spinners.get(evt.node.getName());
     spinner.fail(`Error compiling ${evt.node.getName()}`)
     evt.logs.forEach(l => console.error(l));
     process.exit(1);
   };
   const onComplete = () => {
+    console.info('\nSuccessfully built ✨');
     process.exit(0);
   }
   if (cmd.S) {

@@ -3,8 +3,8 @@ import { APIGateway, Route53 } from 'aws-sdk';
 import { Change, HostedZone, ListHostedZonesResponse, ResourceRecordSet } from 'aws-sdk/clients/route53';
 import { inspect } from 'util';
 import { LernaHelper, ILernaPackage } from '../../utils/lerna';
-import { ConfigReader } from './read-config';
 import { DomainName } from 'aws-sdk/clients/apigateway';
+import { ConfigReader } from '../../config/read-config';
 
 export class RecordsManager {
   private readonly _route53 = new Route53();

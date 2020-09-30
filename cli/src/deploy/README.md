@@ -160,3 +160,58 @@ Example:
 Every service will be deployed to "eu-west-1", "us-east-1", "ap-southeast-1" in production, except
 service that have a more precise rule and will be deployed only in eu-west-1.
 
+### Custom domains
+
+You can use custom domains for services
+
+Do not forget to install serverless-custom-domain plugin and fill the serverless.yml accordingly
+
+Like above, you can define custom domain service by service
+
+```json
+{
+  "domains": {
+    "service-1": "service-1.my-api.io",
+    "service-3": "service-3.my-api.io"
+  }    
+}
+```
+
+You can even use different custom domain by environment:
+
+```json
+{
+  "domains": {
+    "service-1": {
+      "dev": "dev.service-1.my-api.io",
+      "staging": "staging.service-1.my-api.io",
+      "prod": "service-1.my-api.io"
+    },
+    "service-3": "service-3.my-api.io"
+  }    
+}
+```
+
+### Reformatting serverless.yml
+
+Sometime you may want to change serverless.yaml before deploying, in order to use a slightly 
+different config locally than in cloud.
+
+To do so, register transformation functions in the config file.
+
+These method take in parameters the object parsed from yaml and must return the modified object
+to dump in yaml.
+
+In can be either written in typescript or javascript.
+
+```json
+{
+  "yamlTransforms": [
+    "scripts/yaml/change-custom-authorizer",
+    "scripts/yaml/region-conditional-resources"
+  ]
+}
+```
+
+You can see [example here](TODO gist)
+

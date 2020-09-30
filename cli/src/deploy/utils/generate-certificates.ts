@@ -10,7 +10,7 @@ import {
 import { HostedZone } from 'aws-sdk/clients/route53';
 import { RecordsManager } from './create-cname-records';
 import { ILernaPackage, LernaHelper } from '../../utils/lerna';
-import { ConfigReader } from './read-config';
+import { ConfigReader } from '../../config/read-config';
 
 export class CertificateManager {
   private readonly _services: ILernaPackage[];

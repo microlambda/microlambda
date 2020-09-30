@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+/* eslint-disable no-this._logger */
 import { spawn } from 'child_process';
 import { join, relative } from 'path';
 import { chmodSync, existsSync, mkdirSync, removeSync, statSync } from 'fs-extra';
@@ -6,7 +6,8 @@ import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import chalk from 'chalk';
 import { sync as glob } from 'glob';
-import { ILernaPackage, LernaHelper } from '../utils/lerna';
+import { ILogger, Logger } from '../utils/logger';
+import { LernaGraph, Service } from '../lerna';
 
 export interface IPackage {
   name: string;
@@ -38,12 +39,16 @@ export type Tree = IPackage[];
 export class Packager {
   private readonly _tree: Map<string, Tree>;
   private readonly _shaken: Map<string, boolean>;
-  private readonly _services: string[];
+  private readonly _services: Service[];
+  private readonly _graph: LernaGraph;
+  private readonly _logger: ILogger;
 
-  constructor(services?: string[]) {
-    this._services = services;
+  constructor(graph: LernaGraph, services: Service[] | Service, logger: Logger) {
+    this._services = Array.isArray(services) ? services : [services];
     this._tree = new Map();
     this._shaken = new Map();
+    this._logger = logger.log('packagr');
+    this._graph = graph;
   }
 
   public getTree(serviceName: string): Tree {
@@ -56,34 +61,24 @@ export class Packager {
   }
 
   public async bundle(level = 4): Promise<void> {
-    const lerna = new LernaHelper();
-    const allServices = await lerna.getServices();
-    const unknownServices = this._services
-      ? this._services.filter((name) => !allServices.some((s) => s.name === name))
-      : [];
-    if (unknownServices.length) {
-      console.error('Unknown services', unknownServices);
-      throw Error('E_UNKNOWN_SERVICES');
-    }
-    const toPackage = this._services != null ? allServices.filter((s) => this._services.includes(s.name)) : allServices;
-    await Promise.all(toPackage.map((service) => this.generateZip(service, level)));
+    await Promise.all(this._services.map((service) => this.generateZip(service, level)));
   }
 
-  public async generateZip(service: ILernaPackage, level: number): Promise<void> {
-    if (!this._tree.has(service.name)) {
+  public async generateZip(service: Service, level: number): Promise<number> {
+    if (!this._tree.has(service.getName())) {
       await this.buildDependenciesTree(service);
     }
-    if (!this._shaken.has(service.name)) {
+    if (!this._shaken.has(service.getName())) {
       this.shake(service);
     }
-    console.info(`${chalk.bold(service.name)}: Dependency tree built and shaken: \n${this.print(service)}`);
-    const packageDirectory = join(service.location, '.package');
+    this._logger.info(`${chalk.bold(service.getName())}: Dependency tree built and shaken: \n${this.print(service)}`);
+    const packageDirectory = join(service.getLocation(), '.package');
     if (existsSync(packageDirectory)) {
       removeSync(packageDirectory);
     }
     mkdirSync(packageDirectory);
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<number>((resolve, reject) => {
       const zipName = 'bundle.zip';
 
       const output = createWriteStream(join(packageDirectory, zipName));
@@ -93,25 +88,26 @@ export class Packager {
       });
 
       output.on('close', () => {
-        console.info(
-          `${chalk.bold(service.name)}: Zip files successfully created (${Math.round(
-            100 * (archive.pointer() / 1000000),
-          ) / 100}MB)`,
+        const megabytes = Math.round(
+          100 * (archive.pointer() / 1000000),
+        ) / 100;
+        this._logger.info(
+          `${chalk.bold(service.getName())}: Zip files successfully created (${megabytes}MB)`,
         );
-        return resolve();
+        return resolve(megabytes);
       });
 
       archive.on('warning', (err) => {
         if (err.code === 'ENOENT') {
-          console.warn(err);
+          this._logger.warn(err);
         } else {
-          console.error(err);
+          this._logger.error(err);
           return reject(err);
         }
       });
 
       archive.on('error', (err) => {
-        console.error(err);
+        this._logger.error(err);
         return reject(err);
       });
 
@@ -120,14 +116,12 @@ export class Packager {
       const toZip: Map<string, string> = new Map();
 
       const resolveDestination = (pkg: IPackage, src: string, rootCursor: string, root: string): string => {
-        // determine wether this dependency is a direct dependency or another lerna package dependency
-        const isLernaDescendent = service.location !== root;
-        if (pkg.name === '@dataportal/shared') {
-          console.log(service.location, root);
-        }
+        // determine whether this dependency is a direct dependency or another lerna package dependency
+        const isLernaDescendent = service.getLocation() !== root;
+
         // If it is "direct dependency" just use the same relative path from service root
         if (!isLernaDescendent) {
-          return relative(service.location, src);
+          return relative(service.getLocation(), src);
         }
 
         // eg: root /path/to/project/packages/shared/
@@ -135,9 +129,6 @@ export class Packager {
         const relativePath = relative(root, src);
         // eg: relativePath ./node_modules/foo/lib/bar.js
         // eg: cursor ./node_modules/@project/permissions/node_modules/@project/middleware/node_modules/@project/shared
-        if (pkg.name === '@dataportal/shared') {
-          console.log({ rootCursor, relativePath, dest: join(rootCursor, relativePath) });
-        }
         return join(rootCursor, relativePath);
         // eg: dest ./node_modules/@project/permissions/node_modules/@project/middleware/node_modules/@project/shared/node_modules/foo/lib/bar.js
       };
@@ -146,7 +137,7 @@ export class Packager {
         for (const pkg of packages) {
           if (!pkg.duplicate) {
             // We enter in a new node of the dependency tree, update cursor to reflect position in the tree
-            // Do not modify inplace the sursors and root as we are looping, keep the parent infos for other siblings
+            // Do not modify in-place the cursor and root as we are looping, keep the parent infos for other siblings
             const newCursor = join(cursor, 'node_modules', pkg.name);
 
             // Check if it is lerna symlinked package
@@ -157,35 +148,26 @@ export class Packager {
               (path) => !relative(pkg.path, path).includes('node_modules'),
             );
 
-            if (pkg.name === '@dataportal/shared') {
-              console.log({ newCursor, root, isLerna });
-              console.log(files);
-            }
-
             // If it is a lerna package update the cursor and root
             // Root cursor represent to position of the last lerna root in tree, keep it to resolve
             // destination path
             const newRoot = !isLerna ? root : pkg.path;
             const newRootCursor = !isLerna ? rootCursor : newCursor;
 
-            if (pkg.name === '@dataportal/shared') {
-              console.log({ newRoot, newRootCursor, isLerna });
-            }
-
             // Resolve file destination in archive and add it to copy queue
             files.forEach((src) => toZip.set(resolveDestination(pkg, src, newRootCursor, newRoot), src));
-            // Next recursion step for current package chidlren. Cursor and root are updated.
+            // Next recursion step for current package children. Cursor and root are updated.
             if (pkg.children.length > 0) {
               copyDependencies(pkg.children, newCursor, newRoot, newRootCursor);
             }
           }
         }
       };
-      const roots = this._tree.get(service.name).filter((p) => p.parent == null);
-      copyDependencies(roots, '', service.location, '');
+      const roots = this._tree.get(service.getName()).filter((p) => p.parent == null);
+      copyDependencies(roots, '', service.getLocation(), '');
 
       // Also package compiled service sources
-      const lib = join(service.location, 'lib');
+      const lib = join(service.getLocation(), 'lib');
       const compiledSources = glob(join(lib, '**', '*.js'));
       compiledSources.forEach((js) => {
         toZip.set(relative(lib, js), js);
@@ -219,11 +201,10 @@ export class Packager {
     });
   }
 
-  public async buildDependenciesTree(service: ILernaPackage): Promise<Tree> {
+  public async buildDependenciesTree(service: Service): Promise<Tree> {
     const tree: Tree = [];
-    const lerna = new LernaHelper();
-    const internals = await lerna.getAllPackages(service.location);
-    const rawTree = await Packager.getDependenciesTreeFromNPM(service.location);
+    const internals = await this._graph.getNodes();
+    const rawTree = await Packager.getDependenciesTreeFromNPM(service.getLocation());
     const buildTree = async (deps: RawDependencies, parent?: IPackage): Promise<void> => {
       if (!deps) {
         return;
@@ -232,15 +213,15 @@ export class Packager {
         const dep = deps[name];
         let pkg: IPackage;
         if (dep.missing) {
-          const internal = internals.find((p) => p.name === name);
+          const internal = internals.find((p) => p.getName() === name);
           if (!internal) {
-            console.error('Missing dependency', name);
-            throw Error('Missing dependency');
+            this._logger.error('Missing dependency', name);
+            throw Error(`Missing dependency ${name}`);
           }
           pkg = {
-            name: internal.name,
-            version: internal.version,
-            path: internal.location,
+            name: internal.getName(),
+            version: internal.getVersion(),
+            path: internal.getLocation(),
             children: [],
             parent,
             local: true,
@@ -268,16 +249,16 @@ export class Packager {
       }
     };
     await buildTree(rawTree.dependencies);
-    this._tree.set(service.name, tree);
+    this._tree.set(service.getName(), tree);
     return tree;
   }
 
-  public shake(service: ILernaPackage): Tree {
+  public shake(service: Service): Tree {
     const areEquals = (p1: IPackage, p2: IPackage): boolean => {
       return p1.name === p2.name && p1.version === p2.version;
     };
-    const roots = this._tree.get(service.name).filter((p) => p.parent == null);
-    const leaves = this._tree.get(service.name).filter((p) => p.children.length == 0);
+    const roots = this._tree.get(service.getName()).filter((p) => p.parent == null);
+    const leaves = this._tree.get(service.getName()).filter((p) => p.children.length == 0);
 
     const alreadyAnalyzed: Set<IPackage> = new Set();
     // From leaves to roots we analyze each package and check whether or not it is a duplicate
@@ -328,16 +309,16 @@ export class Packager {
       }
     };
     deduplicateChildren(roots);
-    this._shaken.set(service.name, true);
-    return this._tree.get(service.name);
+    this._shaken.set(service.getName(), true);
+    return this._tree.get(service.getName());
   }
 
-  public print(service: ILernaPackage, printDuplicates = false): string {
+  public print(service: Service, printDuplicates = false): string {
     if (!this._tree) {
-      console.log(this._tree);
+      this._logger.debug(this._tree);
     }
     let printable = '';
-    const roots = this._tree.get(service.name).filter((p) => p.parent == null);
+    const roots = this._tree.get(service.getName()).filter((p) => p.parent == null);
     const printLevel = (packages: Tree, depth = 0): void => {
       for (const pkg of packages) {
         if (printDuplicates || !pkg.duplicate) {
