@@ -324,8 +324,9 @@ export abstract class LernaNode {
     this.setTypeCheckingStatus(TypeCheckStatus.CHECKING);
     let recompile = true;
     let currentChecksums: IChecksums = null;
+    const checksumUtils = checksums(this, this.getGraph().logger);
     if (!force) {
-      const checksumUtils = checksums(this, this.getGraph().logger);
+      // FIXME: Checksums => all dependencies nodes must also have no changes to be considered no need to recompile
       try {
         const oldChecksums = await checksumUtils.read();
         currentChecksums = await checksumUtils.calculate();
@@ -345,6 +346,14 @@ export abstract class LernaNode {
       this.getGraph()
         .logger.log('node')
         .info('Safe-compiling performing type-checks', this.name);
+    } else {
+      try {
+        currentChecksums = await checksumUtils.calculate();
+      } catch (e) {
+        this.getGraph()
+          .logger.log('node')
+          .warn('Error evaluating checksums for node', this.name);
+      }
     }
     if (recompile) {
       this.typeCheckProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.getGraph().logger, this), {

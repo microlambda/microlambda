@@ -8,6 +8,7 @@ import {
 import { init, lernaBootstrap } from './start';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
+import { LernaGraph, Service } from '../lerna';
 
 export interface IBuildCmd {
   S?: string;
@@ -29,33 +30,44 @@ export const beforeBuild = async (cmd: IBuildCmd, scheduler: RecompilationSchedu
   return { graph, service }
 }
 
+export const typeCheck = async (scheduler: RecompilationScheduler, target: LernaGraph | Service, onlySelf: boolean, force: boolean): Promise<void> => {
+  return new Promise<void>((resolve, reject) => {
+    const spinners: Map<string, Ora> = new Map();
+    const onNext = (evt: IRecompilationEvent) => {
+      if (evt.type === RecompilationEventType.TYPE_CHECKING) {
+        const spinner = ora(`Compiling ${evt.node.getName()}`);
+        spinner.start();
+        spinners.set(evt.node.getName(), spinner);
+      } else if (evt.type === RecompilationEventType.TYPE_CHECKED) {
+        const spinner = spinners.get(evt.node.getName());
+        spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
+        spinner.succeed();
+      }
+    };
+    const onError = (evt: IRecompilationError) => {
+      const spinner = spinners.get(evt.node.getName());
+      spinner.fail(`Error compiling ${evt.node.getName()}`)
+      evt.logs.forEach(l => console.error(l));
+      return reject();
+    };
+    const onComplete = () => {
+      return resolve();
+    }
+    if (target instanceof Service) {
+      scheduler.buildOne(target, onlySelf, force).subscribe(onNext, onError, onComplete);
+    } else {
+      scheduler.buildAll(target, onlySelf, force).subscribe(onNext, onError, onComplete);
+    }
+  });
+}
+
 export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger) => {
   const { graph, service } = await beforeBuild(cmd, scheduler, logger);
-  const spinners: Map<string, Ora> = new Map();
-  const onNext = (evt: IRecompilationEvent) => {
-    if (evt.type === RecompilationEventType.TYPE_CHECKING) {
-      const spinner = ora(`Compiling ${evt.node.getName()}`);
-      spinner.start();
-      spinners.set(evt.node.getName(), spinner);
-    } else if (evt.type === RecompilationEventType.TYPE_CHECKED) {
-      const spinner = spinners.get(evt.node.getName());
-      spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
-      spinner.succeed();
-    }
-  };
-  const onError = (evt: IRecompilationError) => {
-    const spinner = spinners.get(evt.node.getName());
-    spinner.fail(`Error compiling ${evt.node.getName()}`)
-    evt.logs.forEach(l => console.error(l));
-    process.exit(1);
-  };
-  const onComplete = () => {
+  try {
+    await typeCheck(scheduler, cmd.S ? service : graph, cmd.onlySelf, true);
     console.info('\nSuccessfully built ✨');
     process.exit(0);
-  }
-  if (cmd.S) {
-    scheduler.buildOne(service, cmd.onlySelf).subscribe(onNext, onError, onComplete);
-  } else {
-    scheduler.buildAll(graph, cmd.onlySelf).subscribe(onNext, onError, onComplete);
+  } catch (e) {
+    process.exit(1);
   }
 }

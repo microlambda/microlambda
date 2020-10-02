@@ -708,20 +708,20 @@ export class RecompilationScheduler {
     return recompilationProcess$.pipe(filter(evt => !!evt));
   }
 
-  buildOne(service: Service, onlySelf: boolean): Observable<IRecompilationEvent> {
+  buildOne(service: Service, onlySelf: boolean, force: boolean): Observable<IRecompilationEvent> {
     if (onlySelf) {
-      this._requestTypeCheck(service, true);
+      this._requestTypeCheck(service, force);
     } else {
-      this._compile([service], RecompilationMode.SAFE, true);
+      this._compile([service], RecompilationMode.SAFE, force);
     }
     return this._exec();
   }
 
-  buildAll(graph: LernaGraph, onlySelf: boolean): Observable<IRecompilationEvent> {
+  buildAll(graph: LernaGraph, onlySelf: boolean, force: boolean): Observable<IRecompilationEvent> {
     if (onlySelf) {
-      graph.getServices().forEach(s => this._requestTypeCheck(s, true));
+      graph.getServices().forEach(s => this._requestTypeCheck(s, force));
     } else {
-      this._compile(graph.getServices(), RecompilationMode.SAFE, true);
+      this._compile(graph.getServices(), RecompilationMode.SAFE, force);
     }
     return this._exec();
   }

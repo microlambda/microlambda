@@ -9,6 +9,7 @@ import { build } from './cmd/build';
 import chalk from 'chalk';
 import { getDefaultThreads } from './utils/platform';
 import { packagr } from './cmd/package';
+import { runTests } from './cmd/test';
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -138,6 +139,8 @@ program
   .action(async (cmd) => {
   });
 
+// TODO Remove deployed stack
+
 /*
 // TODO: IPC and background mode
 program
@@ -148,32 +151,23 @@ program
   });
 */
 
-/*
-// TODO: Test runner
 program
   .command('test')
   .description('test microlambda services')
   .option('--no-bootstrap', 'skip reinstalling dependencies before starting microservices', false)
   .option('--no-recompile', 'skip recompiling dependency graph before starting microservices', false)
+  .option('--only-self', 'only recompile target services', false)
   .option('--unit', 'only run unit tests', false)
   .option('--functional', 'only run functional tests', false)
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
   .option('-s <service>, --service <service>', 'the service for which you want to test', null)
   .action(async (cmd) => {
     await runTests(
+      cmd,
       scheduler,
-      {
-        bootstrap: cmd.bootstrap,
-        recompile: cmd.recompile,
-        unit: cmd.unit,
-        functional: cmd.functional,
-        concurrency: cmd.C,
-        service: cmd.S,
-      },
       logger,
     );
   });
-*/
 
 /*
 // TODO: Generator

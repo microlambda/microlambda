@@ -249,4 +249,17 @@ export class Service extends LernaNode {
     console.warn('Not implemented');
     return of(this);
   }
+
+  hasCustomDomain(): boolean {
+    // TODO
+    return false;
+  }
+
+  createCustomDomain() {
+
+  }
+
+  test() {
+
+  }
 }
