@@ -10,6 +10,7 @@ import chalk from 'chalk';
 import { getDefaultThreads } from './utils/platform';
 import { packagr } from './cmd/package';
 import { runTests } from './cmd/test';
+import { deploy } from './cmd/deploy';
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -137,6 +138,7 @@ program
   .option('-s <service>, --service <service>', 'the service you want to deploy', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
+    await deploy(cmd, logger, scheduler);
   });
 
 // TODO Remove deployed stack

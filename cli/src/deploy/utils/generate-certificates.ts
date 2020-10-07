@@ -1,5 +1,5 @@
-/* eslint-disable no-console */
-import { ACM, Route53 } from 'aws-sdk';
+/* eslint-disable no-this._logger */
+import { ACM, Route53  } from 'aws-sdk';
 import {
   CertificateSummary,
   DescribeCertificateResponse,
@@ -9,53 +9,101 @@ import {
 } from 'aws-sdk/clients/acm';
 import { HostedZone } from 'aws-sdk/clients/route53';
 import { RecordsManager } from './create-cname-records';
-import { ILernaPackage, LernaHelper } from '../../utils/lerna';
 import { ConfigReader } from '../../config/read-config';
+import { Service } from '../../lerna';
+import { ILogger, Logger } from '../../utils/logger';
+import { Observable } from 'rxjs';
+
+export enum CertificateEventType {
+  CREATING,
+  CREATED,
+  ACTIVATING,
+  ACTIVATED,
+}
+
+export interface ICertificateEvent {
+  type: CertificateEventType;
+  region: string;
+  domain: string;
+}
 
 export class CertificateManager {
-  private readonly _services: ILernaPackage[];
+  private readonly _services: Service[];
   private readonly _configReader: ConfigReader;
+  private readonly _logger: ILogger;
+  private readonly _certificates: Map<string, Set<string>>;
 
-  constructor(services: ILernaPackage[], configReader: ConfigReader) {
+  constructor(logger: Logger, services: Service[], configReader: ConfigReader) {
     this._services = services;
     this._configReader = configReader;
+    this._logger = logger.log('certificates');
+    this._certificates = new Map();
   }
 
-  public async requestCertificates(stage: string): Promise<void> {
+  public async prepareCertificatesRequests(stage: string): Promise<boolean> {
+    let needAction = false;
     for (const service of this._services) {
-      const domain = LernaHelper.getCustomDomain(service.name, stage);
+      const domain = this._configReader.getCustomDomain(service.getName(), stage);
       if (!domain) {
-        console.info(`No custom domain for service ${service.name}. Skipping`);
+        this._logger.info(`No custom domain for service ${service.getName()}. Skipping`);
         continue;
       }
-      const regions = await this._configReader.getRegions(service.name, stage);
+      const regions = await this._configReader.getRegions(service.getName(), stage);
       for (const region of regions) {
-        const certificate = await this.getClosestCertificate(region, domain);
+        if (!this._certificates.has(region)) {
+          this._certificates.set(region, new Set());
+        }
+        const regionCertificates = this._certificates.get(region);
+        const certificate = await this._getClosestCertificate(region, domain);
         if (!certificate) {
           const segments = domain.split('.');
           segments.shift();
           const targetDomain = ['*', ...segments].join('.');
-          console.info('Creating certificate', { region, domain: targetDomain });
-          const response = await this.createCertificate(region, targetDomain);
-          console.info('Certificate created', response.CertificateArn);
-          console.info('Activating certificate');
-          await this.activateCertificate(domain, region, response.CertificateArn);
+          this._logger.info('Creating certificate', { region, domain: targetDomain });
+          regionCertificates.add(targetDomain);
+          needAction = true;
         } else {
-          const details = await this.describeCertificate(region, certificate.CertificateArn);
+          const details = await CertificateManager._describeCertificate(region, certificate.CertificateArn);
           if (details.Certificate.Status !== 'ISSUED') {
-            console.error('Cannot use existing certificate: certificate status is not ISSUED', {
+            this._logger.error('Cannot use existing certificate: certificate status is not ISSUED', {
               arn: details.Certificate.CertificateArn,
               status: details.Certificate.Status,
             });
             throw Error('E_CERTIFICATE_NOT_ISSUED');
           }
-          console.info('Using already existing certificate', details.Certificate.CertificateArn);
+          this._logger.info('Using already existing certificate', details.Certificate.CertificateArn);
         }
       }
     }
+    return needAction;
   }
 
-  public async describeCertificate(region: string, arn: string): Promise<DescribeCertificateResponse> {
+  public doRequestCertificates(): Observable<ICertificateEvent> {
+    return new Observable<ICertificateEvent>((obs) => {
+      const promises = [];
+      for (const [region, domains] of this._certificates.entries()) {
+        for (const domain of domains) {
+          obs.next({ type: CertificateEventType.CREATING, domain, region });
+          const createCertificate = CertificateManager._createCertificate(region, domain);
+          promises.push(createCertificate);
+          createCertificate.then((response) => {
+            obs.next({ type: CertificateEventType.CREATED, domain, region });
+            this._logger.info('Certificate created', response.CertificateArn);
+            this._logger.info('Activating certificate');
+            obs.next({ type: CertificateEventType.ACTIVATING, domain, region });
+            const activateCertificate = this._activateCertificate(domain, region, response.CertificateArn);
+            promises.push(activateCertificate);
+            activateCertificate.then(() => {
+              obs.next({ type: CertificateEventType.ACTIVATED, domain, region });
+            }).catch((err) => obs.error({ err, domain, region }));
+          }).catch((err) => obs.error({ err, domain, region }));
+        }
+      }
+      Promise.all(promises).then(() => obs.complete());
+    })
+  }
+
+  private static async _describeCertificate(region: string, arn: string): Promise<DescribeCertificateResponse> {
     const acm = new ACM({ region });
     return acm
       .describeCertificate({
@@ -64,11 +112,11 @@ export class CertificateManager {
       .promise();
   }
 
-  public async getClosestCertificate(region: string, domain: string): Promise<CertificateSummary> {
-    const certificates = await this.listCertificates(region);
+  private async _getClosestCertificate(region: string, domain: string): Promise<CertificateSummary> {
+    const certificates = await CertificateManager._listCertificates(region);
     // Exact match
     if (certificates.some((c) => c.DomainName === domain)) {
-      console.debug('Exact match', certificates.find((c) => c.DomainName === domain).DomainName);
+      this._logger.debug('Exact match', certificates.find((c) => c.DomainName === domain).DomainName);
       return certificates.find((c) => c.DomainName === domain);
     }
 
@@ -77,7 +125,7 @@ export class CertificateManager {
     segments.shift();
     const wildcard = ['*', ...segments].join('.');
     if (certificates.some((c) => c.DomainName === wildcard)) {
-      console.debug('Upper wildcard match', certificates.find((c) => c.DomainName === wildcard).DomainName);
+      this._logger.debug('Upper wildcard match', certificates.find((c) => c.DomainName === wildcard).DomainName);
       return certificates.find((c) => c.DomainName === wildcard);
     }
     // Upper level wildcards
@@ -86,14 +134,14 @@ export class CertificateManager {
       segments.shift();
       const wildcard = ['*', ...segments].join('.');
       if (certificates.some((c) => c.DomainName === wildcard)) {
-        console.debug('Upper wildcard match', certificates.find((c) => c.DomainName === wildcard).DomainName);
+        this._logger.debug('Upper wildcard match', certificates.find((c) => c.DomainName === wildcard).DomainName);
         return certificates.find((c) => c.DomainName === wildcard);
       }
     }*/
     return null;
   }
 
-  public async listCertificates(region: string): Promise<CertificateSummary[]> {
+  private static async _listCertificates(region: string): Promise<CertificateSummary[]> {
     const acm = new ACM({ region });
     let nextToken = null;
     const certificates: CertificateSummary[] = [];
@@ -109,7 +157,7 @@ export class CertificateManager {
     return certificates;
   }
 
-  public async createCertificate(region: string, targetDomain: string): Promise<RequestCertificateResponse> {
+  private static async _createCertificate(region: string, targetDomain: string): Promise<RequestCertificateResponse> {
     const acm = new ACM({ region });
     return acm
       .requestCertificate({
@@ -119,37 +167,37 @@ export class CertificateManager {
       .promise();
   }
 
-  public async activateCertificate(domain: string, region: string, arn: string, polling = 20000): Promise<void> {
+  private async _activateCertificate(domain: string, region: string, arn: string, polling = 20000): Promise<void> {
     // workaround pb with SDK: @see https://github.com/aws/aws-sdk-js/issues/2133
     await new Promise((resolve) => setTimeout(resolve, 5000));
-    const details = await this.describeCertificate(region, arn);
-    console.debug(JSON.stringify(details, null, 2));
+    const details = await CertificateManager._describeCertificate(region, arn);
+    this._logger.debug(JSON.stringify(details, null, 2));
     const record = details.Certificate.DomainValidationOptions.find((dv) => dv.ResourceRecord).ResourceRecord;
     const dnsManager = new RecordsManager();
     const hostedZone = await dnsManager.getHostedZone(domain);
     const throwError = (): void => {
-      console.error('Cannot activate certificate. Related hosted zone not found on Route53');
-      console.error('Ask your domain administrator to create the following CNAME record and re-run deployment');
-      console.error(record);
+      this._logger.error('Cannot activate certificate. Related hosted zone not found on Route53');
+      this._logger.error('Ask your domain administrator to create the following CNAME record and re-run deployment');
+      this._logger.error(record);
       throw Error('E_CERTIFICATE_ACTIVATION');
     };
     if (!hostedZone) {
       throwError();
     }
-    console.info('Found related hosted zone', hostedZone);
+    this._logger.info('Found related hosted zone', hostedZone);
     try {
-      await this.createActivationRecord(hostedZone, record);
-      console.info('Create DNS record to activate certificate');
+      await CertificateManager._createActivationRecord(hostedZone, record);
+      this._logger.info('Create DNS record to activate certificate');
     } catch (e) {
-      console.error(e);
+      this._logger.error(e);
       throwError();
     }
-    console.info('Waiting for the certificate to be active. Please wait this can take up to 30 minutes');
+    this._logger.info('Waiting for the certificate to be active. Please wait this can take up to 30 minutes');
 
     return new Promise<void>((resolve, reject) => {
       const poll = setInterval(async () => {
-        const details = await this.describeCertificate(region, arn);
-        console.log('Status', details.Certificate.Status);
+        const details = await CertificateManager._describeCertificate(region, arn);
+        this._logger.info('Status', details.Certificate.Status);
         if (details.Certificate.Status === 'ISSUED') {
           clearInterval(poll);
           return resolve();
@@ -159,14 +207,14 @@ export class CertificateManager {
       const THIRTY_MINUTES = 30 * 60 * 1000;
       setTimeout(() => {
         clearInterval(poll);
-        console.error('Certificate was not issued within thirty minutes');
-        console.error('Please double-check that the correct activation record have been created');
+        this._logger.error('Certificate was not issued within thirty minutes');
+        this._logger.error('Please double-check that the correct activation record have been created');
         return reject(Error('E_CERTIFICATE_ACTIVATION'));
       }, THIRTY_MINUTES);
     });
   }
 
-  public async createActivationRecord(hostedZone: HostedZone, record: ResourceRecord): Promise<void> {
+  private static async _createActivationRecord(hostedZone: HostedZone, record: ResourceRecord): Promise<void> {
     const route53 = new Route53();
     await route53
       .changeResourceRecordSets({

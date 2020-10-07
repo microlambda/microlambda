@@ -68,11 +68,6 @@ export const start = async (
 
   recreateLogDirectory(projectRoot, logger);
 
-  if (!options.interactive) {
-    logger.log('start').info('Starting services');
-    await scheduler.startProject(graph, options.recompile);
-  }
-
   process.on('SIGINT', async () => {
     logger.log('start').warn('SIGINT signal received');
     console.log('\n');
@@ -86,6 +81,11 @@ export const start = async (
     gracefulShutdown.succeed();
     process.exit(0);
   });
+
+  if (!options.interactive) {
+    logger.log('start').info('Starting services');
+    await scheduler.startProject(graph, options.recompile);
+  }
 };
 
 export const init = async (logger: Logger, scheduler: RecompilationScheduler, defaultPort?: number) => {

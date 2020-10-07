@@ -232,7 +232,6 @@ export abstract class LernaNode {
         this.getGraph()
           .logger.log('node')
           .info('Package transpiled', this.name);
-        this.watch();
         observer.next(this);
         this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
         return observer.complete();
@@ -424,10 +423,10 @@ export abstract class LernaNode {
     });
   }
 
-  protected watch() {
+  watch() {
     this.getGraph()
       .logger.log('node')
-      .debug('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+      .info('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
     const watcher = watch(`${this.location}/src/**/*.{ts,js,json}`);
     watcher.on('change', (path) => {
       this.getGraph()
@@ -436,6 +435,8 @@ export abstract class LernaNode {
       const isFinalLeaf = this.isService() && this.getDependent().length === 0;
       if (!isFinalLeaf) {
         this._scheduler.fileChanged(this);
+      } else {
+        this._scheduler.buildOne(this as unknown as Service, true, true).subscribe();
       }
     })
     this._watchers.push(watcher);

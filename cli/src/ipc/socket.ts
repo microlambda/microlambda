@@ -114,13 +114,13 @@ export class IPCSocketsManager {
 
   private _emitEvent(recompilationEvent: IRecompilationEvent): void {
     switch (recompilationEvent.type) {
-      case RecompilationEventType.SERVICE_STARTED:
+      case RecompilationEventType.START_SUCCESS:
         this._ipc.server.emit(IPCSocketsManager._responseEvent('start'), {
           node: recompilationEvent.node.getName(),
           port: this._graph.getPort(recompilationEvent.node.getName()),
         });
         break;
-      case RecompilationEventType.SERVICE_STOPPED:
+      case RecompilationEventType.STOP_SUCCESS:
         this._ipc.server.emit(IPCSocketsManager._responseEvent('stop'), {
           node: recompilationEvent.node.getName(),
         });

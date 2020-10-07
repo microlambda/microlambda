@@ -23,18 +23,24 @@ enum RecompilationStatus {
 }
 
 export enum RecompilationEventType {
-  STOPPING_SERVICE,
-  SERVICE_STOPPED,
-  TRANSPILING_NODE,
-  NODE_TRANSPILED,
-  TYPE_CHECKING,
-  TYPE_CHECKED,
-  STARTING_SERVICE,
-  SERVICE_STARTED,
-  PACKAGING,
-  PACKAGED,
-  DEPLOYING,
-  DEPLOYED,
+  STOP_IN_PROGRESS,
+  STOP_SUCCESS,
+  STOP_FAILURE,
+  TRANSPILE_IN_PROGRESS,
+  TRANSPILE_SUCCESS,
+  TRANSPILE_FAILURE,
+  TYPE_CHECK_IN_PROGRESS,
+  TYPE_CHECK_SUCCESS,
+  TYPE_CHECK_FAILURE,
+  START_IN_PROGRESS,
+  START_SUCCESS,
+  START_FAILURE,
+  PACKAGE_IN_PROGRESS,
+  PACKAGE_SUCCESS,
+  PACKAGE_FAILURE,
+  DEPLOY_IN_PROGRESS,
+  DEPLOY_SUCCESS,
+  DEPLOY_FAILURE,
 }
 
 export enum RecompilationErrorType {
@@ -180,7 +186,7 @@ export class RecompilationScheduler {
     if (compile) {
       // Compile all enabled nodes from leaves to roots
       this._logger.debug('Building compilation queue...', graph.getNodes().filter((n) => n.isEnabled()).length);
-      this._compile(graph.getNodes().filter((n) => n.isEnabled()));
+      this._compile(graph.getNodes().filter((n) => n.isEnabled()), RecompilationMode.FAST, false, false);
     }
     this._logger.debug(
       'Compilation queue built',
@@ -200,7 +206,16 @@ export class RecompilationScheduler {
       this._jobs.start.map((n) => n.getName()),
     );
     this._logger.debug('Executing tasks');
-    return this._execPromise();
+    const watch = () => {
+      this._logger.info('Watching for file changes');
+      graph.getNodes().forEach((n) => n.watch());
+    }
+    try {
+      await this._execPromise();
+      watch();
+    } catch (e) {
+      watch();
+    }
   }
 
   public stopProject(graph: LernaGraph): Promise<void> {
@@ -225,7 +240,7 @@ export class RecompilationScheduler {
         if (this._changes.size > 0) {
           this._logger.info('Triggering recompilation...');
           // abort previous recompilation if any
-          this._abort$.next();
+          this._reset();
           // find all services that are impacted
           this._logger.info('Changed nodes', Array.from(this._changes).map(n => n.getName()));
           const impactedServices: Set<Service> = new Set<Service>();
@@ -267,9 +282,10 @@ export class RecompilationScheduler {
    * @param target: The nodes to compile
    * @param mode: Whether or node type-check and transpiling jobs should be executed in separate threads
    * @param force: perform type-checking even if checksums are unchanged
+   * @param throws: whether type check should throws and stop jobs execution
    * @private
    */
-  private _compile(target: LernaNode | LernaNode[], mode = RecompilationMode.FAST, force = false): void {
+  private _compile(target: LernaNode | LernaNode[], mode = RecompilationMode.FAST, force = false, throws = true): void {
     const toCompile = Array.isArray(target) ? target : [target];
     this._logger.debug(
       'Requested to compile nodes',
@@ -282,9 +298,10 @@ export class RecompilationScheduler {
       'Root nodes',
       roots.map((n) => n.getName()),
     );
-    const recursivelyCompile = (nodes: LernaNode[], requested: Set<LernaNode>): void => {
+    const recursivelyCompile = (nodes: LernaNode[], requested: Set<LernaNode>, depth = 0): void => {
+      this._logger.debug('-'.repeat(depth), 'Recursively compile', nodes.map(n => n.getName()));
       for (const node of nodes) {
-        this._logger.debug('Request to compile', node.getName());
+        this._logger.debug('-'.repeat(depth), 'Request to compile', node.getName());
         // For each node get his descendants and compile them before him
         const dependencies = node.getChildren().filter((d) => {
           // compile node only if it is himself in requested targets
@@ -299,30 +316,29 @@ export class RecompilationScheduler {
           });
           return d.isEnabled() && (hasDescendantInRequest || inRequest);
         });
-        this._logger.debug('Has dependencies', dependencies.length);
+        this._logger.debug('-'.repeat(depth), 'Has dependencies', dependencies.map(d => d.getName()));
         if (dependencies.length > 0) {
           // If the current node has dependencies that should be compiled before him, compile them (recursion down)
-          recursivelyCompile(dependencies, requested);
+          recursivelyCompile(dependencies, requested, depth + 1);
         }
         // Else compile it and return (recursion up)
         // Check if node has not been already recompiled earlier in recursion (using set)
         const alreadyCompiled = requested.has(node);
         if (alreadyCompiled) {
-          this._logger.debug('Already in compilation queue', node.getName());
-          return;
+          this._logger.debug('-'.repeat(depth), 'Already in compilation queue', node.getName());
+        } else {
+          // Check if node is a service that is not used by another service as package
+          // In that case, no need to transpile if fast-compilation if asked. Service will be transpiled by serverless-webpack
+          const isRootService = roots.includes(node) && node.isService();
+          if (mode === RecompilationMode.FAST && !isRootService) {
+            this._logger.debug('-'.repeat(depth), 'Added to transpiling queue', node.getName());
+            this._requestTranspile(node);
+          }
+          this._logger.debug('-'.repeat(depth), 'Added to type-checking queue', node.getName());
+          this._requestTypeCheck(node, force);
+          // Avoid node to be recompiled later in recursion using a set
+          requested.add(node);
         }
-
-        // Check if node is a service that is not used by another service as package
-        // In that case, no need to transpile if fast-compilation if asked. Service will be transpiled by serverless-webpack
-        const isRootService = roots.includes(node) && node.isService();
-        if (mode === RecompilationMode.FAST && !isRootService) {
-          this._logger.debug('Added to transpiling queue', node.getName());
-          this._requestTranspile(node);
-        }
-        this._logger.debug('Added to type-checking queue', node.getName());
-        this._requestTypeCheck(node, force);
-        // Avoid node to be recompiled later in recursion using a set
-        requested.add(node);
       }
     };
     recursivelyCompile(roots, new Set());
@@ -414,8 +430,14 @@ export class RecompilationScheduler {
       this._logger.debug('Recompilation process', recompilationProcess$);
       recompilationProcess$.subscribe(
         (event) => this._logger.debug(event),
-        (err) => reject(err),
-        () => resolve(),
+        (err) => {
+          this._logger.error('exec promise error', err);
+          return reject(err);
+        },
+        () => {
+          this._logger.info('resolving exec promise');
+          return resolve();
+        },
       );
     });
   }
@@ -423,88 +445,109 @@ export class RecompilationScheduler {
   private _exec(): Observable<IRecompilationEvent> {
     if (this._status === SchedulerStatus.BUSY) {
       this._logger.warn('Scheduler is already busy');
-      this._abort$.next();
-      return;
+      this._reset();
     }
     if (this._status === SchedulerStatus.ABORTED) {
       this._logger.info('Previous recompilation has been preempted');
     }
     this._status = SchedulerStatus.BUSY;
-    this._logger.debug('Executing recompilation task');
-    this._logger.debug(
+    this._logger.info('Executing recompilation task');
+    this._logger.info(
       'To stop',
       this._jobs.stop.map((n) => n.getName()),
     );
-    this._logger.debug(
+    this._logger.info(
       'To transpile',
       this._jobs.transpile.map((n) => n.getName()),
     );
-    this._logger.debug(
+    this._logger.info(
       'To type-check',
       this._jobs.typeCheck.map((n) => n.node.getName()),
     );
-    this._logger.debug(
+    this._logger.info(
       'To start',
       this._jobs.start.map((n) => n.getName()),
     );
 
-    const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((s) =>
-      s.stop().pipe(
-        map((service) => {
-          this._logger.debug('Stopped', service.getName());
-          return { node: service, type: RecompilationEventType.SERVICE_STOPPED };
-        }),
-        catchError((err) => {
-          this._logger.error(err);
-          return throwError(err);
-        }),
-      ),
-    );
+    const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((node) => {
+      return new Observable<IRecompilationEvent>((obs) => {
+        obs.next({ node, type: RecompilationEventType.STOP_IN_PROGRESS });
+        const now = Date.now();
+        node.stop().subscribe(
+          (node) => {
+            this._logger.debug('Stopped', node.getName());
+            obs.next({ node: node, type: RecompilationEventType.STOP_SUCCESS, took: Date.now() - now });
+            return obs.complete();
+          },
+          (err) => {
+            obs.next({ node: node, type: RecompilationEventType.STOP_FAILURE, took: Date.now() - now });
+            this._logger.error('Error stopping', node.getName(), err);
+            return obs.error(err);
+          },
+        );
+      });
+    });
 
-    const transpilingJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.transpile.map((node) =>
-      node.transpile().pipe(
-        map((node) => {
-          this._logger.debug('Compiled', node.getName());
-          return { node: node, type: RecompilationEventType.NODE_TRANSPILED };
-        }),
-        catchError((err) => {
-          this._logger.error(err);
-          return throwError(err);
-        }),
-      ),
-    );
+    const transpilingJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.transpile.map((node) => {
+      return new Observable<IRecompilationEvent>((obs) => {
+        obs.next({ node, type: RecompilationEventType.TRANSPILE_IN_PROGRESS });
+        const now = Date.now();
+        node.transpile().subscribe(
+          (node) => {
+            this._logger.debug('Transpiled', node.getName());
+            obs.next({ node: node, type: RecompilationEventType.TRANSPILE_SUCCESS, took: Date.now() - now });
+            return obs.complete();
+          },
+          (err) => {
+            obs.next({ node: node, type: RecompilationEventType.TYPE_CHECK_FAILURE, took: Date.now() - now });
+            this._logger.error('Error transpiling', err);
+            return obs.error(err);
+          },
+        );
+      });
+    });
 
-    const startJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.start.map((s) =>
-      s.start().pipe(
-        map((service) => {
-          this._logger.debug('Started', service.getName());
-          return { node: service, type: RecompilationEventType.SERVICE_STARTED };
-        }),
-        catchError((err) => {
-          this._logger.error(err);
-          return throwError(err);
-        }),
-      ),
-    );
+    const startJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.start.map((service) => {
+      return new Observable<IRecompilationEvent>((obs) => {
+        obs.next({ node: service, type: RecompilationEventType.START_IN_PROGRESS });
+        const now = Date.now();
+        service.start().subscribe(
+          (node) => {
+            this._logger.debug('Service started', service.getName());
+            obs.next({ node: node, type: RecompilationEventType.START_SUCCESS, took: Date.now() - now });
+            return obs.complete();
+          },
+          (err) => {
+            this._logger.error('Error starting', err);
+            const evt: IRecompilationEvent = {
+              type: RecompilationEventType.START_FAILURE,
+              node: service,
+            }
+            return obs.next(evt);
+          },
+        );
+      });
+    });
 
     const typeCheckJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.typeCheck.map((job) => {
       return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: job.node, type: RecompilationEventType.TYPE_CHECKING });
+        obs.next({ node: job.node, type: RecompilationEventType.TYPE_CHECK_IN_PROGRESS });
         const now = Date.now();
         job.node.performTypeChecking(job.force).subscribe(
           (node) => {
             this._logger.debug('Type checked', job.node.getName());
-            obs.next({ node: node, type: RecompilationEventType.TYPE_CHECKED, took: Date.now() - now });
-            obs.complete();
+            obs.next({ node: node, type: RecompilationEventType.TYPE_CHECK_SUCCESS, took: Date.now() - now });
+            return obs.complete();
           },
           (err) => {
-            this._logger.error(err);
+            obs.next({ node: job.node, type: RecompilationEventType.TYPE_CHECK_FAILURE, took: Date.now() - now });
+            this._logger.error('Error typechecking', err);
             const evt: IRecompilationError = {
               type: RecompilationErrorType.TYPE_CHECK_ERROR,
               node: job.node,
               logs: job.node.tscLogs,
             }
-            obs.error(evt);
+            return obs.error(evt);
           },
         );
       });
@@ -512,22 +555,23 @@ export class RecompilationScheduler {
 
     const packageJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.package.map((job) => {
       return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: job.service, type: RecompilationEventType.PACKAGING});
+        obs.next({ node: job.service, type: RecompilationEventType.PACKAGE_IN_PROGRESS});
         const now = Date.now();
         job.service.package(job.level).subscribe(
           (output) => {
             this._logger.debug('Service packaged', job.service.getName());
-            obs.next({ node: output.service, type: RecompilationEventType.PACKAGED, took: Date.now() - now, megabytes: output.megabytes });
-            obs.complete();
+            obs.next({ node: output.service, type: RecompilationEventType.PACKAGE_SUCCESS, took: Date.now() - now, megabytes: output.megabytes });
+            return obs.complete();
           },
           (err) => {
-            this._logger.error(err);
+            obs.next({ node: job.service, type: RecompilationEventType.PACKAGE_FAILURE, took: Date.now() - now });
+            this._logger.error('Error packaging', err);
             const evt: IRecompilationError = {
               type: RecompilationErrorType.PACKAGE_ERROR,
               node: job.service,
               logs: [err],
             }
-            obs.error(evt);
+            return obs.error(evt);
           },
         )
       });
@@ -535,16 +579,17 @@ export class RecompilationScheduler {
 
     const deployJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.deploy.map((service) => {
       return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: service, type: RecompilationEventType.DEPLOYING});
+        obs.next({ node: service, type: RecompilationEventType.DEPLOY_IN_PROGRESS});
         const now = Date.now();
         service.deploy().subscribe(
           (service) => {
             this._logger.debug('Service deployed', service.getName());
-            obs.next({ node: service, type: RecompilationEventType.DEPLOYED, took: Date.now() - now });
+            obs.next({ node: service, type: RecompilationEventType.DEPLOY_SUCCESS, took: Date.now() - now });
             obs.complete();
           },
           (err) => {
-            this._logger.error(err);
+            obs.next({ node: service, type: RecompilationEventType.DEPLOY_FAILURE, took: Date.now() - now });
+            this._logger.error('Error deploying', err);
             obs.error({node: service, err: err});
           },
         )
@@ -553,158 +598,210 @@ export class RecompilationScheduler {
 
     this._recompilation = RecompilationStatus.STOPPING;
 
-    let stopped = 0;
-    let started = 0;
-    let transpiled = 0;
-    let typeChecked = 0;
-    let packaged = 0;
-    let deployed = 0;
-
-    const afterStopped = (): void => {
+    const stop$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      let stopped = 0;
       const allDone = (): void => {
         this._logger.info('All services stopped');
         this._recompilation = RecompilationStatus.COMPILING;
       }
       if (stopJobs$.length === 0) {
-        return allDone();
-      }
-      stopped++;
-      this._logger.debug(`Stopped ${stopped}/${stopJobs$.length} services`);
-      if (stopped >= stopJobs$.length) {
         allDone();
+        return obs.complete();
       }
-    };
+      from(stopJobs$).pipe(
+        mergeMap((stopJob$) => stopJob$)).subscribe(
+        (evt) => {
+          obs.next(evt);
+          if (evt.type === RecompilationEventType.STOP_SUCCESS) {
+            stopped++;
+            this._logger.info(`Stopped ${stopped}/${stopJobs$.length} services`);
+            if (stopped >= stopJobs$.length) {
+              allDone();
+              return obs.complete();
+            }
+          }
+        },
+        (err) => {
+          this._logger.error('Error stopping service', err);
+          return obs.error(err);
+        }
+      )
+    });
 
-    const stop$: Observable<IRecompilationEvent> =
-      stopJobs$.length > 0
-        ? from(stopJobs$).pipe(
-            mergeMap((stopJob$) => stopJob$),
-            tap(afterStopped.bind(this)),
-          )
-        : of(null).pipe(tap(afterStopped.bind(this)));
-
-    const afterTranspiled = (): void => {
+    const transpile$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      let transpiled = 0;
       const allDone = (): void => {
         this._logger.info('All dependencies transpiled');
         this._recompilation = RecompilationStatus.STARTING;
       }
       if (transpilingJobs$.length === 0) {
-        return allDone();
-      }
-      transpiled++;
-      this._logger.debug(`Transpiled ${transpiled}/${transpilingJobs$.length} services`);
-      if (transpiled >= transpilingJobs$.length) {
         allDone();
+        return obs.complete();
       }
-    };
+      concat(transpilingJobs$).pipe(concatAll()).subscribe(
+        (evt) => {
+          obs.next(evt);
+          if (evt.type === RecompilationEventType.TRANSPILE_SUCCESS) {
+            transpiled++;
+            this._logger.info(`Transpiled ${transpiled}/${transpilingJobs$.length} services`);
+            if (transpiled >= transpilingJobs$.length) {
+              allDone();
+              return obs.complete();
+            }
+          }
+        },
+        (err) => {
+          this._logger.error('Error transpiling service', err);
+          return obs.error(err);
+        }
+      )
+    });
 
-    const transpile$: Observable<IRecompilationEvent> =
-      transpilingJobs$.length > 0
-        ? concat(transpilingJobs$).pipe(concatAll(), tap(afterTranspiled.bind(this)))
-        : of(null).pipe(tap(afterTranspiled.bind(this)));
-
-
-    const afterTypechecking = (evt: IRecompilationEvent): void => {
+    const typeCheck$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      let typeChecked = 0;
       const allDone = (): void => this._logger.info('Type-checking performed');
       if (typeCheckJobs$.length === 0) {
         return allDone();
       }
-      if (evt.type === RecompilationEventType.TYPE_CHECKED) {
-        typeChecked++;
-        this._logger.debug(`Type-checked ${typeChecked}/${typeCheckJobs$.length} services`);
-        if (typeChecked >= typeCheckJobs$.length) {
-          allDone();
-        }
+      if (typeCheckJobs$.length === 0) {
+        allDone();
+        return obs.complete();
       }
-    };
+      concat(typeCheckJobs$).pipe(concatAll()).subscribe(
+        (evt) => {
+          obs.next(evt);
+          if (evt.type === RecompilationEventType.TYPE_CHECK_SUCCESS) {
+            typeChecked++;
+            this._logger.info(`Type-checked ${typeChecked}/${typeCheckJobs$.length} services`);
+            if (typeChecked >= typeCheckJobs$.length) {
+              allDone();
+              return obs.complete();
+            }
+          }
+        },
+        () => {
+          this._logger.warn('Typechecking failed !');
+          // TODO: Fault tolerant in start mode, not in build mode
+          return obs.complete();
+        },
+        () => {
+          this._logger.warn('All typechecking performed !');
+          return obs.complete();
+        }
+      )
+    });
 
-    const typeCheck$: Observable<IRecompilationEvent> =
-      typeCheckJobs$.length > 0
-        ? concat(typeCheckJobs$).pipe(concatAll(), tap(afterTypechecking.bind(this)))
-        : of(null).pipe(tap(afterTypechecking.bind(this)));
-
-    const afterStarted = (): void => {
+    const start$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      let started = 0;
       const allDone = (): void => {
         this._logger.info('All services started');
         this._recompilation = RecompilationStatus.STARTING;
       }
       if (startJobs$.length === 0) {
-        return allDone();
-      }
-      started++;
-      this._logger.debug(`Started ${started}/${startJobs$.length} services`);
-      if (started >= startJobs$.length) {
         allDone();
+        return obs.complete();
       }
-    };
+      from(startJobs$).pipe(
+        mergeMap((startJob$) => startJob$),
+      ).subscribe(
+        (evt) => {
+          obs.next(evt);
+          if (evt.type === RecompilationEventType.START_FAILURE || evt.type === RecompilationEventType.START_SUCCESS) {
+            started++;
+            this._logger.info(`Started ${started}/${startJobs$.length} services`);
+            if (started >= startJobs$.length) {
+              allDone();
+              return obs.complete();
+            }
+          }
+        },
+        (err) => {
+          this._logger.error('Error starting services');
+          return obs.error(err);
+        }
+      )
+    });
 
-    const start$: Observable<IRecompilationEvent> =
-      startJobs$.length > 0
-        ? from(startJobs$).pipe(
-            mergeMap((startJob$) => startJob$),
-            tap(afterStarted.bind(this)),
-          )
-        : of(null).pipe(tap(afterStarted.bind(this)));
-
-    const afterPackaged = (): void => {
+    const package$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      let packaged = 0;
       const allDone = (): void => {
         this._logger.info('All services packaged');
       }
       if (packageJobs$.length === 0) {
-        return allDone();
-      }
-      packaged++;
-      this._logger.debug(`Packaged ${packaged}/${packageJobs$.length} services`);
-      if (packaged >= packageJobs$.length) {
         allDone();
+        return obs.complete();
       }
-    };
-
-    const package$: Observable<IRecompilationEvent> =
-      packageJobs$.length > 0
-        ? from(packageJobs$).pipe(
+      from(packageJobs$).pipe(
         mergeMap((packageJob$) => packageJob$, this._concurrency),
-        tap(afterPackaged.bind(this)),
-        )
-        : of(null).pipe(tap(afterPackaged.bind(this)));
+      ).subscribe(
+        (evt) => {
+          obs.next(evt);
+          if (evt.type === RecompilationEventType.PACKAGE_SUCCESS) {
+            packaged++;
+            this._logger.info(`Packaged ${packaged}/${packageJobs$.length} services`);
+            if (packaged >= packageJobs$.length) {
+              allDone();
+              return obs.complete();
+            }
+          }
+        },
+        (err) => {
+          this._logger.error('Error packaging services');
+          return obs.error(err);
+        }
+      )
+    });
 
-    const afterDeployed = (): void => {
+    const deploy$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      let deployed = 0;
       const allDone = (): void => {
         this._logger.info('All services deployed');
       }
       if (deployJobs$.length === 0) {
-        return allDone();
-      }
-      deployed++;
-      this._logger.debug(`Deployed ${deployed}/${deployJobs$.length} services`);
-      if (deployed >= deployJobs$.length) {
         allDone();
+        return obs.complete();
       }
-    };
-
-    const deploy$: Observable<IRecompilationEvent> =
-      deployJobs$.length > 0
-        ? from(deployJobs$).pipe(
+      from(deployJobs$).pipe(
         mergeMap((deployJob$) => deployJob$, this._concurrency),
-        tap(afterDeployed.bind(this)),
-        )
-        : of(null).pipe(tap(afterDeployed.bind(this)));
+      ).subscribe(
+        (evt) => {
+          obs.next(evt);
+          if (evt.type === RecompilationEventType.DEPLOY_SUCCESS) {
+            deployed++;
+            this._logger.info(`Deployed ${deployed}/${deployJobs$.length} services`);
+            if (deployed >= deployJobs$.length) {
+              allDone();
+              return obs.complete();
+            }
+          }
+        },
+        (err) => {
+          this._logger.error('Error deploying services');
+          return obs.error(err);
+        }
+      )
+    });
 
-    const recompilationProcess$: Observable<IRecompilationEvent> = concat([stop$, merge(concat(typeCheck$, package$, deploy$), concat(transpile$, start$))]).pipe(
-      concatAll(),
-      takeUntil(this._abort$),
-      catchError((err) => {
-        this._logger.error(err);
-        this._reset();
-        return throwError(err);
-      }),
-      tap(null, null, () => {
-        this._logger.info('All tasks finished');
-        this._reset();
-      }),
-    );
+    const recompilationProcess$:  Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
+      concat([stop$, merge(concat(typeCheck$, package$, deploy$), concat(transpile$, start$))]).pipe(
+        concatAll(),
+        takeUntil(this._abort$),
+      ).subscribe(
+        (evt) => obs.next(evt),
+        (err) => {
+          this._logger.error('Error happened in tasks execution', err);
+          this._reset();
+          return obs.error(err);
+        },
+        () => {
+          this._logger.info('All tasks finished');
+          this._reset();
+          return obs.complete();
+        }
+      )
+    });
 
-    this._logger.debug('All tasks successfully scheduled');
+    this._logger.info('All tasks successfully scheduled');
     return recompilationProcess$.pipe(filter(evt => !!evt));
   }
 
@@ -726,18 +823,12 @@ export class RecompilationScheduler {
     return this._exec();
   }
 
-  packageOne(service: Service, recompile: boolean, level = 4) {
-    if (recompile) {
-      this._compile([service], RecompilationMode.SAFE, true);
-    }
+  packageOne(service: Service, level = 4) {
     this._requestPackage(service, level);
     return this._exec();
   }
 
-  packageAll(graph: LernaGraph, recompile: boolean, level = 4) {
-    if (recompile) {
-      this._compile(graph.getServices(), RecompilationMode.SAFE, true);
-    }
+  packageAll(graph: LernaGraph, level = 4) {
     graph.getServices().forEach(s => this._requestPackage(s, level));
     return this._exec();
   }

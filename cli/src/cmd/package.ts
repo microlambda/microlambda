@@ -2,66 +2,86 @@ import { Logger } from '../utils/logger';
 import {
   IRecompilationError,
   IRecompilationEvent,
-  RecompilationErrorType,
   RecompilationEventType,
   RecompilationScheduler,
 } from '../utils/scheduler';
-import { beforeBuild, IBuildCmd } from './build';
-import ora, { Ora } from 'ora';
+import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import chalk from 'chalk';
+import Spinnies from "spinnies";
+import { getDefaultThreads, getThreads } from '../utils/platform';
+import { LernaGraph, Service } from '../lerna';
 
-interface IPackageCmd extends IBuildCmd {
-  concurrency: number;
+export interface IPackageCmd extends IBuildCmd {
+  C: number;
   level: number;
   recompile: boolean;
 }
 
-export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: RecompilationScheduler) => {
+export const beforePackage = async (cmd: IPackageCmd, scheduler: RecompilationScheduler, logger: Logger) => {
+  const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
   const { graph, service } = await beforeBuild(cmd, scheduler, logger);
-  const spinners: Map<string, Ora> = new Map();
-  const onNext = (evt: IRecompilationEvent) => {
-    switch (evt.type) {
-      case RecompilationEventType.TYPE_CHECKING: {
-        const spinner = ora(`Compiling ${evt.node.getName()}`);
-        spinner.start();
-        spinners.set('compile.' + evt.node.getName(), spinner);
-        break;
-      }
-      case RecompilationEventType.TYPE_CHECKED: {
-        const spinner = spinners.get('compile.' + evt.node.getName());
-        spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
-        spinner.succeed();
-        break;
-      }
-      case RecompilationEventType.PACKAGING: {
-        const spinner = ora(`Packaging ${evt.node.getName()}`);
-        spinner.start();
-        spinners.set('package.' + evt.node.getName(), spinner);
-        break;
-      }
-      case RecompilationEventType.PACKAGED: {
-        const spinner = spinners.get('package.' + evt.node.getName());
-        spinner.text = `${evt.node.getName()} packaged ${chalk.cyan(evt.megabytes + 'MB')} ${chalk.gray(evt.took + 'ms')}`;
-        spinner.succeed();
-        break;
-      }
+  const target = cmd.S ? service : graph;
+  if (cmd.recompile) {
+    try {
+      console.info('\nBuilding dependency graph\n');
+      await typeCheck(scheduler, target, cmd.onlySelf, false);
+    } catch (e) {
+      process.exit(1);
     }
-  };
-  const onError = (evt: IRecompilationError) => {
-    const isCompiling = evt.type === RecompilationErrorType.TYPE_CHECK_ERROR;
-    const prefix = isCompiling ? 'compile.' : 'package.';
-    const spinner = spinners.get(prefix + evt.node.getName());
-    spinner.fail(`Error ${isCompiling ? 'compiling' : 'packaging'} ${evt.node.getName()}`);
-    evt.logs.forEach(l => console.error(l));
-    process.exit(1);
-  };
-  const onComplete = () => {
+  }
+  return { concurrency, graph, service};
+}
+
+export const packageService = (scheduler: RecompilationScheduler, concurrency: number, target: Service | LernaGraph) => {
+  return new Promise<void>((resolve, reject) => {
+    const spinnies = new Spinnies({
+      failColor: 'white',
+      succeedColor: 'white',
+      spinnerColor: 'cyan',
+    });
+    const onNext = (evt: IRecompilationEvent) => {
+      switch (evt.type) {
+        case RecompilationEventType.PACKAGE_IN_PROGRESS: {
+          spinnies.add(evt.node.getName(), { text: `Packaging ${evt.node.getName()}` })
+          break;
+        }
+        case RecompilationEventType.PACKAGE_SUCCESS: {
+          spinnies.succeed(evt.node.getName(), { text: `${evt.node.getName()} packaged ${chalk.cyan(evt.megabytes + 'MB')} ${chalk.gray(evt.took + 'ms')}` })
+          break;
+        }
+      }
+    };
+    const onError = async (evt: IRecompilationError) => {
+      spinnies.fail(evt.node.getName(), { text: `Error packaging ${evt.node.getName()}` });
+      spinnies.stopAll();
+      console.log('\n');
+      evt.logs.forEach(l => {
+        console.info(chalk.bold(evt.node.getName()));
+        console.log(chalk.red(l));
+      });
+      return reject();
+    };
+    const onComplete = () => {
+      return resolve();
+    }
+    scheduler.setConcurrency(concurrency);
+    if (target instanceof Service) {
+      scheduler.packageOne(target).subscribe(onNext, onError, onComplete);
+    } else {
+      scheduler.packageAll(target).subscribe(onNext, onError, onComplete);
+    }
+  });
+}
+
+export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: RecompilationScheduler) => {
+
+  console.info('\nPackaging services\n');
+  try {
+    const { concurrency, graph, service} = await beforePackage(cmd, scheduler, logger);
+    await packageService(scheduler, concurrency, cmd.S ? service : graph)
     console.info('\nSuccessfully packaged 📦');
     process.exit(0);
-  }
-  if (cmd.S) {
-    scheduler.packageOne(service, cmd.recompile).subscribe(onNext, onError, onComplete);
-  } else {
-    scheduler.packageAll(graph, cmd.recompile).subscribe(onNext, onError, onComplete);
+  } catch (e) {
+    process.exit(1);
   }
 }

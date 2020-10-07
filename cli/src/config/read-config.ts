@@ -192,4 +192,8 @@ export class ConfigReader {
       domains: Joi.any(),
     }).unknown(true);
   }
+
+  getCustomDomain(name: string, stage: string): string {
+    throw Error('Not ipmlemented');
+  }
 }

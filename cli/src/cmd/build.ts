@@ -34,11 +34,11 @@ export const typeCheck = async (scheduler: RecompilationScheduler, target: Lerna
   return new Promise<void>((resolve, reject) => {
     const spinners: Map<string, Ora> = new Map();
     const onNext = (evt: IRecompilationEvent) => {
-      if (evt.type === RecompilationEventType.TYPE_CHECKING) {
+      if (evt.type === RecompilationEventType.TYPE_CHECK_IN_PROGRESS) {
         const spinner = ora(`Compiling ${evt.node.getName()}`);
         spinner.start();
         spinners.set(evt.node.getName(), spinner);
-      } else if (evt.type === RecompilationEventType.TYPE_CHECKED) {
+      } else if (evt.type === RecompilationEventType.TYPE_CHECK_SUCCESS) {
         const spinner = spinners.get(evt.node.getName());
         spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
         spinner.succeed();
