@@ -7,9 +7,12 @@ import { ConfigReader } from '../config/read-config';
 import { CertificateEventType, CertificateManager, ICertificateEvent } from '../deploy/utils/generate-certificates';
 import Spinnies from "spinnies";
 import chalk from 'chalk';
+import { prompt } from 'inquirer';
+import { getAccountIAM } from '../utils/aws-account';
+import { backupYaml, reformatYaml, restoreYaml } from '../utils/yaml';
 
 interface IDeployCmd extends IPackageCmd {
-  stage: string;
+  E: string;
   package: boolean;
   prompt: boolean;
 }
@@ -52,29 +55,59 @@ export const requestCertificates = (certificateManager: CertificateManager) => {
 }
 
 export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler) => {
-  if (cmd.prompt) {
-    // TODO: Prompt user to have confirmation
+  const config = new ConfigReader(logger);
+  config.readConfig();
+  if (!cmd.E) {
+    console.error(chalk.red('You must provide a target stage to deploy services'));
+    process.exit(1);
   }
-  // TODO: Validate stage
-  const { concurrency, graph, service} = await beforePackage(cmd, scheduler, logger);
+  if (config.config.stages && !config.config.stages.includes(cmd.E)) {
+    console.error(chalk.red('Target stage is not part of allowed stages.'));
+    console.error(chalk.red('Allowed stages are:', config.config.stages));
+    process.exit(1);
+  }
+  const currentIAM = await getAccountIAM().catch((err) =>{
+    console.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
+    console.error(chalk.red('Original error: ' + err));
+    process.exit(1);
+  });
+
+  console.info(chalk.bold('\nDeployment information'));
+  console.info('Stage:', cmd.E);
+  console.info('Services:', cmd.S != null ? cmd.S : 'all');
+  console.info('As:', currentIAM);
+
+  if (cmd.prompt) {
+    const answers = await prompt([
+      {
+        type: 'confirm',
+        name: 'ok',
+        message: 'Are you sure you want to execute this deployment',
+      }
+    ]);
+    if (!answers.ok) {
+      process.exit(0);
+    }
+  }
+
+  console.log('\n');
+  const { projectRoot, concurrency, graph, service} = await beforePackage(cmd, scheduler, logger);
   if (cmd.package) {
     console.info('\nPackaging services\n');
-    try {
-      await packageService(scheduler, concurrency, cmd.S ? service : graph)
-    } catch (e) {
+    await packageService(scheduler, concurrency, cmd.S ? service : graph).catch((e) => {
+      console.error(chalk.red('Error packaging services'));
+      console.error(e);
       process.exit(1);
-    }
+    });
   }
 
   let needActions: boolean;
   let certificateManager: CertificateManager;
+  const services = cmd.S ? [service] : graph.getServices();
 
   try {
-    const config = new ConfigReader(logger);
-    config.readConfig();
-    const services = cmd.S ? [service] : graph.getServices();
     certificateManager = new CertificateManager(logger, services, config);
-    needActions = await certificateManager.prepareCertificatesRequests(cmd.stage);
+    needActions = await certificateManager.prepareCertificatesRequests(cmd.E);
   } catch (e) {
     console.error(chalk.red('Cannot determine certificate to request'));
     console.error(e);
@@ -89,10 +122,21 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       console.error(chalk.red(e));
       process.exit(1);
     }
-    // run sls create domain
-    // run sls deploy
-    // create DNS records
   }
 
   console.info('\nDeploying services\n');
+  // TODO: If all services, define steps, run deployment on each region
+  backupYaml(services);
+  try {
+    await reformatYaml(projectRoot, config, services, 'eu-west-1', cmd.E);
+    restoreYaml(services);
+  } catch (e) {
+    // run sls create domain
+    // run sls deploy
+    restoreYaml(services);
+    console.error(chalk.red(e));
+    process.exit(1);
+  }
+
+  // create DNS records
 }

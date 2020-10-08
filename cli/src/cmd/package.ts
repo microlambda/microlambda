@@ -19,7 +19,7 @@ export interface IPackageCmd extends IBuildCmd {
 
 export const beforePackage = async (cmd: IPackageCmd, scheduler: RecompilationScheduler, logger: Logger) => {
   const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
-  const { graph, service } = await beforeBuild(cmd, scheduler, logger);
+  const { projectRoot, graph, service } = await beforeBuild(cmd, scheduler, logger);
   const target = cmd.S ? service : graph;
   if (cmd.recompile) {
     try {
@@ -29,7 +29,7 @@ export const beforePackage = async (cmd: IPackageCmd, scheduler: RecompilationSc
       process.exit(1);
     }
   }
-  return { concurrency, graph, service};
+  return { projectRoot, concurrency, graph, service};
 }
 
 export const packageService = (scheduler: RecompilationScheduler, concurrency: number, target: Service | LernaGraph) => {
@@ -59,7 +59,7 @@ export const packageService = (scheduler: RecompilationScheduler, concurrency: n
         console.info(chalk.bold(evt.node.getName()));
         console.log(chalk.red(l));
       });
-      return reject();
+      return reject(evt);
     };
     const onComplete = () => {
       return resolve();
@@ -75,13 +75,14 @@ export const packageService = (scheduler: RecompilationScheduler, concurrency: n
 
 export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: RecompilationScheduler) => {
 
-  console.info('\nPackaging services\n');
   try {
     const { concurrency, graph, service} = await beforePackage(cmd, scheduler, logger);
-    await packageService(scheduler, concurrency, cmd.S ? service : graph)
+    console.info('\nPackaging services\n');
+    await packageService(scheduler, concurrency, cmd.S ? service : graph);
     console.info('\nSuccessfully packaged 📦');
     process.exit(0);
   } catch (e) {
+    console.error(e);
     process.exit(1);
   }
 }

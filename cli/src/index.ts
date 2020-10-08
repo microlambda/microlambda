@@ -135,7 +135,9 @@ program
   .option( '--no-recompile', 'skip package and service recompilation', false)
   .option( '-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option( '--no-package', 'skip bundling service deployment package', false)
-  .option('-s <service>, --service <service>', 'the service you want to deploy', false)
+  .option('-s <service>, --service <service>', 'the service you want to deploy', null)
+  .option('-e <stage>, --stage <stage>', 'target stage for deployment', null)
+  .option( '--no-prompt', 'skip asking user confirmation before deploying', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
     await deploy(cmd, logger, scheduler);

@@ -63,7 +63,7 @@ const copyFile = async (dest: string, data: string, logger: Logger): Promise<voi
   });
 };
 
-const compileFile = (
+export const compileFile = (
   cwd: string,
   absolutePath: string,
   compilerOptions: CompilerOptions,

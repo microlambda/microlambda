@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { load, Schema, Type } from 'js-yaml';
-import { readFileSync } from 'fs-extra';
+import { dump, load, Schema, Type } from 'js-yaml';
+import { existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
+import { join, dirname } from "path";
+import { Service } from '../lerna';
+import { ConfigReader } from '../config/read-config';
+import { compileFile } from './typescript';
+import { Logger } from './logger';
 
 class Mapping {
   map: any;
@@ -95,4 +100,91 @@ export const parseServerlessYaml = (path: string) => {
   return load(readFileSync(path).toString(), {
     schema: CUSTOM_SCHEMA,
   });
+};
+
+const getServerlessPath = (service: Service): { src: string; dest: string } => {
+  const basePath = service.getLocation();
+  const src = join(basePath, 'serverless.yml');
+  const dest = join(basePath, 'serverless.yml.backup');
+  return { src, dest };
+};
+
+export const backupYaml = (services: Service[]): void => {
+  services.forEach((service) => {
+    const { src, dest } = getServerlessPath(service);
+    try {
+      renameSync(src, dest);
+    } catch (e) {
+      if (!existsSync(dest)) {
+        throw e;
+      }
+    }
+  });
+};
+
+export const restoreYaml = (services: Service[]): void => {
+  services.forEach((service) => {
+    const { src, dest } = getServerlessPath(service);
+    removeSync(src);
+    renameSync(dest, src);
+  });
+};
+
+const removePlugins = (doc: any): void => {
+  const removePlugins = ['serverless-offline', 'serverless-webpack'];
+  if (doc.plugins) {
+    doc.plugins = doc.plugins.filter((p: string) => !removePlugins.includes(p));
+  }
+}
+
+const optionalRegion = (doc: any, region: string): void => {
+  const toDelete = [];
+  for (const functionName of Object.keys(doc.functions)) {
+    const functionDef = doc.functions[functionName];
+    if (functionDef.region && functionDef.region !== region) {
+      toDelete.push(functionName);
+    }
+  }
+  toDelete.forEach((name) => delete doc.functions[name]);
+}
+
+export const reformatYaml = async (projectRoot: string, config: ConfigReader, services: Service[], region: string, env: string): Promise<void> => {
+  for (const service of services) {
+    const { src, dest } = getServerlessPath(service);
+    const doc = load(readFileSync(dest, 'utf8'), {
+      schema: CUSTOM_SCHEMA,
+    });
+    const scripts = config.getYamlTransformations(projectRoot);
+    for (const script of scripts) {
+      if (!existsSync(script)) {
+        throw Error(`YAML Transforms: Script ${script} does not exists`);
+      }
+      let path: string;
+      if (script.match(/\.ts$/)) {
+        await compileFile(dirname(script), script, {outDir: dirname(script)}, new Logger());
+        path = script.replace(/\.ts$/, '.js');
+      } else if (script.match(/\.js$/)) {
+        path = script;
+      } else {
+        throw Error(`YAML Transforms: Script ${script} has invalid extension: not {js, ts}`);
+      }
+      if (!existsSync(path)) {
+        throw Error(`YAML Transforms: Script ${path} does not exists`);
+      }
+      const transformation: { default: Function } = require(path);
+      if (typeof transformation.default !== 'function') {
+        throw Error(`YAML Transforms: Default export of script must be a function @ ${script}`);
+      }
+      transformation.default(doc, region, env);
+    }
+    removePlugins(doc);
+    optionalRegion(doc, region);
+    console.log(doc);
+    writeFileSync(
+      src,
+      dump(doc, {
+        schema: CUSTOM_SCHEMA,
+      }),
+    );
+  }
 };

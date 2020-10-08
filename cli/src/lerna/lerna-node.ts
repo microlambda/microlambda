@@ -432,12 +432,7 @@ export abstract class LernaNode {
       this.getGraph()
         .logger.log('node')
         .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-      const isFinalLeaf = this.isService() && this.getDependent().length === 0;
-      if (!isFinalLeaf) {
-        this._scheduler.fileChanged(this);
-      } else {
-        this._scheduler.buildOne(this as unknown as Service, true, true).subscribe();
-      }
+      this._scheduler.fileChanged(this);
     })
     this._watchers.push(watcher);
   }

@@ -4,6 +4,9 @@ import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
 import { ILogger, Logger } from '../utils/logger';
+import { sync } from 'glob';
+import { join } from 'path';
+import { compileFile } from '../utils/typescript';
 
 type Step = Map<Region, Set<Microservice>>;
 type Region = string;
@@ -188,12 +191,20 @@ export class ConfigReader {
       steps: Joi.array()
         .items(Joi.alternatives([Joi.string().valid('*'), Joi.array().items(services)]))
         .optional(),
-      // TODO: Validate domains
-      domains: Joi.any(),
+      domains: Joi.object().pattern(services, Joi.object().pattern(Joi.string(), Joi.string()).optional()).optional(),
+      yamlTransforms: Joi.array().items(Joi.string()).optional(),
     }).unknown(true);
   }
 
   getCustomDomain(name: string, stage: string): string {
-    throw Error('Not ipmlemented');
+    return this._config.domains[name] ? this._config.domains[name][stage] : null;
+  }
+
+  getYamlTransformations(projectRoot: string): string[] {
+    const matches: Set<string> = new Set();
+    this._config.yamlTransforms.map(glob => join(projectRoot, glob)).forEach((glob) => {
+      sync(glob).forEach((path) => matches.add(path));
+    });
+    return Array.from(matches);
   }
 }

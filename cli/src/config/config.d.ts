@@ -15,6 +15,7 @@ export interface IDeployConfig {
   };
   steps: Array<string[] | '*'>;
   domains: DomainConfig;
+  yamlTransforms: string[];
 }
 
 type Step = Map<Region, Set<Microservice>>;
@@ -26,4 +27,9 @@ export interface IConfig extends IDeployConfig {
   compilationMode: CompilationMode;
   ports: { [key: string]: number };
   noStart: string[];
+  domains: {
+    [service: string]: {
+      [env: string]: string;
+    }
+  }
 }

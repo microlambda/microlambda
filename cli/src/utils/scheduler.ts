@@ -1,6 +1,6 @@
-import { concat, from, merge, Observable, of, Subject, throwError } from 'rxjs';
+import { concat, from, merge, Observable, Subject } from 'rxjs';
 import { LernaGraph, LernaNode, Service } from '../lerna';
-import { catchError, concatAll, debounceTime, filter, map, mergeMap, takeUntil, tap } from 'rxjs/operators';
+import { concatAll, debounceTime, filter, mergeMap, takeUntil } from 'rxjs/operators';
 import { ServiceStatus } from '../lerna/enums/service.status';
 import { ILogger, Logger } from './logger';
 import { getDefaultThreads } from './platform';
@@ -240,6 +240,9 @@ export class RecompilationScheduler {
         if (this._changes.size > 0) {
           this._logger.info('Triggering recompilation...');
           // abort previous recompilation if any
+          // TODO: Proper preemption
+          // TODO: If is service leaf, only request type-check
+          // TODO: If not, find impacted services, stop them, recompile from root to leaves (type check) and impacted files and restart
           this._reset();
           // find all services that are impacted
           this._logger.info('Changed nodes', Array.from(this._changes).map(n => n.getName()));
@@ -468,6 +471,14 @@ export class RecompilationScheduler {
       'To start',
       this._jobs.start.map((n) => n.getName()),
     );
+    this._logger.info(
+      'To package',
+      this._jobs.package.map((n) => n.service.getName()),
+    );
+    this._logger.info(
+      'To deploy',
+      this._jobs.deploy.map((n) => n.getName()),
+    );
 
     const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((node) => {
       return new Observable<IRecompilationEvent>((obs) => {
@@ -660,9 +671,6 @@ export class RecompilationScheduler {
     const typeCheck$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
       let typeChecked = 0;
       const allDone = (): void => this._logger.info('Type-checking performed');
-      if (typeCheckJobs$.length === 0) {
-        return allDone();
-      }
       if (typeCheckJobs$.length === 0) {
         allDone();
         return obs.complete();

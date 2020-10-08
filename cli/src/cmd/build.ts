@@ -17,7 +17,7 @@ export interface IBuildCmd {
 }
 
 export const beforeBuild = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger) => {
-  const { graph } = await init(logger, scheduler);
+  const { graph, projectRoot } = await init(logger, scheduler);
   graph.enableAll();
   const service = graph.getServices().find(s => s.getName() === cmd.S)
   if (cmd.S && !service) {
@@ -27,7 +27,7 @@ export const beforeBuild = async (cmd: IBuildCmd, scheduler: RecompilationSchedu
   if (cmd.bootstrap) {
     await lernaBootstrap(graph, logger);
   }
-  return { graph, service }
+  return { projectRoot, graph, service }
 }
 
 export const typeCheck = async (scheduler: RecompilationScheduler, target: LernaGraph | Service, onlySelf: boolean, force: boolean): Promise<void> => {
@@ -42,6 +42,11 @@ export const typeCheck = async (scheduler: RecompilationScheduler, target: Lerna
         const spinner = spinners.get(evt.node.getName());
         spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
         spinner.succeed();
+      } else if (evt.type === RecompilationEventType.TYPE_CHECK_FAILURE) {
+        const spinner = spinners.get(evt.node.getName());
+        spinner.fail(`Error compiling ${evt.node.getName()}`);
+        (evt.node as Service).logs.forEach((l) => console.error(l));
+        return reject();
       }
     };
     const onError = (evt: IRecompilationError) => {

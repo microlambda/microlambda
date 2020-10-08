@@ -6,5 +6,6 @@
   "defaultRegions": null,
   "regions": {},
   "steps": ["*"],
-  "domains": {}
+  "domains": {},
+  "yamlTransforms": []
 }
