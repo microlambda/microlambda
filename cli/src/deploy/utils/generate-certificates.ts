@@ -173,7 +173,7 @@ export class CertificateManager {
     const details = await CertificateManager._describeCertificate(region, arn);
     this._logger.debug(JSON.stringify(details, null, 2));
     const record = details.Certificate.DomainValidationOptions.find((dv) => dv.ResourceRecord).ResourceRecord;
-    const dnsManager = new RecordsManager();
+    const dnsManager = new RecordsManager(new Logger());
     const hostedZone = await dnsManager.getHostedZone(domain);
     const throwError = (): void => {
       this._logger.error('Cannot activate certificate. Related hosted zone not found on Route53');

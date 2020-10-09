@@ -1,15 +1,15 @@
 import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs';
 import rimraf from 'rimraf';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
 import { showOffTitle } from './ascii';
 import { Logger } from './logger';
 
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.mila', 'logs');
-export const getLogsPath = (projectRoot: string, service: string): string => {
+export const getLogsPath = (projectRoot: string, service: string, type: 'offline' | 'deploy' | 'createDomain'): string => {
   const segments = service.split('/');
   const name = segments[segments.length - 1];
-  return join(getLogsDirectory(projectRoot), `${name}.log`);
+  return join(getLogsDirectory(projectRoot), `${name}.${type}.log`);
 };
 
 export const recreateLogDirectory = (projectRoot: string, logger: Logger): void => {
@@ -28,8 +28,11 @@ export const recreateLogDirectory = (projectRoot: string, logger: Logger): void 
   mkdirSync(logsDirectory);
 };
 
-export const createLogFile = (projectRoot: string, service: string): void => {
-  const logsPath = getLogsPath(projectRoot, service);
+export const createLogFile = (projectRoot: string, service: string, type: 'offline' | 'deploy' | 'createDomain'): void => {
+  const logsPath = getLogsPath(projectRoot, service, type);
+  if (!existsSync(dirname(logsPath))) {
+    mkdirSync(dirname(logsPath), {recursive: true});
+  }
   if (!existsSync(logsPath)) {
     closeSync(openSync(logsPath, 'w'));
   }

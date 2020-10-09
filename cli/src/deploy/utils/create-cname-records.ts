@@ -1,27 +1,33 @@
-/* eslint-disable no-console */
+/* eslint-disable no-this._logger */
 import { APIGateway, Route53 } from 'aws-sdk';
 import { Change, HostedZone, ListHostedZonesResponse, ResourceRecordSet } from 'aws-sdk/clients/route53';
 import { inspect } from 'util';
-import { LernaHelper, ILernaPackage } from '../../utils/lerna';
 import { DomainName } from 'aws-sdk/clients/apigateway';
 import { ConfigReader } from '../../config/read-config';
+import { Service } from '../../lerna';
+import { getServiceName } from '../../utils/yaml';
+import { ILogger, Logger } from '../../utils/logger';
 
 export class RecordsManager {
   private readonly _route53 = new Route53();
+  private readonly _logger: ILogger;
 
-  public async createRecords(configReader: ConfigReader, stage: string, services: ILernaPackage[]): Promise<void> {
+  constructor(logger: Logger) {
+    this._logger = logger.log('dns');
+  }
+
+  public async createRecords(configReader: ConfigReader, stage: string, services: Service[]): Promise<void> {
     for (const service of services) {
-      const regions = await configReader.getRegions(service.name, stage);
-      const hasDomain = LernaHelper.hasCustomDomain(service);
-      if (!hasDomain) {
-        console.info(`No custom domain set for ${service.name}. Skipping`);
+      const regions = await configReader.getRegions(service.getName(), stage);
+      const domain = configReader.getCustomDomain(service.getName(), stage);
+      if (!domain) {
+        this._logger.info(`No custom domain set for ${service.getName()}. Skipping`);
         continue;
       }
-      const domain = LernaHelper.getCustomDomain(service.name, stage);
       const toCreate: Change[] = [];
       const hostedZone = await this.getHostedZone(domain);
       const records = await this.listRecords(hostedZone);
-      const serviceName = LernaHelper.getServiceName(service) + '-' + stage;
+      const serviceName = getServiceName(service) + '-' + stage;
 
       for (const region of regions) {
         const apiGatewayDomain = await this._getDomain(region, domain);
@@ -30,20 +36,20 @@ export class RecordsManager {
         }
         const apiGatewayUrl = apiGatewayDomain.regionalDomainName;
         if (!apiGatewayUrl) {
-          console.error('Cannot resolve API Gateway url for service', service.name);
-          throw Error('Cannot resolve API gateway URL for service ' + service.name);
+          this._logger.error('Cannot resolve API Gateway url for service', service.getName());
+          throw Error('Cannot resolve API gateway URL for service ' + service.getName());
         }
         const hasRecord = await this._recordExists(records, domain, apiGatewayUrl, region);
         if (!hasRecord) {
           const record = await this._createRecord(domain, apiGatewayUrl, region, serviceName);
           toCreate.push(record);
         } else {
-          console.info('Record already exist', { region, apiGatewayUrl, domain });
+          this._logger.info('Record already exist', { region, apiGatewayUrl, domain });
         }
       }
-      console.log(inspect(toCreate, false, null, true));
+      this._logger.debug(inspect(toCreate, false, null, true));
       if (toCreate.length > 0) {
-        console.info('Creating missing records');
+        this._logger.info('Creating missing records');
         await this._route53
           .changeResourceRecordSets({
             HostedZoneId: hostedZone.Id,
@@ -117,7 +123,7 @@ export class RecordsManager {
     const outputs = stacks.Stacks[0].Outputs;
     const output = outputs.find((o) => o.OutputKey === 'ServiceEndpoint');
     if (output != null) {
-      console.info(`${serviceName} [${region}] -> ${output.OutputValue}`);
+      this._logger.info(`${serviceName} [${region}] -> ${output.OutputValue}`);
     }
     return output != null ? output.OutputValue : null;
   }*/

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { dump, load, Schema, Type } from 'js-yaml';
-import { existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
+import { copySync, existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
 import { join, dirname } from "path";
 import { Service } from '../lerna';
 import { ConfigReader } from '../config/read-config';
@@ -125,8 +125,10 @@ export const backupYaml = (services: Service[]): void => {
 export const restoreYaml = (services: Service[]): void => {
   services.forEach((service) => {
     const { src, dest } = getServerlessPath(service);
-    removeSync(src);
-    renameSync(dest, src);
+    //if (existsSync(src)) {
+    //  removeSync(src);
+    //}
+    //copySync(dest, src);
   });
 };
 
@@ -179,7 +181,6 @@ export const reformatYaml = async (projectRoot: string, config: ConfigReader, se
     }
     removePlugins(doc);
     optionalRegion(doc, region);
-    console.log(doc);
     writeFileSync(
       src,
       dump(doc, {
@@ -188,3 +189,12 @@ export const reformatYaml = async (projectRoot: string, config: ConfigReader, se
     );
   }
 };
+
+export const getServiceName = (service: Service): string => {
+  const path = join(service.getLocation(), 'serverless.yml');
+  if (!existsSync(path)) {
+    throw Error('Error: serverless.yml not found @ ' + path);
+  }
+  const yaml = parseServerlessYaml(path);
+  return yaml.service;
+}

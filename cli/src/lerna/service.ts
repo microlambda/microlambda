@@ -12,26 +12,37 @@ import { FSWatcher, watch } from 'chokidar';
 import { RecompilationScheduler } from '../utils/scheduler';
 import { Packager } from '../package/packagr';
 
+interface IServiceLogs {
+  offline: string[];
+  createDomain: string[];
+  deploy: string[];
+}
+
 export class Service extends LernaNode {
   private status: ServiceStatus;
   private readonly _port: number;
   private process: ChildProcess;
   private logStream: WriteStream;
-  private _inMemoryLogs: string[] = [];
+  private readonly _logs: IServiceLogs;
   private _slsYamlWatcher: FSWatcher;
 
   constructor(scheduler: RecompilationScheduler, graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
     super(scheduler, graph, node, nodes, elements);
     this.status = ServiceStatus.STOPPED;
     this._port = graph.getPort(node.name);
+    this._logs = {
+      offline: [],
+      createDomain: [],
+      deploy: [],
+    }
   }
 
   public getStatus(): ServiceStatus {
     return this.status;
   }
 
-  get logs(): string[] {
-    return this._inMemoryLogs;
+  get logs(): IServiceLogs {
+    return this._logs;
   }
 
   get port(): number {
@@ -149,7 +160,7 @@ export class Service extends LernaNode {
 
   private _startProcess(): void {
     this._updateStatus(ServiceStatus.STARTING);
-    createLogFile(this.graph.getProjectRoot(), this.name);
+    createLogFile(this.graph.getProjectRoot(), this.name, 'offline');
     this.getGraph()
       .logger.log('service')
       .info(`Starting ${this.name} on localhost:${this.port}`);
@@ -159,7 +170,7 @@ export class Service extends LernaNode {
     this.getGraph()
       .logger.log('service')
       .debug('Env:', process.env.ENV);
-    this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name));
+    this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'offline'));
     this.process = spawn(
       getBinary('sls', this.graph.getProjectRoot(), this.getGraph().logger, this),
       ['offline', 'start', '--port', this.port.toString(), '--region', process.env.AWS_REGION],
@@ -211,7 +222,7 @@ export class Service extends LernaNode {
 
   private _handleLogs(data: any): void {
     this.logStream.write(data);
-    this._inMemoryLogs.push(data.toString());
+    this._logs.offline.push(data.toString());
     this.getGraph().io.handleServiceLog(this.name, data.toString());
   }
 
@@ -245,21 +256,65 @@ export class Service extends LernaNode {
     });
   }
 
-  deploy(): Observable<Service> {
-    console.warn('Not implemented');
-    return of(this);
+  async deploy(region: string, stage: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      createLogFile(this.graph.getProjectRoot(), this.name, 'deploy');
+      const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'deploy'));
+      const deployProcess = spawn('npm', ['run', 'deploy'],       {
+        cwd: this.location,
+        env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region },
+        stdio: 'pipe',
+      });
+      deployProcess.stderr.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.deploy.push(data);
+      });
+      deployProcess.stdout.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.deploy.push(data);
+      });
+      deployProcess.on('close', (code) => {
+        writeStream.close();
+        if (code !== 0) {
+          return reject(code);
+        }
+        return resolve();
+      });
+      deployProcess.on('error', (err) => {
+        writeStream.close();
+        return reject(err);
+      });
+    });
   }
 
-  hasCustomDomain(): boolean {
-    // TODO
-    return false;
-  }
-
-  createCustomDomain() {
-
-  }
-
-  test() {
-
+  async createCustomDomain(region: string, stage: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      createLogFile(this.graph.getProjectRoot(), this.name, 'createDomain');
+      const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'createDomain'));
+      const createDomainProcess = spawn(getBinary('sls', this.graph.getProjectRoot(), this.getGraph().logger, this), ['create_domain'],       {
+        cwd: this.location,
+        env: { ...process.env, ENV: stage, FORCE_COLOR: '2', AWS_REGION: region },
+        stdio: 'pipe',
+      });
+      createDomainProcess.stderr.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.createDomain.push(data);
+      });
+      createDomainProcess.stdout.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.createDomain.push(data);
+      });
+      createDomainProcess.on('close', (code) => {
+        writeStream.close();
+        if (code !== 0) {
+          return reject(code);
+        }
+        return resolve();
+      });
+      createDomainProcess.on('error', (err) => {
+        writeStream.close();
+        return reject(err);
+      });
+    });
   }
 }

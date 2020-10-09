@@ -45,7 +45,7 @@ export const typeCheck = async (scheduler: RecompilationScheduler, target: Lerna
       } else if (evt.type === RecompilationEventType.TYPE_CHECK_FAILURE) {
         const spinner = spinners.get(evt.node.getName());
         spinner.fail(`Error compiling ${evt.node.getName()}`);
-        (evt.node as Service).logs.forEach((l) => console.error(l));
+        (evt.node as Service).tscLogs.forEach((l) => console.error(l));
         return reject();
       }
     };

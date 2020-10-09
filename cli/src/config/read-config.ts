@@ -6,7 +6,6 @@ import fallback from './default.json';
 import { ILogger, Logger } from '../utils/logger';
 import { sync } from 'glob';
 import { join } from 'path';
-import { compileFile } from '../utils/typescript';
 
 type Step = Map<Region, Set<Microservice>>;
 type Region = string;
@@ -70,7 +69,7 @@ export class ConfigReader {
   }
 
   public getRegions(service: string, stage: string): string[] {
-    // console.debug('Resolving regions', { service, stage });
+    this._logger.debug('Resolving regions', { service, stage });
     const config = this.readConfig();
     const formatRegion = (config: string | string[]): string[] => {
       if (Array.isArray(config)) {
@@ -88,23 +87,22 @@ export class ConfigReader {
       return null;
     };
     if (config.regions && config.regions[service]) {
-      // FIXME: Use mila logger with config scope
-      // console.debug('Regions specified at service-level', config.regions[service]);
+      this._logger.debug('Regions specified at service-level', config.regions[service]);
       const regions = getRegion(config.regions[service]);
-      // console.debug('Should be deployed @', regions);
+      this._logger.debug('Should be deployed @', regions);
       if (regions) {
         return regions;
       }
     }
     if (config.defaultRegions) {
-      // console.debug('Fallback on default regions', config.defaultRegions);
+      this._logger.debug('Fallback on default regions', config.defaultRegions);
       const regions = getRegion(config.defaultRegions);
-      // console.debug('Should be deployed @', regions);
+      this._logger.debug('Should be deployed @', regions);
       if (regions) {
         return regions;
       }
     }
-    // console.debug('Fallback on user preferred region', process.env.AWS_REGION);
+    this._logger.debug('Fallback on user preferred region', process.env.AWS_REGION);
     if (process.env.AWS_REGION) {
       return [process.env.AWS_REGION];
     }
@@ -112,7 +110,7 @@ export class ConfigReader {
   }
 
   public getAllRegions(stage: string): string[] {
-    console.debug('Finding all region in config for stage', stage);
+    this._logger.debug('Finding all region in config for stage', stage);
     const allRegions: Set<string> = new Set();
     const schedule = this.scheduleDeployments(stage);
     for (const step of schedule) {
@@ -120,14 +118,14 @@ export class ConfigReader {
         allRegions.add(region);
       }
     }
-    console.debug('All regions', [...allRegions]);
+    this._logger.debug('All regions', [...allRegions]);
     return [...allRegions];
   }
 
   public scheduleDeployments(stage: string): Step[] {
-    console.info('Scheduling deployment steps', { stage });
+    this._logger.info('Scheduling deployment steps', { stage });
     const steps = this.readConfig().steps;
-    console.info('From config', steps);
+    this._logger.info('From config', steps);
     const schedule = (services: string[]): Step => {
       const step: Step = new Map();
       services.forEach((s) => {
@@ -143,26 +141,26 @@ export class ConfigReader {
       return step;
     };
     if (!steps) {
-      console.debug('No specific config for steps. Using default', schedule(this._services.map((s) => s.getName())));
+      this._logger.debug('No specific config for steps. Using default', schedule(this._services.map((s) => s.getName())));
       const step = schedule(this._services.map((s) => s.getName()));
       return [step];
     }
     const builtSteps: Step[] = [];
     for (const step of steps) {
-      console.debug('Scheduling', step);
+      this._logger.debug('Scheduling', step);
       let toSchedule: string[];
       if (step === '*') {
         toSchedule = this._services
           .map((s) => s.getName())
           .filter((s) => !steps.filter((step) => Array.isArray(step)).some((step) => step.includes(s)));
-        console.debug('Is wildcard. Resolving all other services', toSchedule);
+        this._logger.debug('Is wildcard. Resolving all other services', toSchedule);
       } else {
         toSchedule = step;
       }
       const scheduled = schedule(toSchedule);
       builtSteps.push(scheduled);
     }
-    console.debug('Steps scheduled', builtSteps);
+    this._logger.debug('Steps scheduled', builtSteps);
     return builtSteps;
   }
 

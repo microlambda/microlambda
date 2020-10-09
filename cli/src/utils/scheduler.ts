@@ -74,7 +74,6 @@ export class RecompilationScheduler {
     typeCheck: { node: LernaNode, force: boolean }[];
     start: Service[];
     package: { service: Service, level: number }[];
-    deploy: Service[];
   };
   private _status: SchedulerStatus;
   private _recompilation: RecompilationStatus;
@@ -356,7 +355,6 @@ export class RecompilationScheduler {
       typeCheck: [],
       start: [],
       package: [],
-      deploy: [],
     };
     this._recompilation = RecompilationStatus.READY;
     this._status = SchedulerStatus.READY;
@@ -413,17 +411,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _requestDeploy(service: Service): void {
-    this._logger.debug(`Request to add deploy job`, service.getName());
-    const inQueue = this._alreadyQueued(service, 'deploy');
-    this._logger.debug('Already in deploy queue', inQueue);
-    if (!inQueue) {
-      this._logger.debug('Adding service in deploy job queue', service.getName());
-      this._jobs.deploy.push(service);
-    }
-  }
-
-  private _alreadyQueued(node: LernaNode, queue: 'transpile' | 'start' | 'stop' | 'deploy'): boolean {
+  private _alreadyQueued(node: LernaNode, queue: 'transpile' | 'start' | 'stop'): boolean {
     return this._jobs[queue].some((n) => n.getName() === node.getName());
   }
 
@@ -474,10 +462,6 @@ export class RecompilationScheduler {
     this._logger.info(
       'To package',
       this._jobs.package.map((n) => n.service.getName()),
-    );
-    this._logger.info(
-      'To deploy',
-      this._jobs.deploy.map((n) => n.getName()),
     );
 
     const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((node) => {
@@ -583,25 +567,6 @@ export class RecompilationScheduler {
               logs: [err],
             }
             return obs.error(evt);
-          },
-        )
-      });
-    });
-
-    const deployJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.deploy.map((service) => {
-      return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: service, type: RecompilationEventType.DEPLOY_IN_PROGRESS});
-        const now = Date.now();
-        service.deploy().subscribe(
-          (service) => {
-            this._logger.debug('Service deployed', service.getName());
-            obs.next({ node: service, type: RecompilationEventType.DEPLOY_SUCCESS, took: Date.now() - now });
-            obs.complete();
-          },
-          (err) => {
-            obs.next({ node: service, type: RecompilationEventType.DEPLOY_FAILURE, took: Date.now() - now });
-            this._logger.error('Error deploying', err);
-            obs.error({node: service, err: err});
           },
         )
       });
@@ -760,38 +725,8 @@ export class RecompilationScheduler {
       )
     });
 
-    const deploy$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
-      let deployed = 0;
-      const allDone = (): void => {
-        this._logger.info('All services deployed');
-      }
-      if (deployJobs$.length === 0) {
-        allDone();
-        return obs.complete();
-      }
-      from(deployJobs$).pipe(
-        mergeMap((deployJob$) => deployJob$, this._concurrency),
-      ).subscribe(
-        (evt) => {
-          obs.next(evt);
-          if (evt.type === RecompilationEventType.DEPLOY_SUCCESS) {
-            deployed++;
-            this._logger.info(`Deployed ${deployed}/${deployJobs$.length} services`);
-            if (deployed >= deployJobs$.length) {
-              allDone();
-              return obs.complete();
-            }
-          }
-        },
-        (err) => {
-          this._logger.error('Error deploying services');
-          return obs.error(err);
-        }
-      )
-    });
-
     const recompilationProcess$:  Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
-      concat([stop$, merge(concat(typeCheck$, package$, deploy$), concat(transpile$, start$))]).pipe(
+      concat([stop$, merge(concat(typeCheck$, package$), concat(transpile$, start$))]).pipe(
         concatAll(),
         takeUntil(this._abort$),
       ).subscribe(
