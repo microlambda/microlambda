@@ -303,7 +303,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       process.exit(1);
     },
     () => {
-      log.info('Deploying process completed', failures);
+      log.info('Deployment process completed', failures.values());
       if (failures.size) {
         const getMessage = (type: ErrorType): string => {
           switch(type) {

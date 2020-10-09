@@ -19,7 +19,7 @@ const scheduler = new RecompilationScheduler(logger);
 
 const program = new Command();
 
-program.version('0.0.11-alpha');
+program.version('0.0.12-alpha');
 
 program
   .command('start')
