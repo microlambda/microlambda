@@ -125,10 +125,10 @@ export const backupYaml = (services: Service[]): void => {
 export const restoreYaml = (services: Service[]): void => {
   services.forEach((service) => {
     const { src, dest } = getServerlessPath(service);
-    //if (existsSync(src)) {
-    //  removeSync(src);
-    //}
-    //copySync(dest, src);
+    if (existsSync(src)) {
+      removeSync(src);
+    }
+    copySync(dest, src);
   });
 };
 
