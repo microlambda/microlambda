@@ -60,6 +60,7 @@ export const requestCertificates = (certificateManager: CertificateManager) => {
 }
 
 export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler) => {
+  const log = logger.log('deploy');
   const config = new ConfigReader(logger);
   config.readConfig();
   if (!cmd.E) {
@@ -111,6 +112,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   let certificateManager: CertificateManager;
   const services = cmd.S ? [service] : graph.getServices();
 
+  log.info('Resolving certificates to generate');
   try {
     certificateManager = new CertificateManager(logger, services, config);
     needActions = await certificateManager.prepareCertificatesRequests(cmd.E);
@@ -129,20 +131,29 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       console.error(chalk.red(e));
       process.exit(1);
     }
+  } else {
+    log.info('No certificate to generate');
   }
 
   const failures: Map<Service, {type: ErrorType, error: Error}> = new Map();
 
   const deployOne = (service: Service, region: string): Observable<IDeployEvent> => {
     return new Observable<IDeployEvent>( (obs) => {
+      log.info('Deploying', service.getName());
       obs.next({service, type: IDeployEventType.BACKING_UP_YAML});
+      log.info(service.getName(), 'Back-up YAML');
       backupYaml([service]);
       obs.next({service, type: IDeployEventType.REFORMATTING_YAML});
       const failed = (type: ErrorType, e: Error, restore = true) => {
+        log.error(service.getName(), 'Failure', service.getName());
+        log.error(type);
+        log.error(e);
         failures.set(service, {type, error: e});
         obs.next({service, type: IDeployEventType.RESTORING_YAML});
         if (restore) {
+          log.info(service.getName(), 'Restoring YAML');
           restoreYaml([service]);
+          log.info(service.getName(), 'YAML restored');
         }
         obs.next({service, type: IDeployEventType.FAILURE, error: e});
       }
@@ -151,9 +162,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
           try {
             // run sls create domain
             const customDomain = config.getCustomDomain(service.getName(), cmd.E);
+            log.info(service.getName(), 'Custom domain', customDomain);
             if (customDomain) {
               obs.next({service, type: IDeployEventType.CREATING_CUSTOM_DOMAIN});
               try {
+                log.info(service.getName(), 'Creating Custom domain', customDomain);
                 await service.createCustomDomain(region, cmd.E);
               } catch (e) {
                 failed('creatingDomain', e);
@@ -165,6 +178,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             // run sls deploy
             obs.next({service, type: IDeployEventType.DEPLOYING});
             try {
+              log.info(service.getName(), 'running npm run deploy');
               await service.deploy(region, cmd.E);
             } catch (e) {
               failed('deploying', e);
@@ -173,13 +187,17 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             obs.next({service, type: IDeployEventType.DEPLOYED});
 
             obs.next({service, type: IDeployEventType.RESTORING_YAML});
+            log.info(service.getName(), 'restoring YAML');
             restoreYaml([service]);
+            log.info(service.getName(), 'restored YAML');
             obs.next({service, type: IDeployEventType.RESTORED_YAML});
             obs.next({service, type: IDeployEventType.CREATING_RECORDS});
             try {
               obs.next({service, type: IDeployEventType.CREATED_RECORDS});
+              log.info(service.getName(), 'Creating records');
               const recordsManager = new RecordsManager(logger);
               await recordsManager.createRecords(config, cmd.E, [service]);
+              log.info(service.getName(), 'Created records');
             } catch (e) {
               failed('creatingRecords', e, false);
               return obs.complete();
@@ -188,10 +206,13 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             return obs.complete();
           } catch (e) {
             failed('other', e);
+            return obs.complete();
           }
         })
         .catch((e) => {
+          log.error(service.getName(), 'Error reformatting');
           failed('reformatting', e);
+          return obs.complete();
         });
     })
   }
@@ -200,9 +221,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   let deployments: Observable<IDeployEvent>;
 
   if (cmd.S) {
+    log.info('Deploying one service', service.getName());
     const regions = config.getRegions(service.getName(), cmd.E);
     deployments = concat(...regions.map(region => deployOne(service, region)));
   } else {
+    log.info('Deploying all services');
     const schedule = config.scheduleDeployments(cmd.E);
     let steps: Array<Observable<IDeployEvent>> = [];
     for (const step of schedule) {
@@ -280,6 +303,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       process.exit(1);
     },
     () => {
+      log.info('Deploying process completed', failures);
       if (failures.size) {
         const getMessage = (type: ErrorType): string => {
           switch(type) {
