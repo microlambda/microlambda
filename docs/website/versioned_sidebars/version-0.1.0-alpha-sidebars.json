@@ -1,0 +1,20 @@
+{
+  "version-0.1.0-alpha-docs": {
+    "Docusaurus": [
+      "version-0.1.0-alpha-doc1"
+    ],
+    "First Category": [
+      "version-0.1.0-alpha-doc2"
+    ],
+    "Second Category": [
+      "version-0.1.0-alpha-doc3",
+      "version-0.1.0-alpha-doc4"
+    ]
+  },
+  "version-0.1.0-alpha-docs-other": {
+    "First Category": [
+      "version-0.1.0-alpha-doc4",
+      "version-0.1.0-alpha-doc5"
+    ]
+  }
+}

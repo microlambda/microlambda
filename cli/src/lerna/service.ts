@@ -262,7 +262,7 @@ export class Service extends LernaNode {
       const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'deploy'));
       const deployProcess = spawn('npm', ['run', 'deploy'],       {
         cwd: this.location,
-        env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region },
+        env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region, AWS_REGION: region },
         stdio: 'pipe',
       });
       deployProcess.stderr.on('data', (data) => {
