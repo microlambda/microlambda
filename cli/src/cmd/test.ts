@@ -8,6 +8,8 @@ import { spawn } from 'child_process';
 import chalk from 'chalk';
 import { getDefaultThreads, getThreads } from '../utils/platform';
 import Spinnies from 'spinnies';
+import { readJSONSync } from 'fs-extra';
+import { join } from 'path';
 
 interface ITestOptions extends IBuildCmd {
   recompile: boolean;
@@ -20,6 +22,7 @@ enum TestStatus {
   TESTING,
   PASS,
   FAIL,
+  SKIPPED,
 }
 
 interface ITestEvent {
@@ -60,6 +63,19 @@ class TestRunner {
       return new Observable<ITestEvent>((obs) => {
         const now = Date.now();
         obs.next({ type, node, status: TestStatus.TESTING });
+        let hasTests = false;
+        const testKey = `test:${type}`;
+        try {
+          const packageJson = readJSONSync(join(node.getLocation(), 'package.json'));
+          hasTests = packageJson.scripts && packageJson.scripts[testKey] != null;
+        } catch (e) {
+          console.error(e);
+          obs.next({ type, node, status: TestStatus.FAIL, took: Date.now() - now });
+        }
+        if (!hasTests) {
+          obs.next({ type, node, status: TestStatus.SKIPPED, took: Date.now() - now });
+          return obs.complete();
+        }
         const testProcess = spawn('npm', ['run', `test:${type}`], {
           cwd: node.getLocation(),
           env: { ...process.env, FORCE_COLOR: '2' },
@@ -145,6 +161,14 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
           text: `${chalk.black.bgGreen(' PASS ')} [${chalk.cyan(evt.type)}] ${evt.node.getName()} ${chalk.gray(
             evt.took + 'ms',
           )}`,
+        });
+        break;
+      }
+      case TestStatus.SKIPPED: {
+        spinnies.succeed(evt.node.getName(), {
+          text: `${chalk.black.bgYellow(' SKIPPED ')} [${chalk.cyan(
+            evt.type,
+          )}] ${evt.node.getName()} - No script test:${evt.type} in package.json`,
         });
         break;
       }
