@@ -1,4 +1,3 @@
-/* eslint-disable no-this._logger */
 import { APIGateway, Route53 } from 'aws-sdk';
 import { Change, HostedZone, ListHostedZonesResponse, ResourceRecordSet } from 'aws-sdk/clients/route53';
 import { inspect } from 'util';

@@ -44,7 +44,9 @@ export class ConfigReader {
     this._logger = logger.log('config');
   }
 
-  get config(): IConfig { return this._config }
+  get config(): IConfig {
+    return this._config;
+  }
 
   public readConfig(): IConfig {
     this._config = rc('microlambda', fallback) as IConfig;
@@ -141,7 +143,10 @@ export class ConfigReader {
       return step;
     };
     if (!steps) {
-      this._logger.debug('No specific config for steps. Using default', schedule(this._services.map((s) => s.getName())));
+      this._logger.debug(
+        'No specific config for steps. Using default',
+        schedule(this._services.map((s) => s.getName())),
+      );
       const step = schedule(this._services.map((s) => s.getName()));
       return [step];
     }
@@ -177,21 +182,43 @@ export class ConfigReader {
         ]),
       ),
     ]);
-    this._schema = Joi.object().keys({
-      stages: Joi.array().items(Joi.string()).optional().allow(null),
-      compilationMode: Joi.string().valid('safe', 'fast'),
-      ports: Joi.object().pattern(services, Joi.number().integer().greater(0).less(64738)),
-      noStart: Joi.array().items(services).optional(),
-      defaultRegions: regionSchema.optional().allow(null),
-      regions: Joi.object()
-        .pattern(services, regionSchema)
-        .optional(),
-      steps: Joi.array()
-        .items(Joi.alternatives([Joi.string().valid('*'), Joi.array().items(services)]))
-        .optional(),
-      domains: Joi.object().pattern(services, Joi.object().pattern(Joi.string(), Joi.string()).optional()).optional(),
-      yamlTransforms: Joi.array().items(Joi.string()).optional(),
-    }).unknown(true);
+    this._schema = Joi.object()
+      .keys({
+        stages: Joi.array()
+          .items(Joi.string())
+          .optional()
+          .allow(null),
+        compilationMode: Joi.string().valid('safe', 'fast'),
+        ports: Joi.object().pattern(
+          services,
+          Joi.number()
+            .integer()
+            .greater(0)
+            .less(64738),
+        ),
+        noStart: Joi.array()
+          .items(services)
+          .optional(),
+        defaultRegions: regionSchema.optional().allow(null),
+        regions: Joi.object()
+          .pattern(services, regionSchema)
+          .optional(),
+        steps: Joi.array()
+          .items(Joi.alternatives([Joi.string().valid('*'), Joi.array().items(services)]))
+          .optional(),
+        domains: Joi.object()
+          .pattern(
+            services,
+            Joi.object()
+              .pattern(Joi.string(), Joi.string())
+              .optional(),
+          )
+          .optional(),
+        yamlTransforms: Joi.array()
+          .items(Joi.string())
+          .optional(),
+      })
+      .unknown(true);
   }
 
   getCustomDomain(name: string, stage: string): string {
@@ -200,9 +227,11 @@ export class ConfigReader {
 
   getYamlTransformations(projectRoot: string): string[] {
     const matches: Set<string> = new Set();
-    this._config.yamlTransforms.map(glob => join(projectRoot, glob)).forEach((glob) => {
-      sync(glob).forEach((path) => matches.add(path));
-    });
+    this._config.yamlTransforms
+      .map((glob) => join(projectRoot, glob))
+      .forEach((glob) => {
+        sync(glob).forEach((path) => matches.add(path));
+      });
     return Array.from(matches);
   }
 }

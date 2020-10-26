@@ -1,5 +1,4 @@
-/* eslint-disable no-this._logger */
-import { ACM, Route53  } from 'aws-sdk';
+import { ACM, Route53 } from 'aws-sdk';
 import {
   CertificateSummary,
   DescribeCertificateResponse,
@@ -86,21 +85,25 @@ export class CertificateManager {
           obs.next({ type: CertificateEventType.CREATING, domain, region });
           const createCertificate = CertificateManager._createCertificate(region, domain);
           promises.push(createCertificate);
-          createCertificate.then((response) => {
-            obs.next({ type: CertificateEventType.CREATED, domain, region });
-            this._logger.info('Certificate created', response.CertificateArn);
-            this._logger.info('Activating certificate');
-            obs.next({ type: CertificateEventType.ACTIVATING, domain, region });
-            const activateCertificate = this._activateCertificate(domain, region, response.CertificateArn);
-            promises.push(activateCertificate);
-            activateCertificate.then(() => {
-              obs.next({ type: CertificateEventType.ACTIVATED, domain, region });
-            }).catch((err) => obs.error({ err, domain, region }));
-          }).catch((err) => obs.error({ err, domain, region }));
+          createCertificate
+            .then((response) => {
+              obs.next({ type: CertificateEventType.CREATED, domain, region });
+              this._logger.info('Certificate created', response.CertificateArn);
+              this._logger.info('Activating certificate');
+              obs.next({ type: CertificateEventType.ACTIVATING, domain, region });
+              const activateCertificate = this._activateCertificate(domain, region, response.CertificateArn);
+              promises.push(activateCertificate);
+              activateCertificate
+                .then(() => {
+                  obs.next({ type: CertificateEventType.ACTIVATED, domain, region });
+                })
+                .catch((err) => obs.error({ err, domain, region }));
+            })
+            .catch((err) => obs.error({ err, domain, region }));
         }
       }
       Promise.all(promises).then(() => obs.complete());
-    })
+    });
   }
 
   private static async _describeCertificate(region: string, arn: string): Promise<DescribeCertificateResponse> {

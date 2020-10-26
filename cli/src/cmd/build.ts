@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Logger } from '../utils/logger';
 import {
   IRecompilationError,
@@ -8,7 +9,7 @@ import {
 import { init, lernaBootstrap } from './start';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
-import { LernaGraph, Service } from '../lerna';
+import { LernaGraph, LernaNode, Service } from '../lerna';
 
 export interface IBuildCmd {
   S?: string;
@@ -16,10 +17,16 @@ export interface IBuildCmd {
   onlySelf: boolean;
 }
 
-export const beforeBuild = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger) => {
+export const beforeBuild = async (
+  cmd: IBuildCmd,
+  scheduler: RecompilationScheduler,
+  logger: Logger,
+  acceptPackages = false,
+): Promise<{ projectRoot: string; graph: LernaGraph; service: LernaNode }> => {
   const { graph, projectRoot } = await init(logger, scheduler);
   graph.enableAll();
-  const service = graph.getServices().find(s => s.getName() === cmd.S)
+  const nodes = acceptPackages ? graph.getNodes() : graph.getServices();
+  const service = nodes.find((s) => s.getName() === cmd.S);
   if (cmd.S && !service) {
     console.error(chalk.red('Unknown service', cmd.S));
     process.exit(1);
@@ -27,13 +34,18 @@ export const beforeBuild = async (cmd: IBuildCmd, scheduler: RecompilationSchedu
   if (cmd.bootstrap) {
     await lernaBootstrap(graph, logger);
   }
-  return { projectRoot, graph, service }
-}
+  return { projectRoot, graph, service };
+};
 
-export const typeCheck = async (scheduler: RecompilationScheduler, target: LernaGraph | Service, onlySelf: boolean, force: boolean): Promise<void> => {
+export const typeCheck = async (
+  scheduler: RecompilationScheduler,
+  target: LernaGraph | LernaNode,
+  onlySelf: boolean,
+  force: boolean,
+): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const spinners: Map<string, Ora> = new Map();
-    const onNext = (evt: IRecompilationEvent) => {
+    const onNext = (evt: IRecompilationEvent): void => {
       if (evt.type === RecompilationEventType.TYPE_CHECK_IN_PROGRESS) {
         const spinner = ora(`Compiling ${evt.node.getName()}`);
         spinner.start();
@@ -49,25 +61,25 @@ export const typeCheck = async (scheduler: RecompilationScheduler, target: Lerna
         return reject();
       }
     };
-    const onError = (evt: IRecompilationError) => {
+    const onError = (evt: IRecompilationError): void => {
       const spinner = spinners.get(evt.node.getName());
-      spinner.fail(`Error compiling ${evt.node.getName()}`)
-      evt.logs.forEach(l => console.error(l));
+      spinner.fail(`Error compiling ${evt.node.getName()}`);
+      evt.logs.forEach((l) => console.error(l));
       return reject();
     };
-    const onComplete = () => {
+    const onComplete = (): void => {
       return resolve();
-    }
-    if (target instanceof Service) {
+    };
+    if (target instanceof LernaNode) {
       scheduler.buildOne(target, onlySelf, force).subscribe(onNext, onError, onComplete);
     } else {
       scheduler.buildAll(target, onlySelf, force).subscribe(onNext, onError, onComplete);
     }
   });
-}
+};
 
-export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger) => {
-  const { graph, service } = await beforeBuild(cmd, scheduler, logger);
+export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger): Promise<void> => {
+  const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
   try {
     await typeCheck(scheduler, cmd.S ? service : graph, cmd.onlySelf, true);
     console.info('\nSuccessfully built ✨');
@@ -75,4 +87,4 @@ export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, l
   } catch (e) {
     process.exit(1);
   }
-}
+};

@@ -6,7 +6,11 @@ import { showOffTitle } from './ascii';
 import { Logger } from './logger';
 
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.mila', 'logs');
-export const getLogsPath = (projectRoot: string, service: string, type: 'offline' | 'deploy' | 'createDomain'): string => {
+export const getLogsPath = (
+  projectRoot: string,
+  service: string,
+  type: 'offline' | 'deploy' | 'createDomain',
+): string => {
   const segments = service.split('/');
   const name = segments[segments.length - 1];
   return join(getLogsDirectory(projectRoot), `${name}.${type}.log`);
@@ -28,10 +32,14 @@ export const recreateLogDirectory = (projectRoot: string, logger: Logger): void 
   mkdirSync(logsDirectory);
 };
 
-export const createLogFile = (projectRoot: string, service: string, type: 'offline' | 'deploy' | 'createDomain'): void => {
+export const createLogFile = (
+  projectRoot: string,
+  service: string,
+  type: 'offline' | 'deploy' | 'createDomain',
+): void => {
   const logsPath = getLogsPath(projectRoot, service, type);
   if (!existsSync(dirname(logsPath))) {
-    mkdirSync(dirname(logsPath), {recursive: true});
+    mkdirSync(dirname(logsPath), { recursive: true });
   }
   if (!existsSync(logsPath)) {
     closeSync(openSync(logsPath, 'w'));

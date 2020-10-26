@@ -1,10 +1,10 @@
 import os from 'os';
 
-const cpuCount = os.cpus().length
+const cpuCount = os.cpus().length;
 
 export const getDefaultThreads = (): number => {
-  return Math.floor(cpuCount/2);
-}
+  return Math.floor(cpuCount / 2);
+};
 
 export const getThreads = (target: number): number => {
   if (target < 0 || !Number.isInteger(target)) {
@@ -14,4 +14,4 @@ export const getThreads = (target: number): number => {
     return cpuCount;
   }
   return target;
-}
+};

@@ -1,11 +1,10 @@
+/* eslint-disable no-console */
 import { Logger } from '../utils/logger';
-import {
-  RecompilationScheduler,
-} from '../utils/scheduler';
+import { RecompilationScheduler } from '../utils/scheduler';
 import { beforePackage, IPackageCmd, packageService } from './package';
 import { ConfigReader } from '../config/read-config';
 import { CertificateEventType, CertificateManager, ICertificateEvent } from '../deploy/utils/generate-certificates';
-import Spinnies from "spinnies";
+import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import { prompt } from 'inquirer';
 import { getAccountIAM } from '../utils/aws-account';
@@ -20,16 +19,37 @@ interface IDeployCmd extends IPackageCmd {
   prompt: boolean;
 }
 
+enum IDeployEventType {
+  BACKING_UP_YAML,
+  REFORMATTING_YAML,
+  CREATING_CUSTOM_DOMAIN,
+  CREATED_CUSTOM_DOMAIN,
+  DEPLOYING,
+  DEPLOYED,
+  CREATING_RECORDS,
+  CREATED_RECORDS,
+  RESTORING_YAML,
+  RESTORED_YAML,
+  SUCCESS,
+  FAILURE,
+}
+
+interface IDeployEvent {
+  type: IDeployEventType;
+  service: Service;
+  error?: Error;
+}
+
 type ErrorType = 'other' | 'reformatting' | 'creatingDomain' | 'deploying' | 'creatingRecords';
 
-export const requestCertificates = (certificateManager: CertificateManager) => {
+export const requestCertificates = (certificateManager: CertificateManager): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const spinnies = new Spinnies({
       failColor: 'white',
       succeedColor: 'white',
       spinnerColor: 'cyan',
     });
-    const onNext = (evt: ICertificateEvent) => {
+    const onNext = (evt: ICertificateEvent): void => {
       const key = `${evt.domain}@${evt.region}`;
       switch (evt.type) {
         case CertificateEventType.CREATING: {
@@ -37,29 +57,35 @@ export const requestCertificates = (certificateManager: CertificateManager) => {
           break;
         }
         case CertificateEventType.ACTIVATING: {
-          spinnies.update(key, { text: `${chalk.cyan(`[${evt.region}]`)} Activating certificate for ${evt.domain} ${chalk.gray('Please be patient, this can take up to thirty minutes')}`});
+          spinnies.update(key, {
+            text: `${chalk.cyan(`[${evt.region}]`)} Activating certificate for ${evt.domain} ${chalk.gray(
+              'Please be patient, this can take up to thirty minutes',
+            )}`,
+          });
           break;
         }
         case CertificateEventType.ACTIVATED: {
-          spinnies.add(key, { text: `${chalk.cyan(`[${evt.region}]`)} Successfully created certificate for ${evt.domain}` });
+          spinnies.add(key, {
+            text: `${chalk.cyan(`[${evt.region}]`)} Successfully created certificate for ${evt.domain}`,
+          });
           break;
         }
       }
     };
-    const onError = async (evt: {domain: string, region: string, error: Error}) => {
+    const onError = async (evt: { domain: string; region: string; error: Error }): Promise<void> => {
       const key = `${evt.domain}@${evt.region}`;
       spinnies.fail(key, { text: `${chalk.cyan(`[${evt.region}]`)} Error creating certificate for ${evt.domain}` });
       spinnies.stopAll();
       return reject(evt.error);
     };
-    const onComplete = () => {
+    const onComplete = (): void => {
       return resolve();
-    }
+    };
     certificateManager.doRequestCertificates().subscribe(onNext, onError, onComplete);
   });
-}
+};
 
-export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler) => {
+export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
   const log = logger.log('deploy');
   const config = new ConfigReader(logger);
   config.readConfig();
@@ -72,7 +98,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     console.error(chalk.red('Allowed stages are:', config.config.stages));
     process.exit(1);
   }
-  const currentIAM = await getAccountIAM().catch((err) =>{
+  const currentIAM = await getAccountIAM().catch((err) => {
     console.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
     console.error(chalk.red('Original error: ' + err));
     process.exit(1);
@@ -89,7 +115,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
         type: 'confirm',
         name: 'ok',
         message: 'Are you sure you want to execute this deployment',
-      }
+      },
     ]);
     if (!answers.ok) {
       process.exit(0);
@@ -97,11 +123,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   }
 
   console.log('\n');
-  const { projectRoot, concurrency, graph, service} = await beforePackage(cmd, scheduler, logger);
+  const { projectRoot, concurrency, graph, service } = await beforePackage(cmd, scheduler, logger);
   config.validate(graph);
   if (cmd.package) {
     console.info('\nPackaging services\n');
-    await packageService(scheduler, concurrency, cmd.S ? service : graph).catch((e) => {
+    await packageService(scheduler, concurrency, cmd.S ? (service as Service) : graph).catch((e) => {
       console.error(chalk.red('Error packaging services'));
       console.error(e);
       process.exit(1);
@@ -110,7 +136,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
 
   let needActions: boolean;
   let certificateManager: CertificateManager;
-  const services = cmd.S ? [service] : graph.getServices();
+  const services = cmd.S ? [service as Service] : graph.getServices();
 
   log.info('Resolving certificates to generate');
   try {
@@ -135,28 +161,28 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     log.info('No certificate to generate');
   }
 
-  const failures: Map<Service, {type: ErrorType, error: Error}> = new Map();
+  const failures: Map<Service, { type: ErrorType; error: Error }> = new Map();
 
   const deployOne = (service: Service, region: string): Observable<IDeployEvent> => {
-    return new Observable<IDeployEvent>( (obs) => {
+    return new Observable<IDeployEvent>((obs) => {
       log.info('Deploying', service.getName());
-      obs.next({service, type: IDeployEventType.BACKING_UP_YAML});
+      obs.next({ service, type: IDeployEventType.BACKING_UP_YAML });
       log.info(service.getName(), 'Back-up YAML');
       backupYaml([service]);
-      obs.next({service, type: IDeployEventType.REFORMATTING_YAML});
-      const failed = (type: ErrorType, e: Error, restore = true) => {
+      obs.next({ service, type: IDeployEventType.REFORMATTING_YAML });
+      const failed = (type: ErrorType, e: Error, restore = true): void => {
         log.error(service.getName(), 'Failure', service.getName());
         log.error(type);
         log.error(e);
-        failures.set(service, {type, error: e});
-        obs.next({service, type: IDeployEventType.RESTORING_YAML});
+        failures.set(service, { type, error: e });
+        obs.next({ service, type: IDeployEventType.RESTORING_YAML });
         if (restore) {
           log.info(service.getName(), 'Restoring YAML');
           restoreYaml([service]);
           log.info(service.getName(), 'YAML restored');
         }
-        obs.next({service, type: IDeployEventType.FAILURE, error: e});
-      }
+        obs.next({ service, type: IDeployEventType.FAILURE, error: e });
+      };
       reformatYaml(projectRoot, config, [service], region, cmd.E)
         .then(async () => {
           try {
@@ -164,7 +190,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             const customDomain = config.getCustomDomain(service.getName(), cmd.E);
             log.info(service.getName(), 'Custom domain', customDomain);
             if (customDomain) {
-              obs.next({service, type: IDeployEventType.CREATING_CUSTOM_DOMAIN});
+              obs.next({ service, type: IDeployEventType.CREATING_CUSTOM_DOMAIN });
               try {
                 log.info(service.getName(), 'Creating Custom domain', customDomain);
                 await service.createCustomDomain(region, cmd.E);
@@ -172,11 +198,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
                 failed('creatingDomain', e);
                 return obs.complete();
               }
-              obs.next({service, type: IDeployEventType.CREATED_CUSTOM_DOMAIN});
+              obs.next({ service, type: IDeployEventType.CREATED_CUSTOM_DOMAIN });
             }
 
             // run sls deploy
-            obs.next({service, type: IDeployEventType.DEPLOYING});
+            obs.next({ service, type: IDeployEventType.DEPLOYING });
             try {
               log.info(service.getName(), 'running npm run deploy');
               await service.deploy(region, cmd.E);
@@ -184,16 +210,16 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
               failed('deploying', e);
               return obs.complete();
             }
-            obs.next({service, type: IDeployEventType.DEPLOYED});
+            obs.next({ service, type: IDeployEventType.DEPLOYED });
 
-            obs.next({service, type: IDeployEventType.RESTORING_YAML});
+            obs.next({ service, type: IDeployEventType.RESTORING_YAML });
             log.info(service.getName(), 'restoring YAML');
             restoreYaml([service]);
             log.info(service.getName(), 'restored YAML');
-            obs.next({service, type: IDeployEventType.RESTORED_YAML});
-            obs.next({service, type: IDeployEventType.CREATING_RECORDS});
+            obs.next({ service, type: IDeployEventType.RESTORED_YAML });
+            obs.next({ service, type: IDeployEventType.CREATING_RECORDS });
             try {
-              obs.next({service, type: IDeployEventType.CREATED_RECORDS});
+              obs.next({ service, type: IDeployEventType.CREATED_RECORDS });
               log.info(service.getName(), 'Creating records');
               const recordsManager = new RecordsManager(logger);
               await recordsManager.createRecords(config, cmd.E, [service]);
@@ -202,7 +228,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
               failed('creatingRecords', e, false);
               return obs.complete();
             }
-            obs.next({service, type: IDeployEventType.SUCCESS});
+            obs.next({ service, type: IDeployEventType.SUCCESS });
             return obs.complete();
           } catch (e) {
             failed('other', e);
@@ -214,8 +240,8 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
           failed('reformatting', e);
           return obs.complete();
         });
-    })
-  }
+    });
+  };
 
   console.info('\nDeploying services\n');
   let deployments: Observable<IDeployEvent>;
@@ -223,11 +249,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   if (cmd.S) {
     log.info('Deploying one service', service.getName());
     const regions = config.getRegions(service.getName(), cmd.E);
-    deployments = concat(...regions.map(region => deployOne(service, region)));
+    deployments = concat(...regions.map((region) => deployOne(service as Service, region)));
   } else {
     log.info('Deploying all services');
     const schedule = config.scheduleDeployments(cmd.E);
-    let steps: Array<Observable<IDeployEvent>> = [];
+    const steps: Array<Observable<IDeployEvent>> = [];
     for (const step of schedule) {
       const toDeploy: Map<Service, Set<string>> = new Map();
       const regions = step.keys();
@@ -247,7 +273,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       }
       const stepDeployments: Array<Observable<IDeployEvent>> = [];
       for (const [stepService, regions] of toDeploy.entries()) {
-        stepDeployments.push(concat(...Array.from(regions).map(region => deployOne(stepService, region))));
+        stepDeployments.push(concat(...Array.from(regions).map((region) => deployOne(stepService, region))));
       }
       steps.push(merge(...stepDeployments, concurrency));
     }
@@ -264,35 +290,47 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     (evt) => {
       switch (evt.type) {
         case IDeployEventType.BACKING_UP_YAML: {
-          spinnies.add(evt.service.getName(), { text: `Deploying ${evt.service.getName()} ${chalk.cyan('Backing-up YAML')}` })
+          spinnies.add(evt.service.getName(), {
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Backing-up YAML')}`,
+          });
           break;
         }
         case IDeployEventType.REFORMATTING_YAML: {
-          spinnies.update(evt.service.getName(), { text: `Deploying ${evt.service.getName()} ${chalk.cyan('Reformatting YAML')}` })
+          spinnies.update(evt.service.getName(), {
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Reformatting YAML')}`,
+          });
           break;
         }
         case IDeployEventType.CREATING_CUSTOM_DOMAIN: {
-          spinnies.update(evt.service.getName(), { text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating custom domain')}` })
+          spinnies.update(evt.service.getName(), {
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating custom domain')}`,
+          });
           break;
         }
         case IDeployEventType.DEPLOYING: {
-          spinnies.update(evt.service.getName(), { text: `Deploying ${evt.service.getName()} ${chalk.cyan('Updating CloudFormation stack')}` })
+          spinnies.update(evt.service.getName(), {
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Updating CloudFormation stack')}`,
+          });
           break;
         }
         case IDeployEventType.RESTORING_YAML: {
-          spinnies.update(evt.service.getName(), { text: `Deploying ${evt.service.getName()} ${chalk.cyan('Restoring YAML')}` })
+          spinnies.update(evt.service.getName(), {
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Restoring YAML')}`,
+          });
           break;
         }
         case IDeployEventType.CREATING_RECORDS: {
-          spinnies.update(evt.service.getName(), { text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating latency-based DNS records')}` })
+          spinnies.update(evt.service.getName(), {
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating latency-based DNS records')}`,
+          });
           break;
         }
         case IDeployEventType.SUCCESS: {
-          spinnies.succeed(evt.service.getName(), { text: `Successfully deployed ${evt.service.getName()}` })
+          spinnies.succeed(evt.service.getName(), { text: `Successfully deployed ${evt.service.getName()}` });
           break;
         }
         case IDeployEventType.FAILURE: {
-          spinnies.fail(evt.service.getName(), { text: `Failed to deploy ${evt.service.getName()}` })
+          spinnies.fail(evt.service.getName(), { text: `Failed to deploy ${evt.service.getName()}` });
           break;
         }
       }
@@ -306,7 +344,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       log.info('Deployment process completed', failures.values());
       if (failures.size) {
         const getMessage = (type: ErrorType): string => {
-          switch(type) {
+          switch (type) {
             case 'reformatting':
               return 'Error reformatting YAML';
             case 'creatingDomain':
@@ -318,7 +356,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             case 'other':
               return 'Unknown error';
           }
-        }
+        };
         for (const [service, failure] of failures.entries()) {
           console.info(`\n${chalk.bold(service.getName())}`);
           console.error(chalk.red(getMessage(failure.type)));
@@ -335,27 +373,6 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       }
       console.info(`Successfully deployed to ${cmd.E} :rocket:`);
       process.exit(0);
-    }
+    },
   );
-}
-
-interface IDeployEvent {
-  type: IDeployEventType;
-  service: Service;
-  error?: Error;
-}
-
-enum IDeployEventType {
-  BACKING_UP_YAML,
-  REFORMATTING_YAML,
-  CREATING_CUSTOM_DOMAIN,
-  CREATED_CUSTOM_DOMAIN,
-  DEPLOYING,
-  DEPLOYED,
-  CREATING_RECORDS,
-  CREATED_RECORDS,
-  RESTORING_YAML,
-  RESTORED_YAML,
-  SUCCESS,
-  FAILURE,
-}
+};

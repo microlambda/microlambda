@@ -1,3 +1,4 @@
+// FIXME: should be removed
 import { spawn } from 'child_process';
 import { existsSync } from 'fs-extra';
 import { join } from 'path';

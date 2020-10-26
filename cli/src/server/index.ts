@@ -4,7 +4,6 @@ import { LernaGraph, Service } from '../lerna';
 import { Logger } from '../utils/logger';
 
 export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> => {
-
   const log = logger.log('api');
   const port = 4545;
   const app = express();
@@ -35,7 +34,7 @@ export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> 
   app.get('/api/services/:service/logs', (req, res) => {
     const serviceName = req.params.service;
     log.debug('GET /api/services/:service/logs', serviceName);
-    const service = graph.getServices().find(s => s.getName() === serviceName);
+    const service = graph.getServices().find((s) => s.getName() === serviceName);
     if (!service) {
       log.error('GET /api/services/:service/logs - 404: No such service');
       return res.status(404);
@@ -46,7 +45,7 @@ export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> 
   app.get('/api/nodes/:node/tsc/logs', (req, res) => {
     const nodeName = req.params.node;
     log.debug('GET /api/nodes/:node/tsc/logs', nodeName);
-    const node = graph.getNodes().find(s => s.getName() === nodeName);
+    const node = graph.getNodes().find((s) => s.getName() === nodeName);
     if (!node) {
       log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
       return res.status(404).send();
@@ -57,7 +56,7 @@ export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> 
   app.get('/api/nodes/:node/tree', (req, res) => {
     const nodeName = req.params.node;
     log.debug('GET /api/nodes/:node/tree', nodeName);
-    const node = graph.getNodes().find(s => s.getName() === nodeName);
+    const node = graph.getNodes().find((s) => s.getName() === nodeName);
     if (!node) {
       log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
       return res.status(404).send();
@@ -66,9 +65,9 @@ export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> 
   });
 
   const http = createServer(app);
-  return new Promise<Server>((resolve => {
+  return new Promise<Server>((resolve) => {
     http.listen(port, () => {
       resolve(http);
     });
-  }));
+  });
 };

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 import { Command } from 'commander';
 import { RecompilationScheduler } from './utils/scheduler';
-import { start, stop } from './cmd';
+import { start } from './cmd';
 import { Logger } from './utils/logger';
 import { checkStage } from './cmd/check-stage';
 import { checkService } from './cmd/check-service';
@@ -103,8 +104,8 @@ program
 program
   .command('build')
   // .option('-i, --interactive', 'interactively choose microservices', false)
-  .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
-  .option( '--only-self', 'skip compiling service dependencies', false)
+  .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option('--only-self', 'skip compiling service dependencies', false)
   .option('-s <service>, --service <service>', 'the service you want to build', false)
   .description('compile packages and services')
   .action(async (cmd) => {
@@ -119,9 +120,9 @@ program
 program
   .command('package')
   // .option('-i, --interactive', 'interactively choose microservices', false)
-  .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
-  .option( '--no-recompile', 'skip package and service recompilation', false)
-  .option( '-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
+  .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option('--no-recompile', 'skip package and service recompilation', false)
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
   .action(async (cmd) => {
@@ -131,13 +132,13 @@ program
 program
   .command('deploy')
   // .option('-i, --interactive', 'interactively choose microservices', false)
-  .option( '--no-bootstrap', 'skip bootstrapping dependencies', false)
-  .option( '--no-recompile', 'skip package and service recompilation', false)
-  .option( '-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
-  .option( '--no-package', 'skip bundling service deployment package', false)
+  .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option('--no-recompile', 'skip package and service recompilation', false)
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
+  .option('--no-package', 'skip bundling service deployment package', false)
   .option('-s <service>, --service <service>', 'the service you want to deploy', null)
   .option('-e <stage>, --stage <stage>', 'target stage for deployment', null)
-  .option( '--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
     await deploy(cmd, logger, scheduler);
@@ -166,11 +167,7 @@ program
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
   .option('-s <service>, --service <service>', 'the service for which you want to test', null)
   .action(async (cmd) => {
-    await runTests(
-      cmd,
-      scheduler,
-      logger,
-    );
+    await runTests(cmd, scheduler, logger);
   });
 
 /*

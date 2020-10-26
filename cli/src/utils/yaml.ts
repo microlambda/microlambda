@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { dump, load, Schema, Type } from 'js-yaml';
 import { copySync, existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
-import { join, dirname } from "path";
+import { join, dirname } from 'path';
 import { Service } from '../lerna';
 import { ConfigReader } from '../config/read-config';
 import { compileFile } from './typescript';
@@ -137,7 +137,7 @@ const removePlugins = (doc: any): void => {
   if (doc.plugins) {
     doc.plugins = doc.plugins.filter((p: string) => !removePlugins.includes(p));
   }
-}
+};
 
 const optionalRegion = (doc: any, region: string): void => {
   const toDelete = [];
@@ -148,9 +148,15 @@ const optionalRegion = (doc: any, region: string): void => {
     }
   }
   toDelete.forEach((name) => delete doc.functions[name]);
-}
+};
 
-export const reformatYaml = async (projectRoot: string, config: ConfigReader, services: Service[], region: string, env: string): Promise<void> => {
+export const reformatYaml = async (
+  projectRoot: string,
+  config: ConfigReader,
+  services: Service[],
+  region: string,
+  env: string,
+): Promise<void> => {
   for (const service of services) {
     const { src, dest } = getServerlessPath(service);
     const doc = load(readFileSync(dest, 'utf8'), {
@@ -163,7 +169,7 @@ export const reformatYaml = async (projectRoot: string, config: ConfigReader, se
       }
       let path: string;
       if (script.match(/\.ts$/)) {
-        await compileFile(dirname(script), script, {outDir: dirname(script)}, new Logger());
+        await compileFile(dirname(script), script, { outDir: dirname(script) }, new Logger());
         path = script.replace(/\.ts$/, '.js');
       } else if (script.match(/\.js$/)) {
         path = script;
@@ -173,6 +179,7 @@ export const reformatYaml = async (projectRoot: string, config: ConfigReader, se
       if (!existsSync(path)) {
         throw Error(`YAML Transforms: Script ${path} does not exists`);
       }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const transformation: { default: Function } = require(path);
       if (typeof transformation.default !== 'function') {
         throw Error(`YAML Transforms: Default export of script must be a function @ ${script}`);
@@ -197,4 +204,4 @@ export const getServiceName = (service: Service): string => {
   }
   const yaml = parseServerlessYaml(path);
   return yaml.service;
-}
+};

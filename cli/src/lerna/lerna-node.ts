@@ -52,7 +52,13 @@ export abstract class LernaNode {
   protected _scheduler: RecompilationScheduler;
   private _watchers: FSWatcher[] = [];
 
-  public constructor(scheduler: RecompilationScheduler, graph: LernaGraph, node: IGraphElement, nodes: Set<LernaNode>, elements: IGraphElement[]) {
+  public constructor(
+    scheduler: RecompilationScheduler,
+    graph: LernaGraph,
+    node: IGraphElement,
+    nodes: Set<LernaNode>,
+    elements: IGraphElement[],
+  ) {
     graph.logger.log('node').debug('Building node', node.name);
     this.graph = graph;
     this.name = node.name;
@@ -88,9 +94,13 @@ export abstract class LernaNode {
     nodes.add(this);
   }
 
-  get tscLogs() { return this._typeCheckLogs };
+  get tscLogs(): string[] {
+    return this._typeCheckLogs;
+  }
 
-  get lastTypeCheck() { return this._lastTypeCheck };
+  get lastTypeCheck(): string {
+    return this._lastTypeCheck;
+  }
 
   public enable(): void {
     this.nodeStatus = NodeStatus.ENABLED;
@@ -228,20 +238,22 @@ export abstract class LernaNode {
             .info('Package already transpiling', this.name);
           break;
       }
-      this.transpilingPromise.then(() => {
-        this.getGraph()
-          .logger.log('node')
-          .info('Package transpiled', this.name);
-        observer.next(this);
-        this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
-        return observer.complete();
-      }).catch((err) => {
-        this.getGraph()
-          .logger.log('node')
-          .info(`Error transpiling ${this.getName()}`, err);
-        this.setTranspilingStatus(TranspilingStatus.ERROR_TRANSPILING);
-        return observer.error(err);
-      });
+      this.transpilingPromise
+        .then(() => {
+          this.getGraph()
+            .logger.log('node')
+            .info('Package transpiled', this.name);
+          observer.next(this);
+          this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
+          return observer.complete();
+        })
+        .catch((err) => {
+          this.getGraph()
+            .logger.log('node')
+            .info(`Error transpiling ${this.getName()}`, err);
+          this.setTranspilingStatus(TranspilingStatus.ERROR_TRANSPILING);
+          return observer.error(err);
+        });
     });
   }
 
@@ -292,7 +304,7 @@ export abstract class LernaNode {
               this._typeCheckLogs = [
                 'Safe-compilation skipped, sources did not change since last type check. Checksums:',
                 JSON.stringify(this._checksums, null, 2),
-              ]
+              ];
               observer.next(this);
               observer.complete();
             }
@@ -375,55 +387,55 @@ export abstract class LernaNode {
     return { recompile, checksums: currentChecksums };
   }
 
-  private _handleTscLogs(data: any): void {
+  private _handleTscLogs(data: Buffer): void {
     this._typeCheckLogs.push(data.toString());
-    if(this.getGraph().io) {
+    if (this.getGraph().io) {
       this.getGraph().io.handleTscLogs(this.name, data.toString());
     }
   }
 
   private _watchTypeChecking(): Observable<LernaNode> {
     return new Observable<LernaNode>((observer) => {
-        this.typeCheckProcess.on('close', (code) => {
+      this.typeCheckProcess.on('close', (code) => {
+        this.getGraph()
+          .logger.log('node')
+          .silly('npx tsc process closed');
+        if (code === 0) {
+          this.setTypeCheckingStatus(TypeCheckStatus.SUCCESS);
           this.getGraph()
             .logger.log('node')
-            .silly('npx tsc process closed');
-          if (code === 0) {
-            this.setTypeCheckingStatus(TypeCheckStatus.SUCCESS);
-            this.getGraph()
-              .logger.log('node')
-              .info(`Package safe-compiled ${this.getName()}`);
-            observer.next(this);
-            this._lastTypeCheck = new Date().toISOString();
-            // this.compilationProcess.removeAllListeners('close');
-            return observer.complete();
-          } else {
-            this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
-            this.getGraph()
-              .logger.log('node')
-              .info(`Error safe-compiling ${this.getName()}`);
-            // this.compilationProcess.removeAllListeners('close');
-            return observer.error();
-          }
-        });
-        this.typeCheckProcess.on('error', (err) => {
-          this.getGraph()
-            .logger.log('node')
-            .silly('npx tsc process error');
-          this.getGraph()
-            .logger.log('node')
-            .error(err);
+            .info(`Package safe-compiled ${this.getName()}`);
+          observer.next(this);
+          this._lastTypeCheck = new Date().toISOString();
+          // this.compilationProcess.removeAllListeners('close');
+          return observer.complete();
+        } else {
           this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
           this.getGraph()
             .logger.log('node')
-            .info(`Error safe-compiling ${this.getName()}`, err);
-          // this.compilationProcess.removeAllListeners('error');
-          return observer.error(err);
-        });
+            .info(`Error safe-compiling ${this.getName()}`);
+          // this.compilationProcess.removeAllListeners('close');
+          return observer.error();
+        }
+      });
+      this.typeCheckProcess.on('error', (err) => {
+        this.getGraph()
+          .logger.log('node')
+          .silly('npx tsc process error');
+        this.getGraph()
+          .logger.log('node')
+          .error(err);
+        this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
+        this.getGraph()
+          .logger.log('node')
+          .info(`Error safe-compiling ${this.getName()}`, err);
+        // this.compilationProcess.removeAllListeners('error');
+        return observer.error(err);
+      });
     });
   }
 
-  watch() {
+  watch(): void {
     this.getGraph()
       .logger.log('node')
       .info('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
@@ -433,11 +445,11 @@ export abstract class LernaNode {
         .logger.log('node')
         .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
       this._scheduler.fileChanged(this);
-    })
+    });
     this._watchers.push(watcher);
   }
 
-  protected unwatch() {
-    this._watchers.forEach(w => w.close());
+  protected unwatch(): void {
+    this._watchers.forEach((w) => w.close());
   }
 }

@@ -1,6 +1,7 @@
-declare module "spinnies" {
-  type StopAllStatus = "succeed" | "fail" | "stopped";
-  type SpinnerStatus = StopAllStatus | "spinning" | "non-spinnable";
+/* eslint-disable @typescript-eslint/interface-name-prefix */
+declare module 'spinnies' {
+  type StopAllStatus = 'succeed' | 'fail' | 'stopped';
+  type SpinnerStatus = StopAllStatus | 'spinning' | 'non-spinnable';
 
   interface Spinner {
     interval: number;

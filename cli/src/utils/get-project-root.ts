@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { join, parse } from 'path';
 import { existsSync } from 'fs';
 import { Logger } from './logger';

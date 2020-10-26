@@ -30,7 +30,14 @@ export class LernaGraph {
     return this._io;
   }
 
-  constructor(scheduler: RecompilationScheduler, nodes: IGraphElement[], projectRoot: string, config: IConfig, logger: Logger, defaultPort?: number) {
+  constructor(
+    scheduler: RecompilationScheduler,
+    nodes: IGraphElement[],
+    projectRoot: string,
+    config: IConfig,
+    logger: Logger,
+    defaultPort?: number,
+  ) {
     this._logger = logger;
     this._config = config;
     this._logger.log('graph').debug('Building graph with', nodes);
@@ -153,7 +160,7 @@ export class LernaGraph {
     });
   }
 
-  registerIOSockets(io: IOSocketManager) {
+  registerIOSockets(io: IOSocketManager): void {
     this._io = io;
   }
 }

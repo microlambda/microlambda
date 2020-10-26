@@ -6,7 +6,7 @@ interface IRegionConfig {
 
 type RegionConfig = string | string[] | IRegionConfig;
 
-type DomainConfig = {[service: string]: string} | {[service: string]: {[env: string]: string}};
+type DomainConfig = { [service: string]: string } | { [service: string]: { [env: string]: string } };
 
 export interface IDeployConfig {
   defaultRegions: RegionConfig;
@@ -30,6 +30,6 @@ export interface IConfig extends IDeployConfig {
   domains: {
     [service: string]: {
       [env: string]: string;
-    }
-  }
+    };
+  };
 }

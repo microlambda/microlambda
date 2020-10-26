@@ -1,4 +1,3 @@
-/* eslint-disable no-this._logger */
 import { spawn } from 'child_process';
 import { join, relative } from 'path';
 import { chmodSync, existsSync, mkdirSync, removeSync, statSync } from 'fs-extra';
@@ -88,12 +87,8 @@ export class Packager {
       });
 
       output.on('close', () => {
-        const megabytes = Math.round(
-          100 * (archive.pointer() / 1000000),
-        ) / 100;
-        this._logger.info(
-          `${chalk.bold(service.getName())}: Zip files successfully created (${megabytes}MB)`,
-        );
+        const megabytes = Math.round(100 * (archive.pointer() / 1000000)) / 100;
+        this._logger.info(`${chalk.bold(service.getName())}: Zip files successfully created (${megabytes}MB)`);
         return resolve(megabytes);
       });
 
