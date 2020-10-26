@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/cli",
-  "version": "0.0.14-alpha",
+  "version": "0.0.15-alpha",
   "description": "µlambda framework CLI ",
   "author": "Mario Arnautou & Arthur Brunck",
   "repository": {
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "../node_modules/.bin/jest",
-    "build": "tsc --build",
+    "build": "npx tsc --build",
     "start": "node lib/src/start.js start",
     "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
