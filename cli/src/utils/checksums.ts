@@ -28,22 +28,26 @@ export const checksums = (
       mkdirSync(hashesDir, { recursive: true });
     }
   };
-
   return {
     calculate: async (): Promise<IChecksums> => {
-      const config = getTsConfig(node.getLocation());
-      const sources = config ? config.fileNames : [];
       const hashes: IChecksums = {};
-      await Promise.all(
-        sources.map(async (src) => {
-          hashes[src] = await fromFile(src, { algorithm: 'sha256' });
-        }),
-      );
+      const calculateForNode = async (n: LernaNode): Promise<void> => {
+        const config = getTsConfig(n.getLocation());
+        const sources = config ? config.fileNames : [];
+        await Promise.all(
+          sources.map(async (src) => {
+            hashes[src] = await fromFile(src, { algorithm: 'sha256' });
+          }),
+        );
+      };
+      const dependencies = [node, ...node.getDependencies()];
+      await Promise.all(dependencies.map((n) => calculateForNode(n)));
       logger.log('checksum').debug(`Calculated checksum for ${node.getName()}`, hashes);
       return hashes;
     },
     read: async (): Promise<IChecksums> => {
       if (!existsSync(hashPath)) {
+        logger.log('checksum').debug('cannot read, path does not exist');
         return null;
       }
       return new Promise<IChecksums>((resolve, reject) => {
