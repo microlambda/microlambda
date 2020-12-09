@@ -70,7 +70,7 @@ describe('The find closest certificate method', () => {
     const result = await certificateManager.getClosestCertificate('eu-west-1', domain);
     expect(result).toEqual({ DomainName: expected });
   });
-});
+});*/
 describe('The generate certificate step', () => {
   it.todo('should check that the matching certificate is issued');
   it.todo('should throw if the matching certificate is pending validation');
@@ -81,4 +81,3 @@ describe('The generate certificate step', () => {
   it.todo('should succeed if certificate is issued within 5 minutes');
   it.todo('should throw if certificate is not issued within 5 minutes');
 });
-*/

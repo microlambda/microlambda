@@ -177,14 +177,10 @@ export class Service extends LernaNode {
       .logger.log('service')
       .debug('Env:', process.env.ENV);
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'offline'));
-    this.process = spawn(
-      getBinary('sls', this.graph.getProjectRoot(), this.getGraph().logger, this),
-      ['offline', 'start', '--port', this.port.toString(), '--region', process.env.AWS_REGION],
-      {
-        cwd: this.location,
-        env: { ...process.env, FORCE_COLOR: '2' },
-      },
-    );
+    this.process = spawn('npm', ['start', '--', '--port', this.port.toString()], {
+      cwd: this.location,
+      env: { ...process.env, FORCE_COLOR: '2' },
+    });
     this.process.stderr.on('data', (data) => {
       this.getGraph()
         .logger.log('service')

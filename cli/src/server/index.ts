@@ -5,6 +5,7 @@ import { Logger } from '../utils/logger';
 
 export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> => {
   const log = logger.log('api');
+  // TODO: Arg de mila start --port
   const port = 4545;
   const app = express();
 

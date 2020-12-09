@@ -3,36 +3,35 @@ import { join, parse } from 'path';
 import { existsSync } from 'fs';
 import { Logger } from './logger';
 import chalk from 'chalk';
+import { MilaError, MilaErrorCode } from './errors';
 
-export const getProjectRoot = (logger: Logger, path?: string): string => {
-  try {
-    if (!path) {
-      path = process.cwd();
+export const findProjectRoot = (): string => {
+  const root = parse(process.cwd()).root;
+  const recursivelyFind = (path: string): string => {
+    if (path === root) {
+      throw new MilaError(MilaErrorCode.NOT_IN_A_VALID_LERNA_PROJECT);
     }
-    logger.log('project-root').debug('Resolving project root');
-    const fileSystemRoot = parse(path).root;
-    logger.log('project-root').debug('File system root', fileSystemRoot);
-    const checkDepth = (): string => {
-      if (path === fileSystemRoot) {
-        throw Error('Filesystem root reached');
-      }
-      logger.log('project-root').debug('Check path', join(path, 'lerna.json'));
-      const hasLerna = (): boolean => existsSync(join(path, 'lerna.json'));
-      logger.log('project-root').debug('Exists', hasLerna());
-      if (hasLerna()) {
-        return path;
-      }
-      process.chdir('..');
-      return checkDepth();
-    };
-    const current = path;
-    const projectRoot = checkDepth();
-    process.chdir(current);
-    return projectRoot;
+    if (existsSync(join(path, 'lerna.json'))) {
+      return path;
+    } else {
+      return recursivelyFind(join(path, '..'));
+    }
+  };
+  return recursivelyFind(process.cwd());
+};
+
+export const getProjectRoot = (logger: Logger): string => {
+  try {
+    return findProjectRoot();
   } catch (e) {
     logger.log('project-root').error('Cannot find project root. Make sure it is a valid lerna project.');
-    console.error(chalk.red('Error: It seems you are not running this command in a valid microlambda project.'));
-    console.error(chalk.red('Please check your current directory and try again'));
+    logger.log('project-root').error(e);
+    if (e instanceof MilaError) {
+      console.error(chalk.red(e.message));
+    } else {
+      console.error(chalk.red('Cannot find project root'));
+      console.error(chalk.red(e));
+    }
     process.exit(1);
   }
 };
