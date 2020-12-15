@@ -1,28 +1,30 @@
-import { IGraphElement, LernaNode } from './';
+import { Node } from './';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package } from './';
 import { Service } from './';
 import { resolvePorts } from '../utils/resolve-ports';
 import { IConfig } from '../config/config';
-import { spawn } from 'child_process';
 import { Logger } from '../utils/logger';
 import { IPCSocketsManager } from '../ipc/socket';
 import { IOSocketManager } from '../server/socket';
 import { RecompilationScheduler } from '../utils/scheduler';
+import { Project } from '@yarnpkg/core';
+import { getName } from '../yarn/project';
 
 export const isService = (location: string): boolean => {
   return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
 };
 
-export class LernaGraph {
+export class DependenciesGraph {
   private _io: IOSocketManager;
 
   private readonly _config: IConfig;
   private readonly projectRoot: string;
   private readonly ports: { [key: string]: number };
-  private readonly nodes: LernaNode[];
+  private readonly nodes: Node[];
   private readonly _logger: Logger;
+  private readonly _project: Project;
   get logger(): Logger {
     return this._logger;
   }
@@ -30,32 +32,36 @@ export class LernaGraph {
     return this._io;
   }
 
+  get project(): Project {
+    return this._project;
+  }
+
   constructor(
     scheduler: RecompilationScheduler,
-    nodes: IGraphElement[],
-    projectRoot: string,
+    project: Project,
     config: IConfig,
     logger: Logger,
     defaultPort?: number,
   ) {
     this._logger = logger;
     this._config = config;
-    this._logger.log('graph').debug('Building graph with', nodes);
-    this.projectRoot = projectRoot;
-    const services = nodes.filter((n) => isService(n.location));
+    this._project = project;
+    this._logger.log('graph').debug('Building graph with', project);
+    this.projectRoot = project.cwd;
+    const services = project.workspaces.filter((n) => isService(n.cwd));
     this.ports = resolvePorts(services, config, this._logger, defaultPort);
-    const builtNodes: Set<LernaNode> = new Set<LernaNode>();
-    for (const node of nodes) {
-      if (!Array.from(builtNodes).some((n) => n.getName() === node.name)) {
-        this._logger.log('graph').debug('Building node', node.name);
+    const builtNodes: Set<Node> = new Set<Node>();
+    for (const node of project.workspaces) {
+      if (!Array.from(builtNodes).some((n) => n.getName() === getName(node))) {
+        this._logger.log('graph').debug('Building node', getName(node));
         this._logger.log('graph').debug(
           'Already built',
           Array.from(builtNodes).map((b) => b.getName()),
         );
-        this._logger.log('graph').debug('Is service', isService(node.location));
-        isService(node.location)
-          ? new Service(scheduler, this, node, builtNodes, nodes)
-          : new Package(scheduler, this, node, builtNodes, nodes);
+        this._logger.log('graph').debug('Is service', isService(node.cwd));
+        isService(node.cwd)
+          ? new Service(scheduler, this, node, builtNodes, project)
+          : new Package(scheduler, this, node, builtNodes, project);
       }
     }
     this.nodes = Array.from(builtNodes);
@@ -91,7 +97,7 @@ export class LernaGraph {
    * @param node
    */
   // FIXME: Enabled status should only be used to discard node excluded by config, not for partial run
-  public enableOne(node: LernaNode): void {
+  public enableOne(node: Node): void {
     node.enable();
     node
       .getDependencies()
@@ -104,7 +110,7 @@ export class LernaGraph {
    * @param node
    */
   // FIXME: Enabled status should only be used to discard node excluded by config, not for partial run
-  public disableOne(node: LernaNode): void {
+  public disableOne(node: Node): void {
     node.disable();
     node
       .getDependencies()
@@ -130,35 +136,19 @@ export class LernaGraph {
     return this.nodes.filter((n) => !n.isService()) as Package[];
   }
 
-  public getNodes(): LernaNode[] {
+  public getNodes(): Node[] {
     return this.nodes;
   }
 
-  public get(name: string): LernaNode {
+  public get(name: string): Node {
     return this.nodes.find((n) => n.getName() === name);
   }
 
-  public async bootstrap(): Promise<void> {
-    this._logger.log('graph').info('Bootstrapping dependencies');
-    const spawnedProcess = spawn('npx', ['lerna', 'bootstrap'], {
-      cwd: this.projectRoot,
-      stdio: 'ignore',
-    });
-    return new Promise<void>((resolve, reject) => {
-      spawnedProcess.on('close', (code) => {
-        if (code === 0) {
-          return resolve();
-        }
-        const err = `Process exited with status ${code}`;
-        this._logger.log('graph').error(err);
-        return reject(err);
-      });
-      spawnedProcess.on('error', (err) => {
-        this._logger.log('graph').error('Process errored: ', err.message);
-        return reject(err);
-      });
-    });
-  }
+  // TODO: Check if dependencies correctly installed
+  /**
+  public async install(): Promise<void> {
+    await this._project.install({ cache: null, report: null });
+  }*/
 
   registerIOSockets(io: IOSocketManager): void {
     this._io = io;

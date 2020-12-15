@@ -9,7 +9,7 @@ import {
 import { HostedZone } from 'aws-sdk/clients/route53';
 import { RecordsManager } from './create-cname-records';
 import { ConfigReader } from '../../config/read-config';
-import { Service } from '../../lerna';
+import { Service } from '../../graph';
 import { ILogger, Logger } from '../../utils/logger';
 import { Observable } from 'rxjs';
 

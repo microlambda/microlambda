@@ -1,9 +1,9 @@
 import express from 'express';
 import { createServer, Server } from 'http';
-import { LernaGraph, Service } from '../lerna';
 import { Logger } from '../utils/logger';
+import { DependenciesGraph, Service } from '../graph';
 
-export const startServer = (graph: LernaGraph, logger: Logger): Promise<Server> => {
+export const startServer = (graph: DependenciesGraph, logger: Logger): Promise<Server> => {
   const log = logger.log('api');
   // TODO: Arg de mila start --port
   const port = 4545;

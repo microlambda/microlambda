@@ -2,7 +2,7 @@
 import { Logger } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
-import { LernaNode } from '../lerna';
+import { Node } from '../graph';
 import { concat, merge, Observable } from 'rxjs';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
@@ -28,17 +28,17 @@ enum TestStatus {
 interface ITestEvent {
   type: 'unit' | 'functional';
   status: TestStatus;
-  node: LernaNode;
+  node: Node;
   took?: number;
 }
 
 class TestRunner {
-  private readonly _services: LernaNode[];
+  private readonly _services: Node[];
   private readonly _concurrency: number;
   private readonly _type: 'unit' | 'functional';
-  private readonly _logs: Map<LernaNode, string[]> = new Map();
+  private readonly _logs: Map<Node, string[]> = new Map();
 
-  constructor(target: LernaNode | LernaNode[], concurrency: number, type?: 'unit' | 'functional') {
+  constructor(target: Node | Node[], concurrency: number, type?: 'unit' | 'functional') {
     this._services = Array.isArray(target) ? target : [target];
     this._concurrency = concurrency;
     this._type = type;
@@ -59,7 +59,7 @@ class TestRunner {
   }
 
   runTests(): Observable<ITestEvent> {
-    const testNode = (node: LernaNode, type: 'unit' | 'functional'): Observable<ITestEvent> => {
+    const testNode = (node: Node, type: 'unit' | 'functional'): Observable<ITestEvent> => {
       return new Observable<ITestEvent>((obs) => {
         const now = Date.now();
         obs.next({ type, node, status: TestStatus.TESTING });
@@ -112,7 +112,7 @@ class TestRunner {
     return concat(unit$, functional$);
   }
 
-  printLogs(service: LernaNode): void {
+  printLogs(service: Node): void {
     const { cmd, args } = this._getCmd();
     console.log(`${chalk.bold(service.getName())} - ${chalk.gray([cmd, ...args].join(' '))}`);
     console.log('\n');
@@ -149,7 +149,7 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
     spinnerColor: 'cyan',
   });
   const runner = new TestRunner(cmd.S ? service : graph.getNodes(), concurrency, type);
-  const failures: LernaNode[] = [];
+  const failures: Node[] = [];
   const onNext = (evt: ITestEvent): void => {
     switch (evt.status) {
       case TestStatus.TESTING: {

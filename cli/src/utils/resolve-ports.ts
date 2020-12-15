@@ -1,6 +1,7 @@
-import { IGraphElement } from '../lerna';
 import { IConfig } from '../config/config';
 import { Logger } from './logger';
+import { Workspace } from '@yarnpkg/core';
+import { getName } from '../yarn/project';
 
 type PortMap = { [key: string]: number };
 
@@ -10,10 +11,11 @@ type PortMap = { [key: string]: number };
  * Otherwise start from default port 3001 and increment it.
  * @param services
  * @param config
+ * @param logger
  * @param defaultPort
  */
 export const resolvePorts = (
-  services: IGraphElement[],
+  services: Workspace[],
   config: IConfig,
   logger: Logger,
   defaultPort = 3001,
@@ -21,13 +23,13 @@ export const resolvePorts = (
   logger.log('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {
-    const name = service.name;
+    const name = getName(service);
     const inConfig = config.ports[name] != null;
     const port = inConfig ? config.ports[name] : defaultPort;
     if (!inConfig) {
       defaultPort++;
     }
-    result[service.name] = port;
+    result[name] = port;
   });
   logger.log('port').debug('Ports resolved', result);
   return result;

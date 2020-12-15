@@ -1,20 +1,19 @@
 /* eslint-disable no-console */
 import { getProjectRoot } from '../utils/get-project-root';
-import { getLernaGraph } from '../utils/get-lerna-graph';
 import { recreateLogDirectory } from '../utils/logs';
 import { RecompilationScheduler } from '../utils/scheduler';
 import { verifyBinaries } from '../utils/external-binaries';
-import { execSync } from 'child_process';
 import { startServer } from '../server';
 import { IOSocketManager } from '../server/socket';
 import { Logger } from '../utils/logger';
 import { IPCSocketsManager } from '../ipc/socket';
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
-import { LernaGraph } from '../lerna';
 import { IConfig } from '../config/config';
 import { ConfigReader } from '../config/read-config';
 import chalk from 'chalk';
+import { DependenciesGraph } from '../graph';
+import { getGraphFromYarnProject } from '../yarn/project';
 
 interface IStartOptions {
   interactive: boolean;
@@ -22,7 +21,7 @@ interface IStartOptions {
   defaultPort: number;
 }
 
-export const validateConfig = (config: ConfigReader, graph: LernaGraph): IConfig => {
+export const validateConfig = (config: ConfigReader, graph: DependenciesGraph): IConfig => {
   const validating = ora('Validating config 🔧').start();
   try {
     config.validate(graph);
@@ -53,22 +52,15 @@ export const readConfig = async (projectRoot: string, logger: Logger): Promise<C
   return reader;
 };
 
-export const parseGraph = async (
+export const getDependenciesGraph = async (
   projectRoot: string,
   scheduler: RecompilationScheduler,
   config: IConfig,
   logger: Logger,
   defaultPort?: number,
-): Promise<LernaGraph> => {
-  let lernaVersion: string;
-  try {
-    lernaVersion = execSync('npx lerna -v').toString();
-    logger.log('graph').info('Using lerna', lernaVersion);
-  } catch (e) {
-    logger.log('graph').warn('cannot determine lerna version');
-  }
-  const parsingGraph = ora('Parsing lerna dependency graph 🐉').start();
-  const graph = await getLernaGraph(projectRoot, scheduler, config, logger, defaultPort);
+): Promise<DependenciesGraph> => {
+  const parsingGraph = ora('Parsing dependency graph 🧶').start();
+  const graph = await getGraphFromYarnProject(projectRoot, scheduler, config, logger, defaultPort);
   parsingGraph.succeed();
   return graph;
 };
@@ -77,17 +69,18 @@ export const init = async (
   logger: Logger,
   scheduler: RecompilationScheduler,
   defaultPort?: number,
-): Promise<{ projectRoot: string; config: IConfig; graph: LernaGraph }> => {
+): Promise<{ projectRoot: string; config: IConfig; graph: DependenciesGraph }> => {
   const log = logger.log('start');
   const projectRoot = getProjectRoot(logger);
   log.info('Project root resolved', projectRoot);
   const config = await readConfig(projectRoot, logger);
-  const graph = await parseGraph(projectRoot, scheduler, config.config, logger, defaultPort);
+  const graph = await getDependenciesGraph(projectRoot, scheduler, config.config, logger, defaultPort);
   validateConfig(config, graph);
   return { projectRoot, config: config.config, graph };
 };
 
-export const lernaBootstrap = async (graph: LernaGraph, logger: Logger): Promise<void> => {
+// TODO: Install dependencies just in case
+/*export const yarnInstall = async (graph: DependenciesGraph, logger: Logger): Promise<void> => {
   const installing = ora('Installing dependencies 📦').start();
   await graph.bootstrap().catch((e) => {
     const message =
@@ -100,7 +93,7 @@ export const lernaBootstrap = async (graph: LernaGraph, logger: Logger): Promise
   });
   installing.text = 'Dependencies installed 📦';
   installing.succeed();
-};
+};*/
 
 export const start = async (
   scheduler: RecompilationScheduler,
@@ -111,7 +104,7 @@ export const start = async (
 
   const { projectRoot, config, graph } = await init(logger, scheduler, options.defaultPort);
 
-  await lernaBootstrap(graph, logger);
+  // await yarnInstall(graph, logger);
 
   const startingServer = ora('Starting server').start();
   const server = await startServer(graph, logger);

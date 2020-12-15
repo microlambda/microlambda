@@ -4,17 +4,24 @@
     "outDir": "./lib",
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "target": "es6",
-    "lib": ["es6", "esnext"],
+    "lib": ["es6", "esnext", "esnext.asynciterable"],
     "noImplicitAny": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "sourceMap": true,
-    "jsx": "react"
+    "jsx": "react",
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "noImplicitReturns": true,
+    "strict": false,
+    "target": "ES2018",
+    "declaration": true,
+    "importHelpers": true,
+    "isolatedModules": false,
+    "skipLibCheck": true
   },
   "include": ["./src"]
 }

@@ -1,9 +1,14 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
-import { LernaNode } from '../lerna';
+import { Node } from '../graph';
 import { CompilationMode } from '../config/config';
 import { Logger } from './logger';
+
+
+/*
+FIXME: The idea here would be to use npm local scripts start, test, deploy instead
+ */
 
 type Cmd = 'tsc' | 'sls' | 'lerna';
 
@@ -28,7 +33,7 @@ const getVersion = (binary: string): string => {
  * @param projectRoot
  * @param node
  */
-export const getBinary = (cmd: Cmd, projectRoot: string, logger: Logger, node?: LernaNode): string => {
+export const getBinary = (cmd: Cmd, projectRoot: string, logger: Logger, node?: Node): string => {
   const cmdPath = ['node_modules', '.bin', cmd];
   const projectBinary = join(projectRoot, ...cmdPath);
   if (!node) {

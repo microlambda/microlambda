@@ -1,12 +1,12 @@
 import { IPC } from 'node-ipc';
-import { LernaGraph, Service } from '../lerna';
 import { Socket } from 'net';
-import { TranspilingStatus } from '../lerna/enums/compilation.status';
-import { ServiceStatus } from '../lerna/enums/service.status';
 import { Observable, Subject } from 'rxjs';
 import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../utils/scheduler';
 import { v4 as uuid } from 'uuid';
 import { Logger } from '../utils/logger';
+import { TranspilingStatus } from '../graph/enums/compilation.status';
+import { ServiceStatus } from '../graph/enums/service.status';
+import { DependenciesGraph, Service } from '../graph';
 
 interface IGraphStatus {
   name: string;
@@ -26,13 +26,13 @@ type ErrorEvent = 'errorStopping' | 'errorStarting' | 'errorRestarting';
 
 export class IPCSocketsManager {
   private _ipc = new IPC();
-  private _graph: LernaGraph;
+  private _graph: DependenciesGraph;
   private readonly _id: string;
   private _sockets: Socket[] = [];
   private readonly _scheduler: RecompilationScheduler;
   private readonly _logger: Logger;
 
-  constructor(projectRoot: string, scheduler: RecompilationScheduler, logger: Logger, graph?: LernaGraph) {
+  constructor(projectRoot: string, scheduler: RecompilationScheduler, logger: Logger, graph?: DependenciesGraph) {
     this._logger = logger;
     this._logger.log('ipc').debug('Creating socket', projectRoot);
     this._ipc.config.silent = !process.env.MILA_DEBUG;

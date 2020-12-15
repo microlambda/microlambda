@@ -1,9 +1,9 @@
 import { concat, from, merge, Observable, Subject } from 'rxjs';
-import { LernaGraph, LernaNode, Service } from '../lerna';
 import { concatAll, debounceTime, filter, mergeMap, takeUntil } from 'rxjs/operators';
-import { ServiceStatus } from '../lerna/enums/service.status';
 import { ILogger, Logger } from './logger';
 import { getDefaultThreads } from './platform';
+import { DependenciesGraph, Node, Service } from '../graph';
+import { ServiceStatus } from '../graph/enums/service.status';
 
 enum SchedulerStatus {
   READY,
@@ -55,23 +55,23 @@ export enum RecompilationMode {
 
 export interface IRecompilationEvent {
   type: RecompilationEventType;
-  node: LernaNode;
+  node: Node;
   took?: number;
   megabytes?: number;
 }
 
 export interface IRecompilationError {
   type: RecompilationErrorType;
-  node: LernaNode;
+  node: Node;
   logs: string[];
 }
 
 export class RecompilationScheduler {
-  private _graph: LernaGraph;
+  private _graph: DependenciesGraph;
   private _jobs: {
     stop: Service[];
-    transpile: LernaNode[];
-    typeCheck: { node: LernaNode; force: boolean; throws: boolean }[];
+    transpile: Node[];
+    typeCheck: { node: Node; force: boolean; throws: boolean }[];
     start: Service[];
     package: { service: Service; level: number }[];
   };
@@ -79,7 +79,7 @@ export class RecompilationScheduler {
   private _recompilation: RecompilationStatus;
   private _abort$: Subject<void> = new Subject<void>();
   private _filesChanged$: Subject<void> = new Subject<void>();
-  private _changes: Set<LernaNode>;
+  private _changes: Set<Node>;
   private _debounce: number;
   private _logger: ILogger;
   private _concurrency: number;
@@ -93,7 +93,7 @@ export class RecompilationScheduler {
     this._concurrency = getDefaultThreads();
   }
 
-  public setGraph(graph: LernaGraph): void {
+  public setGraph(graph: DependenciesGraph): void {
     this._graph = graph;
   }
 
@@ -180,7 +180,7 @@ export class RecompilationScheduler {
   /**
    * Compile and start the whole project
    */
-  public async startProject(graph: LernaGraph, compile = true): Promise<void> {
+  public async startProject(graph: DependenciesGraph, compile = true): Promise<void> {
     this._logger.debug('Starting project');
     if (compile) {
       // Compile all enabled nodes from leaves to roots
@@ -222,7 +222,7 @@ export class RecompilationScheduler {
     }
   }
 
-  public stopProject(graph: LernaGraph): Promise<void> {
+  public stopProject(graph: DependenciesGraph): Promise<void> {
     this._reset();
     graph
       .getServices()
@@ -231,7 +231,7 @@ export class RecompilationScheduler {
     return this._execPromise();
   }
 
-  public fileChanged(node: LernaNode): void {
+  public fileChanged(node: Node): void {
     this._changes.add(node);
     this._filesChanged$.next();
   }
@@ -255,11 +255,12 @@ export class RecompilationScheduler {
           );
           const impactedServices: Set<Service> = new Set<Service>();
           for (const node of this._changes) {
-            const isRunningService = (n: LernaNode): boolean => {
+            const isRunningService = (n: Node): boolean => {
               if (n.isService()) {
                 const s = n as Service;
                 return s.isRunning();
               }
+              return false;
             };
             if (isRunningService(node)) {
               impactedServices.add(node as Service);
@@ -286,7 +287,7 @@ export class RecompilationScheduler {
       });
   }
 
-  recompileSafe(node: LernaNode, force = false): void {
+  recompileSafe(node: Node, force = false): void {
     this._compile([node], RecompilationMode.FAST, force);
   }
 
@@ -298,7 +299,7 @@ export class RecompilationScheduler {
    * @param throws: whether type check should throws and stop jobs execution
    * @private
    */
-  private _compile(target: LernaNode | LernaNode[], mode = RecompilationMode.FAST, force = false, throws = true): void {
+  private _compile(target: Node | Node[], mode = RecompilationMode.FAST, force = false, throws = true): void {
     const toCompile = Array.isArray(target) ? target : [target];
     this._logger.debug(
       'Requested to compile nodes',
@@ -311,7 +312,7 @@ export class RecompilationScheduler {
       'Root nodes',
       roots.map((n) => n.getName()),
     );
-    const recursivelyCompile = (nodes: LernaNode[], requested: Set<LernaNode>, depth = 0): void => {
+    const recursivelyCompile = (nodes: Node[], requested: Set<Node>, depth = 0): void => {
       this._logger.debug(
         '-'.repeat(depth),
         'Recursively compile',
@@ -377,7 +378,7 @@ export class RecompilationScheduler {
     };
     this._recompilation = RecompilationStatus.READY;
     this._status = SchedulerStatus.READY;
-    this._changes = new Set<LernaNode>();
+    this._changes = new Set<Node>();
   }
 
   private _requestStop(service: Service): void {
@@ -390,7 +391,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _requestTypeCheck(node: LernaNode, force: boolean, throws: boolean): void {
+  private _requestTypeCheck(node: Node, force: boolean, throws: boolean): void {
     this._logger.debug(`Request to add typeCheck job`, node.getName());
     const inQueue = this._jobs.typeCheck.some((n) => n.node.getName() === node.getName());
     this._logger.debug('Already in typeCheck queue', inQueue);
@@ -400,7 +401,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _requestTranspile(node: LernaNode): void {
+  private _requestTranspile(node: Node): void {
     this._logger.debug(`Request to add transpile job`, node.getName());
     const inQueue = this._alreadyQueued(node, 'transpile');
     this._logger.debug('Already in transpile queue', inQueue);
@@ -430,7 +431,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _alreadyQueued(node: LernaNode, queue: 'transpile' | 'start' | 'stop'): boolean {
+  private _alreadyQueued(node: Node, queue: 'transpile' | 'start' | 'stop'): boolean {
     return this._jobs[queue].some((n) => n.getName() === node.getName());
   }
 
@@ -573,7 +574,9 @@ export class RecompilationScheduler {
       return new Observable<IRecompilationEvent>((obs) => {
         obs.next({ node: job.service, type: RecompilationEventType.PACKAGE_IN_PROGRESS });
         const now = Date.now();
-        job.service.package(job.level).subscribe(
+        let i = 1;
+        const isLast = i === packageJobs$.length;
+        job.service.package(isLast, job.level).subscribe(
           (output) => {
             this._logger.debug('Service packaged', job.service.getName());
             obs.next({
@@ -582,6 +585,7 @@ export class RecompilationScheduler {
               took: Date.now() - now,
               megabytes: output.megabytes,
             });
+            i++;
             return obs.complete();
           },
           (err) => {
@@ -738,8 +742,8 @@ export class RecompilationScheduler {
         allDone();
         return obs.complete();
       }
-      from(packageJobs$)
-        .pipe(mergeMap((packageJob$) => packageJob$, this._concurrency))
+      concat(typeCheckJobs$)
+        .pipe(concatAll())
         .subscribe(
           (evt) => {
             obs.next(evt);
@@ -781,7 +785,7 @@ export class RecompilationScheduler {
     return recompilationProcess$.pipe(filter((evt) => !!evt));
   }
 
-  buildOne(service: LernaNode, onlySelf: boolean, force: boolean): Observable<IRecompilationEvent> {
+  buildOne(service: Node, onlySelf: boolean, force: boolean): Observable<IRecompilationEvent> {
     if (onlySelf) {
       this._requestTypeCheck(service, force, true);
     } else {
@@ -790,7 +794,7 @@ export class RecompilationScheduler {
     return this._exec();
   }
 
-  buildAll(graph: LernaGraph, onlySelf: boolean, force: boolean): Observable<IRecompilationEvent> {
+  buildAll(graph: DependenciesGraph, onlySelf: boolean, force: boolean): Observable<IRecompilationEvent> {
     if (onlySelf) {
       graph.getServices().forEach((s) => this._requestTypeCheck(s, force, true));
     } else {
@@ -804,7 +808,7 @@ export class RecompilationScheduler {
     return this._exec();
   }
 
-  packageAll(graph: LernaGraph, level = 4): Observable<IRecompilationEvent> {
+  packageAll(graph: DependenciesGraph, level = 4): Observable<IRecompilationEvent> {
     graph.getServices().forEach((s) => this._requestPackage(s, level));
     return this._exec();
   }

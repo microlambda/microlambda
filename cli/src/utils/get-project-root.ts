@@ -11,7 +11,7 @@ export const findProjectRoot = (): string => {
     if (path === root) {
       throw new MilaError(MilaErrorCode.NOT_IN_A_VALID_LERNA_PROJECT);
     }
-    if (existsSync(join(path, 'lerna.json'))) {
+    if (existsSync(join(path, '.microlambdarc'))) {
       return path;
     } else {
       return recursivelyFind(join(path, '..'));

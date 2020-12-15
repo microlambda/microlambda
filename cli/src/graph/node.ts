@@ -1,4 +1,4 @@
-import { isService, LernaGraph } from './lerna-graph';
+import { isService, DependenciesGraph } from './dependencies-graph';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
@@ -11,27 +11,20 @@ import { IPCSocketsManager } from '../ipc/socket';
 import { getBinary } from '../utils/external-binaries';
 import { compileFiles } from '../utils/typescript';
 import { checksums, IChecksums } from '../utils/checksums';
-import { actions } from '../ui';
 import { FSWatcher, watch } from 'chokidar';
-
-export interface IGraphElement {
-  name: string;
-  version: string;
-  private: boolean;
-  location: string;
-  dependencies: string[];
-}
+import { Project, Workspace } from '@yarnpkg/core';
+import { getName } from '../yarn/project';
 
 enum NodeStatus {
   DISABLED,
   ENABLED,
 }
 
-export abstract class LernaNode {
+export abstract class Node {
   protected readonly name: string;
   protected readonly location: string;
-  protected readonly graph: LernaGraph;
-  protected readonly dependencies: LernaNode[];
+  protected readonly graph: DependenciesGraph;
+  protected readonly dependencies: Node[];
 
   private readonly version: string;
   private readonly private: boolean;
@@ -54,43 +47,45 @@ export abstract class LernaNode {
 
   public constructor(
     scheduler: RecompilationScheduler,
-    graph: LernaGraph,
-    node: IGraphElement,
-    nodes: Set<LernaNode>,
-    elements: IGraphElement[],
+    graph: DependenciesGraph,
+    node: Workspace,
+    nodes: Set<Node>,
+    project: Project,
   ) {
-    graph.logger.log('node').debug('Building node', node.name);
+    const logger = graph.logger.log('node');
+    logger.debug('Building node', getName(node));
     this.graph = graph;
-    this.name = node.name;
-    this.version = node.version;
-    this.private = node.private;
-    this.location = node.location;
+    this.name = getName(node);
+    this.version = node.manifest.version;
+    this.private = node.manifest.private;
+    this.location = node.cwd;
     this.nodeStatus = NodeStatus.DISABLED;
     this.transpilingStatus = TranspilingStatus.NOT_TRANSPILED;
     this.typeCheckStatus = TypeCheckStatus.NOT_CHECKED;
     this._scheduler = scheduler;
-    this.dependencies = node.dependencies.map((d) => {
-      const dep = Array.from(nodes).find((n) => n.name === d);
-      if (dep) {
-        this.getGraph()
-          .logger.log('node')
-          .debug('Dependency is already built', d);
-        return dep;
+    const workspaces = project.workspaces;
+    const dependentWorkspaces: Node[] = [];
+    for (const descriptor of node.dependencies.values()) {
+      const name = getName(descriptor);
+      const alreadyBuilt = Array.from(nodes).find((n) => n.name === name);
+      if (alreadyBuilt) {
+        logger.debug('Dependency is already built', alreadyBuilt);
+        dependentWorkspaces.push(alreadyBuilt);
+        continue;
       }
-      this.getGraph()
-        .logger.log('node')
-        .debug('Building dependency', d);
-      const elt = elements.find((e) => e.name === d);
-      this.getGraph()
-        .logger.log('node')
-        .debug('Is service', { name: d, result: isService(elt.location) });
-      return isService(elt.location)
-        ? new Service(scheduler, graph, elt, nodes, elements)
-        : new Package(scheduler, graph, elt, nodes, elements);
-    });
-    this.getGraph()
-      .logger.log('node')
-      .debug('Node built', this.name);
+      logger.debug('Building dependency', descriptor);
+      const workspace = workspaces.find((w) => getName(w) === name);
+      if (!workspace) {
+        logger.debug('is external dependency', name);
+        continue;
+      }
+      logger.debug('Is service', { name, result: isService(workspace.cwd) });
+      dependentWorkspaces.push(isService(workspace.cwd)
+        ? new Service(scheduler, graph, workspace, nodes, project)
+        : new Package(scheduler, graph, workspace, nodes, project))
+    }
+    this.dependencies = dependentWorkspaces;
+    logger.debug('Node built', this.name);
     nodes.add(this);
   }
 
@@ -137,11 +132,11 @@ export abstract class LernaNode {
     return this.typeCheckStatus;
   }
 
-  public getChildren(): LernaNode[] {
+  public getChildren(): Node[] {
     return this.dependencies;
   }
 
-  public getGraph(): LernaGraph {
+  public getGraph(): DependenciesGraph {
     return this.graph;
   }
 
@@ -149,7 +144,7 @@ export abstract class LernaNode {
     return this.version;
   }
 
-  public getChild(name: string): LernaNode {
+  public getChild(name: string): Node {
     return this.dependencies.find((d) => d.name === name);
   }
 
@@ -164,7 +159,6 @@ export abstract class LernaNode {
     if (this.getGraph().io) {
       this.getGraph().io.transpilingStatusUpdated(this, this.transpilingStatus);
     }
-    actions.updateCompilationStatus(this);
   }
 
   public setTypeCheckingStatus(status: TypeCheckStatus): void {
@@ -185,13 +179,13 @@ export abstract class LernaNode {
     return this.location;
   }
 
-  public getDependencies(): LernaNode[] {
-    const deps: LernaNode[] = [];
+  public getDependencies(): Node[] {
+    const deps: Node[] = [];
     this._getDependencies(deps);
     return deps;
   }
 
-  private _getDependencies(deps: LernaNode[]): void {
+  private _getDependencies(deps: Node[]): void {
     for (const dep of this.dependencies) {
       deps.push(dep);
       dep._getDependencies(deps);
@@ -201,7 +195,7 @@ export abstract class LernaNode {
   /**
    * Get all dependents nodes.
    */
-  public getDependent(): LernaNode[] {
+  public getDependent(): Node[] {
     const dependent = this.graph.getNodes().filter((n) =>
       n
         .getDependencies()
@@ -220,12 +214,12 @@ export abstract class LernaNode {
   /**
    * Get the direct parents in dependency tree.
    */
-  public getParents(): LernaNode[] {
+  public getParents(): Node[] {
     return this.graph.getNodes().filter((n) => n.dependencies.some((d) => d.name === this.name));
   }
 
-  public transpile(): Observable<LernaNode> {
-    return new Observable<LernaNode>((observer) => {
+  public transpile(): Observable<Node> {
+    return new Observable<Node>((observer) => {
       switch (this.transpilingStatus) {
         case TranspilingStatus.TRANSPILED:
         case TranspilingStatus.ERROR_TRANSPILING:
@@ -257,8 +251,8 @@ export abstract class LernaNode {
     });
   }
 
-  public performTypeChecking(force = false): Observable<LernaNode> {
-    return new Observable<LernaNode>((observer) => {
+  public performTypeChecking(force = false): Observable<Node> {
+    return new Observable<Node>((observer) => {
       switch (this.typeCheckStatus) {
         case TypeCheckStatus.SUCCESS:
         case TypeCheckStatus.ERROR:
@@ -394,8 +388,8 @@ export abstract class LernaNode {
     }
   }
 
-  private _watchTypeChecking(): Observable<LernaNode> {
-    return new Observable<LernaNode>((observer) => {
+  private _watchTypeChecking(): Observable<Node> {
+    return new Observable<Node>((observer) => {
       this.typeCheckProcess.on('close', (code) => {
         this.getGraph()
           .logger.log('node')

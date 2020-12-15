@@ -9,7 +9,7 @@ import chalk from 'chalk';
 import { prompt } from 'inquirer';
 import { getAccountIAM } from '../utils/aws-account';
 import { backupYaml, reformatYaml, restoreYaml } from '../utils/yaml';
-import { Service } from '../lerna';
+import { Service } from '../graph';
 import { concat, merge, Observable } from 'rxjs';
 import { RecordsManager } from '../deploy/utils/create-cname-records';
 

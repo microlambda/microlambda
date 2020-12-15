@@ -1,4 +1,4 @@
-import { IGraphElement, LernaGraph, LernaNode } from './';
+import { DependenciesGraph, Node } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../utils/logs';
@@ -7,10 +7,11 @@ import { Observable } from 'rxjs';
 import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
 import { getBinary } from '../utils/external-binaries';
-import { actions } from '../ui';
 import { FSWatcher, watch } from 'chokidar';
 import { RecompilationScheduler } from '../utils/scheduler';
 import { Packager } from '../package/packagr';
+import { Project, Workspace } from '@yarnpkg/core';
+import { getName } from '../yarn/project';
 
 interface IServiceLogs {
   offline: string[];
@@ -18,7 +19,7 @@ interface IServiceLogs {
   deploy: string[];
 }
 
-export class Service extends LernaNode {
+export class Service extends Node {
   private status: ServiceStatus;
   private readonly _port: number;
   private process: ChildProcess;
@@ -28,14 +29,14 @@ export class Service extends LernaNode {
 
   constructor(
     scheduler: RecompilationScheduler,
-    graph: LernaGraph,
-    node: IGraphElement,
-    nodes: Set<LernaNode>,
-    elements: IGraphElement[],
+    graph: DependenciesGraph,
+    workspace: Workspace,
+    nodes: Set<Node>,
+    project: Project,
   ) {
-    super(scheduler, graph, node, nodes, elements);
+    super(scheduler, graph, workspace, nodes, project);
     this.status = ServiceStatus.STOPPED;
-    this._port = graph.getPort(node.name);
+    this._port = graph.getPort(getName(workspace));
     this._logs = {
       offline: [],
       createDomain: [],
@@ -241,18 +242,17 @@ export class Service extends LernaNode {
     this.status = status;
     this._ipc.graphUpdated();
     this.getGraph().io.statusUpdated(this, this.status);
-    actions.updateServiceStatus(this);
   }
 
   isRunning(): boolean {
     return this.status === ServiceStatus.RUNNING;
   }
 
-  package(level = 4): Observable<{ service: Service; megabytes: number }> {
+  package(restore = true, level = 4): Observable<{ service: Service; megabytes: number }> {
     return new Observable<{ service: Service; megabytes: number }>((obs) => {
       const packagr = new Packager(this.graph, this, this.graph.logger);
       packagr
-        .generateZip(this, level)
+        .generateZip(this, level, restore)
         .then((megabytes) => {
           obs.next({ service: this, megabytes });
           obs.complete();

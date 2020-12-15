@@ -1,18 +1,15 @@
-import { Service } from '../lerna';
-import { getLernaGraph } from '../utils/get-lerna-graph';
-import { interactive } from '../utils/interactive';
-import { tailLogs } from '../utils/logs';
 import { Logger } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
-import { init } from './start';
 
+// TODO: Fix this properly
 export const logs = async (cmd: { S: string }, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
-  const { projectRoot, config } = await init(logger, scheduler);
+  logger.log('log').debug({ cmd, scheduler });
+  /*const { projectRoot, config } = await init(logger, scheduler);
   let services: Service[] = [];
   logger.log('logs').debug(config);
 
   if (!cmd.S) {
-    const graph = await getLernaGraph(projectRoot, scheduler, config, logger, 3001);
+    const graph = await getGraphFromYarnProject(projectRoot, scheduler, config, logger, 3001);
 
     await graph.bootstrap().catch((e) => {
       logger.log('logs').error(e);
@@ -38,5 +35,5 @@ export const logs = async (cmd: { S: string }, logger: Logger, scheduler: Recomp
     servicesName.forEach((name: string) => tailLogs(name, projectRoot, logger));
   } else {
     tailLogs(cmd.S, projectRoot, logger);
-  }
+  }*/
 };

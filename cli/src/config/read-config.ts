@@ -1,11 +1,11 @@
 import Joi from '@hapi/joi';
-import { LernaGraph, Service } from '../lerna';
 import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
 import { ILogger, Logger } from '../utils/logger';
 import { sync } from 'glob';
 import { join } from 'path';
+import { DependenciesGraph, Service } from '../graph';
 
 type Step = Map<Region, Set<Microservice>>;
 type Region = string;
@@ -53,7 +53,7 @@ export class ConfigReader {
     return this._config;
   }
 
-  public validate(graph: LernaGraph): IConfig {
+  public validate(graph: DependenciesGraph): IConfig {
     this._services = graph.getServices();
     this._buildConfigSchema();
     if (!this._config) {

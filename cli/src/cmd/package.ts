@@ -10,7 +10,7 @@ import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import { getDefaultThreads, getThreads } from '../utils/platform';
-import { LernaGraph, LernaNode, Service } from '../lerna';
+import { DependenciesGraph, Node, Service } from '../graph';
 
 export interface IPackageCmd extends IBuildCmd {
   C: number;
@@ -22,7 +22,7 @@ export const beforePackage = async (
   cmd: IPackageCmd,
   scheduler: RecompilationScheduler,
   logger: Logger,
-): Promise<{ projectRoot: string; concurrency: number; graph: LernaGraph; service: LernaNode }> => {
+): Promise<{ projectRoot: string; concurrency: number; graph: DependenciesGraph; service: Node }> => {
   const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
   const { projectRoot, graph, service } = await beforeBuild(cmd, scheduler, logger);
   const target = cmd.S ? service : graph;
@@ -40,7 +40,7 @@ export const beforePackage = async (
 export const packageService = (
   scheduler: RecompilationScheduler,
   concurrency: number,
-  target: Service | LernaGraph,
+  target: Service | DependenciesGraph,
 ): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const spinnies = new Spinnies({

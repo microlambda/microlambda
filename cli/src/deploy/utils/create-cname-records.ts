@@ -3,7 +3,7 @@ import { Change, HostedZone, ListHostedZonesResponse, ResourceRecordSet } from '
 import { inspect } from 'util';
 import { DomainName } from 'aws-sdk/clients/apigateway';
 import { ConfigReader } from '../../config/read-config';
-import { Service } from '../../lerna';
+import { Service } from '../../graph';
 import { getServiceName } from '../../utils/yaml';
 import { ILogger, Logger } from '../../utils/logger';
 

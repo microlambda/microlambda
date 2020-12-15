@@ -1,4 +1,4 @@
-import { LernaNode } from '../lerna';
+import { Node } from '../graph';
 import { existsSync, mkdirSync, readFile, writeFile } from 'fs';
 import { join } from 'path';
 import { getTsConfig } from './typescript';
@@ -10,7 +10,7 @@ export interface IChecksums {
 }
 
 export const checksums = (
-  node: LernaNode,
+  node: Node,
   logger: Logger,
 ): {
   calculate: () => Promise<IChecksums>;
@@ -31,7 +31,7 @@ export const checksums = (
   return {
     calculate: async (): Promise<IChecksums> => {
       const hashes: IChecksums = {};
-      const calculateForNode = async (n: LernaNode): Promise<void> => {
+      const calculateForNode = async (n: Node): Promise<void> => {
         const config = getTsConfig(n.getLocation());
         const sources = config ? config.fileNames : [];
         await Promise.all(

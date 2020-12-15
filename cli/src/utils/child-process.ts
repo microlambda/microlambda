@@ -3,6 +3,7 @@ import { Logger } from './logger';
 
 type Verbosity = 'silly' | 'debug' | 'info' | 'warn' | 'error';
 
+// TODO: Replace with execa
 export const execCmd = async (
   cmd: string,
   args: ReadonlyArray<string> = null,

@@ -6,10 +6,10 @@ import {
   RecompilationEventType,
   RecompilationScheduler,
 } from '../utils/scheduler';
-import { init, lernaBootstrap } from './start';
+import { init } from './start';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
-import { LernaGraph, LernaNode, Service } from '../lerna';
+import { DependenciesGraph, Node, Service } from '../graph';
 
 export interface IBuildCmd {
   S?: string;
@@ -22,7 +22,7 @@ export const beforeBuild = async (
   scheduler: RecompilationScheduler,
   logger: Logger,
   acceptPackages = false,
-): Promise<{ projectRoot: string; graph: LernaGraph; service: LernaNode }> => {
+): Promise<{ projectRoot: string; graph: DependenciesGraph; service: Node }> => {
   const { graph, projectRoot } = await init(logger, scheduler);
   graph.enableAll();
   const nodes = acceptPackages ? graph.getNodes() : graph.getServices();
@@ -31,15 +31,16 @@ export const beforeBuild = async (
     console.error(chalk.red('Unknown service', cmd.S));
     process.exit(1);
   }
-  if (cmd.bootstrap) {
+  // FIXME: Remove --no-bootstrap, put --re-install instead
+  /*if (cmd.bootstrap) {
     await lernaBootstrap(graph, logger);
-  }
+  }*/
   return { projectRoot, graph, service };
 };
 
 export const typeCheck = async (
   scheduler: RecompilationScheduler,
-  target: LernaGraph | LernaNode,
+  target: DependenciesGraph | Node,
   onlySelf: boolean,
   force: boolean,
 ): Promise<void> => {
@@ -70,7 +71,7 @@ export const typeCheck = async (
     const onComplete = (): void => {
       return resolve();
     };
-    if (target instanceof LernaNode) {
+    if (target instanceof Node) {
       scheduler.buildOne(target, onlySelf, force).subscribe(onNext, onError, onComplete);
     } else {
       scheduler.buildAll(target, onlySelf, force).subscribe(onNext, onError, onComplete);

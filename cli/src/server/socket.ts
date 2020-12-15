@@ -1,19 +1,19 @@
 import ws from 'socket.io';
 import { Server } from 'http';
-import { LernaGraph, LernaNode, Service } from '../lerna';
-import { ServiceStatus } from '../lerna/enums/service.status';
-import { TypeCheckStatus, TranspilingStatus } from '../lerna/enums/compilation.status';
 import { IEventLog, Logger } from '../utils/logger';
 import { RecompilationScheduler } from '../utils/scheduler';
+import { DependenciesGraph, Node, Service } from '../graph';
+import { ServiceStatus } from '../graph/enums/service.status';
+import { TranspilingStatus, TypeCheckStatus } from '../graph/enums/compilation.status';
 
 export class IOSocketManager {
   private _io: ws.Server;
   private _serviceToListen: string;
   private _scheduler: RecompilationScheduler;
   private _logger: Logger;
-  private _graph: LernaGraph;
+  private _graph: DependenciesGraph;
 
-  constructor(server: Server, scheduler: RecompilationScheduler, logger: Logger, graph: LernaGraph) {
+  constructor(server: Server, scheduler: RecompilationScheduler, logger: Logger, graph: DependenciesGraph) {
     this._scheduler = scheduler;
     this._logger = logger;
     this._io = ws(server);
@@ -71,11 +71,11 @@ export class IOSocketManager {
     this._io.emit('node.status.updated', { node: node.getName(), status });
   }
 
-  transpilingStatusUpdated(node: LernaNode, status: TranspilingStatus): void {
+  transpilingStatusUpdated(node: Node, status: TranspilingStatus): void {
     this._io.emit('transpiling.status.updated', { node: node.getName(), status });
   }
 
-  typeCheckStatusUpdated(node: LernaNode, status: TypeCheckStatus): void {
+  typeCheckStatusUpdated(node: Node, status: TypeCheckStatus): void {
     this._io.emit('type.checking.status.updated', { node: node.getName(), status });
   }
 

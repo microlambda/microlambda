@@ -7,7 +7,7 @@
  *   users/
  *     john/
  *       project-1/
- *          lerna.json
+ *          .microlambdarc
  *           packages/
  *              utils/
  *                src/
