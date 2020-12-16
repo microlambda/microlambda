@@ -742,7 +742,7 @@ export class RecompilationScheduler {
         allDone();
         return obs.complete();
       }
-      concat(typeCheckJobs$)
+      concat(packageJobs$)
         .pipe(concatAll())
         .subscribe(
           (evt) => {

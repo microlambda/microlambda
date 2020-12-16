@@ -65,7 +65,7 @@ export abstract class Node {
     this._scheduler = scheduler;
     const workspaces = project.workspaces;
     const dependentWorkspaces: Node[] = [];
-    for (const descriptor of node.dependencies.values()) {
+    for (const descriptor of node.manifest.dependencies.values()) {
       const name = getName(descriptor);
       const alreadyBuilt = Array.from(nodes).find((n) => n.name === name);
       if (alreadyBuilt) {
@@ -80,9 +80,11 @@ export abstract class Node {
         continue;
       }
       logger.debug('Is service', { name, result: isService(workspace.cwd) });
-      dependentWorkspaces.push(isService(workspace.cwd)
-        ? new Service(scheduler, graph, workspace, nodes, project)
-        : new Package(scheduler, graph, workspace, nodes, project))
+      dependentWorkspaces.push(
+        isService(workspace.cwd)
+          ? new Service(scheduler, graph, workspace, nodes, project)
+          : new Package(scheduler, graph, workspace, nodes, project),
+      );
     }
     this.dependencies = dependentWorkspaces;
     logger.debug('Node built', this.name);

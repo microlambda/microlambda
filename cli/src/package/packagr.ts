@@ -59,13 +59,20 @@ export class Packager {
     this._tree.set(serviceName, tree);
   }
 
-  public async bundle(restore = true, level = 4): Promise<void> {
-    await Promise.all(this._services.map((service) => this.generateZip(service, level, restore)));
+  public async bundle(restore = true, level = 4, stdio: 'ignore' | 'inherit' = 'ignore'): Promise<void> {
+    await Promise.all(this._services.map((service) => this.generateZip(service, level, restore, stdio)));
   }
 
-  public async generateZip(service: Service, level: number, restore: boolean): Promise<number> {
-    this._logger.info(`${chalk.bold(service.getName())}: re-installing only workspace production dependencies with yarn`);
-    await command(`yarn workspaces focus ${service.getName()} --production`, { stdio: 'inherit' });
+  public async generateZip(
+    service: Service,
+    level: number,
+    restore: boolean,
+    stdio: 'ignore' | 'inherit',
+  ): Promise<number> {
+    this._logger.info(
+      `${chalk.bold(service.getName())}: re-installing only workspace production dependencies with yarn`,
+    );
+    await command(`yarn workspaces focus ${service.getName()} --production`, { stdio });
     const projectRoot = this._graph.project.cwd;
 
     const packageDirectory = join(service.getLocation(), '.package');
@@ -134,7 +141,7 @@ export class Packager {
       archive.finalize();
     });
     if (restore) {
-      await command('yarn install', { stdio: 'inherit'});
+      await command('yarn install', { stdio });
     }
     return megabytes;
   }

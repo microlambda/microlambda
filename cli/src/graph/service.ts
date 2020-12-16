@@ -252,7 +252,7 @@ export class Service extends Node {
     return new Observable<{ service: Service; megabytes: number }>((obs) => {
       const packagr = new Packager(this.graph, this, this.graph.logger);
       packagr
-        .generateZip(this, level, restore)
+        .generateZip(this, level, restore, 'ignore')
         .then((megabytes) => {
           obs.next({ service: this, megabytes });
           obs.complete();
