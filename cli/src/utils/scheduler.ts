@@ -328,11 +328,10 @@ export class RecompilationScheduler {
           const hasDescendantInRequest = d.getDependent().some((descendant) => toCompile.includes(descendant));
           this._logger.debug('should compile ?', {
             name: d.getName(),
-            enabled: d.isEnabled(),
             inRequest,
             hasDescendantInRequest,
           });
-          return d.isEnabled() && (hasDescendantInRequest || inRequest);
+          return hasDescendantInRequest || inRequest;
         });
         this._logger.debug(
           '-'.repeat(depth),

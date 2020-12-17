@@ -51,6 +51,7 @@ export class DependenciesGraph {
     const services = project.workspaces.filter((n) => isService(n.cwd));
     this.ports = resolvePorts(services, config, this._logger, defaultPort);
     const builtNodes: Set<Node> = new Set<Node>();
+    this._logger.log('graph').debug(project.workspaces.map((w) => getName(w)));
     for (const node of project.workspaces) {
       if (!Array.from(builtNodes).some((n) => n.getName() === getName(node))) {
         this._logger.log('graph').debug('Building node', getName(node));
