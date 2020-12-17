@@ -65,7 +65,9 @@ export abstract class Node {
     this._scheduler = scheduler;
     const workspaces = project.workspaces;
     const dependentWorkspaces: Node[] = [];
-    for (const descriptor of node.manifest.dependencies.values()) {
+    const dependencies = Array.from(node.manifest.dependencies.values());
+    const devDependencies = Array.from(node.manifest.devDependencies.values());
+    for (const descriptor of dependencies.concat(devDependencies)) {
       const name = getName(descriptor);
       const alreadyBuilt = Array.from(nodes).find((n) => n.name === name);
       if (alreadyBuilt) {
