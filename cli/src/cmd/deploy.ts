@@ -35,6 +35,7 @@ enum IDeployEventType {
 }
 
 interface IDeployEvent {
+  region: string;
   type: IDeployEventType;
   service: Service;
   error?: Error;
@@ -166,22 +167,22 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   const deployOne = (service: Service, region: string): Observable<IDeployEvent> => {
     return new Observable<IDeployEvent>((obs) => {
       log.info('Deploying', service.getName());
-      obs.next({ service, type: IDeployEventType.BACKING_UP_YAML });
+      obs.next({ service, type: IDeployEventType.BACKING_UP_YAML, region });
       log.info(service.getName(), 'Back-up YAML');
       backupYaml([service]);
-      obs.next({ service, type: IDeployEventType.REFORMATTING_YAML });
+      obs.next({ service, type: IDeployEventType.REFORMATTING_YAML, region });
       const failed = (type: ErrorType, e: Error, restore = true): void => {
         log.error(service.getName(), 'Failure', service.getName());
         log.error(type);
         log.error(e);
         failures.set(service, { type, error: e });
-        obs.next({ service, type: IDeployEventType.RESTORING_YAML });
+        obs.next({ service, type: IDeployEventType.RESTORING_YAML, region });
         if (restore) {
           log.info(service.getName(), 'Restoring YAML');
           restoreYaml([service]);
           log.info(service.getName(), 'YAML restored');
         }
-        obs.next({ service, type: IDeployEventType.FAILURE, error: e });
+        obs.next({ service, type: IDeployEventType.FAILURE, error: e, region });
       };
       reformatYaml(projectRoot, config, [service], region, cmd.E)
         .then(async () => {
@@ -190,7 +191,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             const customDomain = config.getCustomDomain(service.getName(), cmd.E);
             log.info(service.getName(), 'Custom domain', customDomain);
             if (customDomain) {
-              obs.next({ service, type: IDeployEventType.CREATING_CUSTOM_DOMAIN });
+              obs.next({ service, type: IDeployEventType.CREATING_CUSTOM_DOMAIN, region });
               try {
                 log.info(service.getName(), 'Creating Custom domain', customDomain);
                 await service.createCustomDomain(region, cmd.E);
@@ -198,11 +199,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
                 failed('creatingDomain', e);
                 return obs.complete();
               }
-              obs.next({ service, type: IDeployEventType.CREATED_CUSTOM_DOMAIN });
+              obs.next({ service, type: IDeployEventType.CREATED_CUSTOM_DOMAIN, region });
             }
 
             // run sls deploy
-            obs.next({ service, type: IDeployEventType.DEPLOYING });
+            obs.next({ service, type: IDeployEventType.DEPLOYING, region });
             try {
               log.info(service.getName(), 'running npm run deploy');
               await service.deploy(region, cmd.E);
@@ -210,16 +211,16 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
               failed('deploying', e);
               return obs.complete();
             }
-            obs.next({ service, type: IDeployEventType.DEPLOYED });
+            obs.next({ service, type: IDeployEventType.DEPLOYED, region });
 
-            obs.next({ service, type: IDeployEventType.RESTORING_YAML });
+            obs.next({ service, type: IDeployEventType.RESTORING_YAML, region });
             log.info(service.getName(), 'restoring YAML');
             restoreYaml([service]);
             log.info(service.getName(), 'restored YAML');
-            obs.next({ service, type: IDeployEventType.RESTORED_YAML });
-            obs.next({ service, type: IDeployEventType.CREATING_RECORDS });
+            obs.next({ service, type: IDeployEventType.RESTORED_YAML, region });
+            obs.next({ service, type: IDeployEventType.CREATING_RECORDS, region });
             try {
-              obs.next({ service, type: IDeployEventType.CREATED_RECORDS });
+              obs.next({ service, type: IDeployEventType.CREATED_RECORDS, region });
               log.info(service.getName(), 'Creating records');
               const recordsManager = new RecordsManager(logger);
               await recordsManager.createRecords(config, cmd.E, [service]);
@@ -228,7 +229,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
               failed('creatingRecords', e, false);
               return obs.complete();
             }
-            obs.next({ service, type: IDeployEventType.SUCCESS });
+            obs.next({ service, type: IDeployEventType.SUCCESS, region });
             return obs.complete();
           } catch (e) {
             failed('other', e);
@@ -291,46 +292,62 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       switch (evt.type) {
         case IDeployEventType.BACKING_UP_YAML: {
           spinnies.add(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Backing-up YAML')}`,
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Backing-up YAML')} ${chalk.magenta(
+              `[${evt.region}]`,
+            )}`,
           });
           break;
         }
         case IDeployEventType.REFORMATTING_YAML: {
           spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Reformatting YAML')}`,
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Reformatting YAML')} ${chalk.magenta(
+              `[${evt.region}]`,
+            )}`,
           });
           break;
         }
         case IDeployEventType.CREATING_CUSTOM_DOMAIN: {
           spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating custom domain')}`,
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating custom domain')} ${chalk.magenta(
+              `[${evt.region}]`,
+            )}`,
           });
           break;
         }
         case IDeployEventType.DEPLOYING: {
           spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Updating CloudFormation stack')}`,
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Updating CloudFormation stack')} ${chalk.magenta(
+              `[${evt.region}]`,
+            )}`,
           });
           break;
         }
         case IDeployEventType.RESTORING_YAML: {
           spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Restoring YAML')}`,
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Restoring YAML')} ${chalk.magenta(
+              `[${evt.region}]`,
+            )}`,
           });
           break;
         }
         case IDeployEventType.CREATING_RECORDS: {
           spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating latency-based DNS records')}`,
+            text: `Deploying ${evt.service.getName()} ${chalk.cyan(
+              'Creating latency-based DNS records',
+            )} ${chalk.magenta(`[${evt.region}]`)}`,
           });
           break;
         }
         case IDeployEventType.SUCCESS: {
-          spinnies.succeed(evt.service.getName(), { text: `Successfully deployed ${evt.service.getName()}` });
+          spinnies.succeed(evt.service.getName(), {
+            text: `Successfully deployed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+          });
           break;
         }
         case IDeployEventType.FAILURE: {
-          spinnies.fail(evt.service.getName(), { text: `Failed to deploy ${evt.service.getName()}` });
+          spinnies.fail(evt.service.getName(), {
+            text: `Failed to deploy ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+          });
           break;
         }
       }

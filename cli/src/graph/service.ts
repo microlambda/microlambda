@@ -301,7 +301,7 @@ export class Service extends Node {
         ['create_domain'],
         {
           cwd: this.location,
-          env: { ...process.env, ENV: stage, FORCE_COLOR: '2', AWS_REGION: region },
+          env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region, AWS_REGION: region },
           stdio: 'pipe',
         },
       );

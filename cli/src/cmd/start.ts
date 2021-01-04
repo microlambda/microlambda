@@ -46,7 +46,8 @@ export const readConfig = async (projectRoot: string, logger: Logger): Promise<C
     console.error(chalk.red(e));
     process.exit(1);
   }
-  await verifyBinaries(config.compilationMode, projectRoot, logger);
+  // FIXME: Implement real strategy about this
+  // await verifyBinaries(config.compilationMode, projectRoot, logger);
   logger.log('start').debug(config);
   loadingConfig.succeed();
   return reader;

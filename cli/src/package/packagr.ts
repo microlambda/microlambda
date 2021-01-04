@@ -116,9 +116,10 @@ export class Packager {
 
       const toZip: Map<string, string> = new Map();
       // Copy dependencies
-      const dependencies = glob(join(projectRoot, 'node_modules', '**', '*'));
+      const dependencies = glob(join(projectRoot, 'node_modules', '**', '*'), { follow: true });
+
       dependencies.forEach((path) => {
-        toZip.set(relative(lib, path), relative(projectRoot, path));
+        toZip.set(relative(projectRoot, path), path);
       });
 
       // Also package compiled service sources
@@ -129,12 +130,11 @@ export class Packager {
 
       // Apply correct permissions to compressed files
       toZip.forEach((from, dest) => {
-        if (statSync(from).isDirectory()) {
-          chmodSync(from, 0o755);
-        } else if (statSync(from).isFile()) {
-          chmodSync(from, 0o644);
-          archive.file(from, {
+        const stats = statSync(from);
+        if (stats.isFile()) {
+          archive.append(from, {
             name: dest,
+            mode: 0o644,
           });
         }
       });
