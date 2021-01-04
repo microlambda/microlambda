@@ -1,4 +1,6 @@
 {
+  "name": "@microlambda/docs",
+  "version": "0.0.1-alpha",
   "scripts": {
     "examples": "docusaurus-examples",
     "start": "docusaurus-start",

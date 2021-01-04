@@ -16,8 +16,8 @@ export class ServiceLogsComponent implements OnInit {
 
   ngOnInit(): void {
     this.mila.serviceLogs$.subscribe((log) => {
-      this.log = convert.toHtml(log.join('').replace(/(\r\n|\n|\r)/gm, "<br />"));
-      console.log(this.log);
+      console.log('BBBB', log);
+      this.log = convert.toHtml(log.offline.join('').replace(/(\r\n|\n|\r)/gm, "<br />"));
       this._scrollToEnd();
     });
   }

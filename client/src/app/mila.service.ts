@@ -31,6 +31,13 @@ const convert = new Convert();
  */
 
 const BASE_URL = environment.production ? window.origin : `http://localhost:${environment.port}`
+const EMPTY_LOGS = {deploy: [], createDoain: [], offline: []};
+
+interface IServiceLogs {
+  offline: string[];
+  deploy: string[];
+  createDoain: string[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -42,7 +49,7 @@ export class MilaService{
   private _services$ = new BehaviorSubject<Service[]>([]);
   private _logs$ = new BehaviorSubject<Log[]>([]);
   private _currentService$ = new BehaviorSubject<string>(null);
-  private _serviceLogs$ = new BehaviorSubject<string[]>([]);
+  private _serviceLogs$ = new BehaviorSubject<IServiceLogs>(EMPTY_LOGS);
 
   // FIXME: Change url
   private _socket = io('http://localhost:4545');
@@ -111,7 +118,7 @@ export class MilaService{
       const currentServiceName = this._currentService$.getValue();
       const currentService = currentServiceName ? services.find(s => s.name === currentServiceName) : null;
       if (currentService && currentService.status !== 'Running') {
-        this._serviceLogs$.next([]);
+        this._serviceLogs$.next(EMPTY_LOGS);
       }
     });
   }
@@ -142,15 +149,15 @@ export class MilaService{
     if (this._currentService$.getValue()) {
       this._socket.off(`${this._currentService$.getValue()}.log.added`);
     }
-    this._serviceLogs$.next([]);
+    this._serviceLogs$.next(EMPTY_LOGS);
     this._currentService$.next(name);
     this._socket.emit('send.service.logs', name);
-    this.http.get<string[]>(`${BASE_URL}/api/services/${encodeURIComponent(name)}/logs`).subscribe((data) => {
+    this.http.get<IServiceLogs>(`${BASE_URL}/api/services/${encodeURIComponent(name)}/logs`).subscribe((data) => {
       this._serviceLogs$.next(data);
       this._socket.on(`${name}.log.added`, (data: string) => {
         console.log('Logs received for current service', data);
         const logs = this._serviceLogs$.getValue();
-        logs.push(data);
+        logs.offline.push(data);
         this._serviceLogs$.next(logs);
       });
     });

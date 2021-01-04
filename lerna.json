@@ -1,9 +1,0 @@
-{
-  "packages": [
-    "cli/",
-    "handling/",
-    "testing/"
-  ],
-  "npmClient": "npm",
-  "version": "independent"
-}

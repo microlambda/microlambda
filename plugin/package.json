@@ -21,7 +21,6 @@
     "serverless.com"
   ],
   "main": "dist/index.js",
-  "bin": {},
   "scripts": {
     "test": "tsc --project . && nyc mocha -r ts-node/register test/unit-tests/index.test.ts && nyc report --reporter=text-summary",
     "integration-test": "node ./node_modules/istanbul/lib/cli.js test _mocha test/integration-tests -- -R spec",
