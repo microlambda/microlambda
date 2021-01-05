@@ -1,0 +1,11 @@
+{
+    "stages": null,
+    "compilationMode": "safe",
+    "ports": {},
+    "noStart": [],
+    "defaultRegions": null,
+    "regions": {},
+    "steps": ["*"],
+    "domains": {},
+    "yamlTransforms": []
+}

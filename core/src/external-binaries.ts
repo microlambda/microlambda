@@ -1,8 +1,8 @@
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
-import { Node } from '../graph';
-import { CompilationMode } from '../config/config';
+import { Node } from './graph';
+import { CompilationMode } from './config/config';
 import { Logger } from './logger';
 
 

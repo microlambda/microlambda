@@ -1,5 +1,4 @@
 import { blue, green, cyan, yellow, red, bold } from 'chalk';
-import { IOSocketManager } from '../server/socket';
 import { inspect } from 'util';
 
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
@@ -29,11 +28,12 @@ export interface IEventLog {
 
 export class Logger {
   private _logs: IEventLog[] = [];
-  private _io: IOSocketManager;
 
-  setIO(io: IOSocketManager): void {
+  //private _io: IOSocketManager;
+
+  /*setIO(io: IOSocketManager): void {
     this._io = io;
-  }
+  }*/
 
   get logs(): IEventLog[] {
     return this._logs;
@@ -53,11 +53,11 @@ export class Logger {
       scope,
       args: args.map((arg) => (isPrimitive(arg) ? arg : inspect(arg, null, 2, false))),
     });
-    const toIO = (event: IEventLog): void => {
+    /*const toIO = (event: IEventLog): void => {
       if (this._io) {
         this._io.eventLogAdded(event);
       }
-    };
+    };*/
     return {
       silly: (...args: any[]): void => {
         const event = toEvent('silly', args);
@@ -65,7 +65,7 @@ export class Logger {
           console.debug(cyan('[SILLY]'), bold(scope), ...args);
         }
         this._logs.push(event);
-        toIO(event);
+        //toIO(event);
       },
       debug: (...args: any[]): void => {
         const event = toEvent('debug', args);
@@ -73,7 +73,7 @@ export class Logger {
           console.debug(blue('[DEBUG]'), bold(scope), ...args);
         }
         this._logs.push(event);
-        toIO(event);
+        //toIO(event);
       },
       info: (...args: any[]): void => {
         const event = toEvent('info', args);
@@ -81,7 +81,7 @@ export class Logger {
           console.info(prefix.info, ...args);
         }
         this._logs.push(event);
-        toIO(event);
+        //toIO(event);
       },
       warn: (...args: any[]): void => {
         const event = toEvent('warn', args);
@@ -89,7 +89,7 @@ export class Logger {
           console.info(yellow('[WARNING]', ...args));
         }
         this._logs.push(event);
-        toIO(event);
+        //toIO(event);
       },
       error: (...args: any[]): void => {
         const event = toEvent('error', args);
@@ -97,7 +97,7 @@ export class Logger {
           console.info(prefix.error, ...args);
         }
         this._logs.push(event);
-        toIO(event);
+        //toIO(event);
       },
     };
   }

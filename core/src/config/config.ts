@@ -1,12 +1,12 @@
 export type CompilationMode = 'safe' | 'fast';
 
-interface IRegionConfig {
+export interface IRegionConfig {
   [stage: string]: string | string[];
 }
 
-type RegionConfig = string | string[] | IRegionConfig;
+export type RegionConfig = string | string[] | IRegionConfig;
 
-type DomainConfig = { [service: string]: string } | { [service: string]: { [env: string]: string } };
+export type DomainConfig = { [service: string]: string } | { [service: string]: { [env: string]: string } };
 
 export interface IDeployConfig {
   defaultRegions: RegionConfig;
@@ -18,9 +18,9 @@ export interface IDeployConfig {
   yamlTransforms: string[];
 }
 
-type Step = Map<Region, Set<Microservice>>;
-type Region = string;
-type Microservice = string;
+export type Step = Map<Region, Set<Microservice>>;
+export type Region = string;
+export type Microservice = string;
 
 export interface IConfig extends IDeployConfig {
   stages: string[];

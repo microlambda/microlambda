@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 import { Command } from 'commander';
-import { RecompilationScheduler } from './utils/scheduler';
 import { start } from './cmd';
-import { Logger } from './utils/logger';
 import { checkStage } from './cmd/check-stage';
 import { checkService } from './cmd/check-service';
 import { build } from './cmd/build';
 import chalk from 'chalk';
-import { getDefaultThreads } from './utils/platform';
 import { packagr } from './cmd/package';
 import { runTests } from './cmd/test';
 import { deploy } from './cmd/deploy';
+import { getDefaultThreads, RecompilationScheduler, Logger } from '@microlambda/core';
 
 // Logger must be a singleton
 const logger = new Logger();

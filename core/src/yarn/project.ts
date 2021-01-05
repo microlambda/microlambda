@@ -1,9 +1,9 @@
 import { Project, Configuration, Workspace, Ident } from '@yarnpkg/core';
 import { convertPath, PortablePath, ppath } from '@yarnpkg/fslib/lib/path';
 import { getPluginConfiguration, openWorkspace } from '@yarnpkg/cli';
-import { RecompilationScheduler } from '../utils/scheduler';
+import { RecompilationScheduler } from '../scheduler';
 import { IConfig } from '../config/config';
-import { Logger } from '../utils/logger';
+import { Logger } from '../logger';
 import { DependenciesGraph } from '../graph';
 
 export const getYarnProject = async (projectRoot: string): Promise<Project> => {

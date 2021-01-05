@@ -6,6 +6,11 @@
   "repository": {
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
+  "scripts": {
+    "build:core": "yarn workspace @microlambda/core run build",
+    "build:cli": "yarn workspace @microlambda/cli run build",
+    "build:server": "yarn workspace @microlambda/server run build"
+  },
   "workspaces": [
     "cli",
     "core",
@@ -36,7 +41,7 @@
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged",
-      "pre-push": "npx lerna run lint"
+      "pre-push": "yarn workspace foreach run lint -p"
     }
   },
   "lint-staged": {

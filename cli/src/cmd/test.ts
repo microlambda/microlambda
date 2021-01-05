@@ -1,12 +1,9 @@
 /* eslint-disable no-console */
-import { Logger } from '../utils/logger';
-import { RecompilationScheduler } from '../utils/scheduler';
+import { getDefaultThreads, getThreads, Logger, Node, RecompilationScheduler } from '@microlambda/core';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
-import { Node } from '../graph';
 import { concat, merge, Observable } from 'rxjs';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
-import { getDefaultThreads, getThreads } from '../utils/platform';
 import Spinnies from 'spinnies';
 import { readJSONSync } from 'fs-extra';
 import { join } from 'path';

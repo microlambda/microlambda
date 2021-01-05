@@ -4,8 +4,8 @@ import { inspect } from 'util';
 import { DomainName } from 'aws-sdk/clients/apigateway';
 import { ConfigReader } from '../../config/read-config';
 import { Service } from '../../graph';
-import { getServiceName } from '../../utils/yaml';
-import { ILogger, Logger } from '../../utils/logger';
+import { getServiceName } from '../../yaml';
+import { ILogger, Logger } from '../../logger';
 
 export class RecordsManager {
   private readonly _route53 = new Route53();

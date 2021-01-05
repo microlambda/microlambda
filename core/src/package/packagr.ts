@@ -5,7 +5,7 @@ import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import chalk from 'chalk';
 import { sync as glob } from 'glob';
-import { ILogger, Logger } from '../utils/logger';
+import { ILogger, Logger } from '../logger';
 import { DependenciesGraph, Service } from '../graph';
 
 export interface IPackage {

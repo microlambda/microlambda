@@ -1,7 +1,4 @@
-import { RecompilationScheduler } from '../utils/scheduler';
-import { getProjectRoot } from '../utils/get-project-root';
-import { IPCSocketsManager } from '../ipc/socket';
-import { Logger } from '../utils/logger';
+import { RecompilationScheduler, getProjectRoot, IPCSocketsManager, Logger } from '@microlambda/core';
 
 export const stop = async (scheduler: RecompilationScheduler, logger: Logger, service?: string): Promise<void> => {
   // TODO: Display UI with services, stop them an exit 0.

@@ -1,7 +1,4 @@
-import { getProjectRoot } from '../utils/get-project-root';
-import { IPCSocketsManager } from '../ipc/socket';
-import { RecompilationScheduler } from '../utils/scheduler';
-import { Logger } from '../utils/logger';
+import { getProjectRoot, IPCSocketsManager, RecompilationScheduler, Logger } from '@microlambda/core';
 
 export const status = (scheduler: RecompilationScheduler, logger: Logger): void => {
   // TODO: Subscribe status from IPC socket and use same UI than start

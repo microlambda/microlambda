@@ -1,17 +1,10 @@
 /* eslint-disable no-console */
-import { Logger } from '../utils/logger';
-import { RecompilationScheduler } from '../utils/scheduler';
 import { beforePackage, IPackageCmd, packageService } from './package';
-import { ConfigReader } from '../config/read-config';
-import { CertificateEventType, CertificateManager, ICertificateEvent } from '../deploy/utils/generate-certificates';
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import { prompt } from 'inquirer';
-import { getAccountIAM } from '../utils/aws-account';
-import { backupYaml, reformatYaml, restoreYaml } from '../utils/yaml';
-import { Service } from '../graph';
 import { concat, merge, Observable } from 'rxjs';
-import { RecordsManager } from '../deploy/utils/create-cname-records';
+import { CertificateEventType, CertificateManager, ICertificateEvent, RecordsManager, ConfigReader, RecompilationScheduler, Logger, Service, getAccountIAM, backupYaml, reformatYaml, restoreYaml } from '@microlambda/core';
 
 interface IDeployCmd extends IPackageCmd {
   E: string;

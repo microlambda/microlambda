@@ -1,15 +1,15 @@
 /* eslint-disable no-console */
-import { Logger } from '../utils/logger';
 import {
+  Logger,
   IRecompilationError,
   IRecompilationEvent,
   RecompilationEventType,
   RecompilationScheduler,
-} from '../utils/scheduler';
+  DependenciesGraph, Node, Service,
+} from '@microlambda/core';
 import { init } from './start';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
-import { DependenciesGraph, Node, Service } from '../graph';
 
 export interface IBuildCmd {
   S?: string;

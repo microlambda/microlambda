@@ -1,7 +1,8 @@
 import express from 'express';
 import { createServer, Server } from 'http';
-import { Logger } from '../utils/logger';
-import { DependenciesGraph, Service } from '../graph';
+import { Logger, DependenciesGraph, Service } from '@microlambda/core';
+
+export * from './socket';
 
 export const startServer = (graph: DependenciesGraph, logger: Logger): Promise<Server> => {
   const log = logger.log('api');

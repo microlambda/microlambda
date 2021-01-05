@@ -1,8 +1,7 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
-import { Logger } from '../utils/logger';
+import { Logger, RecompilationScheduler } from '@microlambda/core';
 import { init } from './start';
-import { RecompilationScheduler } from '../utils/scheduler';
 
 export const checkService = async (cmd: string): Promise<void> => {
   const logger = new Logger();

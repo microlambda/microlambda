@@ -1,7 +1,7 @@
-import { IConfig } from '../config/config';
+import { IConfig } from './config/config';
 import { Logger } from './logger';
 import { Workspace } from '@yarnpkg/core';
-import { getName } from '../yarn/project';
+import { getName } from './yarn/project';
 
 type PortMap = { [key: string]: number };
 

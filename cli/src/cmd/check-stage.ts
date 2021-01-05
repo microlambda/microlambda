@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
-import { ConfigReader } from '../config/read-config';
-import { Logger } from '../utils/logger';
+import { ConfigReader, Logger } from '@microlambda/core';
 
 export const checkStage = (cmd: string): void => {
   const config = new ConfigReader(new Logger()).readConfig();

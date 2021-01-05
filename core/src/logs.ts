@@ -2,7 +2,7 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs'
 import rimraf from 'rimraf';
 import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
-import { showOffTitle } from './ascii';
+// import { showOffTitle } from './ascii';
 import { Logger } from './logger';
 
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.mila', 'logs');
@@ -51,7 +51,7 @@ export const tailLogs = (serviceName: string, projectRoot: string, logger: Logge
 
   stat(`${logsDirectory}/${serviceName}.log`, (exists) => {
     if (exists === null) {
-      showOffTitle(serviceName);
+      // showOffTitle(serviceName);
       spawnSync('tail', ['-n', '+1', `${logsDirectory}/${serviceName}.log`], { stdio: 'inherit' });
     } else {
       logger

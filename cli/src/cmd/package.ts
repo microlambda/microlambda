@@ -1,16 +1,15 @@
 /* eslint-disable no-console */
-import { Logger } from '../utils/logger';
 import {
   IRecompilationError,
   IRecompilationEvent,
   RecompilationEventType,
   RecompilationScheduler,
-} from '../utils/scheduler';
+  getDefaultThreads, getThreads,
+  Logger, DependenciesGraph, Node, Service
+} from '@microlambda/core';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
-import { getDefaultThreads, getThreads } from '../utils/platform';
-import { DependenciesGraph, Node, Service } from '../graph';
 
 export interface IPackageCmd extends IBuildCmd {
   C: number;

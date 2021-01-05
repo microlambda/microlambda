@@ -2,7 +2,7 @@ import Joi from '@hapi/joi';
 import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
-import { ILogger, Logger } from '../utils/logger';
+import { ILogger, Logger } from '../logger';
 import { sync } from 'glob';
 import { join } from 'path';
 import { DependenciesGraph, Service } from '../graph';

@@ -2,8 +2,8 @@ import { concat, from, merge, Observable, Subject } from 'rxjs';
 import { concatAll, debounceTime, filter, mergeMap, takeUntil } from 'rxjs/operators';
 import { ILogger, Logger } from './logger';
 import { getDefaultThreads } from './platform';
-import { DependenciesGraph, Node, Service } from '../graph';
-import { ServiceStatus } from '../graph/enums/service.status';
+import { DependenciesGraph, Node, Service } from './graph';
+import { ServiceStatus } from './graph/enums/service.status';
 
 enum SchedulerStatus {
   READY,

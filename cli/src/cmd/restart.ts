@@ -1,7 +1,4 @@
-import { RecompilationScheduler } from '../utils/scheduler';
-import { getProjectRoot } from '../utils/get-project-root';
-import { IPCSocketsManager } from '../ipc/socket';
-import { Logger } from '../utils/logger';
+import { RecompilationScheduler, getProjectRoot, IPCSocketsManager, Logger } from '@microlambda/core';
 
 export const restart = async (scheduler: RecompilationScheduler, logger: Logger, service?: string): Promise<void> => {
   // TODO: UI Just inform that service has restarted/failed

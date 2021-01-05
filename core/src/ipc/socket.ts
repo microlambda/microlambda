@@ -1,9 +1,9 @@
 import { IPC } from 'node-ipc';
 import { Socket } from 'net';
 import { Observable, Subject } from 'rxjs';
-import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../utils/scheduler';
+import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../scheduler';
 import { v4 as uuid } from 'uuid';
-import { Logger } from '../utils/logger';
+import { Logger } from '../logger';
 import { TranspilingStatus } from '../graph/enums/compilation.status';
 import { ServiceStatus } from '../graph/enums/service.status';
 import { DependenciesGraph, Service } from '../graph';

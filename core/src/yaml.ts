@@ -3,8 +3,8 @@
 import { dump, load, Schema, Type } from 'js-yaml';
 import { copySync, existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
 import { join, dirname } from 'path';
-import { Service } from '../graph';
-import { ConfigReader } from '../config/read-config';
+import { Service } from './graph';
+import { ConfigReader } from './config/read-config';
 import { compileFile } from './typescript';
 import { Logger } from './logger';
 

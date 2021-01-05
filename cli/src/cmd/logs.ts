@@ -1,5 +1,4 @@
-import { Logger } from '../utils/logger';
-import { RecompilationScheduler } from '../utils/scheduler';
+import { Logger, RecompilationScheduler } from '@microlambda/core';
 
 // TODO: Fix this properly
 export const logs = async (cmd: { S: string }, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {

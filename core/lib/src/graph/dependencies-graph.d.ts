@@ -1,0 +1,31 @@
+import { Node } from './';
+import { Package } from './';
+import { Service } from './';
+import { IConfig } from '../config/config';
+import { Logger } from '../logger';
+import { IPCSocketsManager } from '../ipc/socket';
+import { RecompilationScheduler } from '../scheduler';
+import { Project } from '@yarnpkg/core';
+export declare const isService: (location: string) => boolean;
+export declare class DependenciesGraph {
+    private readonly _config;
+    private readonly projectRoot;
+    private readonly ports;
+    private readonly nodes;
+    private readonly _logger;
+    private readonly _project;
+    get logger(): Logger;
+    get project(): Project;
+    constructor(scheduler: RecompilationScheduler, project: Project, config: IConfig, logger: Logger, defaultPort?: number);
+    getPort(service: string): number;
+    registerIPCServer(sockets: IPCSocketsManager): void;
+    enableNodes(): void;
+    enableOne(node: Node): void;
+    disableOne(node: Node): void;
+    enableAll(): void;
+    getProjectRoot(): string;
+    getServices(): Service[];
+    getPackages(): Package[];
+    getNodes(): Node[];
+    get(name: string): Node;
+}

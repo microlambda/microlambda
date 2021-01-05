@@ -3,12 +3,12 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package } from './';
 import { Service } from './';
-import { resolvePorts } from '../utils/resolve-ports';
+import { resolvePorts } from '../resolve-ports';
 import { IConfig } from '../config/config';
-import { Logger } from '../utils/logger';
+import { Logger } from '../logger';
 import { IPCSocketsManager } from '../ipc/socket';
-import { IOSocketManager } from '../server/socket';
-import { RecompilationScheduler } from '../utils/scheduler';
+//import { IOSocketManager } from '@microlambda/server';
+import { RecompilationScheduler } from '../scheduler';
 import { Project } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
 
@@ -17,7 +17,7 @@ export const isService = (location: string): boolean => {
 };
 
 export class DependenciesGraph {
-  private _io: IOSocketManager;
+  //private _io: IOSocketManager;
 
   private readonly _config: IConfig;
   private readonly projectRoot: string;
@@ -28,9 +28,9 @@ export class DependenciesGraph {
   get logger(): Logger {
     return this._logger;
   }
-  get io(): IOSocketManager {
+  /*get io(): IOSocketManager {
     return this._io;
-  }
+  }*/
 
   get project(): Project {
     return this._project;
@@ -151,7 +151,7 @@ export class DependenciesGraph {
     await this._project.install({ cache: null, report: null });
   }*/
 
-  registerIOSockets(io: IOSocketManager): void {
+  /*registerIOSockets(io: IOSocketManager): void {
     this._io = io;
-  }
+  }*/
 }

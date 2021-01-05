@@ -1,19 +1,9 @@
 /* eslint-disable no-console */
-import { getProjectRoot } from '../utils/get-project-root';
-import { recreateLogDirectory } from '../utils/logs';
-import { RecompilationScheduler } from '../utils/scheduler';
-import { verifyBinaries } from '../utils/external-binaries';
-import { startServer } from '../server';
-import { IOSocketManager } from '../server/socket';
-import { Logger } from '../utils/logger';
-import { IPCSocketsManager } from '../ipc/socket';
+import { startServer, IOSocketManager } from '@microlambda/server';
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
-import { IConfig } from '../config/config';
-import { ConfigReader } from '../config/read-config';
 import chalk from 'chalk';
-import { DependenciesGraph } from '../graph';
-import { getGraphFromYarnProject } from '../yarn/project';
+import { getGraphFromYarnProject, getProjectRoot, verifyBinaries, RecompilationScheduler, recreateLogDirectory, Logger, IPCSocketsManager, DependenciesGraph, ConfigReader, IConfig } from '@microlambda/core';
 
 interface IStartOptions {
   interactive: boolean;
@@ -117,8 +107,15 @@ export const start = async (
   scheduler.setGraph(graph);
 
   const io = new IOSocketManager(server, scheduler, logger, graph);
-  logger.setIO(io);
-  graph.registerIOSockets(io);
+  graph.getServices().forEach((service) => {
+    service.status$.subscribe((status) => io.statusUpdated(service, status));
+    service.slsLogs$.subscribe((log) => io.handleServiceLog(service.getName(), log));
+  });
+  graph.getNodes().forEach((node) => {
+    node.tscLogs$.subscribe((log) => io.handleTscLogs(node.getName(), log));
+    node.typeCheck$.subscribe((typeCheckStatus) => io.typeCheckStatusUpdated(node, typeCheckStatus));
+    node.transpiled$.subscribe((transpileStatus) => io.transpilingStatusUpdated(node, transpileStatus));
+  });
 
   const ipc = new IPCSocketsManager(projectRoot, scheduler, logger, graph);
   await ipc.createServer();

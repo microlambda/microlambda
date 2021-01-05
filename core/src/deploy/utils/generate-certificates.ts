@@ -10,7 +10,7 @@ import { HostedZone } from 'aws-sdk/clients/route53';
 import { RecordsManager } from './create-cname-records';
 import { ConfigReader } from '../../config/read-config';
 import { Service } from '../../graph';
-import { ILogger, Logger } from '../../utils/logger';
+import { ILogger, Logger } from '../../logger';
 import { Observable } from 'rxjs';
 
 export enum CertificateEventType {

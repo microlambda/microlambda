@@ -1,4 +1,4 @@
-import { Node } from '../graph';
+import { Node } from './graph';
 import { existsSync, mkdirSync, readFile, writeFile } from 'fs';
 import { join } from 'path';
 import { getTsConfig } from './typescript';

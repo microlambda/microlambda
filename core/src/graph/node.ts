@@ -1,16 +1,16 @@
-import { isService, DependenciesGraph } from './dependencies-graph';
+import { DependenciesGraph, isService } from './dependencies-graph';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package, Service } from './';
 import { TranspilingStatus, TypeCheckStatus } from './enums/compilation.status';
 import chalk from 'chalk';
 import { ChildProcess, spawn } from 'child_process';
-import { Observable } from 'rxjs';
-import { RecompilationScheduler } from '../utils/scheduler';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { RecompilationScheduler } from '../scheduler';
 import { IPCSocketsManager } from '../ipc/socket';
-import { getBinary } from '../utils/external-binaries';
-import { compileFiles } from '../utils/typescript';
-import { checksums, IChecksums } from '../utils/checksums';
+import { getBinary } from '../external-binaries';
+import { compileFiles } from '../typescript';
+import { checksums, IChecksums } from '../checksums';
 import { FSWatcher, watch } from 'chokidar';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
@@ -44,6 +44,14 @@ export abstract class Node {
 
   protected _scheduler: RecompilationScheduler;
   private _watchers: FSWatcher[] = [];
+
+  private _tscLogs$: BehaviorSubject<string> = new BehaviorSubject('');
+  private _typeCheck$: BehaviorSubject<TypeCheckStatus> = new BehaviorSubject<TypeCheckStatus>(TypeCheckStatus.NOT_CHECKED);
+  private _transpiled$: BehaviorSubject<TranspilingStatus> = new BehaviorSubject<TranspilingStatus>(TranspilingStatus.NOT_TRANSPILED);
+
+  public typeCheck$ = this._typeCheck$.asObservable();
+  public transpiled$ = this._transpiled$.asObservable();
+  public tscLogs$ = this._tscLogs$.asObservable();
 
   public constructor(
     scheduler: RecompilationScheduler,
@@ -160,16 +168,12 @@ export abstract class Node {
         .debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
-    if (this.getGraph().io) {
-      this.getGraph().io.transpilingStatusUpdated(this, this.transpilingStatus);
-    }
+    this._transpiled$.next(this.transpilingStatus);
   }
 
   public setTypeCheckingStatus(status: TypeCheckStatus): void {
     this.typeCheckStatus = status;
-    if (this.getGraph().io) {
-      this.getGraph().io.typeCheckStatusUpdated(this, this.typeCheckStatus);
-    }
+    this._typeCheck$.next(this.typeCheckStatus);
   }
 
   public isRoot(): boolean {
@@ -387,9 +391,7 @@ export abstract class Node {
 
   private _handleTscLogs(data: Buffer): void {
     this._typeCheckLogs.push(data.toString());
-    if (this.getGraph().io) {
-      this.getGraph().io.handleTscLogs(this.name, data.toString());
-    }
+    this._tscLogs$.next(data.toString());
   }
 
   private _watchTypeChecking(): Observable<Node> {

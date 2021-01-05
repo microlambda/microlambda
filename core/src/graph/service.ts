@@ -1,14 +1,13 @@
-import { DependenciesGraph, Node } from './';
+import { DependenciesGraph, Node, ServiceStatus } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
-import { createLogFile, getLogsPath } from '../utils/logs';
-import { ServiceStatus } from './enums/service.status';
-import { Observable } from 'rxjs';
+import { createLogFile, getLogsPath } from '../logs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import chalk from 'chalk';
 import { concatMap, tap } from 'rxjs/operators';
-import { getBinary } from '../utils/external-binaries';
+import { getBinary } from '../external-binaries';
 import { FSWatcher, watch } from 'chokidar';
-import { RecompilationScheduler } from '../utils/scheduler';
+import { RecompilationScheduler } from '../scheduler';
 import { Packager } from '../package/packagr';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
@@ -26,6 +25,10 @@ export class Service extends Node {
   private logStream: WriteStream;
   private readonly _logs: IServiceLogs;
   private _slsYamlWatcher: FSWatcher;
+  private _slsLogs$: BehaviorSubject<string> = new BehaviorSubject<string>('');
+  private _status$: BehaviorSubject<ServiceStatus> = new BehaviorSubject<ServiceStatus>(ServiceStatus.STOPPED);
+  public status$ = this._status$.asObservable();
+  public slsLogs$ = this._slsLogs$.asObservable();
 
   constructor(
     scheduler: RecompilationScheduler,
@@ -226,7 +229,7 @@ export class Service extends Node {
   private _handleLogs(data: Buffer): void {
     this.logStream.write(data);
     this._logs.offline.push(data.toString());
-    this.getGraph().io.handleServiceLog(this.name, data.toString());
+    this._slsLogs$.next(data.toString())
   }
 
   private _updateStatus(status: ServiceStatus): void {
@@ -241,7 +244,7 @@ export class Service extends Node {
     }
     this.status = status;
     this._ipc.graphUpdated();
-    this.getGraph().io.statusUpdated(this, this.status);
+    this._status$.next(this.status);
   }
 
   isRunning(): boolean {

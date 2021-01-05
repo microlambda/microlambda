@@ -2,7 +2,7 @@
 import { join } from 'path';
 import { readFileSync, existsSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
 import { dump, load } from 'js-yaml';
-import { CUSTOM_SCHEMA } from '../../utils/yaml';
+import { CUSTOM_SCHEMA } from '../../yaml';
 
 export const getPath = (service: string): string => {
   const serviceName = service.match(/^@dataportal\/(.+)$/)[1];
