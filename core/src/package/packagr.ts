@@ -132,7 +132,7 @@ export class Packager {
       toZip.forEach((from, dest) => {
         const stats = statSync(from);
         if (stats.isFile()) {
-          archive.append(from, {
+          archive.file(from, {
             name: dest,
             mode: 0o644,
           });

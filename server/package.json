@@ -1,0 +1,23 @@
+{
+  "name": "@microlambda/server",
+  "version": "0.0.23-alpha",
+  "description": "µlambda framework server",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+  },
+  "license": "MIT",
+  "main": "lib/src/index.js",
+  "scripts": {
+    "test": "../node_modules/.bin/jest",
+    "build": "npx tsc --build",
+    "start": "node lib/src/start.js start",
+    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
+  },
+  "keywords": [
+    "serverless",
+    "typescript",
+    "lerna"
+  ]
+}

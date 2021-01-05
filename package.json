@@ -13,7 +13,8 @@
     "generator",
     "handling",
     "plugin",
-    "testing"
+    "testing",
+    "server"
   ],
   "license": "MIT",
   "devDependencies": {
