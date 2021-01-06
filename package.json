@@ -9,7 +9,10 @@
   "scripts": {
     "build:core": "yarn workspace @microlambda/core run build",
     "build:cli": "yarn workspace @microlambda/cli run build",
-    "build:server": "yarn workspace @microlambda/server run build"
+    "build:server": "yarn workspace @microlambda/server run build",
+    "publish:core": "yarn workspace @microlambda/core npm publish --access public",
+    "publish:server": "yarn workspace @microlambda/server npm publish --access public",
+    "publish:cli": "yarn workspace @microlambda/cli npm publish --access public"
   },
   "workspaces": [
     "cli",

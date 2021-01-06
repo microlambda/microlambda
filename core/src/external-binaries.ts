@@ -51,6 +51,7 @@ const testBinary = (cmd: Cmd, projectRoot: string, logger: Logger): boolean => {
   return existsSync(getBinary(cmd, projectRoot, logger));
 };
 
+//FIXME: Deprecated
 const installBinary = async (deps: string[], projectRoot: string): Promise<void> => {
   const process = spawn('npm', ['i', '-D', ...deps], {
     cwd: projectRoot,

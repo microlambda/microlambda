@@ -19,6 +19,8 @@ export interface IEventLog {
 }
 export declare class Logger {
     private _logs;
+    private _logs$;
+    logs$: import("rxjs").Observable<IEventLog>;
     get logs(): IEventLog[];
     log(scope?: string): ILogger;
 }

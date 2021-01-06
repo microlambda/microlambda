@@ -1,8 +1,8 @@
 import { Observable } from 'rxjs';
 import { RecompilationScheduler } from '../scheduler';
 import { Logger } from '../logger';
-import { TranspilingStatus } from '../graph/enums/compilation.status';
-import { ServiceStatus } from '../graph/enums/service.status';
+import { TranspilingStatus } from '../graph';
+import { ServiceStatus } from '../graph';
 import { DependenciesGraph } from '../graph';
 interface IGraphStatus {
     name: string;

@@ -13,6 +13,7 @@ interface ITestOptions extends IBuildCmd {
   unit: boolean;
   functional: boolean;
   C?: number;
+  stdio: 'inherit' | 'ignore'
 }
 
 enum TestStatus {
@@ -29,6 +30,8 @@ interface ITestEvent {
   took?: number;
 }
 
+// FIXME: Move to core
+// Should be part of Service class and called by RecompilationScheduler
 class TestRunner {
   private readonly _services: Node[];
   private readonly _concurrency: number;
@@ -43,7 +46,7 @@ class TestRunner {
   }
 
   private _getCmd(): { cmd: string; args: string[] } {
-    const cmd = 'npm';
+    const cmd = 'yarn';
     let args: string[];
     if (!this._type) {
       args = ['test'];
@@ -55,7 +58,7 @@ class TestRunner {
     return { cmd, args };
   }
 
-  runTests(): Observable<ITestEvent> {
+  runTests(stdio: 'ignore' | 'inherit'): Observable<ITestEvent> {
     const testNode = (node: Node, type: 'unit' | 'functional'): Observable<ITestEvent> => {
       return new Observable<ITestEvent>((obs) => {
         const now = Date.now();
@@ -73,16 +76,19 @@ class TestRunner {
           obs.next({ type, node, status: TestStatus.SKIPPED, took: Date.now() - now });
           return obs.complete();
         }
-        const testProcess = spawn('npm', ['run', `test:${type}`], {
+        const testProcess = spawn('yarn', ['run', `test:${type}`], {
           cwd: node.getLocation(),
           env: { ...process.env, FORCE_COLOR: '2' },
+          stdio: stdio === 'ignore' ? 'pipe' : 'inherit',
         });
-        testProcess.stderr.on('data', (data) => {
-          this._logs.get(node).push(data.toString());
-        });
-        testProcess.stdout.on('data', (data) => {
-          this._logs.get(node).push(data.toString());
-        });
+        if (stdio !== 'inherit') {
+          testProcess.stderr.on('data', (data) => {
+            this._logs.get(node).push(data.toString());
+          });
+          testProcess.stdout.on('data', (data) => {
+            this._logs.get(node).push(data.toString());
+          });
+        }
         testProcess.on('close', (code) => {
           if (code !== 0) {
             obs.next({ type, node, status: TestStatus.FAIL, took: Date.now() - now });
@@ -128,6 +134,11 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
     type = 'functional';
   } else if (cmd.unit) {
     type = 'unit';
+  }
+  if (!['inherit', 'ignore'].includes(cmd.stdio)) {
+    console.error(chalk.red('Invalid --stdio flag', cmd.stdio));
+    console.error(chalk.red('Should be whether inherit or ignore'));
+    process.exit(1);
   }
   const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
   const target = cmd.S ? service : graph;
@@ -190,5 +201,5 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
     }
     process.exit(0);
   };
-  runner.runTests().subscribe(onNext, onError, onComplete);
+  runner.runTests(cmd.stdio).subscribe(onNext, onError, onComplete);
 };

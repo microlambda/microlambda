@@ -181,7 +181,7 @@ export class Service extends Node {
       .logger.log('service')
       .debug('Env:', process.env.ENV);
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'offline'));
-    this.process = spawn('npm', ['start', '--', '--port', this.port.toString()], {
+    this.process = spawn('yarn', ['start', '--', '--port', this.port.toString()], {
       cwd: this.location,
       env: { ...process.env, FORCE_COLOR: '2' },
     });
@@ -268,7 +268,7 @@ export class Service extends Node {
     return new Promise((resolve, reject) => {
       createLogFile(this.graph.getProjectRoot(), this.name, 'deploy');
       const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'deploy'));
-      const deployProcess = spawn('npm', ['run', 'deploy'], {
+      const deployProcess = spawn('yarn', ['run', 'deploy'], {
         cwd: this.location,
         env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region, AWS_REGION: region },
         stdio: 'pipe',

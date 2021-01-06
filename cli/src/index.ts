@@ -18,7 +18,7 @@ const scheduler = new RecompilationScheduler(logger);
 
 const program = new Command();
 
-program.version('0.0.24-alpha');
+program.version('0.0.26-alpha');
 
 program
   .command('start')
@@ -162,6 +162,7 @@ program
   .option('--only-self', 'only recompile target services', false)
   .option('--unit', 'only run unit tests', false)
   .option('--functional', 'only run functional tests', false)
+  .option('--stdio <stdio>', 'whether to print or not test command stdout', 'ignore')
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
   .option('-s <service>, --service <service>', 'the service for which you want to test', null)
   .action(async (cmd) => {

@@ -1,0 +1,29 @@
+refactor: move test execution from cli to core
+feat(core): add remove stack method to service
+feat(cli): add remove command
+fix(server): serve correctly front-end
+perf(client): use CDN to serve fonts
+ci: lint and test code on push
+fix(client): rework logs display
+fix(client): repair action buttons
+perf(client): event log lazy-loading
+test(core): full-coverage
+test(cli): full-coverage
+feat(generator): create base project
+feat(generator): create generator using yeoman
+feat(cli): create new command
+feat(core): add resources usage metrics
+feat(server): forward resources usage to client
+feat(cli): forward resources usage to server
+feat(client): display resources usage
+feat(server): create endpoint to get serialized graph
+feat(client): display graph using cola
+test(server): full-coverage
+test(client): full-coverage
+docs: motivation
+docs: getting started
+docs: configuration
+docs: handling guide
+docs: testing guide
+docs: cookbook multiple regions
+docs: custom domain
