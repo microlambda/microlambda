@@ -5,7 +5,9 @@ import {
   IRecompilationEvent,
   RecompilationEventType,
   RecompilationScheduler,
-  DependenciesGraph, Node, Service,
+  DependenciesGraph,
+  Node,
+  Service,
 } from '@microlambda/core';
 import { init } from './start';
 import chalk from 'chalk';

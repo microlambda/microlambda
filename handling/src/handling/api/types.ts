@@ -11,30 +11,30 @@ export interface IMultiValueHeaders {
 }
 
 export interface ISingleValueHeaders {
-  [header: string]: boolean | number | string;
+  [header: string]: boolean | number | string | undefined;
 }
 
-export type ApiHandlerEvent<TRequest = unknown> = APIGatewayProxyEvent & { body: TRequest };
+export type ApiHandlerEvent<TRequest = any> = Omit<APIGatewayProxyEvent, 'body'> & { body: TRequest };
 
 export type ApiHandleContext = Context;
 
-export type ApiHandler<TRequest = unknown, TResponse = unknown> = (
+export type ApiHandler<TRequest = any, TResponse = any> = (
   event: ApiHandlerEvent<TRequest>,
   response: Response,
   context: ApiHandleContext,
 ) => Promise<TResponse>;
 
-export type ApiBeforeMiddleware<TRequest = unknown> = (
+export type ApiBeforeMiddleware<TRequest = any> = (
   event: ApiHandlerEvent<TRequest>,
   context: ApiHandleContext,
 ) => Promise<void>;
 
-export type ApiAfterMiddleware<TRequest = unknown> = (
+export type ApiAfterMiddleware<TRequest = any> = (
   event: ApiHandlerEvent<TRequest>,
   result: APIGatewayProxyResult,
 ) => Promise<void>;
 
-export type ApiErrorHandler<TRequest = unknown> = (
+export type ApiErrorHandler<TRequest = any> = (
   event: ApiHandlerEvent<TRequest>,
   err: Error,
   result: APIGatewayProxyResult,

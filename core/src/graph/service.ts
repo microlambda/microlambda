@@ -229,7 +229,7 @@ export class Service extends Node {
   private _handleLogs(data: Buffer): void {
     this.logStream.write(data);
     this._logs.offline.push(data.toString());
-    this._slsLogs$.next(data.toString())
+    this._slsLogs$.next(data.toString());
   }
 
   private _updateStatus(status: ServiceStatus): void {
@@ -270,7 +270,13 @@ export class Service extends Node {
       const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'deploy'));
       const deployProcess = spawn('yarn', ['run', 'deploy'], {
         cwd: this.location,
-        env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region, AWS_REGION: region },
+        env: {
+          ...process.env,
+          ENV: stage,
+          FORCE_COLOR: '2',
+          MILA_REGION: region,
+          AWS_REGION: region,
+        },
         stdio: 'pipe',
       });
       deployProcess.stderr.on('data', (data) => {
@@ -304,7 +310,13 @@ export class Service extends Node {
         ['create_domain'],
         {
           cwd: this.location,
-          env: { ...process.env, ENV: stage, FORCE_COLOR: '2', MILA_REGION: region, AWS_REGION: region },
+          env: {
+            ...process.env,
+            ENV: stage,
+            FORCE_COLOR: '2',
+            MILA_REGION: region,
+            AWS_REGION: region,
+          },
           stdio: 'pipe',
         },
       );

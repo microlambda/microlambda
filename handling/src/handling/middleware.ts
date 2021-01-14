@@ -2,13 +2,13 @@ import { ApiAfterMiddleware, ApiBeforeMiddleware, ApiErrorHandler } from './api'
 import { log } from '../debug';
 import { Context } from 'aws-lambda';
 
-export type DefaultBeforeMiddleware = (event: unknown, context: Context) => Promise<void>;
+export type DefaultBeforeMiddleware = (event: any, context: Context) => Promise<void>;
 export type BeforeMiddleware = ApiBeforeMiddleware | DefaultAfterMiddleware;
 
-export type DefaultAfterMiddleware = (event: unknown, result: unknown) => Promise<void>;
+export type DefaultAfterMiddleware = (event: any, result: any) => Promise<void>;
 export type AfterMiddleware = ApiAfterMiddleware | DefaultAfterMiddleware;
 
-export type DefaultErrorHandler = (event: unknown, error: unknown, result: unknown) => Promise<void>;
+export type DefaultErrorHandler = (event: any, error: any, result: any) => Promise<void>;
 export type ErrorHandler = ApiErrorHandler | DefaultErrorHandler;
 
 export type HandlingType = 'ApiGateway';
@@ -28,7 +28,7 @@ const isSendingType = (
   typeOrMiddleware: HandlingType | BeforeMiddleware[] | AfterMiddleware[] | ErrorHandler[],
 ): typeOrMiddleware is HandlingType => typeof typeOrMiddleware === 'string';
 
-export const callBeforeMiddleware = async <T extends (...args: unknown[]) => unknown>(
+export const callBeforeMiddleware = async <T extends (event: any, context: Context) => any>(
   type: HandlingType,
   args: Parameters<T>,
 ): Promise<void> => {
@@ -48,7 +48,7 @@ export const callBeforeMiddleware = async <T extends (...args: unknown[]) => unk
   }
 };
 
-export const callAfterMiddleware = async <T extends (...args: unknown[]) => unknown>(
+export const callAfterMiddleware = async <T extends (event: any, result: any) => any>(
   type: HandlingType,
   args: Parameters<T>,
 ): Promise<void> => {
@@ -68,7 +68,7 @@ export const callAfterMiddleware = async <T extends (...args: unknown[]) => unkn
   }
 };
 
-export const callErrorHandlers = async <T extends (...args: unknown[]) => unknown>(
+export const callErrorHandlers = async <T extends (event: any, error: any, result: any) => any>(
   type: HandlingType,
   args: Parameters<T>,
 ): Promise<void> => {

@@ -1,27 +1,27 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6",
-    "lib": [
-      "es2018"
-    ],
-    "moduleResolution": "node",
-    "rootDir": "src",
-    "outDir": "dist",
-    "declaration": true,
+    "rootDir": ".",
+    "outDir": "./dist",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "lib": ["es6", "esnext", "esnext.asynciterable"],
     "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noImplicitThis": true,
-    "strictNullChecks": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
     "noImplicitReturns": true,
-    "preserveConstEnums": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "forceConsistentCasingInFileNames": true
+    "strict": true,
+    "target": "es6",
+    "declaration": true,
+    "importHelpers": true,
+    "isolatedModules": false,
+    "skipLibCheck": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "examples",
-    "src/**/*.spec.ts"
-  ]
+  "include": ["./src"],
+  "exclude": ["**/*.spec.ts"]
 }

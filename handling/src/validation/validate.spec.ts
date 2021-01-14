@@ -16,13 +16,12 @@ describe('validation', () => {
         }),
       );
 
-      expect(result).toStrictEqual({
+      expect(result).toEqual({
         email: 'foo@example.com',
       });
     });
 
     it("throws a ValidationError when validation doesn't pass", async () => {
-      expect.assertions(2);
       try {
         await validate(
           {},
@@ -30,9 +29,10 @@ describe('validation', () => {
             email: string().required(),
           }),
         );
+        fail();
       } catch (e) {
         expect(e.name).toBe('ValidationError');
-        expect(e.details).toStrictEqual([
+        expect(e.details).toEqual([
           {
             context: { key: 'email', label: 'email' },
             message: '"email" is required',

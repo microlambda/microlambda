@@ -1,5 +1,5 @@
 .idea/
-**/node_modules/
+.vscode/
 
 cli/src/app.js
 
@@ -8,3 +8,7 @@ cli/src/app.js
 !.yarn/releases
 !.yarn/plugins
 .pnp.*
+**/node_modules/
+
+**/lib/
+**/coverage/

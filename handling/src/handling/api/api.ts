@@ -66,31 +66,37 @@ const multipleHeaders = (event: ApiHandlerEvent, headers: OutgoingHttpHeaders): 
   if (cors) {
     const allowedMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'];
     const exposedHeaders = Object.keys(headers).filter((v, i, a) => a.indexOf(v) === i);
-
     finalHeaders['Access-Control-Allow-Methods'] = cors.methods || allowedMethods;
     finalHeaders['Access-Control-Expose-Headers'] = cors.exposeHeaders || exposedHeaders;
     finalHeaders['Access-Control-Allow-Headers'] = cors.allowHeaders || Object.keys(event.headers);
   }
-
   return finalHeaders;
 };
 
-const format = (event: ApiHandlerEvent, response: Response, content: unknown): APIGatewayProxyResult => {
+const format = (event: ApiHandlerEvent, response: Response, content: any): APIGatewayProxyResult => {
   log.debug('[API] Formatting response');
   log.debug('[API] Setting headers');
   const headers = singleHeaders(event, response.headers);
   const multiValueHeaders = multipleHeaders(event, response.headers);
+  // undefined headers are no more supported in AWS lambda type definitions
+  const apiGatewayHeaders: { [key: string]: string | number | boolean } = {};
+  Object.keys(headers).forEach((key) => {
+    const value =  headers[key];
+    if (value) {
+      apiGatewayHeaders[key] = value;
+    }
+  });
   if (content === null || content === undefined || content === '') {
     log.debug('[API] No content returning 204');
     return {
-      headers,
+      headers: apiGatewayHeaders,
       multiValueHeaders,
       statusCode: event.httpMethod === 'POST' ? 201 : 204,
       body: '',
     };
   }
   return {
-    headers,
+    headers: apiGatewayHeaders,
     multiValueHeaders,
     statusCode: httpMethodToStatus(event.httpMethod, response.statusCode),
     body: JSON.stringify(content, (key, value) => {
@@ -102,7 +108,7 @@ const format = (event: ApiHandlerEvent, response: Response, content: unknown): A
 const formatError = (
   event: APIGatewayProxyEvent,
   response: Response,
-  err: { name: string; details: unknown; statusCode?: number; body?: unknown },
+  err: { name: string; details: any; statusCode?: number; body?: any },
 ): APIGatewayProxyResult => {
   log.debug('[API] Error name', err.name);
   switch (err.name) {

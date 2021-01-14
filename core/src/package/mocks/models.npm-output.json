@@ -7,9 +7,7 @@
   "directories": {
     "lib": "lib"
   },
-  "files": [
-    "lib"
-  ],
+  "files": ["lib"],
   "scripts": {
     "clear": "npm run clear:modules && npm run clear:lib && npm run clear:package",
     "clear:all": "npm run clear && npm run clear:lock",
@@ -22,14 +20,8 @@
   "dependencies": {
     "dynamodels": {
       "_args": [
-        [
-          "dynamodels@1.4.2",
-          "/path/to/project/packages/models"
-        ],
-        [
-          "dynamodels@1.4.2",
-          "/path/to/project/packages/models"
-        ]
+        ["dynamodels@1.4.2", "/path/to/project/packages/models"],
+        ["dynamodels@1.4.2", "/path/to/project/packages/models"]
       ],
       "_from": "dynamodels@1.4.2",
       "_id": "dynamodels@1.4.2",
@@ -46,9 +38,7 @@
         "saveSpec": null,
         "fetchSpec": "1.4.2"
       },
-      "_requiredBy": [
-        "/"
-      ],
+      "_requiredBy": ["/"],
       "_resolved": "https://registry.npmjs.org/dynamodels/-/dynamodels-1.4.2.tgz",
       "_spec": "1.4.2",
       "_where": "/path/to/project/packages/models",
@@ -59,9 +49,7 @@
         "url": "https://github.com/MarioArnt/dynamodels/issues"
       },
       "commitlint": {
-        "extends": [
-          "@commitlint/config-conventional"
-        ]
+        "extends": ["@commitlint/config-conventional"]
       },
       "config": {
         "commitizen": {
@@ -71,14 +59,8 @@
       "dependencies": {
         "@hapi/joi": {
           "_args": [
-            [
-              "@hapi/joi@15.1.1",
-              "/path/to/project/packages/models"
-            ],
-            [
-              "@hapi/joi@15.1.1",
-              "/path/to/project/packages/models"
-            ]
+            ["@hapi/joi@15.1.1", "/path/to/project/packages/models"],
+            ["@hapi/joi@15.1.1", "/path/to/project/packages/models"]
           ],
           "_from": "@hapi/joi@15.1.1",
           "_id": "@hapi/joi@15.1.1",
@@ -96,9 +78,7 @@
             "saveSpec": "[Circular]",
             "fetchSpec": "15.1.1"
           },
-          "_requiredBy": [
-            "/dynamodels"
-          ],
+          "_requiredBy": ["/dynamodels"],
           "_resolved": "https://registry.npmjs.org/@hapi/joi/-/joi-15.1.1.tgz",
           "_spec": "15.1.1",
           "_where": "/path/to/project/packages/models",
@@ -108,14 +88,8 @@
           "dependencies": {
             "@hapi/address": {
               "_args": [
-                [
-                  "@hapi/address@2.1.4",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "@hapi/address@2.1.4",
-                  "/path/to/project/packages/models"
-                ]
+                ["@hapi/address@2.1.4", "/path/to/project/packages/models"],
+                ["@hapi/address@2.1.4", "/path/to/project/packages/models"]
               ],
               "_from": "@hapi/address@2.1.4",
               "_id": "@hapi/address@2.1.4",
@@ -133,9 +107,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "2.1.4"
               },
-              "_requiredBy": [
-                "/@hapi/joi"
-              ],
+              "_requiredBy": ["/@hapi/joi"],
               "_resolved": "https://registry.npmjs.org/@hapi/address/-/address-2.1.4.tgz",
               "_spec": "2.1.4",
               "_where": "/path/to/project/packages/models",
@@ -149,12 +121,7 @@
                 "@hapi/lab": "20.x.x"
               },
               "homepage": "https://github.com/hapijs/address#readme",
-              "keywords": [
-                "email",
-                "domain",
-                "address",
-                "validation"
-              ],
+              "keywords": ["email", "domain", "address", "validation"],
               "license": "BSD-3-Clause",
               "main": "lib/index.js",
               "name": "@hapi/address",
@@ -177,14 +144,8 @@
             },
             "@hapi/bourne": {
               "_args": [
-                [
-                  "@hapi/bourne@1.3.2",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "@hapi/bourne@1.3.2",
-                  "/path/to/project/packages/models"
-                ]
+                ["@hapi/bourne@1.3.2", "/path/to/project/packages/models"],
+                ["@hapi/bourne@1.3.2", "/path/to/project/packages/models"]
               ],
               "_from": "@hapi/bourne@1.3.2",
               "_id": "@hapi/bourne@1.3.2",
@@ -202,9 +163,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "1.3.2"
               },
-              "_requiredBy": [
-                "/@hapi/joi"
-              ],
+              "_requiredBy": ["/@hapi/joi"],
               "_resolved": "https://registry.npmjs.org/@hapi/bourne/-/bourne-1.3.2.tgz",
               "_spec": "1.3.2",
               "_where": "/path/to/project/packages/models",
@@ -219,12 +178,7 @@
                 "benchmark": "^2.1.4"
               },
               "homepage": "https://github.com/hapijs/bourne#readme",
-              "keywords": [
-                "JSON",
-                "parse",
-                "safe",
-                "prototype"
-              ],
+              "keywords": ["JSON", "parse", "safe", "prototype"],
               "license": "BSD-3-Clause",
               "main": "lib/index.js",
               "name": "@hapi/bourne",
@@ -247,14 +201,8 @@
             },
             "@hapi/hoek": {
               "_args": [
-                [
-                  "@hapi/hoek@8.5.1",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "@hapi/hoek@8.5.1",
-                  "/path/to/project/packages/models"
-                ]
+                ["@hapi/hoek@8.5.1", "/path/to/project/packages/models"],
+                ["@hapi/hoek@8.5.1", "/path/to/project/packages/models"]
               ],
               "_from": "@hapi/hoek@8.5.1",
               "_id": "@hapi/hoek@8.5.1",
@@ -272,10 +220,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "8.5.1"
               },
-              "_requiredBy": [
-                "/@hapi/joi",
-                "/@hapi/topo"
-              ],
+              "_requiredBy": ["/@hapi/joi", "/@hapi/topo"],
               "_resolved": "https://registry.npmjs.org/@hapi/hoek/-/hoek-8.5.1.tgz",
               "_spec": "8.5.1",
               "_where": "/path/to/project/packages/models",
@@ -288,13 +233,9 @@
                 "@hapi/code": "6.x.x",
                 "@hapi/lab": "20.x.x"
               },
-              "files": [
-                "lib"
-              ],
+              "files": ["lib"],
               "homepage": "https://github.com/hapijs/hoek#readme",
-              "keywords": [
-                "utilities"
-              ],
+              "keywords": ["utilities"],
               "license": "BSD-3-Clause",
               "main": "lib/index.js",
               "name": "@hapi/hoek",
@@ -318,14 +259,8 @@
             },
             "@hapi/topo": {
               "_args": [
-                [
-                  "@hapi/topo@3.1.6",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "@hapi/topo@3.1.6",
-                  "/path/to/project/packages/models"
-                ]
+                ["@hapi/topo@3.1.6", "/path/to/project/packages/models"],
+                ["@hapi/topo@3.1.6", "/path/to/project/packages/models"]
               ],
               "_from": "@hapi/topo@3.1.6",
               "_id": "@hapi/topo@3.1.6",
@@ -343,9 +278,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "3.1.6"
               },
-              "_requiredBy": [
-                "/@hapi/joi"
-              ],
+              "_requiredBy": ["/@hapi/joi"],
               "_resolved": "https://registry.npmjs.org/@hapi/topo/-/topo-3.1.6.tgz",
               "_spec": "3.1.6",
               "_where": "/path/to/project/packages/models",
@@ -404,16 +337,9 @@
                 "@hapi/code": "6.x.x",
                 "@hapi/lab": "20.x.x"
               },
-              "files": [
-                "lib"
-              ],
+              "files": ["lib"],
               "homepage": "https://github.com/hapijs/topo#readme",
-              "keywords": [
-                "topological",
-                "sort",
-                "toposort",
-                "topsort"
-              ],
+              "keywords": ["topological", "sort", "toposort", "topsort"],
               "license": "BSD-3-Clause",
               "main": "lib/index.js",
               "name": "@hapi/topo",
@@ -443,10 +369,7 @@
             "@hapi/lab": "20.x.x"
           },
           "homepage": "https://github.com/hapijs/joi",
-          "keywords": [
-            "schema",
-            "validation"
-          ],
+          "keywords": ["schema", "validation"],
           "license": "BSD-3-Clause",
           "main": "lib/index.js",
           "name": "@hapi/joi",
@@ -474,14 +397,8 @@
         },
         "aws-sdk": {
           "_args": [
-            [
-              "aws-sdk@2.636.0",
-              "/path/to/project/packages/models"
-            ],
-            [
-              "aws-sdk@2.636.0",
-              "/path/to/project/packages/models"
-            ]
+            ["aws-sdk@2.636.0", "/path/to/project/packages/models"],
+            ["aws-sdk@2.636.0", "/path/to/project/packages/models"]
           ],
           "_from": "aws-sdk@2.636.0",
           "_id": "aws-sdk@2.636.0",
@@ -498,9 +415,7 @@
             "saveSpec": "[Circular]",
             "fetchSpec": "2.636.0"
           },
-          "_requiredBy": [
-            "/dynamodels"
-          ],
+          "_requiredBy": ["/dynamodels"],
           "_resolved": "https://registry.npmjs.org/aws-sdk/-/aws-sdk-2.636.0.tgz",
           "_spec": "2.636.0",
           "_where": "/path/to/project/packages/models",
@@ -533,14 +448,8 @@
           "dependencies": {
             "uuid": {
               "_args": [
-                [
-                  "uuid@3.3.2",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "uuid@3.3.2",
-                  "/path/to/project/packages/models"
-                ]
+                ["uuid@3.3.2", "/path/to/project/packages/models"],
+                ["uuid@3.3.2", "/path/to/project/packages/models"]
               ],
               "_from": "uuid@3.3.2",
               "_id": "uuid@3.3.2",
@@ -557,9 +466,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "3.3.2"
               },
-              "_requiredBy": [
-                "/aws-sdk"
-              ],
+              "_requiredBy": ["/aws-sdk"],
               "_resolved": "https://registry.npmjs.org/uuid/-/uuid-3.3.2.tgz",
               "_spec": "3.3.2",
               "_where": "/path/to/project/packages/models",
@@ -575,9 +482,7 @@
                 "url": "https://github.com/kelektiv/node-uuid/issues"
               },
               "commitlint": {
-                "extends": [
-                  "@commitlint/config-conventional"
-                ]
+                "extends": ["@commitlint/config-conventional"]
               },
               "contributors": [
                 {
@@ -612,11 +517,7 @@
                 "standard-version": "4.4.0"
               },
               "homepage": "https://github.com/kelektiv/node-uuid#readme",
-              "keywords": [
-                "uuid",
-                "guid",
-                "rfc4122"
-              ],
+              "keywords": ["uuid", "guid", "rfc4122"],
               "license": "MIT",
               "name": "uuid",
               "repository": {
@@ -642,14 +543,8 @@
             },
             "buffer": {
               "_args": [
-                [
-                  "buffer@4.9.1",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "buffer@4.9.1",
-                  "/path/to/project/packages/models"
-                ]
+                ["buffer@4.9.1", "/path/to/project/packages/models"],
+                ["buffer@4.9.1", "/path/to/project/packages/models"]
               ],
               "_from": "buffer@4.9.1",
               "_id": "buffer@4.9.1",
@@ -666,9 +561,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "4.9.1"
               },
-              "_requiredBy": [
-                "/aws-sdk"
-              ],
+              "_requiredBy": ["/aws-sdk"],
               "_resolved": "https://registry.npmjs.org/buffer/-/buffer-4.9.1.tgz",
               "_spec": "4.9.1",
               "_where": "/path/to/project/packages/models",
@@ -693,14 +586,8 @@
               "dependencies": {
                 "base64-js": {
                   "_args": [
-                    [
-                      "base64-js@1.3.1",
-                      "/path/to/project/packages/models"
-                    ],
-                    [
-                      "base64-js@1.3.1",
-                      "/path/to/project/packages/models"
-                    ]
+                    ["base64-js@1.3.1", "/path/to/project/packages/models"],
+                    ["base64-js@1.3.1", "/path/to/project/packages/models"]
                   ],
                   "_from": "base64-js@1.3.1",
                   "_id": "base64-js@1.3.1",
@@ -717,9 +604,7 @@
                     "saveSpec": "[Circular]",
                     "fetchSpec": "1.3.1"
                   },
-                  "_requiredBy": [
-                    "/buffer"
-                  ],
+                  "_requiredBy": ["/buffer"],
                   "_resolved": "https://registry.npmjs.org/base64-js/-/base64-js-1.3.1.tgz",
                   "_spec": "1.3.1",
                   "_where": "/path/to/project/packages/models",
@@ -739,9 +624,7 @@
                     "uglify-js": "^3.6.0"
                   },
                   "homepage": "https://github.com/beatgammit/base64-js",
-                  "keywords": [
-                    "base64"
-                  ],
+                  "keywords": ["base64"],
                   "license": "MIT",
                   "main": "index.js",
                   "name": "base64-js",
@@ -767,14 +650,8 @@
                 },
                 "ieee754": {
                   "_args": [
-                    [
-                      "ieee754@1.1.13",
-                      "/path/to/project/packages/models"
-                    ],
-                    [
-                      "ieee754@1.1.13",
-                      "/path/to/project/packages/models"
-                    ]
+                    ["ieee754@1.1.13", "/path/to/project/packages/models"],
+                    ["ieee754@1.1.13", "/path/to/project/packages/models"]
                   ],
                   "_from": "ieee754@1.1.13",
                   "_id": "ieee754@1.1.13",
@@ -791,10 +668,7 @@
                     "saveSpec": "[Circular]",
                     "fetchSpec": "1.1.13"
                   },
-                  "_requiredBy": [
-                    "/aws-sdk",
-                    "/buffer"
-                  ],
+                  "_requiredBy": ["/aws-sdk", "/buffer"],
                   "_resolved": "https://registry.npmjs.org/ieee754/-/ieee754-1.1.13.tgz",
                   "_spec": "1.1.13",
                   "_where": "/path/to/project/packages/models",
@@ -819,13 +693,7 @@
                     "tape": "^4.0.0"
                   },
                   "homepage": "https://github.com/feross/ieee754#readme",
-                  "keywords": [
-                    "IEEE 754",
-                    "buffer",
-                    "convert",
-                    "floating point",
-                    "ieee754"
-                  ],
+                  "keywords": ["IEEE 754", "buffer", "convert", "floating point", "ieee754"],
                   "license": "BSD-3-Clause",
                   "main": "index.js",
                   "name": "ieee754",
@@ -852,14 +720,8 @@
                 },
                 "isarray": {
                   "_args": [
-                    [
-                      "isarray@1.0.0",
-                      "/path/to/project/packages/models"
-                    ],
-                    [
-                      "isarray@1.0.0",
-                      "/path/to/project/packages/models"
-                    ]
+                    ["isarray@1.0.0", "/path/to/project/packages/models"],
+                    ["isarray@1.0.0", "/path/to/project/packages/models"]
                   ],
                   "_from": "isarray@1.0.0",
                   "_id": "isarray@1.0.0",
@@ -876,9 +738,7 @@
                     "saveSpec": "[Circular]",
                     "fetchSpec": "1.0.0"
                   },
-                  "_requiredBy": [
-                    "/buffer"
-                  ],
+                  "_requiredBy": ["/buffer"],
                   "_resolved": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
                   "_spec": "1.0.0",
                   "_where": "/path/to/project/packages/models",
@@ -896,11 +756,7 @@
                     "tape": "~2.13.4"
                   },
                   "homepage": "https://github.com/juliangruber/isarray",
-                  "keywords": [
-                    "browser",
-                    "isarray",
-                    "array"
-                  ],
+                  "keywords": ["browser", "isarray", "array"],
                   "license": "MIT",
                   "main": "index.js",
                   "name": "isarray",
@@ -959,15 +815,7 @@
                   }
                 }
               },
-              "keywords": [
-                "arraybuffer",
-                "browser",
-                "browserify",
-                "buffer",
-                "compatible",
-                "dataview",
-                "uint8array"
-              ],
+              "keywords": ["arraybuffer", "browser", "browserify", "buffer", "compatible", "dataview", "uint8array"],
               "license": "MIT",
               "main": "index.js",
               "name": "buffer",
@@ -988,11 +836,7 @@
                 "update-authors": "./bin/update-authors.sh"
               },
               "standard": {
-                "ignore": [
-                  "test/node/*.js",
-                  "test/_polyfill.js",
-                  "perf/*.js"
-                ]
+                "ignore": ["test/node/*.js", "test/_polyfill.js", "perf/*.js"]
               },
               "version": "4.9.1",
               "readme": "# buffer [![travis][travis-image]][travis-url] [![npm][npm-image]][npm-url] [![downloads][downloads-image]][npm-url]\n\n#### The buffer module from [node.js](https://nodejs.org/), for the browser.\n\n[![saucelabs][saucelabs-image]][saucelabs-url]\n\n[travis-image]: https://img.shields.io/travis/feross/buffer/master.svg\n[travis-url]: https://travis-ci.org/feross/buffer\n[npm-image]: https://img.shields.io/npm/v/buffer.svg\n[npm-url]: https://npmjs.org/package/buffer\n[downloads-image]: https://img.shields.io/npm/dm/buffer.svg\n[saucelabs-image]: https://saucelabs.com/browser-matrix/buffer.svg\n[saucelabs-url]: https://saucelabs.com/u/buffer\n\nWith [browserify](http://browserify.org), simply `require('buffer')` or use the `Buffer` global and you will get this module.\n\nThe goal is to provide an API that is 100% identical to\n[node's Buffer API](https://nodejs.org/api/buffer.html). Read the\n[official docs](https://nodejs.org/api/buffer.html) for the full list of properties,\ninstance methods, and class methods that are supported.\n\n## features\n\n- Manipulate binary data like a boss, in all browsers -- even IE6!\n- Super fast. Backed by Typed Arrays (`Uint8Array`/`ArrayBuffer`, not `Object`)\n- Extremely small bundle size (**5.04KB minified + gzipped**, 35.5KB with comments)\n- Excellent browser support (IE 6+, Chrome 4+, Firefox 3+, Safari 5.1+, Opera 11+, iOS, etc.)\n- Preserves Node API exactly, with one minor difference (see below)\n- Square-bracket `buf[4]` notation works, even in old browsers like IE6!\n- Does not modify any browser prototypes or put anything on `window`\n- Comprehensive test suite (including all buffer tests from node.js core)\n\n\n## install\n\nTo use this module directly (without browserify), install it:\n\n```bash\nnpm install buffer\n```\n\nThis module was previously called **native-buffer-browserify**, but please use **buffer**\nfrom now on.\n\nA standalone bundle is available [here](https://wzrd.in/standalone/buffer), for non-browserify users.\n\n\n## usage\n\nThe module's API is identical to node's `Buffer` API. Read the\n[official docs](https://nodejs.org/api/buffer.html) for the full list of properties,\ninstance methods, and class methods that are supported.\n\nAs mentioned above, `require('buffer')` or use the `Buffer` global with\n[browserify](http://browserify.org) and this module will automatically be included\nin your bundle. Almost any npm module will work in the browser, even if it assumes that\nthe node `Buffer` API will be available.\n\nTo depend on this module explicitly (without browserify), require it like this:\n\n```js\nvar Buffer = require('buffer/').Buffer  // note: the trailing slash is important!\n```\n\nTo require this module explicitly, use `require('buffer/')` which tells the node.js module\nlookup algorithm (also used by browserify) to use the **npm module** named `buffer`\ninstead of the **node.js core** module named `buffer`!\n\n\n## how does it work?\n\nThe Buffer constructor returns instances of `Uint8Array` that have their prototype\nchanged to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of `Uint8Array`,\nso the returned instances will have all the node `Buffer` methods and the\n`Uint8Array` methods. Square bracket notation works as expected -- it returns a\nsingle octet.\n\nThe `Uint8Array` prototype remains unmodified.\n\n\n## one minor difference\n\n#### In old browsers, `buf.slice()` does not modify parent buffer's memory\n\nIf you only support modern browsers (specifically, those with typed array support),\nthen this issue does not affect you. If you support super old browsers, then read on.\n\nIn node, the `slice()` method returns a new `Buffer` that shares underlying memory\nwith the original Buffer. When you modify one buffer, you modify the other.\n[Read more.](https://nodejs.org/api/buffer.html#buffer_buf_slice_start_end)\n\nIn browsers with typed array support, this `Buffer` implementation supports this\nbehavior. In browsers without typed arrays, an alternate buffer implementation is\nused that is based on `Object` which has no mechanism to point separate\n`Buffer`s to the same underlying slab of memory.\n\nYou can see which browser versions lack typed array support\n[here](https://github.com/feross/buffer/blob/master/index.js#L22-L48).\n\n\n## tracking the latest node api\n\nThis module tracks the Buffer API in the latest (unstable) version of node.js. The Buffer\nAPI is considered **stable** in the\n[node stability index](https://nodejs.org/docs/latest/api/documentation.html#documentation_stability_index),\nso it is unlikely that there will ever be breaking changes.\nNonetheless, when/if the Buffer API changes in node, this module's API will change\naccordingly.\n\n## related packages\n\n- [`buffer-equals`](https://www.npmjs.com/package/buffer-equals) - Node.js 0.12 buffer.equals() ponyfill\n- [`buffer-reverse`](https://www.npmjs.com/package/buffer-reverse) - A lite module for reverse-operations on buffers\n- [`buffer-xor`](https://www.npmjs.com/package/buffer-xor) - A simple module for bitwise-xor on buffers\n- [`is-buffer`](https://www.npmjs.com/package/is-buffer) - Determine if an object is a Buffer without including the whole `Buffer` package\n- [`typedarray-to-buffer`](https://www.npmjs.com/package/typedarray-to-buffer) - Convert a typed array to a Buffer without a copy\n\n## performance\n\nSee perf tests in `/perf`.\n\n`BrowserBuffer` is the browser `buffer` module (this repo). `Uint8Array` is included as a\nsanity check (since `BrowserBuffer` uses `Uint8Array` under the hood, `Uint8Array` will\nalways be at least a bit faster). Finally, `NodeBuffer` is the node.js buffer module,\nwhich is included to compare against.\n\nNOTE: Performance has improved since these benchmarks were taken. PR welcoem to update the README.\n\n### Chrome 38\n\n| Method | Operations | Accuracy | Sampled | Fastest |\n|:-------|:-----------|:---------|:--------|:-------:|\n| BrowserBuffer#bracket-notation | 11,457,464 ops/sec | ±0.86% | 66 | ✓ |\n| Uint8Array#bracket-notation | 10,824,332 ops/sec | ±0.74% | 65 | |\n| | | | |\n| BrowserBuffer#concat | 450,532 ops/sec | ±0.76% | 68 | |\n| Uint8Array#concat | 1,368,911 ops/sec | ±1.50% | 62 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16000) | 903,001 ops/sec | ±0.96% | 67 | |\n| Uint8Array#copy(16000) | 1,422,441 ops/sec | ±1.04% | 66 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16) | 11,431,358 ops/sec | ±0.46% | 69 | |\n| Uint8Array#copy(16) | 13,944,163 ops/sec | ±1.12% | 68 | ✓ |\n| | | | |\n| BrowserBuffer#new(16000) | 106,329 ops/sec | ±6.70% | 44 | |\n| Uint8Array#new(16000) | 131,001 ops/sec | ±2.85% | 31 | ✓ |\n| | | | |\n| BrowserBuffer#new(16) | 1,554,491 ops/sec | ±1.60% | 65 | |\n| Uint8Array#new(16) | 6,623,930 ops/sec | ±1.66% | 65 | ✓ |\n| | | | |\n| BrowserBuffer#readDoubleBE | 112,830 ops/sec | ±0.51% | 69 | ✓ |\n| DataView#getFloat64 | 93,500 ops/sec | ±0.57% | 68 | |\n| | | | |\n| BrowserBuffer#readFloatBE | 146,678 ops/sec | ±0.95% | 68 | ✓ |\n| DataView#getFloat32 | 99,311 ops/sec | ±0.41% | 67 | |\n| | | | |\n| BrowserBuffer#readUInt32LE | 843,214 ops/sec | ±0.70% | 69 | ✓ |\n| DataView#getUint32 | 103,024 ops/sec | ±0.64% | 67 | |\n| | | | |\n| BrowserBuffer#slice | 1,013,941 ops/sec | ±0.75% | 67 | |\n| Uint8Array#subarray | 1,903,928 ops/sec | ±0.53% | 67 | ✓ |\n| | | | |\n| BrowserBuffer#writeFloatBE | 61,387 ops/sec | ±0.90% | 67 | |\n| DataView#setFloat32 | 141,249 ops/sec | ±0.40% | 66 | ✓ |\n\n\n### Firefox 33\n\n| Method | Operations | Accuracy | Sampled | Fastest |\n|:-------|:-----------|:---------|:--------|:-------:|\n| BrowserBuffer#bracket-notation | 20,800,421 ops/sec | ±1.84% | 60 | |\n| Uint8Array#bracket-notation | 20,826,235 ops/sec | ±2.02% | 61 | ✓ |\n| | | | |\n| BrowserBuffer#concat | 153,076 ops/sec | ±2.32% | 61 | |\n| Uint8Array#concat | 1,255,674 ops/sec | ±8.65% | 52 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16000) | 1,105,312 ops/sec | ±1.16% | 63 | |\n| Uint8Array#copy(16000) | 1,615,911 ops/sec | ±0.55% | 66 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16) | 16,357,599 ops/sec | ±0.73% | 68 | |\n| Uint8Array#copy(16) | 31,436,281 ops/sec | ±1.05% | 68 | ✓ |\n| | | | |\n| BrowserBuffer#new(16000) | 52,995 ops/sec | ±6.01% | 35 | |\n| Uint8Array#new(16000) | 87,686 ops/sec | ±5.68% | 45 | ✓ |\n| | | | |\n| BrowserBuffer#new(16) | 252,031 ops/sec | ±1.61% | 66 | |\n| Uint8Array#new(16) | 8,477,026 ops/sec | ±0.49% | 68 | ✓ |\n| | | | |\n| BrowserBuffer#readDoubleBE | 99,871 ops/sec | ±0.41% | 69 | |\n| DataView#getFloat64 | 285,663 ops/sec | ±0.70% | 68 | ✓ |\n| | | | |\n| BrowserBuffer#readFloatBE | 115,540 ops/sec | ±0.42% | 69 | |\n| DataView#getFloat32 | 288,722 ops/sec | ±0.82% | 68 | ✓ |\n| | | | |\n| BrowserBuffer#readUInt32LE | 633,926 ops/sec | ±1.08% | 67 | ✓ |\n| DataView#getUint32 | 294,808 ops/sec | ±0.79% | 64 | |\n| | | | |\n| BrowserBuffer#slice | 349,425 ops/sec | ±0.46% | 69 | |\n| Uint8Array#subarray | 5,965,819 ops/sec | ±0.60% | 65 | ✓ |\n| | | | |\n| BrowserBuffer#writeFloatBE | 59,980 ops/sec | ±0.41% | 67 | |\n| DataView#setFloat32 | 317,634 ops/sec | ±0.63% | 68 | ✓ |\n\n### Safari 8\n\n| Method | Operations | Accuracy | Sampled | Fastest |\n|:-------|:-----------|:---------|:--------|:-------:|\n| BrowserBuffer#bracket-notation | 10,279,729 ops/sec | ±2.25% | 56 | ✓ |\n| Uint8Array#bracket-notation | 10,030,767 ops/sec | ±2.23% | 59 | |\n| | | | |\n| BrowserBuffer#concat | 144,138 ops/sec | ±1.38% | 65 | |\n| Uint8Array#concat | 4,950,764 ops/sec | ±1.70% | 63 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16000) | 1,058,548 ops/sec | ±1.51% | 64 | |\n| Uint8Array#copy(16000) | 1,409,666 ops/sec | ±1.17% | 65 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16) | 6,282,529 ops/sec | ±1.88% | 58 | |\n| Uint8Array#copy(16) | 11,907,128 ops/sec | ±2.87% | 58 | ✓ |\n| | | | |\n| BrowserBuffer#new(16000) | 101,663 ops/sec | ±3.89% | 57 | |\n| Uint8Array#new(16000) | 22,050,818 ops/sec | ±6.51% | 46 | ✓ |\n| | | | |\n| BrowserBuffer#new(16) | 176,072 ops/sec | ±2.13% | 64 | |\n| Uint8Array#new(16) | 24,385,731 ops/sec | ±5.01% | 51 | ✓ |\n| | | | |\n| BrowserBuffer#readDoubleBE | 41,341 ops/sec | ±1.06% | 67 | |\n| DataView#getFloat64 | 322,280 ops/sec | ±0.84% | 68 | ✓ |\n| | | | |\n| BrowserBuffer#readFloatBE | 46,141 ops/sec | ±1.06% | 65 | |\n| DataView#getFloat32 | 337,025 ops/sec | ±0.43% | 69 | ✓ |\n| | | | |\n| BrowserBuffer#readUInt32LE | 151,551 ops/sec | ±1.02% | 66 | |\n| DataView#getUint32 | 308,278 ops/sec | ±0.94% | 67 | ✓ |\n| | | | |\n| BrowserBuffer#slice | 197,365 ops/sec | ±0.95% | 66 | |\n| Uint8Array#subarray | 9,558,024 ops/sec | ±3.08% | 58 | ✓ |\n| | | | |\n| BrowserBuffer#writeFloatBE | 17,518 ops/sec | ±1.03% | 63 | |\n| DataView#setFloat32 | 319,751 ops/sec | ±0.48% | 68 | ✓ |\n\n\n### Node 0.11.14\n\n| Method | Operations | Accuracy | Sampled | Fastest |\n|:-------|:-----------|:---------|:--------|:-------:|\n| BrowserBuffer#bracket-notation | 10,489,828 ops/sec | ±3.25% | 90 | |\n| Uint8Array#bracket-notation | 10,534,884 ops/sec | ±0.81% | 92 | ✓ |\n| NodeBuffer#bracket-notation | 10,389,910 ops/sec | ±0.97% | 87 | |\n| | | | |\n| BrowserBuffer#concat | 487,830 ops/sec | ±2.58% | 88 | |\n| Uint8Array#concat | 1,814,327 ops/sec | ±1.28% | 88 | ✓ |\n| NodeBuffer#concat | 1,636,523 ops/sec | ±1.88% | 73 | |\n| | | | |\n| BrowserBuffer#copy(16000) | 1,073,665 ops/sec | ±0.77% | 90 | |\n| Uint8Array#copy(16000) | 1,348,517 ops/sec | ±0.84% | 89 | ✓ |\n| NodeBuffer#copy(16000) | 1,289,533 ops/sec | ±0.82% | 93 | |\n| | | | |\n| BrowserBuffer#copy(16) | 12,782,706 ops/sec | ±0.74% | 85 | |\n| Uint8Array#copy(16) | 14,180,427 ops/sec | ±0.93% | 92 | ✓ |\n| NodeBuffer#copy(16) | 11,083,134 ops/sec | ±1.06% | 89 | |\n| | | | |\n| BrowserBuffer#new(16000) | 141,678 ops/sec | ±3.30% | 67 | |\n| Uint8Array#new(16000) | 161,491 ops/sec | ±2.96% | 60 | |\n| NodeBuffer#new(16000) | 292,699 ops/sec | ±3.20% | 55 | ✓ |\n| | | | |\n| BrowserBuffer#new(16) | 1,655,466 ops/sec | ±2.41% | 82 | |\n| Uint8Array#new(16) | 14,399,926 ops/sec | ±0.91% | 94 | ✓ |\n| NodeBuffer#new(16) | 3,894,696 ops/sec | ±0.88% | 92 | |\n| | | | |\n| BrowserBuffer#readDoubleBE | 109,582 ops/sec | ±0.75% | 93 | ✓ |\n| DataView#getFloat64 | 91,235 ops/sec | ±0.81% | 90 | |\n| NodeBuffer#readDoubleBE | 88,593 ops/sec | ±0.96% | 81 | |\n| | | | |\n| BrowserBuffer#readFloatBE | 139,854 ops/sec | ±1.03% | 85 | ✓ |\n| DataView#getFloat32 | 98,744 ops/sec | ±0.80% | 89 | |\n| NodeBuffer#readFloatBE | 92,769 ops/sec | ±0.94% | 93 | |\n| | | | |\n| BrowserBuffer#readUInt32LE | 710,861 ops/sec | ±0.82% | 92 | |\n| DataView#getUint32 | 117,893 ops/sec | ±0.84% | 91 | |\n| NodeBuffer#readUInt32LE | 851,412 ops/sec | ±0.72% | 93 | ✓ |\n| | | | |\n| BrowserBuffer#slice | 1,673,877 ops/sec | ±0.73% | 94 | |\n| Uint8Array#subarray | 6,919,243 ops/sec | ±0.67% | 90 | ✓ |\n| NodeBuffer#slice | 4,617,604 ops/sec | ±0.79% | 93 | |\n| | | | |\n| BrowserBuffer#writeFloatBE | 66,011 ops/sec | ±0.75% | 93 | |\n| DataView#setFloat32 | 127,760 ops/sec | ±0.72% | 93 | ✓ |\n| NodeBuffer#writeFloatBE | 103,352 ops/sec | ±0.83% | 93 | |\n\n### iojs 1.8.1\n\n| Method | Operations | Accuracy | Sampled | Fastest |\n|:-------|:-----------|:---------|:--------|:-------:|\n| BrowserBuffer#bracket-notation | 10,990,488 ops/sec | ±1.11% | 91 | |\n| Uint8Array#bracket-notation | 11,268,757 ops/sec | ±0.65% | 97 | |\n| NodeBuffer#bracket-notation | 11,353,260 ops/sec | ±0.83% | 94 | ✓ |\n| | | | |\n| BrowserBuffer#concat | 378,954 ops/sec | ±0.74% | 94 | |\n| Uint8Array#concat | 1,358,288 ops/sec | ±0.97% | 87 | |\n| NodeBuffer#concat | 1,934,050 ops/sec | ±1.11% | 78 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16000) | 894,538 ops/sec | ±0.56% | 84 | |\n| Uint8Array#copy(16000) | 1,442,656 ops/sec | ±0.71% | 96 | |\n| NodeBuffer#copy(16000) | 1,457,898 ops/sec | ±0.53% | 92 | ✓ |\n| | | | |\n| BrowserBuffer#copy(16) | 12,870,457 ops/sec | ±0.67% | 95 | |\n| Uint8Array#copy(16) | 16,643,989 ops/sec | ±0.61% | 93 | ✓ |\n| NodeBuffer#copy(16) | 14,885,848 ops/sec | ±0.74% | 94 | |\n| | | | |\n| BrowserBuffer#new(16000) | 109,264 ops/sec | ±4.21% | 63 | |\n| Uint8Array#new(16000) | 138,916 ops/sec | ±1.87% | 61 | |\n| NodeBuffer#new(16000) | 281,449 ops/sec | ±3.58% | 51 | ✓ |\n| | | | |\n| BrowserBuffer#new(16) | 1,362,935 ops/sec | ±0.56% | 99 | |\n| Uint8Array#new(16) | 6,193,090 ops/sec | ±0.64% | 95 | ✓ |\n| NodeBuffer#new(16) | 4,745,425 ops/sec | ±1.56% | 90 | |\n| | | | |\n| BrowserBuffer#readDoubleBE | 118,127 ops/sec | ±0.59% | 93 | ✓ |\n| DataView#getFloat64 | 107,332 ops/sec | ±0.65% | 91 | |\n| NodeBuffer#readDoubleBE | 116,274 ops/sec | ±0.94% | 95 | |\n| | | | |\n| BrowserBuffer#readFloatBE | 150,326 ops/sec | ±0.58% | 95 | ✓ |\n| DataView#getFloat32 | 110,541 ops/sec | ±0.57% | 98 | |\n| NodeBuffer#readFloatBE | 121,599 ops/sec | ±0.60% | 87 | |\n| | | | |\n| BrowserBuffer#readUInt32LE | 814,147 ops/sec | ±0.62% | 93 | |\n| DataView#getUint32 | 137,592 ops/sec | ±0.64% | 90 | |\n| NodeBuffer#readUInt32LE | 931,650 ops/sec | ±0.71% | 96 | ✓ |\n| | | | |\n| BrowserBuffer#slice | 878,590 ops/sec | ±0.68% | 93 | |\n| Uint8Array#subarray | 2,843,308 ops/sec | ±1.02% | 90 | |\n| NodeBuffer#slice | 4,998,316 ops/sec | ±0.68% | 90 | ✓ |\n| | | | |\n| BrowserBuffer#writeFloatBE | 65,927 ops/sec | ±0.74% | 93 | |\n| DataView#setFloat32 | 139,823 ops/sec | ±0.97% | 89 | ✓ |\n| NodeBuffer#writeFloatBE | 135,763 ops/sec | ±0.65% | 96 | |\n| | | | |\n\n## Testing the project\n\nFirst, install the project:\n\n    npm install\n\nThen, to run tests in Node.js, run:\n\n    npm run test-node\n\nTo test locally in a browser, you can run:\n\n    npm run test-browser-local\n\nThis will print out a URL that you can then open in a browser to run the tests, using [Zuul](https://github.com/defunctzombie/zuul).\n\nTo run automated browser tests using Saucelabs, ensure that your `SAUCE_USERNAME` and `SAUCE_ACCESS_KEY` environment variables are set, then run:\n\n    npm test\n\nThis is what's run in Travis, to check against various browsers. The list of browsers is kept in the `.zuul.yml` file.\n\n## JavaScript Standard Style\n\nThis module uses [JavaScript Standard Style](https://github.com/feross/standard).\n\n[![JavaScript Style Guide](https://cdn.rawgit.com/feross/standard/master/badge.svg)](https://github.com/feross/standard)\n\nTo test that the code conforms to the style, `npm install` and run:\n\n    ./node_modules/.bin/standard\n\n## credit\n\nThis was originally forked from [buffer-browserify](https://github.com/toots/buffer-browserify).\n\n\n## license\n\nMIT. Copyright (C) [Feross Aboukhadijeh](http://feross.org), and other contributors. Originally forked from an MIT-licensed module by Romain Beauxis.\n",
@@ -1009,14 +853,8 @@
             },
             "events": {
               "_args": [
-                [
-                  "events@1.1.1",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "events@1.1.1",
-                  "/path/to/project/packages/models"
-                ]
+                ["events@1.1.1", "/path/to/project/packages/models"],
+                ["events@1.1.1", "/path/to/project/packages/models"]
               ],
               "_from": "events@1.1.1",
               "_id": "events@1.1.1",
@@ -1033,9 +871,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "1.1.1"
               },
-              "_requiredBy": [
-                "/aws-sdk"
-              ],
+              "_requiredBy": ["/aws-sdk"],
               "_resolved": "https://registry.npmjs.org/events/-/events-1.1.1.tgz",
               "_spec": "1.1.1",
               "_where": "/path/to/project/packages/models",
@@ -1057,12 +893,7 @@
               },
               "homepage": "https://github.com/Gozala/events#readme",
               "id": "events",
-              "keywords": [
-                "events",
-                "eventEmitter",
-                "eventDispatcher",
-                "listeners"
-              ],
+              "keywords": ["events", "eventEmitter", "eventDispatcher", "listeners"],
               "license": "MIT",
               "main": "./events.js",
               "name": "events",
@@ -1129,14 +960,8 @@
             },
             "jmespath": {
               "_args": [
-                [
-                  "jmespath@0.15.0",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "jmespath@0.15.0",
-                  "/path/to/project/packages/models"
-                ]
+                ["jmespath@0.15.0", "/path/to/project/packages/models"],
+                ["jmespath@0.15.0", "/path/to/project/packages/models"]
               ],
               "_from": "jmespath@0.15.0",
               "_id": "jmespath@0.15.0",
@@ -1153,9 +978,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "0.15.0"
               },
-              "_requiredBy": [
-                "/aws-sdk"
-              ],
+              "_requiredBy": ["/aws-sdk"],
               "_resolved": "https://registry.npmjs.org/jmespath/-/jmespath-0.15.0.tgz",
               "_spec": "0.15.0",
               "_where": "/path/to/project/packages/models",
@@ -1184,12 +1007,7 @@
                 "node": ">= 0.6.0"
               },
               "homepage": "https://github.com/jmespath/jmespath.js",
-              "keywords": [
-                "jmespath",
-                "jsonpath",
-                "json",
-                "xpath"
-              ],
+              "keywords": ["jmespath", "jsonpath", "json", "xpath"],
               "licenses": [
                 {
                   "type": "Apache 2.0",
@@ -1216,14 +1034,8 @@
             },
             "querystring": {
               "_args": [
-                [
-                  "querystring@0.2.0",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "querystring@0.2.0",
-                  "/path/to/project/packages/models"
-                ]
+                ["querystring@0.2.0", "/path/to/project/packages/models"],
+                ["querystring@0.2.0", "/path/to/project/packages/models"]
               ],
               "_from": "querystring@0.2.0",
               "_id": "querystring@0.2.0",
@@ -1240,10 +1052,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "0.2.0"
               },
-              "_requiredBy": [
-                "/aws-sdk",
-                "/url"
-              ],
+              "_requiredBy": ["/aws-sdk", "/url"],
               "_resolved": "https://registry.npmjs.org/querystring/-/querystring-0.2.0.tgz",
               "_spec": "0.2.0",
               "_where": "/path/to/project/packages/models",
@@ -1266,11 +1075,7 @@
               },
               "homepage": "https://github.com/Gozala/querystring#readme",
               "id": "querystring",
-              "keywords": [
-                "commonjs",
-                "query",
-                "querystring"
-              ],
+              "keywords": ["commonjs", "query", "querystring"],
               "licenses": [
                 {
                   "type": "MIT",
@@ -1292,31 +1097,11 @@
               "testling": {
                 "files": "test/tap-index.js",
                 "browsers": {
-                  "iexplore": [
-                    9,
-                    10
-                  ],
-                  "chrome": [
-                    16,
-                    20,
-                    25,
-                    "canary"
-                  ],
-                  "firefox": [
-                    10,
-                    15,
-                    16,
-                    17,
-                    18,
-                    "nightly"
-                  ],
-                  "safari": [
-                    5,
-                    6
-                  ],
-                  "opera": [
-                    12
-                  ]
+                  "iexplore": [9, 10],
+                  "chrome": [16, 20, 25, "canary"],
+                  "firefox": [10, 15, 16, 17, 18, "nightly"],
+                  "safari": [5, 6],
+                  "opera": [12]
                 }
               },
               "version": "0.2.0",
@@ -1331,14 +1116,8 @@
             },
             "sax": {
               "_args": [
-                [
-                  "sax@1.2.1",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "sax@1.2.1",
-                  "/path/to/project/packages/models"
-                ]
+                ["sax@1.2.1", "/path/to/project/packages/models"],
+                ["sax@1.2.1", "/path/to/project/packages/models"]
               ],
               "_from": "sax@1.2.1",
               "_id": "sax@1.2.1",
@@ -1355,10 +1134,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "1.2.1"
               },
-              "_requiredBy": [
-                "/aws-sdk",
-                "/xml2js"
-              ],
+              "_requiredBy": ["/aws-sdk", "/xml2js"],
               "_resolved": "https://registry.npmjs.org/sax/-/sax-1.2.1.tgz",
               "_spec": "1.2.1",
               "_where": "/path/to/project/packages/models",
@@ -1375,12 +1151,7 @@
                 "standard": "^5.3.1",
                 "tap": "^5.2.0"
               },
-              "files": [
-                "lib/sax.js",
-                "LICENSE",
-                "LICENSE-W3C.html",
-                "README.md"
-              ],
+              "files": ["lib/sax.js", "LICENSE", "LICENSE-W3C.html", "README.md"],
               "homepage": "https://github.com/isaacs/sax-js#readme",
               "license": "ISC",
               "main": "lib/sax.js",
@@ -1405,14 +1176,8 @@
             },
             "url": {
               "_args": [
-                [
-                  "url@0.10.3",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "url@0.10.3",
-                  "/path/to/project/packages/models"
-                ]
+                ["url@0.10.3", "/path/to/project/packages/models"],
+                ["url@0.10.3", "/path/to/project/packages/models"]
               ],
               "_from": "url@0.10.3",
               "_id": "url@0.10.3",
@@ -1429,9 +1194,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "0.10.3"
               },
-              "_requiredBy": [
-                "/aws-sdk"
-              ],
+              "_requiredBy": ["/aws-sdk"],
               "_resolved": "https://registry.npmjs.org/url/-/url-0.10.3.tgz",
               "_spec": "0.10.3",
               "_where": "/path/to/project/packages/models",
@@ -1441,14 +1204,8 @@
               "dependencies": {
                 "punycode": {
                   "_args": [
-                    [
-                      "punycode@1.3.2",
-                      "/path/to/project/packages/models"
-                    ],
-                    [
-                      "punycode@1.3.2",
-                      "/path/to/project/packages/models"
-                    ]
+                    ["punycode@1.3.2", "/path/to/project/packages/models"],
+                    ["punycode@1.3.2", "/path/to/project/packages/models"]
                   ],
                   "_from": "punycode@1.3.2",
                   "_id": "punycode@1.3.2",
@@ -1465,9 +1222,7 @@
                     "saveSpec": "[Circular]",
                     "fetchSpec": "1.3.2"
                   },
-                  "_requiredBy": [
-                    "/url"
-                  ],
+                  "_requiredBy": ["/url"],
                   "_resolved": "https://registry.npmjs.org/punycode/-/punycode-1.3.2.tgz",
                   "_spec": "1.3.2",
                   "_where": "/path/to/project/packages/models",
@@ -1499,20 +1254,9 @@
                     "qunitjs": "~1.11.0",
                     "requirejs": "^2.1.14"
                   },
-                  "files": [
-                    "LICENSE-MIT.txt",
-                    "punycode.js"
-                  ],
+                  "files": ["LICENSE-MIT.txt", "punycode.js"],
                   "homepage": "https://mths.be/punycode",
-                  "keywords": [
-                    "punycode",
-                    "unicode",
-                    "idn",
-                    "idna",
-                    "dns",
-                    "url",
-                    "domain"
-                  ],
+                  "keywords": ["punycode", "unicode", "idn", "idna", "dns", "url", "domain"],
                   "license": "MIT",
                   "main": "punycode.js",
                   "name": "punycode",
@@ -1611,14 +1355,8 @@
             },
             "xml2js": {
               "_args": [
-                [
-                  "xml2js@0.4.19",
-                  "/path/to/project/packages/models"
-                ],
-                [
-                  "xml2js@0.4.19",
-                  "/path/to/project/packages/models"
-                ]
+                ["xml2js@0.4.19", "/path/to/project/packages/models"],
+                ["xml2js@0.4.19", "/path/to/project/packages/models"]
               ],
               "_from": "xml2js@0.4.19",
               "_id": "xml2js@0.4.19",
@@ -1635,9 +1373,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "0.4.19"
               },
-              "_requiredBy": [
-                "/aws-sdk"
-              ],
+              "_requiredBy": ["/aws-sdk"],
               "_resolved": "https://registry.npmjs.org/xml2js/-/xml2js-0.4.19.tgz",
               "_spec": "0.4.19",
               "_where": "/path/to/project/packages/models",
@@ -1902,14 +1638,8 @@
                 },
                 "xmlbuilder": {
                   "_args": [
-                    [
-                      "xmlbuilder@9.0.7",
-                      "/path/to/project/packages/models"
-                    ],
-                    [
-                      "xmlbuilder@9.0.7",
-                      "/path/to/project/packages/models"
-                    ]
+                    ["xmlbuilder@9.0.7", "/path/to/project/packages/models"],
+                    ["xmlbuilder@9.0.7", "/path/to/project/packages/models"]
                   ],
                   "_from": "xmlbuilder@9.0.7",
                   "_id": "xmlbuilder@9.0.7",
@@ -1926,9 +1656,7 @@
                     "saveSpec": "[Circular]",
                     "fetchSpec": "9.0.7"
                   },
-                  "_requiredBy": [
-                    "/xml2js"
-                  ],
+                  "_requiredBy": ["/xml2js"],
                   "_resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-9.0.7.tgz",
                   "_spec": "9.0.7",
                   "_where": "/path/to/project/packages/models",
@@ -1953,10 +1681,7 @@
                     "node": ">=4.0"
                   },
                   "homepage": "http://github.com/oozcitak/xmlbuilder-js",
-                  "keywords": [
-                    "xml",
-                    "xmlbuilder"
-                  ],
+                  "keywords": ["xml", "xmlbuilder"],
                   "license": "MIT",
                   "main": "./lib/index",
                   "name": "xmlbuilder",
@@ -1991,14 +1716,9 @@
               "directories": {
                 "lib": "./lib"
               },
-              "files": [
-                "lib"
-              ],
+              "files": ["lib"],
               "homepage": "https://github.com/Leonidas-from-XIV/node-xml2js",
-              "keywords": [
-                "xml",
-                "json"
-              ],
+              "keywords": ["xml", "json"],
               "license": "MIT",
               "main": "./lib/xml2js",
               "name": "xml2js",
@@ -2155,14 +1875,8 @@
         },
         "uuid": {
           "_args": [
-            [
-              "uuid@3.4.0",
-              "/path/to/project/packages/models"
-            ],
-            [
-              "uuid@3.4.0",
-              "/path/to/project/packages/models"
-            ]
+            ["uuid@3.4.0", "/path/to/project/packages/models"],
+            ["uuid@3.4.0", "/path/to/project/packages/models"]
           ],
           "_from": "uuid@3.4.0",
           "_id": "uuid@3.4.0",
@@ -2179,9 +1893,7 @@
             "saveSpec": "[Circular]",
             "fetchSpec": "3.4.0"
           },
-          "_requiredBy": [
-            "/dynamodels"
-          ],
+          "_requiredBy": ["/dynamodels"],
           "_resolved": "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz",
           "_spec": "3.4.0",
           "_where": "/path/to/project/packages/models",
@@ -2197,9 +1909,7 @@
             "url": "https://github.com/uuidjs/uuid/issues"
           },
           "commitlint": {
-            "extends": [
-              "@commitlint/config-conventional"
-            ]
+            "extends": ["@commitlint/config-conventional"]
           },
           "contributors": [
             {
@@ -2239,11 +1949,7 @@
               "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
             }
           },
-          "keywords": [
-            "uuid",
-            "guid",
-            "rfc4122"
-          ],
+          "keywords": ["uuid", "guid", "rfc4122"],
           "license": "MIT",
           "name": "uuid",
           "repository": {
@@ -2332,14 +2038,8 @@
     },
     "lodash.pull": {
       "_args": [
-        [
-          "lodash.pull@4.1.0",
-          "/path/to/project/packages/models"
-        ],
-        [
-          "lodash.pull@4.1.0",
-          "/path/to/project/packages/models"
-        ]
+        ["lodash.pull@4.1.0", "/path/to/project/packages/models"],
+        ["lodash.pull@4.1.0", "/path/to/project/packages/models"]
       ],
       "_from": "lodash.pull@4.1.0",
       "_id": "lodash.pull@4.1.0",
@@ -2356,9 +2056,7 @@
         "saveSpec": "[Circular]",
         "fetchSpec": "4.1.0"
       },
-      "_requiredBy": [
-        "/"
-      ],
+      "_requiredBy": ["/"],
       "_resolved": "https://registry.npmjs.org/lodash.pull/-/lodash.pull-4.1.0.tgz",
       "_spec": "4.1.0",
       "_where": "/path/to/project/packages/models",
@@ -2390,10 +2088,7 @@
       "description": "The lodash method `_.pull` exported as a module.",
       "homepage": "https://lodash.com/",
       "icon": "https://lodash.com/icon.svg",
-      "keywords": [
-        "lodash-modularized",
-        "pull"
-      ],
+      "keywords": ["lodash-modularized", "pull"],
       "license": "MIT",
       "name": "lodash.pull",
       "repository": {
@@ -2416,14 +2111,8 @@
     },
     "uuid": {
       "_args": [
-        [
-          "uuid@7.0.3",
-          "/path/to/project/packages/models"
-        ],
-        [
-          "uuid@7.0.3",
-          "/path/to/project/packages/models"
-        ]
+        ["uuid@7.0.3", "/path/to/project/packages/models"],
+        ["uuid@7.0.3", "/path/to/project/packages/models"]
       ],
       "_from": "uuid@7.0.3",
       "_id": "uuid@7.0.3",
@@ -2440,9 +2129,7 @@
         "saveSpec": "[Circular]",
         "fetchSpec": "7.0.3"
       },
-      "_requiredBy": [
-        "/"
-      ],
+      "_requiredBy": ["/"],
       "_resolved": "https://registry.npmjs.org/uuid/-/uuid-7.0.3.tgz",
       "_spec": "7.0.3",
       "_where": "/path/to/project/packages/models",
@@ -2459,9 +2146,7 @@
         "url": "https://github.com/uuidjs/uuid/issues"
       },
       "commitlint": {
-        "extends": [
-          "@commitlint/config-conventional"
-        ]
+        "extends": ["@commitlint/config-conventional"]
       },
       "description": "RFC4122 (v1, v4, and v5) UUIDs",
       "devDependencies": {
@@ -2513,19 +2198,11 @@
           "pre-commit": "lint-staged"
         }
       },
-      "keywords": [
-        "uuid",
-        "guid",
-        "rfc4122"
-      ],
+      "keywords": ["uuid", "guid", "rfc4122"],
       "license": "MIT",
       "lint-staged": {
-        "*.{js,jsx,json,md}": [
-          "prettier --write"
-        ],
-        "*.{js,jsx}": [
-          "eslint --fix"
-        ]
+        "*.{js,jsx,json,md}": ["prettier --write"],
+        "*.{js,jsx}": ["eslint --fix"]
       },
       "main": "dist/index.js",
       "module": "dist/esm-node/index.js",

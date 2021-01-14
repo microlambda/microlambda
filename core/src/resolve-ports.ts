@@ -14,12 +14,7 @@ type PortMap = { [key: string]: number };
  * @param logger
  * @param defaultPort
  */
-export const resolvePorts = (
-  services: Workspace[],
-  config: IConfig,
-  logger: Logger,
-  defaultPort = 3001,
-): PortMap => {
+export const resolvePorts = (services: Workspace[], config: IConfig, logger: Logger, defaultPort = 3001): PortMap => {
   logger.log('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {

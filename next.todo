@@ -1,7 +1,7 @@
+fix(server): serve correctly front-end
 refactor: move test execution from cli to core
 feat(core): add remove stack method to service
 feat(cli): add remove command
-fix(server): serve correctly front-end
 perf(client): use CDN to serve fonts
 ci: lint and test code on push
 fix(client): rework logs display
@@ -27,3 +27,8 @@ docs: handling guide
 docs: testing guide
 docs: cookbook multiple regions
 docs: custom domain
+refactor: extend prettier eslint default configurations
+perf: optimize npm packages with .npmignore
+chore: add licence in each package
+docs: add per package README
+docs: add badges

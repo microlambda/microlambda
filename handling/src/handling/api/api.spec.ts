@@ -1,14 +1,11 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-
-import 'jest-extended';
-
 import { getConfig } from '../../config';
 import { TestingHandler } from '../index.spec';
-import { callAfterMiddleware, callBeforeMiddleware, callErrorHandlers } from '../middleware';
+import * as middleware from '../middleware';
 import { apiHandler } from './api';
+import { SinonStub, spy, stub } from 'sinon';
 
 jest.mock('../../config');
-jest.mock('../middleware');
 const mock = getConfig as jest.Mock;
 
 describe('handling', () => {
@@ -19,26 +16,31 @@ describe('handling', () => {
 
   describe('api', () => {
     it('runs middlewares before and after the handler', async () => {
-      const handler = jest.fn();
+
+      const handler = stub();
+      const middlewareBefore = stub(middleware, 'callBeforeMiddleware');
+      const middlewareAfter = stub(middleware, 'callAfterMiddleware');
 
       await (apiHandler(handler) as TestingHandler)({});
 
-      expect(handler).toHaveBeenCalledAfter(callBeforeMiddleware as jest.Mock);
-      expect(handler).toHaveBeenCalledBefore(callAfterMiddleware as jest.Mock);
+      expect(handler.calledAfter(middlewareBefore)).toBe(true);
+      expect(handler.calledBefore(middlewareAfter)).toBe(true);
+
+      middlewareBefore.restore();
+      middlewareAfter.restore();
     });
 
     it('parses request body correctly', async () => {
-      expect.assertions(1);
       const body = { email: 'foo@example.com' };
       (apiHandler(async (event: APIGatewayProxyEvent) => {
-        expect(event.body).toStrictEqual(body);
+        expect(event.body).toEqual(body as any);
       }) as TestingHandler)({ body: JSON.stringify(body) });
     });
 
     it('throws a 400 Bad Request when request body is incorrect', async () => {
       const response = await (apiHandler(async (): Promise<null> => null) as TestingHandler)({ body: 'not json' });
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 400,
         headers: {},
         multiValueHeaders: {},
@@ -55,7 +57,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 200,
         headers: {},
         multiValueHeaders: {},
@@ -66,7 +68,7 @@ describe('handling', () => {
     it('returns a 201 when POST succeeds', async () => {
       const response = await (apiHandler(async (): Promise<{}> => ({})) as TestingHandler)({ httpMethod: 'POST' });
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 201,
         headers: {},
         multiValueHeaders: {},
@@ -77,7 +79,7 @@ describe('handling', () => {
     it('returns a 201 when response body is empty and request method is POST', async () => {
       const response = await (apiHandler(async (): Promise<null> => null) as TestingHandler)({ httpMethod: 'POST' });
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 201,
         headers: {},
         multiValueHeaders: {},
@@ -92,7 +94,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 204,
         headers: {},
         multiValueHeaders: {},
@@ -103,7 +105,7 @@ describe('handling', () => {
     it('returns a 204 when response body is null', async () => {
       const response = await (apiHandler(async (): Promise<null> => null) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 204,
         headers: {},
         multiValueHeaders: {},
@@ -114,7 +116,7 @@ describe('handling', () => {
     it('returns a 204 when response body is undefined', async () => {
       const response = await (apiHandler(async (): Promise<void> => undefined) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 204,
         headers: {},
         multiValueHeaders: {},
@@ -125,7 +127,7 @@ describe('handling', () => {
     it('returns a 204 when response body is an empty string', async () => {
       const response = await (apiHandler(async (): Promise<string> => '') as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 204,
         headers: {},
         multiValueHeaders: {},
@@ -136,7 +138,7 @@ describe('handling', () => {
     it('does NOT return 204 when response body is false', async () => {
       const response = await (apiHandler(async (): Promise<boolean> => false) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 200,
         headers: {},
         multiValueHeaders: {},
@@ -151,7 +153,7 @@ describe('handling', () => {
         async (): Promise<{ password: string }> => ({ password: 'password' }),
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 200,
         headers: {},
         multiValueHeaders: {},
@@ -170,7 +172,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({ headers });
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 204,
         headers: {
           'Access-Control-Allow-Origin': 'localhost',
@@ -197,7 +199,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 422,
         headers: {},
         multiValueHeaders: {},
@@ -214,7 +216,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 403,
         headers: {},
         multiValueHeaders: {},
@@ -233,7 +235,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 403,
         headers: {},
         multiValueHeaders: {},
@@ -250,7 +252,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 400,
         headers: {},
         multiValueHeaders: {},
@@ -269,7 +271,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 400,
         headers: {},
         multiValueHeaders: {},
@@ -284,7 +286,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 500,
         headers: {},
         multiValueHeaders: {},
@@ -299,7 +301,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 400,
         headers: {},
         multiValueHeaders: {},
@@ -308,13 +310,14 @@ describe('handling', () => {
     });
 
     it('calls error handlers when an error happens', async () => {
+      const callErrorHandlers = stub(middleware, 'callErrorHandlers');
       await (apiHandler(
         async (): Promise<void> => {
           throw 'error';
         },
       ) as TestingHandler)({});
-
-      expect(callErrorHandlers).toHaveBeenCalledTimes(1);
+      expect(callErrorHandlers.callCount).toBe(1);
+      callErrorHandlers.restore();
     });
 
     it('does not return the content directly anymore, even with statusCode', async () => {
@@ -324,7 +327,7 @@ describe('handling', () => {
         },
       ) as TestingHandler)({});
 
-      expect(response).toStrictEqual({
+      expect(response).toEqual({
         statusCode: 200,
         headers: {},
         multiValueHeaders: {},

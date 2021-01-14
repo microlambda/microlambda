@@ -7,16 +7,20 @@
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "scripts": {
+    "build": "yarn workspaces foreach -tv run build ",
     "build:core": "yarn workspace @microlambda/core run build",
     "build:cli": "yarn workspace @microlambda/cli run build",
     "build:server": "yarn workspace @microlambda/server run build",
+    "build:handling": "yarn workspace @microlambda/handling run build",
     "publish:core": "yarn workspace @microlambda/core npm publish --access public",
     "publish:server": "yarn workspace @microlambda/server npm publish --access public",
-    "publish:cli": "yarn workspace @microlambda/cli npm publish --access public"
+    "publish:cli": "yarn workspace @microlambda/cli npm publish --access public",
+    "test:handling": "yarn workspace @microlambda/handling run test"
   },
   "workspaces": [
     "cli",
     "core",
+    "client",
     "docs/website",
     "generator",
     "handling",
@@ -26,6 +30,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@types/sinon": "^9.0.10",
     "@typescript-eslint/eslint-plugin": "^2.21.0",
     "@typescript-eslint/parser": "^2.21.0",
     "eslint": "^6.8.0",
@@ -34,10 +39,9 @@
     "eslint-plugin-react": "^7.20.6",
     "husky": "^4.2.3",
     "jest": "^26.4.1",
-    "jest-extended": "^0.11.5",
-    "lerna": "^3.20.2",
     "lint-staged": "^10.0.8",
     "prettier": "^1.19.1",
+    "sinon": "^9.2.3",
     "ts-jest": "^26.2.0",
     "typescript": "^3.9.7"
   },

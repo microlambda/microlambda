@@ -5,7 +5,6 @@ import { Node } from './graph';
 import { CompilationMode } from './config/config';
 import { Logger } from './logger';
 
-
 /*
 FIXME: The idea here would be to use npm local scripts start, test, deploy instead
  */

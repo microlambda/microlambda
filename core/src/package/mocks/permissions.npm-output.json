@@ -7,9 +7,7 @@
   "directories": {
     "lib": "lib"
   },
-  "files": [
-    "lib"
-  ],
+  "files": ["lib"],
   "scripts": {
     "clear": "npm run clear:modules && npm run clear:lib && npm run clear:package",
     "clear:all": "npm run clear && npm run clear:lock",

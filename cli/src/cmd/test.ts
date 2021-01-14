@@ -13,7 +13,7 @@ interface ITestOptions extends IBuildCmd {
   unit: boolean;
   functional: boolean;
   C?: number;
-  stdio: 'inherit' | 'ignore'
+  stdio: 'inherit' | 'ignore';
 }
 
 enum TestStatus {

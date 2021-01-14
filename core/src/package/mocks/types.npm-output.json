@@ -7,9 +7,7 @@
   "directories": {
     "lib": "lib"
   },
-  "files": [
-    "lib"
-  ],
+  "files": ["lib"],
   "scripts": {
     "tsc": "npx tsc -v && npx tsc",
     "clear": "npm run clear:modules && npm run clear:lib && npm run clear:package",

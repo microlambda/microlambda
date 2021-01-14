@@ -1,6 +1,6 @@
 import { join, relative } from 'path';
 import { command } from 'execa';
-import { chmodSync, existsSync, mkdirSync, removeSync, statSync } from 'fs-extra';
+import { existsSync, mkdirSync, removeSync, statSync } from 'fs-extra';
 import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import chalk from 'chalk';
@@ -72,7 +72,9 @@ export class Packager {
     this._logger.info(
       `${chalk.bold(service.getName())}: re-installing only workspace production dependencies with yarn`,
     );
-    await command(`yarn workspaces focus ${service.getName()} --production`, { stdio });
+    await command(`yarn workspaces focus ${service.getName()} --production`, {
+      stdio,
+    });
     const projectRoot = this._graph.project.cwd;
 
     const packageDirectory = join(service.getLocation(), '.package');
@@ -116,7 +118,9 @@ export class Packager {
 
       const toZip: Map<string, string> = new Map();
       // Copy dependencies
-      const dependencies = glob(join(projectRoot, 'node_modules', '**', '*'), { follow: true });
+      const dependencies = glob(join(projectRoot, 'node_modules', '**', '*'), {
+        follow: true,
+      });
 
       dependencies.forEach((path) => {
         toZip.set(relative(projectRoot, path), path);

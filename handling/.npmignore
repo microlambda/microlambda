@@ -5,8 +5,6 @@
 jest.config.js
 tslint.json
 tsconfig.json
-src/**/*.spec.ts
-node_modules
+src/**/*.ts
 coverage
-src
-examples
+dist/**/*.map

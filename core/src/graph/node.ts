@@ -46,8 +46,12 @@ export abstract class Node {
   private _watchers: FSWatcher[] = [];
 
   private _tscLogs$: BehaviorSubject<string> = new BehaviorSubject('');
-  private _typeCheck$: BehaviorSubject<TypeCheckStatus> = new BehaviorSubject<TypeCheckStatus>(TypeCheckStatus.NOT_CHECKED);
-  private _transpiled$: BehaviorSubject<TranspilingStatus> = new BehaviorSubject<TranspilingStatus>(TranspilingStatus.NOT_TRANSPILED);
+  private _typeCheck$: BehaviorSubject<TypeCheckStatus> = new BehaviorSubject<TypeCheckStatus>(
+    TypeCheckStatus.NOT_CHECKED,
+  );
+  private _transpiled$: BehaviorSubject<TranspilingStatus> = new BehaviorSubject<TranspilingStatus>(
+    TranspilingStatus.NOT_TRANSPILED,
+  );
 
   public typeCheck$ = this._typeCheck$.asObservable();
   public transpiled$ = this._transpiled$.asObservable();

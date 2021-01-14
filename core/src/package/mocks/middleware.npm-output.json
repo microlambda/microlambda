@@ -7,20 +7,12 @@
   "directories": {
     "lib": "lib"
   },
-  "files": [
-    "lib"
-  ],
+  "files": ["lib"],
   "dependencies": {
     "node-serverless-helpers": {
       "_args": [
-        [
-          "node-serverless-helpers@3.0.6",
-          "/path/to/project/packages/middleware"
-        ],
-        [
-          "node-serverless-helpers@3.0.6",
-          "/path/to/project/packages/middleware"
-        ]
+        ["node-serverless-helpers@3.0.6", "/path/to/project/packages/middleware"],
+        ["node-serverless-helpers@3.0.6", "/path/to/project/packages/middleware"]
       ],
       "_from": "node-serverless-helpers@3.0.6",
       "_id": "node-serverless-helpers@3.0.6",
@@ -37,9 +29,7 @@
         "saveSpec": null,
         "fetchSpec": "3.0.6"
       },
-      "_requiredBy": [
-        "/"
-      ],
+      "_requiredBy": ["/"],
       "_resolved": "https://registry.npmjs.org/node-serverless-helpers/-/node-serverless-helpers-3.0.6.tgz",
       "_spec": "3.0.6",
       "_where": "/path/to/project/packages/middleware",
@@ -53,14 +43,8 @@
       "dependencies": {
         "deepmerge": {
           "_args": [
-            [
-              "deepmerge@3.3.0",
-              "/path/to/project/packages/middleware"
-            ],
-            [
-              "deepmerge@3.3.0",
-              "/path/to/project/packages/middleware"
-            ]
+            ["deepmerge@3.3.0", "/path/to/project/packages/middleware"],
+            ["deepmerge@3.3.0", "/path/to/project/packages/middleware"]
           ],
           "_from": "deepmerge@3.3.0",
           "_id": "deepmerge@3.3.0",
@@ -77,9 +61,7 @@
             "saveSpec": "[Circular]",
             "fetchSpec": "3.3.0"
           },
-          "_requiredBy": [
-            "/node-serverless-helpers"
-          ],
+          "_requiredBy": ["/node-serverless-helpers"],
           "_resolved": "https://registry.npmjs.org/deepmerge/-/deepmerge-3.3.0.tgz",
           "_spec": "3.3.0",
           "_where": "/path/to/project/packages/middleware",
@@ -105,14 +87,7 @@
             "node": ">=0.10.0"
           },
           "homepage": "https://github.com/TehShrike/deepmerge",
-          "keywords": [
-            "merge",
-            "deep",
-            "extend",
-            "copy",
-            "clone",
-            "recursive"
-          ],
+          "keywords": ["merge", "deep", "extend", "copy", "clone", "recursive"],
           "license": "MIT",
           "main": "dist/umd.js",
           "name": "deepmerge",
@@ -137,14 +112,8 @@
         },
         "joi": {
           "_args": [
-            [
-              "joi@14.3.1",
-              "/path/to/project/packages/middleware"
-            ],
-            [
-              "joi@14.3.1",
-              "/path/to/project/packages/middleware"
-            ]
+            ["joi@14.3.1", "/path/to/project/packages/middleware"],
+            ["joi@14.3.1", "/path/to/project/packages/middleware"]
           ],
           "_from": "joi@14.3.1",
           "_id": "joi@14.3.1",
@@ -161,9 +130,7 @@
             "saveSpec": "[Circular]",
             "fetchSpec": "14.3.1"
           },
-          "_requiredBy": [
-            "/node-serverless-helpers"
-          ],
+          "_requiredBy": ["/node-serverless-helpers"],
           "_resolved": "https://registry.npmjs.org/joi/-/joi-14.3.1.tgz",
           "_spec": "14.3.1",
           "_where": "/path/to/project/packages/middleware",
@@ -173,14 +140,8 @@
           "dependencies": {
             "hoek": {
               "_args": [
-                [
-                  "hoek@6.1.3",
-                  "/path/to/project/packages/middleware"
-                ],
-                [
-                  "hoek@6.1.3",
-                  "/path/to/project/packages/middleware"
-                ]
+                ["hoek@6.1.3", "/path/to/project/packages/middleware"],
+                ["hoek@6.1.3", "/path/to/project/packages/middleware"]
               ],
               "_from": "hoek@6.1.3",
               "_id": "hoek@6.1.3",
@@ -197,10 +158,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "6.1.3"
               },
-              "_requiredBy": [
-                "/joi",
-                "/topo"
-              ],
+              "_requiredBy": ["/joi", "/topo"],
               "_resolved": "https://registry.npmjs.org/hoek/-/hoek-6.1.3.tgz",
               "_spec": "6.1.3",
               "_where": "/path/to/project/packages/middleware",
@@ -214,9 +172,7 @@
                 "lab": "18.x.x"
               },
               "homepage": "https://github.com/hapijs/hoek#readme",
-              "keywords": [
-                "utilities"
-              ],
+              "keywords": ["utilities"],
               "license": "BSD-3-Clause",
               "main": "lib/index.js",
               "name": "hoek",
@@ -239,14 +195,8 @@
             },
             "isemail": {
               "_args": [
-                [
-                  "isemail@3.2.0",
-                  "/path/to/project/packages/middleware"
-                ],
-                [
-                  "isemail@3.2.0",
-                  "/path/to/project/packages/middleware"
-                ]
+                ["isemail@3.2.0", "/path/to/project/packages/middleware"],
+                ["isemail@3.2.0", "/path/to/project/packages/middleware"]
               ],
               "_from": "isemail@3.2.0",
               "_id": "isemail@3.2.0",
@@ -263,9 +213,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "3.2.0"
               },
-              "_requiredBy": [
-                "/joi"
-              ],
+              "_requiredBy": ["/joi"],
               "_resolved": "https://registry.npmjs.org/isemail/-/isemail-3.2.0.tgz",
               "_spec": "3.2.0",
               "_where": "/path/to/project/packages/middleware",
@@ -275,14 +223,8 @@
               "dependencies": {
                 "punycode": {
                   "_args": [
-                    [
-                      "punycode@2.1.1",
-                      "/path/to/project/packages/middleware"
-                    ],
-                    [
-                      "punycode@2.1.1",
-                      "/path/to/project/packages/middleware"
-                    ]
+                    ["punycode@2.1.1", "/path/to/project/packages/middleware"],
+                    ["punycode@2.1.1", "/path/to/project/packages/middleware"]
                   ],
                   "_from": "punycode@2.1.1",
                   "_id": "punycode@2.1.1",
@@ -299,9 +241,7 @@
                     "saveSpec": "[Circular]",
                     "fetchSpec": "2.1.1"
                   },
-                  "_requiredBy": [
-                    "/isemail"
-                  ],
+                  "_requiredBy": ["/isemail"],
                   "_resolved": "https://registry.npmjs.org/punycode/-/punycode-2.1.1.tgz",
                   "_spec": "2.1.1",
                   "_where": "/path/to/project/packages/middleware",
@@ -327,11 +267,7 @@
                   "engines": {
                     "node": ">=6"
                   },
-                  "files": [
-                    "LICENSE-MIT.txt",
-                    "punycode.js",
-                    "punycode.es6.js"
-                  ],
+                  "files": ["LICENSE-MIT.txt", "punycode.js", "punycode.es6.js"],
                   "homepage": "https://mths.be/punycode",
                   "jsnext:main": "punycode.es6.js",
                   "jspm": {
@@ -341,15 +277,7 @@
                       }
                     }
                   },
-                  "keywords": [
-                    "punycode",
-                    "unicode",
-                    "idn",
-                    "idna",
-                    "dns",
-                    "url",
-                    "domain"
-                  ],
+                  "keywords": ["punycode", "unicode", "idn", "idna", "dns", "url", "domain"],
                   "license": "MIT",
                   "main": "punycode.js",
                   "module": "punycode.es6.js",
@@ -381,9 +309,7 @@
               "engines": {
                 "node": ">=4.0.0"
               },
-              "files": [
-                "lib/"
-              ],
+              "files": ["lib/"],
               "homepage": "https://github.com/hapijs/isemail#readme",
               "keywords": [
                 "isemail",
@@ -420,14 +346,8 @@
             },
             "topo": {
               "_args": [
-                [
-                  "topo@3.0.3",
-                  "/path/to/project/packages/middleware"
-                ],
-                [
-                  "topo@3.0.3",
-                  "/path/to/project/packages/middleware"
-                ]
+                ["topo@3.0.3", "/path/to/project/packages/middleware"],
+                ["topo@3.0.3", "/path/to/project/packages/middleware"]
               ],
               "_from": "topo@3.0.3",
               "_id": "topo@3.0.3",
@@ -444,9 +364,7 @@
                 "saveSpec": "[Circular]",
                 "fetchSpec": "3.0.3"
               },
-              "_requiredBy": [
-                "/joi"
-              ],
+              "_requiredBy": ["/joi"],
               "_resolved": "https://registry.npmjs.org/topo/-/topo-3.0.3.tgz",
               "_spec": "3.0.3",
               "_where": "/path/to/project/packages/middleware",
@@ -503,12 +421,7 @@
                 "lab": "17.x.x"
               },
               "homepage": "https://github.com/hapijs/topo#readme",
-              "keywords": [
-                "topological",
-                "sort",
-                "toposort",
-                "topsort"
-              ],
+              "keywords": ["topological", "sort", "toposort", "topsort"],
               "license": "BSD-3-Clause",
               "main": "lib/index.js",
               "name": "topo",
@@ -539,11 +452,7 @@
             "lab": "18.x.x"
           },
           "homepage": "https://github.com/hapijs/joi",
-          "keywords": [
-            "hapi",
-            "schema",
-            "validation"
-          ],
+          "keywords": ["hapi", "schema", "validation"],
           "license": "BSD-3-Clause",
           "main": "lib/index.js",
           "name": "joi",

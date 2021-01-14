@@ -27,9 +27,9 @@ let internalConfig: IConfigOptions = {
 };
 
 export const config = (options: IConfigOptions): void => {
-  log.debug('[CONFIG] Updating config with', options);
+  log.debug('[CONFIG] Updating config with', options);
   internalConfig = merge([internalConfig, options]) as IConfigOptions;
-  log.debug('[CONFIG] Used config', internalConfig);
+  log.debug('[CONFIG] Used config', internalConfig);
 };
 
 export const getConfig = (): IConfigOptions => internalConfig;

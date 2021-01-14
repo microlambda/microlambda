@@ -52,7 +52,9 @@ export const tailLogs = (serviceName: string, projectRoot: string, logger: Logge
   stat(`${logsDirectory}/${serviceName}.log`, (exists) => {
     if (exists === null) {
       // showOffTitle(serviceName);
-      spawnSync('tail', ['-n', '+1', `${logsDirectory}/${serviceName}.log`], { stdio: 'inherit' });
+      spawnSync('tail', ['-n', '+1', `${logsDirectory}/${serviceName}.log`], {
+        stdio: 'inherit',
+      });
     } else {
       logger
         .log('logs')

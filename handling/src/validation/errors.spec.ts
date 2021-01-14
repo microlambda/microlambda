@@ -5,7 +5,7 @@ describe('validation', () => {
     describe('errorNotUnique', () => {
       it('renders correctly', () => {
         const result = errorNotUnique('email', 'user.email');
-        expect(result).toStrictEqual({
+        expect(result).toEqual({
           name: 'ValidationError',
           details: [
             {

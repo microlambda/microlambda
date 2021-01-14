@@ -4,8 +4,12 @@ import {
   IRecompilationEvent,
   RecompilationEventType,
   RecompilationScheduler,
-  getDefaultThreads, getThreads,
-  Logger, DependenciesGraph, Node, Service
+  getDefaultThreads,
+  getThreads,
+  Logger,
+  DependenciesGraph,
+  Node,
+  Service,
 } from '@microlambda/core';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import chalk from 'chalk';

@@ -4,7 +4,20 @@ import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import { prompt } from 'inquirer';
 import { concat, merge, Observable } from 'rxjs';
-import { CertificateEventType, CertificateManager, ICertificateEvent, RecordsManager, ConfigReader, RecompilationScheduler, Logger, Service, getAccountIAM, backupYaml, reformatYaml, restoreYaml } from '@microlambda/core';
+import {
+  CertificateEventType,
+  CertificateManager,
+  ICertificateEvent,
+  RecordsManager,
+  ConfigReader,
+  RecompilationScheduler,
+  Logger,
+  Service,
+  getAccountIAM,
+  backupYaml,
+  reformatYaml,
+  restoreYaml,
+} from '@microlambda/core';
 
 interface IDeployCmd extends IPackageCmd {
   E: string;

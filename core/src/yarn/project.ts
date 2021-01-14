@@ -12,17 +12,17 @@ export const getYarnProject = async (projectRoot: string): Promise<Project> => {
   const configuration = await Configuration.find(rootPath, plugins);
   const mainWorkspace = await openWorkspace(configuration, rootPath);
   return mainWorkspace.project;
-}
+};
 
 export const getName = (entity: Workspace | Ident): string => {
-  const buildName = (desc: Ident) => {
-    return desc.scope ?  ['@' + desc.scope, desc.name].join('/') : desc.name;
-  }
+  const buildName = (desc: Ident): string => {
+    return desc.scope ? ['@' + desc.scope, desc.name].join('/') : desc.name;
+  };
   if (entity instanceof Workspace) {
     return buildName(entity.manifest.name);
   }
   return buildName(entity);
-}
+};
 
 export const getGraphFromYarnProject = async (
   projectRoot: string,
@@ -32,11 +32,5 @@ export const getGraphFromYarnProject = async (
   defaultPort = 3001,
 ): Promise<DependenciesGraph> => {
   const project = await getYarnProject(projectRoot);
-  return new DependenciesGraph(
-    scheduler,
-    project,
-    config,
-    logger,
-    defaultPort,
-  );
+  return new DependenciesGraph(scheduler, project, config, logger, defaultPort);
 };

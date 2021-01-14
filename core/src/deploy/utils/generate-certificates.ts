@@ -58,7 +58,10 @@ export class CertificateManager {
           const segments = domain.split('.');
           segments.shift();
           const targetDomain = ['*', ...segments].join('.');
-          this._logger.info('Creating certificate', { region, domain: targetDomain });
+          this._logger.info('Creating certificate', {
+            region,
+            domain: targetDomain,
+          });
           regionCertificates.add(targetDomain);
           needAction = true;
         } else {
@@ -90,12 +93,20 @@ export class CertificateManager {
               obs.next({ type: CertificateEventType.CREATED, domain, region });
               this._logger.info('Certificate created', response.CertificateArn);
               this._logger.info('Activating certificate');
-              obs.next({ type: CertificateEventType.ACTIVATING, domain, region });
+              obs.next({
+                type: CertificateEventType.ACTIVATING,
+                domain,
+                region,
+              });
               const activateCertificate = this._activateCertificate(domain, region, response.CertificateArn);
               promises.push(activateCertificate);
               activateCertificate
                 .then(() => {
-                  obs.next({ type: CertificateEventType.ACTIVATED, domain, region });
+                  obs.next({
+                    type: CertificateEventType.ACTIVATED,
+                    domain,
+                    region,
+                  });
                 })
                 .catch((err) => obs.error({ err, domain, region }));
             })

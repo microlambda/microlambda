@@ -43,7 +43,11 @@ export class RecordsManager {
           const record = await this._createRecord(domain, apiGatewayUrl, region, serviceName);
           toCreate.push(record);
         } else {
-          this._logger.info('Record already exist', { region, apiGatewayUrl, domain });
+          this._logger.info('Record already exist', {
+            region,
+            apiGatewayUrl,
+            domain,
+          });
         }
       }
       this._logger.debug(inspect(toCreate, false, null, true));

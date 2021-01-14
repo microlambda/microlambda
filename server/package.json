@@ -10,8 +10,10 @@
   "main": "lib/src/index.js",
   "scripts": {
     "test": "../node_modules/.bin/jest",
-    "build": "npx tsc --build",
-    "start": "node lib/src/start.js start",
+    "build": "yarn run pre:build && ../node_modules/.bin/tsc --build && yarn run post:build",
+    "pre:build": "rm -rf ./lib",
+    "post:build": "cp -r ../client/dist ./lib/src/static",
+    "start": "node lib/src/index.js",
     "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   },
@@ -21,6 +23,7 @@
     "lerna"
   ],
   "dependencies": {
+    "@microlambda/client": "workspace:*",
     "@microlambda/core": "workspace:*",
     "express": "^4.17.1"
   },

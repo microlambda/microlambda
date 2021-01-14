@@ -16,7 +16,7 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "noImplicitReturns": true,
-    "strict": false,
+    "strict": true,
     "target": "ES2018",
     "declaration": true,
     "importHelpers": true,

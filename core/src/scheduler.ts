@@ -490,11 +490,19 @@ export class RecompilationScheduler {
         node.stop().subscribe(
           (node) => {
             this._logger.debug('Stopped', node.getName());
-            obs.next({ node: node, type: RecompilationEventType.STOP_SUCCESS, took: Date.now() - now });
+            obs.next({
+              node: node,
+              type: RecompilationEventType.STOP_SUCCESS,
+              took: Date.now() - now,
+            });
             return obs.complete();
           },
           (err) => {
-            obs.next({ node: node, type: RecompilationEventType.STOP_FAILURE, took: Date.now() - now });
+            obs.next({
+              node: node,
+              type: RecompilationEventType.STOP_FAILURE,
+              took: Date.now() - now,
+            });
             this._logger.error('Error stopping', node.getName(), err);
             return obs.error(err);
           },
@@ -509,11 +517,19 @@ export class RecompilationScheduler {
         node.transpile().subscribe(
           (node) => {
             this._logger.debug('Transpiled', node.getName());
-            obs.next({ node: node, type: RecompilationEventType.TRANSPILE_SUCCESS, took: Date.now() - now });
+            obs.next({
+              node: node,
+              type: RecompilationEventType.TRANSPILE_SUCCESS,
+              took: Date.now() - now,
+            });
             return obs.complete();
           },
           (err) => {
-            obs.next({ node: node, type: RecompilationEventType.TYPE_CHECK_FAILURE, took: Date.now() - now });
+            obs.next({
+              node: node,
+              type: RecompilationEventType.TYPE_CHECK_FAILURE,
+              took: Date.now() - now,
+            });
             this._logger.error('Error transpiling', err);
             return obs.error(err);
           },
@@ -523,12 +539,19 @@ export class RecompilationScheduler {
 
     const startJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.start.map((service) => {
       return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: service, type: RecompilationEventType.START_IN_PROGRESS });
+        obs.next({
+          node: service,
+          type: RecompilationEventType.START_IN_PROGRESS,
+        });
         const now = Date.now();
         service.start().subscribe(
           (node) => {
             this._logger.debug('Service started', service.getName());
-            obs.next({ node: node, type: RecompilationEventType.START_SUCCESS, took: Date.now() - now });
+            obs.next({
+              node: node,
+              type: RecompilationEventType.START_SUCCESS,
+              took: Date.now() - now,
+            });
             return obs.complete();
           },
           (err) => {
@@ -545,17 +568,28 @@ export class RecompilationScheduler {
 
     const typeCheckJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.typeCheck.map((job) => {
       return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: job.node, type: RecompilationEventType.TYPE_CHECK_IN_PROGRESS });
+        obs.next({
+          node: job.node,
+          type: RecompilationEventType.TYPE_CHECK_IN_PROGRESS,
+        });
         const now = Date.now();
         job.node.performTypeChecking(job.force).subscribe(
           (node) => {
             this._logger.debug('Type checked', job.node.getName());
-            obs.next({ node: node, type: RecompilationEventType.TYPE_CHECK_SUCCESS, took: Date.now() - now });
+            obs.next({
+              node: node,
+              type: RecompilationEventType.TYPE_CHECK_SUCCESS,
+              took: Date.now() - now,
+            });
             return obs.complete();
           },
           (err) => {
             this._logger.error('Error typechecking', err);
-            obs.next({ node: job.node, type: RecompilationEventType.TYPE_CHECK_FAILURE, took: Date.now() - now });
+            obs.next({
+              node: job.node,
+              type: RecompilationEventType.TYPE_CHECK_FAILURE,
+              took: Date.now() - now,
+            });
             if (job.throws) {
               const evt: IRecompilationError = {
                 type: RecompilationErrorType.TYPE_CHECK_ERROR,
@@ -571,7 +605,10 @@ export class RecompilationScheduler {
 
     const packageJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.package.map((job) => {
       return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: job.service, type: RecompilationEventType.PACKAGE_IN_PROGRESS });
+        obs.next({
+          node: job.service,
+          type: RecompilationEventType.PACKAGE_IN_PROGRESS,
+        });
         const now = Date.now();
         let i = 1;
         const isLast = i === packageJobs$.length;
@@ -588,7 +625,11 @@ export class RecompilationScheduler {
             return obs.complete();
           },
           (err) => {
-            obs.next({ node: job.service, type: RecompilationEventType.PACKAGE_FAILURE, took: Date.now() - now });
+            obs.next({
+              node: job.service,
+              type: RecompilationEventType.PACKAGE_FAILURE,
+              took: Date.now() - now,
+            });
             this._logger.error('Error packaging', err);
             const evt: IRecompilationError = {
               type: RecompilationErrorType.PACKAGE_ERROR,
