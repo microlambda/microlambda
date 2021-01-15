@@ -11,6 +11,7 @@ import { RecompilationScheduler } from '../scheduler';
 import { Packager } from '../package/packagr';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
+import { ILogger } from '../logger';
 
 interface IServiceLogs {
   offline: string[];
@@ -21,10 +22,10 @@ interface IServiceLogs {
 export class Service extends Node {
   private status: ServiceStatus;
   private readonly _port: number;
-  private process: ChildProcess;
-  private logStream: WriteStream;
+  private process: ChildProcess | undefined;
+  private logStream: WriteStream | undefined;
   private readonly _logs: IServiceLogs;
-  private _slsYamlWatcher: FSWatcher;
+  private _slsYamlWatcher: FSWatcher | undefined;
   private _slsLogs$: BehaviorSubject<string> = new BehaviorSubject<string>('');
   private _status$: BehaviorSubject<ServiceStatus> = new BehaviorSubject<ServiceStatus>(ServiceStatus.STOPPED);
   public status$ = this._status$.asObservable();
@@ -59,15 +60,23 @@ export class Service extends Node {
     return this._port;
   }
 
+  get logger(): ILogger {
+    return this.getGraph().logger.log('service');
+  }
+
   public stop(): Observable<Service> {
     return new Observable<Service>((observer) => {
-      this.getGraph()
-        .logger.log('service')
-        .debug('Requested to stop', this.name, 'which status is', this.status);
+      this.logger.debug('Requested to stop', this.name, 'which status is', this.status);
       switch (this.status) {
         case ServiceStatus.RUNNING:
         case ServiceStatus.STARTING:
-          this.process.kill();
+          if (this.process) {
+            this.process.kill();
+          } else {
+            const msg = `No process found to kill ${this.getName()}`;
+            this.logger.error(msg);
+            observer.error(msg);
+          }
           break;
         case ServiceStatus.STOPPING:
           this.getGraph()
@@ -82,23 +91,25 @@ export class Service extends Node {
           observer.next(this);
           return observer.complete();
       }
-      this.process.on('close', (code) => {
-        if (code === 0) {
-          this.getGraph()
-            .logger.log('service')
-            .info(`Service ${this.name} exited with code ${code}`);
-          this._updateStatus(ServiceStatus.STOPPED);
-        } else {
-          this.getGraph()
-            .logger.log('service')
-            .error(`Service ${this.name} exited with code ${code}`);
-          this._updateStatus(ServiceStatus.CRASHED);
-        }
-        // this.process.removeAllListeners('close');
-        this.process = null;
-        observer.next(this);
-        return observer.complete();
-      });
+      if (this.process) {
+        this.process.on('close', (code) => {
+          if (code === 0) {
+            this.getGraph()
+              .logger.log('service')
+              .info(`Service ${this.name} exited with code ${code}`);
+            this._updateStatus(ServiceStatus.STOPPED);
+          } else {
+            this.getGraph()
+              .logger.log('service')
+              .error(`Service ${this.name} exited with code ${code}`);
+            this._updateStatus(ServiceStatus.CRASHED);
+          }
+          // this.process.removeAllListeners('close');
+          this.process = undefined;
+          observer.next(this);
+          return observer.complete();
+        });
+      }
     });
   }
 
@@ -185,27 +196,37 @@ export class Service extends Node {
       cwd: this.location,
       env: { ...process.env, FORCE_COLOR: '2' },
     });
-    this.process.stderr.on('data', (data) => {
-      this.getGraph()
-        .logger.log('service')
-        .error(`${chalk.bold(this.name)}: ${data}`);
-      this._handleLogs(data);
-    });
+    if (this.process.stderr) {
+      this.process.stderr.on('data', (data) => {
+        this.getGraph()
+          .logger.log('service')
+          .error(`${chalk.bold(this.name)}: ${data}`);
+        this._handleLogs(data);
+      });
+    }
   }
 
   private _watchStarted(): Observable<Service> {
     return new Observable<Service>((started) => {
-      this.process.stdout.on('data', (data) => {
-        this._handleLogs(data);
-        if (data.includes('listening on')) {
-          this.getGraph()
-            .logger.log('service')
-            .info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
-          this._updateStatus(ServiceStatus.RUNNING);
-          started.next(this);
-          return started.complete();
-        }
-      });
+      if (!this.process) {
+        const msg = 'No starting process to watch';
+        this.logger.error(msg);
+        started.error(msg);
+        return;
+      }
+      if (this.process.stdout) {
+        this.process.stdout.on('data', (data) => {
+          this._handleLogs(data);
+          if (data.includes('listening on')) {
+            this.getGraph()
+              .logger.log('service')
+              .info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
+            this._updateStatus(ServiceStatus.RUNNING);
+            started.next(this);
+            return started.complete();
+          }
+        });
+      }
       this.process.on('close', (code) => {
         if (code !== 0) {
           this.getGraph()
@@ -227,7 +248,11 @@ export class Service extends Node {
   }
 
   private _handleLogs(data: Buffer): void {
-    this.logStream.write(data);
+    if (this.logStream) {
+      this.logStream.write(data);
+    } else {
+      this.logger.warn('Cannot write logs file for node', this.getName());
+    }
     this._logs.offline.push(data.toString());
     this._slsLogs$.next(data.toString());
   }
@@ -243,7 +268,9 @@ export class Service extends Node {
       });
     }
     this.status = status;
-    this._ipc.graphUpdated();
+    if (this._ipc) {
+      this._ipc.graphUpdated();
+    }
     this._status$.next(this.status);
   }
 

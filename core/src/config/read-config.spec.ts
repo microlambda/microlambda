@@ -1,3 +1,3 @@
 describe('the configuration reader', () => {
-  it.todo('should be tested');
+  test.todo('should be tested');
 });

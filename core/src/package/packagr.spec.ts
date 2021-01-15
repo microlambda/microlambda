@@ -212,5 +212,5 @@ describe('The packager v2', () => {
 });
 */
 describe('The packagr v3', () => {
-  it.todo('should be tested');
+  test.todo('should be tested');
 });

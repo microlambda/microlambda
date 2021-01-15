@@ -6,16 +6,17 @@ import {
   callErrorHandlers,
   handleError,
   HandlingType,
-  MiddlewareList,
 } from './middleware';
 import { stub } from 'sinon';
 import { Context } from 'aws-lambda';
 
 describe('handling', () => {
   describe('middleware', () => {
-    const fct = async (): Promise<void> => {};
+    const fct = async (): Promise<void> => {
+      return;
+    };
     it(`allows registering for _ALWAYS_`, () => {
-      expect(() => before( [fct])).not.toThrow();
+      expect(() => before([fct])).not.toThrow();
       expect(() => after([fct])).not.toThrow();
       expect(() => handleError([fct])).not.toThrow();
     });
@@ -48,7 +49,7 @@ describe('handling', () => {
     });
 
     it('runs middlewares in the correct order', async () => {
-      const middlwares = [stub(), stub(),stub(),stub(),stub(),stub(),stub(),stub()];
+      const middlwares = [stub(), stub(), stub(), stub(), stub(), stub(), stub(), stub()];
 
       before([middlwares[0], middlwares[1]]);
       before('ApiGateway', [middlwares[2], middlwares[3]]);

@@ -23,7 +23,7 @@ type LogLevel = 'silly' | 'debug' | 'info' | 'warn' | 'error';
 export interface IEventLog {
   level: LogLevel;
   date: string;
-  scope: string;
+  scope?: string;
   args: string[];
 }
 
@@ -38,18 +38,21 @@ export class Logger {
   }
 
   log(scope?: string): ILogger {
-    const logLevel = ['silent', 'silly', 'debug', 'info', 'warn', 'error'].includes(process.env.MILA_LOG_LEVEL)
-      ? process.env.MILA_LOG_LEVEL
+    const logLevel: string = ['silent', 'silly', 'debug', 'info', 'warn', 'error'].includes(
+      String(process.env.MILA_LOG_LEVEL),
+    )
+      ? String(process.env.MILA_LOG_LEVEL)
       : 'silent';
     const inScope =
-      process.env.MILA_DEBUG === '*' || (process.env.MILA_DEBUG && process.env.MILA_DEBUG.split(',').includes(scope));
+      process.env.MILA_DEBUG === '*' ||
+      (process.env.MILA_DEBUG && process.env.MILA_DEBUG.split(',').includes(scope || ''));
     const isPrimitive = (arg: any): boolean =>
       typeof arg === 'string' || typeof arg === 'number' || typeof arg === 'boolean';
     const toEvent = (level: LogLevel, args: any[]): IEventLog => ({
       level,
       date: new Date().toISOString(),
       scope,
-      args: args.map((arg) => (isPrimitive(arg) ? arg : inspect(arg, null, 2, false))),
+      args: args.map((arg) => (isPrimitive(arg) ? arg : inspect(arg, false, 2, false))),
     });
 
     return {

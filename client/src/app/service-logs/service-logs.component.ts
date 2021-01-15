@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { MilaService } from '../mila.service';
+// @ts-ignore
 import * as Convert from 'ansi-to-html';
 
 const convert = new Convert();
@@ -10,13 +11,11 @@ const convert = new Convert();
   styleUrls: ['./service-logs.component.scss']
 })
 export class ServiceLogsComponent implements OnInit {
-
-  log: string;
+  log = '';
   constructor(public readonly mila: MilaService) { }
 
   ngOnInit(): void {
     this.mila.serviceLogs$.subscribe((log) => {
-      console.log('BBBB', log);
       this.log = convert.toHtml(log.offline.join('').replace(/(\r\n|\n|\r)/gm, "<br />"));
       this._scrollToEnd();
     });
@@ -26,7 +25,9 @@ export class ServiceLogsComponent implements OnInit {
     console.log('scrolling');
     setTimeout(() =>{
       const elt = document.getElementById('service-logs');
-      elt.scrollTo({behavior: 'smooth', top: elt.scrollHeight - elt.clientHeight });
+      if (elt) {
+        elt.scrollTo({behavior: 'smooth', top: elt.scrollHeight - elt.clientHeight });
+      }
     }, 0);
   }
 }

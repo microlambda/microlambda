@@ -12,3 +12,4 @@ cli/src/app.js
 
 **/lib/
 **/coverage/
+**/dist

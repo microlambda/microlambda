@@ -50,7 +50,7 @@ export class Packager {
     this._graph = graph;
   }
 
-  public getTree(serviceName: string): Tree {
+  public getTree(serviceName: string): Tree | undefined {
     return this._tree.get(serviceName);
   }
 
@@ -155,7 +155,8 @@ export class Packager {
       this._logger.debug(this._tree);
     }
     let printable = '';
-    const roots = this._tree.get(service.getName()).filter((p) => p.parent == null);
+    const tree = this._tree.get(service.getName());
+    const roots = tree ? tree.filter((p) => p.parent == null) : [];
     const printLevel = (packages: Tree, depth = 0): void => {
       for (const pkg of packages) {
         if (printDuplicates || !pkg.duplicate) {

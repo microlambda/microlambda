@@ -15,9 +15,10 @@
     "@typescript-eslint/no-inferrable-types": "error",
     "prefer-const": "error",
     "no-console":"error",
+    "no-unused-vars":"error",
     "@typescript-eslint/no-use-before-define": "error",
     "@typescript-eslint/ban-ts-ignore": "error",
-    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-function-return-type": "error"
   }
 }

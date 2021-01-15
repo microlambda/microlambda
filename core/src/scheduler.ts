@@ -67,19 +67,25 @@ export interface IRecompilationError {
 }
 
 export class RecompilationScheduler {
-  private _graph: DependenciesGraph;
+  private _graph: DependenciesGraph | null = null;
   private _jobs: {
     stop: Service[];
     transpile: Node[];
     typeCheck: { node: Node; force: boolean; throws: boolean }[];
     start: Service[];
     package: { service: Service; level: number }[];
+  } = {
+    stop: [],
+    transpile: [],
+    typeCheck: [],
+    start: [],
+    package: [],
   };
-  private _status: SchedulerStatus;
-  private _recompilation: RecompilationStatus;
+  private _status: SchedulerStatus = SchedulerStatus.READY;
+  private _recompilation: RecompilationStatus = RecompilationStatus.READY;
   private _abort$: Subject<void> = new Subject<void>();
   private _filesChanged$: Subject<void> = new Subject<void>();
-  private _changes: Set<Node>;
+  private _changes: Set<Node> = new Set();
   private _debounce: number;
   private _logger: ILogger;
   private _concurrency: number;
@@ -111,42 +117,49 @@ export class RecompilationScheduler {
   }
 
   public startAll(): Observable<IRecompilationEvent> {
-    // Enable nodes that not already enabled
-    this._graph.enableAll();
+    if (this._graph) {
+      // Enable nodes that not already enabled
+      this._graph.enableAll();
 
-    // Compile nodes that are not already compiled
-    const toStart = this._graph.getServices().filter((s) => s.getStatus() !== ServiceStatus.RUNNING);
-    const roots = toStart.filter((n) => n.isRoot());
-    this._compile(roots);
+      // Compile nodes that are not already compiled
+      const toStart = this._graph.getServices().filter((s) => s.getStatus() !== ServiceStatus.RUNNING);
+      const roots = toStart.filter((n) => n.isRoot());
+      this._compile(roots);
 
-    // Start services that are not already started
-    toStart.forEach((s) => this._requestStart(s));
+      // Start services that are not already started
+      toStart.forEach((s) => this._requestStart(s));
+    }
     return this._exec();
   }
 
   public stopOne(service: Service): Observable<IRecompilationEvent> {
     // Disable "orphan" nodes i.e. nodes that are descendant of the service to stop but used by no other
     // enabled nodes
-    // FIXME: Use disable status only for config explicit exclusion (use unwatch instead to stop watching unused dependencies)
-    this._graph.disableOne(service);
+    if (this._graph) {
+      // FIXME: Use disable status only for config explicit exclusion (use unwatch instead to stop watching unused dependencies)
+      this._graph.disableOne(service);
+    }
     // Stop the service
     this._requestStop(service);
     return this._exec();
   }
 
   public gracefulShutdown(): Observable<IRecompilationEvent> {
-    this._graph
-      .getServices()
-      .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()))
-      .forEach((s) => this._requestStop(s));
+    if (this._graph) {
+      this._graph
+        .getServices()
+        .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()))
+        .forEach((s) => this._requestStop(s));
+    }
     return this._exec();
   }
 
   public stopAll(): Observable<IRecompilationEvent> {
     // Disable all nodes
     // FIXME: Use disable status only for config explicit exclusion (use unwatch instead to stop watching unused dependencies)
-    this._graph.getNodes().forEach((n) => n.disable());
-
+    if (this._graph) {
+      this._graph.getNodes().forEach((n) => n.disable());
+    }
     // Stop all running services
     return this.gracefulShutdown();
   }
@@ -159,21 +172,23 @@ export class RecompilationScheduler {
   }
 
   public restartAll(recompile = true): Observable<IRecompilationEvent> {
-    // Stop all running/starting services
-    const toRestart = this._graph
-      .getServices()
-      .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()));
-    toRestart.forEach((s) => this._requestStop(s));
+    if (this._graph) {
+      // Stop all running/starting services
+      const toRestart = this._graph
+        .getServices()
+        .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()));
+      toRestart.forEach((s) => this._requestStop(s));
 
-    // Recompile their dependencies tree
-    this._compile(
-      toRestart.filter((s) => s.isRoot()),
-      RecompilationMode.FAST,
-      recompile,
-    );
+      // Recompile their dependencies tree
+      this._compile(
+        toRestart.filter((s) => s.isRoot()),
+        RecompilationMode.FAST,
+        recompile,
+      );
 
-    // And restart them
-    toRestart.forEach((s) => this._requestStart(s));
+      // And restart them
+      toRestart.forEach((s) => this._requestStart(s));
+    }
     return this._exec();
   }
 

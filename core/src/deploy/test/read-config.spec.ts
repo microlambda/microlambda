@@ -563,5 +563,5 @@ describe('The configuration reader class', () => {
 });
  */
 describe('The configurationReader', () => {
-  it.todo('should be tested');
+  test.todo('should be tested');
 });

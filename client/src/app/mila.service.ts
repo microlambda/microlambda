@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import * as io from 'socket.io-client';
 import { Service } from './service';
 import { Package } from './package';
@@ -10,6 +10,7 @@ import { TranspilingStatus, TypeCheckStatus } from './compilation.status.enum';
 import { ServiceStatus } from './service.status.enum';
 import { INode } from './node.interface';
 import { map } from 'rxjs/operators';
+// @ts-ignore
 import * as Convert from 'ansi-to-html';
 
 const convert = new Convert();
@@ -48,7 +49,7 @@ export class MilaService{
   private _packages$ = new BehaviorSubject<Package[]>([]);
   private _services$ = new BehaviorSubject<Service[]>([]);
   private _logs$ = new BehaviorSubject<Log[]>([]);
-  private _currentService$ = new BehaviorSubject<string>(null);
+  private _currentService$ = new BehaviorSubject<string | null>(null);
   private _serviceLogs$ = new BehaviorSubject<IServiceLogs>(EMPTY_LOGS);
 
   // FIXME: Change url
@@ -72,40 +73,43 @@ export class MilaService{
       console.debug('disconnected to mila server');
       this._connected$.next(false);
     });
-    const findNode = (node: string) => {
-      const isService = this._services$.getValue().some(s => s.name === node);
-      const obs = isService ? this._services$ : this._packages$;
-      const nodes = [...obs.getValue()];
-      const toUpdate = nodes.find(s => s.name === node);
-      if (!toUpdate) {
-        throw Error('No node found');
+    const updatePackage = (name: string, action: (pkg: Package) => void) => {
+      const packages = [...this._packages$.getValue()];
+      const toUpdate = packages.find(s => s.name === name);
+      if (toUpdate) {
+        action(toUpdate);
+        this._packages$.next(packages);
+        console.debug('nodes updated', packages);
+      } else {
+        console.error('service not found', name);
       }
-      return { obs, toUpdate, nodes };
     }
+    const updateService = (name: string, action: (service: Service) => void) => {
+      const services = [...this._services$.getValue()];
+      const toUpdate = services.find(s => s.name === name);
+      if (toUpdate) {
+        action(toUpdate);
+        this._services$.next(services);
+        console.debug('nodes updated', services);
+      } else {
+        console.error('service not found', name);
+      }
+    }
+    const isService = (name: string): boolean => this._services$.getValue().some(s => s.name === name);
+
     this._socket.on('transpiling.status.updated', (data: { node: string, status: TranspilingStatus}) => {
       console.debug('received transpiling event', data);
-      const { obs, toUpdate, nodes } = findNode(data.node);
-      toUpdate.setTranspilingStatus(data.status);
-      obs.next(nodes);
-      console.debug('nodes updated', nodes);
+      if (isService(data.node)) {
+        updateService(data.node, (service) => service.setTranspilingStatus(data.status));
+      } else {
+        updatePackage(data.node, (pkg) => pkg.setTranspilingStatus(data.status));
+      }
     });
     this._socket.on('type.checking.status.updated', (data: { node: string, status: TypeCheckStatus}) => {
-      console.debug('received type check event', data);
-      const { obs, toUpdate, nodes } = findNode(data.node);
-      toUpdate.setTypeCheckStatus(data.status);
-      obs.next(nodes);
-      console.debug('nodes updated', nodes);
+      updateService(data.node, (service) => service.setTypeCheckStatus(data.status))
     });
     this._socket.on('node.status.updated', (data: { node: string, status: ServiceStatus}) => {
-      console.debug('received service event', data);
-      const services = [...this._services$.getValue()];
-      const toUpdate = services.find(s => s.name === data.node);
-      if (!toUpdate) {
-        throw Error('No node found');
-      }
-      toUpdate.setStatus(data.status);
-      this._services$.next(services);
-      console.debug('services updated', services);
+      updateService(data.node, (service) => service.setStatus(data.status));
     });
     this._socket.on('event.log.added', (log: IEventLog) => {
       console.debug('log received', log);
@@ -137,7 +141,7 @@ export class MilaService{
     });
   }
 
-  getNode(name: string): Package | Service {
+  getNode(name: string): Package | Service | undefined {
     const pkg = this._packages$.getValue().find(p => p.name === name);
     if (pkg) {
       return pkg;
@@ -163,16 +167,19 @@ export class MilaService{
     });
   }
 
-  private _currentNode: string;
+  private _currentNode: string | undefined;
 
   setCurrentNode(node: string) { this._currentNode = node }
 
-  get currentNode(): string { return  this._currentNode }
+  get currentNode(): string | undefined { return  this._currentNode }
 
   getTscLogs(): Observable<string> {
-    return this.http.get<string[]>(`${BASE_URL}/api/nodes/${encodeURIComponent(this._currentNode)}/tsc/logs`).pipe(map((data) => {
-      return convert.toHtml(data.join('').replace(/(\r\n|\n|\r)/gm, "<br />"));
-    }));
+    if (this._currentNode) {
+      return this.http.get<string[]>(`${BASE_URL}/api/nodes/${encodeURIComponent(this._currentNode)}/tsc/logs`).pipe(map((data) => {
+        return convert.toHtml(data.join('').replace(/(\r\n|\n|\r)/gm, "<br />"));
+      }));
+    }
+    return of('');
   }
 
   start(service: string) {

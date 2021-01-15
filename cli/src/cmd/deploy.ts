@@ -94,15 +94,15 @@ export const requestCertificates = (certificateManager: CertificateManager): Pro
 
 export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
   const log = logger.log('deploy');
-  const config = new ConfigReader(logger);
-  config.readConfig();
+  const reader = new ConfigReader(logger);
+  const config = reader.readConfig();
   if (!cmd.E) {
     console.error(chalk.red('You must provide a target stage to deploy services'));
     process.exit(1);
   }
-  if (config.config.stages && !config.config.stages.includes(cmd.E)) {
+  if (config.stages && !config.stages.includes(cmd.E)) {
     console.error(chalk.red('Target stage is not part of allowed stages.'));
-    console.error(chalk.red('Allowed stages are:', config.config.stages));
+    console.error(chalk.red('Allowed stages are:', config.stages));
     process.exit(1);
   }
   const currentIAM = await getAccountIAM().catch((err) => {
@@ -131,7 +131,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
 
   console.log('\n');
   const { projectRoot, concurrency, graph, service } = await beforePackage(cmd, scheduler, logger);
-  config.validate(graph);
+  reader.validate(graph);
   if (cmd.package) {
     console.info('\nPackaging services\n');
     await packageService(scheduler, concurrency, cmd.S ? (service as Service) : graph).catch((e) => {
@@ -147,7 +147,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
 
   log.info('Resolving certificates to generate');
   try {
-    certificateManager = new CertificateManager(logger, services, config);
+    certificateManager = new CertificateManager(logger, services, reader);
     needActions = await certificateManager.prepareCertificatesRequests(cmd.E);
   } catch (e) {
     console.error(chalk.red('Cannot determine certificate to request'));
@@ -190,11 +190,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
         }
         obs.next({ service, type: IDeployEventType.FAILURE, error: e, region });
       };
-      reformatYaml(projectRoot, config, [service], region, cmd.E)
+      reformatYaml(projectRoot, reader, [service], region, cmd.E)
         .then(async () => {
           try {
             // run sls create domain
-            const customDomain = config.getCustomDomain(service.getName(), cmd.E);
+            const customDomain = reader.getCustomDomain(service.getName(), cmd.E);
             log.info(service.getName(), 'Custom domain', customDomain);
             if (customDomain) {
               obs.next({ service, type: IDeployEventType.CREATING_CUSTOM_DOMAIN, region });
@@ -229,7 +229,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
               obs.next({ service, type: IDeployEventType.CREATED_RECORDS, region });
               log.info(service.getName(), 'Creating records');
               const recordsManager = new RecordsManager(logger);
-              await recordsManager.createRecords(config, cmd.E, [service]);
+              await recordsManager.createRecords(reader, cmd.E, [service]);
               log.info(service.getName(), 'Created records');
             } catch (e) {
               failed('creatingRecords', e, false);
@@ -253,26 +253,27 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   console.info('\nDeploying services\n');
   let deployments: Observable<IDeployEvent>;
 
-  if (cmd.S) {
+  if (service) {
     log.info('Deploying one service', service.getName());
-    const regions = config.getRegions(service.getName(), cmd.E);
+    const regions = reader.getRegions(service.getName(), cmd.E);
     deployments = concat(...regions.map((region) => deployOne(service as Service, region)));
   } else {
     log.info('Deploying all services');
-    const schedule = config.scheduleDeployments(cmd.E);
+    const schedule = reader.scheduleDeployments(cmd.E);
     const steps: Array<Observable<IDeployEvent>> = [];
     for (const step of schedule) {
       const toDeploy: Map<Service, Set<string>> = new Map();
       const regions = step.keys();
       for (const region of regions) {
-        const stepServices = step.get(region);
+        const stepServices = step.get(region) || [];
         for (const serviceName of stepServices) {
           const stepService = graph.getServices().find((s) => s.getName() === serviceName);
           if (!stepService) {
             throw Error('Unresolved service ' + serviceName);
           }
-          if (toDeploy.has(stepService)) {
-            toDeploy.get(stepService).add(region);
+          const regions = toDeploy.get(stepService);
+          if (regions) {
+            regions.add(region);
           } else {
             toDeploy.set(stepService, new Set([region]));
           }

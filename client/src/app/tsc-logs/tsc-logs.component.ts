@@ -7,7 +7,7 @@ import { MilaService } from '../mila.service';
   styleUrls: ['./tsc-logs.component.scss']
 })
 export class TscLogsComponent implements OnInit {
-  log: string;
+  log = '';
   constructor(public readonly mila: MilaService) { }
 
   ngOnInit(): void {
@@ -21,7 +21,9 @@ export class TscLogsComponent implements OnInit {
     console.log('scrolling');
     setTimeout(() =>{
       const elt = document.getElementById('service-logs');
-      elt.scrollTo({behavior: 'smooth', top: elt.scrollHeight - elt.clientHeight });
+      if (elt) {
+        elt.scrollTo({behavior: 'smooth', top: elt.scrollHeight - elt.clientHeight });
+      }
     }, 0);
   }
 }

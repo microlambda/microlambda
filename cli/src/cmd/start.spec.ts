@@ -1,3 +1,3 @@
-describe('the logger', () => {
+describe('[command] start', () => {
   test.todo('should be tested');
 });

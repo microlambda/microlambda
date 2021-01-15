@@ -1,11 +1,11 @@
 {
   "name": "@microlambda/handling",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Helpers to simplify nodejs code on FASS environments",
   "author": "Thomas Ruiz <contact@thomasruiz.eu>",
   "license": "ISC",
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://bitbucket.org/MarioArnt/microlambda/src/master/handling/"

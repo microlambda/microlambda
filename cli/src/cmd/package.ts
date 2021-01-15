@@ -25,10 +25,10 @@ export const beforePackage = async (
   cmd: IPackageCmd,
   scheduler: RecompilationScheduler,
   logger: Logger,
-): Promise<{ projectRoot: string; concurrency: number; graph: DependenciesGraph; service: Node }> => {
+): Promise<{ projectRoot: string; concurrency: number; graph: DependenciesGraph; service: Node | undefined }> => {
   const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
   const { projectRoot, graph, service } = await beforeBuild(cmd, scheduler, logger);
-  const target = cmd.S ? service : graph;
+  const target = service ? service : graph;
   if (cmd.recompile) {
     try {
       console.info('\nBuilding dependency graph\n');

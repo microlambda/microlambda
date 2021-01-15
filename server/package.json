@@ -7,13 +7,13 @@
     "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
   },
   "license": "MIT",
-  "main": "lib/src/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "../node_modules/.bin/jest",
     "build": "yarn run pre:build && ../node_modules/.bin/tsc --build && yarn run post:build",
-    "pre:build": "rm -rf ./lib",
-    "post:build": "cp -r ../client/dist ./lib/src/static",
-    "start": "node lib/src/index.js",
+    "pre:build": "rm -rf ./dist",
+    "post:build": "cp -r ../client/dist ./dist/static",
+    "start": "node dist/index.js",
     "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   },

@@ -23,13 +23,15 @@ import { Logger } from './logger';
 import { MilaError, MilaErrorCode } from './errors';
 
 describe('[method] findProjectRoot', () => {
-  const stubs: {
-    cwd?: SinonStub;
-    existSync?: SinonStub;
-  } = {};
+  let stubs: {
+    cwd: SinonStub;
+    existSync: SinonStub;
+  };
   beforeEach(() => {
-    stubs.cwd = stub(process, 'cwd');
-    stubs.existSync = stub(fs, 'existsSync');
+    stubs = {
+      cwd: stub(process, 'cwd'),
+      existSync: stub(fs, 'existsSync'),
+    }
     stubs.existSync.returns(false);
     stubs.existSync.withArgs('/users/john/project-1/lerna.json').returns(true);
   });

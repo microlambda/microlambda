@@ -64,23 +64,36 @@ export class TabsService {
     this._history.push(tab);
     this._currentTab$.next(tab);
     if (tab.type === 'service-logs') {
-      this.mila.selectService(tab.name.match(/^Logs \| (.+)$/)[1]);
+      const matching = tab.name.match(/^Logs \| (.+)$/);
+      if (matching) {
+        this.mila.selectService(matching[1]);
+      }
     }
     if (tab.type === 'tsc-logs') {
-      this.mila.setCurrentNode(tab.name.match(/^(.+) \| tsc$/)[1]);
+      const matching = tab.name.match(/^(.+) \| tsc$/);
+      if (matching) {
+        this.mila.setCurrentNode(matching[1]);
+      }
     }
   }
 
   deleteTab(name: string) {
     const tabs = [...this._tabs$.getValue()];
     this._tabs$.next(tabs.filter(t => t.name !== name));
-    if (this._history.length > 2) {
-      this._history.pop();
-      const previous = this._history.pop();
+    const reset = (): void => {
+      this._history = [];
+      this.selectTab(DEFAULT_TAB);
+    }
+    if (this._history.length <= 2) {
+      reset();
+      return;
+    }
+    this._history.pop();
+    const previous = this._history.pop();
+    if (previous) {
       this._currentTab$.next(previous);
     } else {
-     this._history = [];
-     this.selectTab(DEFAULT_TAB);
+      reset();
     }
   }
 }

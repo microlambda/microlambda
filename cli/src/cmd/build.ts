@@ -24,7 +24,7 @@ export const beforeBuild = async (
   scheduler: RecompilationScheduler,
   logger: Logger,
   acceptPackages = false,
-): Promise<{ projectRoot: string; graph: DependenciesGraph; service: Node }> => {
+): Promise<{ projectRoot: string; graph: DependenciesGraph; service: Node | undefined }> => {
   const { graph, projectRoot } = await init(logger, scheduler);
   graph.enableAll();
   const nodes = acceptPackages ? graph.getNodes() : graph.getServices();
@@ -55,18 +55,24 @@ export const typeCheck = async (
         spinners.set(evt.node.getName(), spinner);
       } else if (evt.type === RecompilationEventType.TYPE_CHECK_SUCCESS) {
         const spinner = spinners.get(evt.node.getName());
-        spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
-        spinner.succeed();
+        if (spinner) {
+          spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
+          spinner.succeed();
+        }
       } else if (evt.type === RecompilationEventType.TYPE_CHECK_FAILURE) {
         const spinner = spinners.get(evt.node.getName());
-        spinner.fail(`Error compiling ${evt.node.getName()}`);
+        if (spinner) {
+          spinner.fail(`Error compiling ${evt.node.getName()}`);
+        }
         (evt.node as Service).tscLogs.forEach((l) => console.error(l));
         return reject();
       }
     };
     const onError = (evt: IRecompilationError): void => {
       const spinner = spinners.get(evt.node.getName());
-      spinner.fail(`Error compiling ${evt.node.getName()}`);
+      if (spinner) {
+        spinner.fail(`Error compiling ${evt.node.getName()}`);
+      }
       evt.logs.forEach((l) => console.error(l));
       return reject();
     };
@@ -84,7 +90,7 @@ export const typeCheck = async (
 export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger): Promise<void> => {
   const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
   try {
-    await typeCheck(scheduler, cmd.S ? service : graph, cmd.onlySelf, true);
+    await typeCheck(scheduler, service ? service : graph, cmd.onlySelf, true);
     console.info('\nSuccessfully built ✨');
     process.exit(0);
   } catch (e) {

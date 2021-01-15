@@ -19,6 +19,9 @@ export const getName = (entity: Workspace | Ident): string => {
     return desc.scope ? ['@' + desc.scope, desc.name].join('/') : desc.name;
   };
   if (entity instanceof Workspace) {
+    if (entity.manifest.name == null) {
+      throw new Error(`Cannot get identity name: workspace @ ${entity.cwd} manifest has no name.`);
+    }
     return buildName(entity.manifest.name);
   }
   return buildName(entity);

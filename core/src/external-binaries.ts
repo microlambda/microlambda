@@ -11,15 +11,19 @@ FIXME: The idea here would be to use npm local scripts start, test, deploy inste
 
 type Cmd = 'tsc' | 'sls' | 'lerna';
 
-const versions: Map<string, string> = new Map();
+const versions: Map<string, string | null> = new Map();
 
-const getVersion = (binary: string): string => {
+const getVersion = (binary: string): string | null => {
   if (versions.has(binary)) {
-    return versions.get(binary);
+    return String(versions.get(binary));
   }
-  const version = execSync(binary + ' --version')
-    .toString()
-    .match(/[0-9]+\.[0-9]+\.[0-9]+/)[0];
+  const stdout = execSync(binary + ' --version');
+
+  let version: string | null = null;
+  if (stdout) {
+    const matches = stdout.toString().match(/[0-9]+\.[0-9]+\.[0-9]+/);
+    version = matches ? matches[0] : null;
+  }
   versions.set(binary, version);
   return version;
 };
@@ -82,7 +86,7 @@ export const verifyBinaries = async (mode: CompilationMode, projectRoot: string,
   const deps: string[] = [];
   for (const cmd of binariesToTest) {
     if (!testBinary(cmd, projectRoot, logger)) {
-      const packagesToInstall = binaryPackages.get(cmd);
+      const packagesToInstall = binaryPackages.get(cmd) || [];
       packagesToInstall.forEach((pkg) => {
         logger.log('binaries').warn(`Missing peer dependency ${pkg}`);
         deps.push(pkg);

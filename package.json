@@ -7,15 +7,27 @@
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "scripts": {
-    "build": "yarn workspaces foreach -tv run build ",
+    "build": "yarn workspaces foreach -ptv run build",
+    "test": "yarn workspaces foreach -pv run test",
     "build:core": "yarn workspace @microlambda/core run build",
-    "build:cli": "yarn workspace @microlambda/cli run build",
-    "build:server": "yarn workspace @microlambda/server run build",
-    "build:handling": "yarn workspace @microlambda/handling run build",
+    "lint:core": "yarn workspace @microlambda/core run lint",
+    "test:core": "yarn workspace @microlambda/core run test",
     "publish:core": "yarn workspace @microlambda/core npm publish --access public",
-    "publish:server": "yarn workspace @microlambda/server npm publish --access public",
+    "build:cli": "yarn workspace @microlambda/cli run build",
+    "lint:cli": "yarn workspace @microlambda/cli run lint",
+    "test:cli": "yarn workspace @microlambda/cli run test",
     "publish:cli": "yarn workspace @microlambda/cli npm publish --access public",
-    "test:handling": "yarn workspace @microlambda/handling run test"
+    "build:server": "yarn workspace @microlambda/server run build",
+    "lint:server": "yarn workspace @microlambda/server run lint",
+    "test:server": "yarn workspace @microlambda/server run test",
+    "publish:server": "yarn workspace @microlambda/server npm publish --access public",
+    "build:handling": "yarn workspace @microlambda/handling run build",
+    "lint:handling": "yarn workspace @microlambda/handling run lint",
+    "test:handling": "yarn workspace @microlambda/handling run test",
+    "publish:handling": "yarn workspace @microlambda/handling npm publish --access public",
+    "build:client": "yarn workspace @microlambda/client run build",
+    "lint:client": "yarn workspace @microlambda/client run lint",
+    "test:client": "yarn workspace @microlambda/client run test"
   },
   "workspaces": [
     "cli",

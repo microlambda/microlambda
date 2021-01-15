@@ -25,6 +25,9 @@ export class RecordsManager {
       }
       const toCreate: Change[] = [];
       const hostedZone = await this.getHostedZone(domain);
+      if (!hostedZone) {
+        throw new Error('Cannot find hosted zone for domain ' + domain);
+      }
       const records = await this.listRecords(hostedZone);
       const serviceName = getServiceName(service) + '-' + stage;
 
@@ -65,7 +68,7 @@ export class RecordsManager {
     }
   }
 
-  public async getHostedZone(domain: string): Promise<HostedZone> {
+  public async getHostedZone(domain: string): Promise<HostedZone | undefined> {
     const hostedZones = await this._listHostedZones();
     const segments = domain.split('.');
     while (segments.length > 1) {
@@ -75,14 +78,11 @@ export class RecordsManager {
       }
       segments.shift();
     }
-    return null;
+    return undefined;
   }
 
   public async listRecords(hz: HostedZone): Promise<ResourceRecordSet[]> {
-    const nextRecord: { name: string; type: string } = {
-      name: null,
-      type: null,
-    };
+    const nextRecord: { name?: string; type?: string } = {};
     const records: ResourceRecordSet[] = [];
     do {
       const result = await this._route53
@@ -96,15 +96,12 @@ export class RecordsManager {
       if (result.IsTruncated) {
         nextRecord.type = result.NextRecordType;
         nextRecord.name = result.NextRecordName;
-      } else {
-        nextRecord.name = null;
-        nextRecord.type = null;
       }
     } while (nextRecord.type && nextRecord.name);
     return records;
   }
 
-  private async _getDomain(region: string, domainName: string): Promise<DomainName> {
+  private async _getDomain(region: string, domainName: string): Promise<DomainName | null> {
     const apiGateway = new APIGateway({ region });
     try {
       return apiGateway.getDomainName({ domainName }).promise();
@@ -142,6 +139,7 @@ export class RecordsManager {
         r.Type === 'CNAME' &&
         r.Name === (domain.endsWith('.') ? domain : domain) + '.' &&
         r.Region === region &&
+        r.ResourceRecords &&
         r.ResourceRecords.some((rr) => rr.Value === apiGateWayUrl),
     );
   }
@@ -166,7 +164,7 @@ export class RecordsManager {
   }
 
   private async _listHostedZones(): Promise<Array<HostedZone>> {
-    let nextToken = null;
+    let nextToken;
     const hostedZones: HostedZone[] = [];
     do {
       const result: ListHostedZonesResponse = await this._route53

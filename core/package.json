@@ -7,8 +7,8 @@
     "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
   },
   "license": "MIT",
-  "main": "lib/src/index.js",
-  "types": "lib/src/index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "test": "../node_modules/.bin/jest",
     "build": "rm -rf ./lib && ../node_modules/.bin/tsc --build",

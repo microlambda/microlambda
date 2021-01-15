@@ -1,4 +1,4 @@
-import Joi from '@hapi/joi';
+import Joi, { ObjectSchema } from '@hapi/joi';
 import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
@@ -35,16 +35,16 @@ export class ConfigReader {
     'me-south-1',
     'ap-south-1',
   ];
-  private _services: Service[];
-  private _config: IConfig;
-  private _schema: Joi.ObjectSchema;
+  private _services: Service[] = [];
+  private _config: IConfig | undefined;
+  private _schema: Joi.ObjectSchema | undefined;
   private readonly _logger: ILogger;
 
   constructor(logger: Logger) {
     this._logger = logger.log('config');
   }
 
-  get config(): IConfig {
+  get config(): IConfig | undefined {
     return this._config;
   }
 
@@ -55,7 +55,7 @@ export class ConfigReader {
 
   public validate(graph: DependenciesGraph): IConfig {
     this._services = graph.getServices();
-    this._buildConfigSchema();
+    this._schema = this._buildConfigSchema();
     if (!this._config) {
       this._config = this.readConfig();
     }
@@ -66,7 +66,7 @@ export class ConfigReader {
       throw error;
     }
     this._logger.info('config valid');
-    this._config = value;
+    this._config = value as IConfig;
     return this._config;
   }
 
@@ -79,7 +79,7 @@ export class ConfigReader {
       }
       return [config];
     };
-    const getRegion = (config: RegionConfig): string[] => {
+    const getRegion = (config: RegionConfig): string[] | null => {
       if (typeof config === 'string' || Array.isArray(config)) {
         return formatRegion(config);
       }
@@ -133,8 +133,9 @@ export class ConfigReader {
       services.forEach((s) => {
         const regions = this.getRegions(s, stage);
         regions.forEach((r) => {
-          if (step.has(r)) {
-            step.get(r).add(s);
+          const regionServices = step.get(r);
+          if (regionServices) {
+            regionServices.add(s);
           } else {
             step.set(r, new Set([s]));
           }
@@ -169,7 +170,7 @@ export class ConfigReader {
     return builtSteps;
   }
 
-  private _buildConfigSchema(): void {
+  private _buildConfigSchema(): ObjectSchema {
     const services = Joi.string().valid(...this._services.map((s) => s.getName()));
     const regionSchema = Joi.alternatives([
       Joi.string().valid(...ConfigReader.regions),
@@ -182,7 +183,7 @@ export class ConfigReader {
         ]),
       ),
     ]);
-    this._schema = Joi.object()
+    const schema = Joi.object()
       .keys({
         stages: Joi.array()
           .items(Joi.string())
@@ -219,13 +220,21 @@ export class ConfigReader {
           .optional(),
       })
       .unknown(true);
+    this._schema = schema;
+    return schema;
   }
 
-  getCustomDomain(name: string, stage: string): string {
+  getCustomDomain(name: string, stage: string): string | null {
+    if (!this._config) {
+      throw new Error('Config has not been read');
+    }
     return this._config.domains[name] ? this._config.domains[name][stage] : null;
   }
 
   getYamlTransformations(projectRoot: string): string[] {
+    if (!this._config) {
+      throw new Error('Config has not been read');
+    }
     const matches: Set<string> = new Set();
     this._config.yamlTransforms
       .map((glob) => join(projectRoot, glob))

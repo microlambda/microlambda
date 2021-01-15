@@ -14,7 +14,7 @@ import {
 
 export class IOSocketManager {
   private _io: ws.Server;
-  private _serviceToListen: string;
+  private _serviceToListen: string = '';
   private _scheduler: RecompilationScheduler;
   private _logger: Logger;
   private _graph: DependenciesGraph;

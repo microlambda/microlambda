@@ -32,7 +32,7 @@ export class IPCSocketsManager {
   private readonly _scheduler: RecompilationScheduler;
   private readonly _logger: Logger;
 
-  constructor(projectRoot: string, scheduler: RecompilationScheduler, logger: Logger, graph?: DependenciesGraph) {
+  constructor(projectRoot: string, scheduler: RecompilationScheduler, logger: Logger, graph: DependenciesGraph) {
     this._logger = logger;
     this._logger.log('ipc').debug('Creating socket', projectRoot);
     this._ipc.config.silent = !process.env.MILA_DEBUG;
@@ -100,7 +100,7 @@ export class IPCSocketsManager {
     );
   }
 
-  private _findService(name: string, action: Action): Service {
+  private _findService(name: string, action: Action): Service | null {
     const service = this._graph.getServices().find((s) => s.getName() === name);
     if (!service) {
       this._ipc.server.emit(IPCSocketsManager._errorEvent(action), {

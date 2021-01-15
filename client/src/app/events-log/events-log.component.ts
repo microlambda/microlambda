@@ -16,7 +16,7 @@ import {
   styleUrls: ['./events-log.component.scss']
 })
 export class EventsLogComponent implements OnInit {
-  logs: Log[];
+  logs: Log[] = [];
   levels: LogLevel[] = ['info', 'warn', 'error'];
   faFilter = faFilter;
   faCheck = faCheck;

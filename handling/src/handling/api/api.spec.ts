@@ -3,7 +3,7 @@ import { getConfig } from '../../config';
 import { TestingHandler } from '../index.spec';
 import * as middleware from '../middleware';
 import { apiHandler } from './api';
-import { SinonStub, spy, stub } from 'sinon';
+import { stub } from 'sinon';
 
 jest.mock('../../config');
 const mock = getConfig as jest.Mock;
@@ -16,7 +16,6 @@ describe('handling', () => {
 
   describe('api', () => {
     it('runs middlewares before and after the handler', async () => {
-
       const handler = stub();
       const middlewareBefore = stub(middleware, 'callBeforeMiddleware');
       const middlewareAfter = stub(middleware, 'callAfterMiddleware');

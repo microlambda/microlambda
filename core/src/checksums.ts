@@ -14,9 +14,9 @@ export const checksums = (
   logger: Logger,
 ): {
   calculate: () => Promise<IChecksums>;
-  read: () => Promise<IChecksums>;
+  read: () => Promise<IChecksums | null>;
   write: (data: IChecksums) => Promise<void>;
-  compare: (old: IChecksums, current: IChecksums) => boolean;
+  compare: (old: IChecksums | null, current: IChecksums) => boolean;
 } => {
   const projectRoot = node.getGraph().getProjectRoot();
   const hashesDir = join(projectRoot, '.mila', 'hashes');
@@ -45,7 +45,7 @@ export const checksums = (
       logger.log('checksum').debug(`Calculated checksum for ${node.getName()}`, hashes);
       return hashes;
     },
-    read: async (): Promise<IChecksums> => {
+    read: async (): Promise<IChecksums | null> => {
       if (!existsSync(hashPath)) {
         logger.log('checksum').debug('cannot read, path does not exist');
         return null;
@@ -67,7 +67,7 @@ export const checksums = (
         });
       });
     },
-    compare: (old: IChecksums, current: IChecksums): boolean => {
+    compare: (old: IChecksums | null, current: IChecksums): boolean => {
       logger.log('checksum').debug(`Comparing checksums for ${node.getName()}`, { old, current });
       if (!old) {
         return true;

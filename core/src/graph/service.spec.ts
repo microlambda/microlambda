@@ -1,3 +1,3 @@
 describe('the service class', () => {
-  it.todo('should be tested');
+  test.todo('should be tested');
 });

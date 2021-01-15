@@ -10,7 +10,7 @@ import { faTimes } from '@fortawesome/free-solid-svg-icons';
 })
 export class AppComponent {
   title = 'client';
-  nodeList: string;
+  nodeList: string = '';
   faTimes = faTimes;
   constructor(public readonly mila: MilaService, public readonly tabs: TabsService) {
   }

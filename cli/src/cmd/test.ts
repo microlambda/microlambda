@@ -35,7 +35,7 @@ interface ITestEvent {
 class TestRunner {
   private readonly _services: Node[];
   private readonly _concurrency: number;
-  private readonly _type: 'unit' | 'functional';
+  private readonly _type: 'unit' | 'functional' | undefined;
   private readonly _logs: Map<Node, string[]> = new Map();
 
   constructor(target: Node | Node[], concurrency: number, type?: 'unit' | 'functional') {
@@ -81,13 +81,17 @@ class TestRunner {
           env: { ...process.env, FORCE_COLOR: '2' },
           stdio: stdio === 'ignore' ? 'pipe' : 'inherit',
         });
-        if (stdio !== 'inherit') {
-          testProcess.stderr.on('data', (data) => {
-            this._logs.get(node).push(data.toString());
-          });
-          testProcess.stdout.on('data', (data) => {
-            this._logs.get(node).push(data.toString());
-          });
+        if (testProcess.stderr && testProcess.stdout) {
+          const appendLogs = (data: Buffer): void => {
+            const logs = this._logs.get(node);
+            if (logs) {
+              logs.push(data.toString());
+            } else {
+              this._logs.set(node, [data.toString()]);
+            }
+          };
+          testProcess.stderr.on('data', (data) => appendLogs(data));
+          testProcess.stdout.on('data', (data) => appendLogs(data));
         }
         testProcess.on('close', (code) => {
           if (code !== 0) {
@@ -119,14 +123,15 @@ class TestRunner {
     const { cmd, args } = this._getCmd();
     console.log(`${chalk.bold(service.getName())} - ${chalk.gray([cmd, ...args].join(' '))}`);
     console.log('\n');
-    console.log(this._logs.get(service).join(''));
+    const logs = this._logs.get(service);
+    console.log(logs ? logs.join('') : '');
     console.log('\n');
   }
 }
 
 export const runTests = async (cmd: ITestOptions, scheduler: RecompilationScheduler, logger: Logger): Promise<void> => {
   const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
-  let type: 'functional' | 'unit' = null;
+  let type: 'functional' | 'unit' | undefined;
   if (cmd.functional && cmd.unit) {
     console.error(chalk.red('Cannot use both --unit and --functional flags'));
     process.exit(1);
@@ -141,7 +146,7 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
     process.exit(1);
   }
   const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
-  const target = cmd.S ? service : graph;
+  const target = service ? service : graph;
   if (cmd.recompile) {
     try {
       console.info('\nBuilding dependency graph\n');
@@ -156,7 +161,7 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
     succeedColor: 'white',
     spinnerColor: 'cyan',
   });
-  const runner = new TestRunner(cmd.S ? service : graph.getNodes(), concurrency, type);
+  const runner = new TestRunner(service ? service : graph.getNodes(), concurrency, type);
   const failures: Node[] = [];
   const onNext = (evt: ITestEvent): void => {
     switch (evt.status) {

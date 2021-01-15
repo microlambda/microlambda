@@ -12,7 +12,7 @@ import { faClipboard, faFileAlt, faHammer, faPlay, faRedo, faStop } from '@forta
 })
 export class NodeDetailsComponent implements OnInit {
 
-  node: Package | Service;
+  node: Package | Service | undefined;
   fa = {
     refresh: faRedo,
     build: faHammer,
@@ -35,12 +35,16 @@ export class NodeDetailsComponent implements OnInit {
   }
 
   openLogs() {
-    this.mila.selectService(this.node.name);
-    this.tabs.openTab('service-logs', `Logs | ${this.node.name}`)
+    if (this.node) {
+      this.mila.selectService(this.node.name);
+      this.tabs.openTab('service-logs', `Logs | ${this.node.name}`)
+    }
   }
 
   openTscLogs() {
-    this.mila.setCurrentNode(this.node.name);
-    this.tabs.openTab('tsc-logs', `${this.node.name} | tsc`);
+    if (this.node) {
+      this.mila.setCurrentNode(this.node.name);
+      this.tabs.openTab('tsc-logs', `${this.node.name} | tsc`);
+    }
   }
 }

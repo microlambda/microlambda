@@ -1,3 +1,5 @@
+// FIXME: Proper type definition
+// @ts-ignore
 import * as Convert from 'ansi-to-html';
 const convert = new Convert();
 

@@ -1,22 +1,83 @@
 image: node:lts-alpine
 
-reference:
+definitions:
+  caches:
+    sonar: ~/.sonar/cache
+    yarn: .yarn/cache
   steps:
-    - step: &testCLI
-        name: 'Test and build CLI'
+    - step: &installDependencies
+        name: 'Install dependencies'
+        caches:
+          - node
+          - yarn
         script:
-          - npm i
-          - npx lerna bootstrap
-          - npx lerna run lint --scope=@microlambda/cli
-          - npx lerna run test --scope=@microlambda/cli
-          - npx lerna run build --scope=@microlambda/cli
+          - yarn
+        artifacts:
+          - node_modules/**
+          - ./*/node_modules/**
+    - step: &buildProject
+        name: 'Build projects'
+        script:
+          - yarn build
+        artifacts:
+          - ./*/lib/**
+          - ./*/dist/**
+    - parallel: &runTests
+        - step:
+          name: 'Test @microlambda/core'
+          script:
+            - yarn lint:core
+            - yarn test:core
+          artifacts:
+            - core/coverage/**
+        - step:
+          name: 'Test @microlambda/cli'
+          script:
+            - yarn lint:cli
+            - yarn test:cli
+          artifacts:
+            - cli/coverage/**
+        - step:
+          name: 'Test @microlambda/server'
+          script:
+            - yarn lint:server
+            - yarn test:server
+          artifacts:
+            - server/coverage/**
+        - step:
+          name: 'Test @microlambda/client'
+          script:
+            - yarn lint:client
+            - yarn test:client
+          artifacts:
+            - client/coverage/**
+        - step:
+          name: 'Test @microlambda/handling'
+          script:
+            - yarn lint:handling
+            - yarn test:handling
+          artifacts:
+            - handling/coverage/**
+    - step: &scan
+        name: 'Scan projects'
+        script:
+          - echo 'TODO codeclimate + codecov'
+    - step: &publish
+        name: 'Publish packages'
+        script:
+          - yarn run ts-node ./scripts/publish.ts
 
 pipelines:
   pull-requests:
     '**':
-      - step: *testCLI
+      - step: *installDependencies
+      - step: *buildProject
+      - parallel: *runTests
   branches:
     master:
-      - step: *testCLI
-    next:
-      - step: *testCLI
+      - step: *installDependencies
+      - step: *buildProject
+      - parallel: *runTests
+      - parallel:
+          - step: *scan
+          - step: *publish

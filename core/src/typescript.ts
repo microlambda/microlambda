@@ -20,6 +20,9 @@ export const getTsConfig = (cwd: string): ParsedCommandLine => {
     useCaseSensitiveFileNames: true,
   };
   const configFileName = findConfigFile(cwd, sys.fileExists, 'tsconfig.json');
+  if (!configFileName) {
+    throw new Error('Cannot resolve tsconfig.json');
+  }
   const configFile = readConfigFile(configFileName, sys.readFile);
   return parseJsonConfigFileContent(configFile.config, parseConfigHost, cwd);
 };

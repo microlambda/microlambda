@@ -141,7 +141,7 @@ export class DependenciesGraph {
     return this.nodes;
   }
 
-  public get(name: string): Node {
+  public get(name: string): Node | undefined {
     return this.nodes.find((n) => n.getName() === name);
   }
 

@@ -81,7 +81,7 @@ const format = (event: ApiHandlerEvent, response: Response, content: any): APIGa
   // undefined headers are no more supported in AWS lambda type definitions
   const apiGatewayHeaders: { [key: string]: string | number | boolean } = {};
   Object.keys(headers).forEach((key) => {
-    const value =  headers[key];
+    const value = headers[key];
     if (value) {
       apiGatewayHeaders[key] = value;
     }

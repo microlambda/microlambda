@@ -1,3 +1,3 @@
 describe('the scheduler', () => {
-  it.todo('should be tested');
+  test.todo('should be tested');
 });

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "lib": ["es6", "esnext", "esnext.asynciterable"],
+    "noImplicitAny": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "noImplicitReturns": true,
+    "strict": true,
+    "target": "es6",
+    "declaration": true,
+    "importHelpers": true,
+    "isolatedModules": false,
+    "skipLibCheck": true
+  }
+}

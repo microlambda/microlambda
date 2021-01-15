@@ -25,33 +25,34 @@ interface IStartOptions {
 export const validateConfig = (config: ConfigReader, graph: DependenciesGraph): IConfig => {
   const validating = ora('Validating config 🔧').start();
   try {
-    config.validate(graph);
+    const validated = config.validate(graph);
+    validating.succeed('Config valid');
+    return validated;
   } catch (e) {
     validating.fail('Invalid microlambda config file');
     console.error(chalk.red('Please check the docs and provide a valid configuration.'));
     console.error(chalk.red(e));
     process.exit(1);
   }
-  validating.succeed('Config valid');
-  return config.config;
 };
 
-export const readConfig = async (projectRoot: string, logger: Logger): Promise<ConfigReader> => {
+export const readConfig = async (
+  projectRoot: string,
+  logger: Logger,
+): Promise<{ reader: ConfigReader; config: IConfig }> => {
   const loadingConfig = ora('Loading config ⚙️').start();
   const reader = new ConfigReader(logger);
   let config: IConfig;
   try {
     config = reader.readConfig();
+    logger.log('start').debug(config);
+    loadingConfig.succeed();
+    return { reader, config };
   } catch (e) {
     loadingConfig.fail('Cannot read microlambda config file');
     console.error(chalk.red(e));
     process.exit(1);
   }
-  // FIXME: Implement real strategy about this
-  // await verifyBinaries(config.compilationMode, projectRoot, logger);
-  logger.log('start').debug(config);
-  loadingConfig.succeed();
-  return reader;
 };
 
 export const getDependenciesGraph = async (
@@ -75,10 +76,10 @@ export const init = async (
   const log = logger.log('start');
   const projectRoot = getProjectRoot(logger);
   log.info('Project root resolved', projectRoot);
-  const config = await readConfig(projectRoot, logger);
-  const graph = await getDependenciesGraph(projectRoot, scheduler, config.config, logger, defaultPort);
-  validateConfig(config, graph);
-  return { projectRoot, config: config.config, graph };
+  const { config, reader } = await readConfig(projectRoot, logger);
+  const graph = await getDependenciesGraph(projectRoot, scheduler, config, logger, defaultPort);
+  validateConfig(reader, graph);
+  return { projectRoot, config: config, graph };
 };
 
 // TODO: Install dependencies just in case

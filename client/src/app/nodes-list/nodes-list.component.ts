@@ -10,9 +10,9 @@ import { TabsService } from '../tabs.service';
   styleUrls: ['./nodes-list.component.scss']
 })
 export class NodesListComponent implements OnInit {
-  packages: Package[];
-  services: Service[];
-  @Input() filter: string;
+  packages: Package[] = [];
+  services: Service[] = [];
+  @Input() filter = '';
 
   constructor(
     private readonly mila: MilaService,

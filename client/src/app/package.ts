@@ -1,6 +1,5 @@
 import { TranspilingStatus, TypeCheckStatus } from './compilation.status.enum';
 import { INode } from './node.interface';
-import { Service } from './service';
 
 export class Package {
   private readonly _name: string;
