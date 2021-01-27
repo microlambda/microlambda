@@ -30,6 +30,7 @@
     "test:client": "yarn workspace @microlambda/client run test"
   },
   "workspaces": [
+    "types",
     "cli",
     "core",
     "client",
@@ -38,7 +39,8 @@
     "handling",
     "plugin",
     "testing",
-    "server"
+    "server",
+    "clientv2"
   ],
   "license": "MIT",
   "devDependencies": {

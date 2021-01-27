@@ -25,6 +25,7 @@
   ],
   "dependencies": {
     "@hapi/joi": "^17.1.1",
+    "@microlambda/types": "workspace:*",
     "@yarnpkg/cli": "^2.4.0",
     "@yarnpkg/core": "^2.4.0",
     "@yarnpkg/fslib": "^2.4.0",
@@ -40,10 +41,10 @@
     "lodash": "^4.17.19",
     "node-ipc": "^9.1.1",
     "ora": "^5.1.0",
+    "ps-tree": "^1.2.0",
     "rc": "^1.2.8",
     "rimraf": "^3.0.2",
     "rxjs": "^6.5.4",
-    "socket.io": "^2.3.0",
     "spinnies": "^0.5.1",
     "uuid": "^7.0.2"
   },
@@ -58,6 +59,7 @@
     "@types/lodash": "^4.14.149",
     "@types/node": "^14.14.9",
     "@types/node-ipc": "^9.1.2",
+    "@types/ps-tree": "^1.1.0",
     "@types/rc": "^1.1.0",
     "@types/rimraf": "^2.0.3",
     "@types/socket.io": "^2.1.11",

@@ -1,0 +1,33 @@
+{
+  "name": "@microlambda/svelte-client",
+  "scripts": {
+    "start": "snowpack dev",
+    "build": "snowpack build",
+    "test": "web-test-runner \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "ansi-html": "^0.0.7",
+    "dagre-d3": "^0.6.4",
+    "socket.io-client": "^3.1.0",
+    "svelte": "^3.24.0",
+    "timeago.js": "^4.0.2"
+  },
+  "devDependencies": {
+    "@microlambda/types": "workspace:*",
+    "@snowpack/plugin-dotenv": "^2.0.5",
+    "@snowpack/plugin-svelte": "^3.5.0",
+    "@snowpack/plugin-typescript": "^1.2.0",
+    "@snowpack/web-test-runner-plugin": "^0.2.0",
+    "@testing-library/svelte": "^3.0.0",
+    "@types/chai": "^4.2.13",
+    "@types/dagre-d3": "^0.6.2",
+    "@types/mocha": "^8.2.0",
+    "@types/snowpack-env": "^2.3.2",
+    "@web/test-runner": "^0.12.0",
+    "chai": "^4.2.0",
+    "sass": "^1.32.5",
+    "snowpack": "^3.0.1",
+    "svelte-preprocess": "^4.6.3",
+    "typescript": "^4.0.0"
+  }
+}

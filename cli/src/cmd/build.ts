@@ -26,7 +26,6 @@ export const beforeBuild = async (
   acceptPackages = false,
 ): Promise<{ projectRoot: string; graph: DependenciesGraph; service: Node | undefined }> => {
   const { graph, projectRoot } = await init(logger, scheduler);
-  graph.enableAll();
   const nodes = acceptPackages ? graph.getNodes() : graph.getServices();
   const service = nodes.find((s) => s.getName() === cmd.S);
   if (cmd.S && !service) {

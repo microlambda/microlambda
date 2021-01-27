@@ -1,4 +1,4 @@
-import { DependenciesGraph, Node, ServiceStatus } from './';
+import { DependenciesGraph, Node } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../logs';
@@ -11,13 +11,9 @@ import { RecompilationScheduler } from '../scheduler';
 import { Packager } from '../package/packagr';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
-import { ILogger } from '../logger';
-
-interface IServiceLogs {
-  offline: string[];
-  createDomain: string[];
-  deploy: string[];
-}
+import { IServiceLogs, ServiceStatus, TranspilingStatus } from '@microlambda/types';
+import { isPortAvailable } from '../resolve-ports';
+import processTree from 'ps-tree';
 
 export class Service extends Node {
   private status: ServiceStatus;
@@ -30,6 +26,7 @@ export class Service extends Node {
   private _status$: BehaviorSubject<ServiceStatus> = new BehaviorSubject<ServiceStatus>(ServiceStatus.STOPPED);
   public status$ = this._status$.asObservable();
   public slsLogs$ = this._slsLogs$.asObservable();
+  private _startedBeganAt: number | undefined;
 
   constructor(
     scheduler: RecompilationScheduler,
@@ -60,64 +57,83 @@ export class Service extends Node {
     return this._port;
   }
 
-  get logger(): ILogger {
-    return this.getGraph().logger.log('service');
+  private _killProcessTree(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM') {
+    if (this.process) {
+      processTree(this.process.pid, (err, children) => {
+        if (err) {
+          this._logger.error('Cannot get process tree', err);
+          this.process?.kill(signal);
+        }
+        children.forEach((child) => process.kill(Number(child.PID), signal));
+      });
+    } else {
+      this._logger.error('No process to kill');
+    }
   }
 
   public stop(): Observable<Service> {
     return new Observable<Service>((observer) => {
-      this.logger.debug('Requested to stop', this.name, 'which status is', this.status);
+      this._logger.debug('Requested to stop', this.name, 'which status is', this.status);
+      const watchKilled = () => {
+        if (this.process) {
+          this._logger.debug('Waiting for process to be killed');
+          this.process.on('exit', () => {
+            this._logger.debug('Process exited');
+            this._updateStatus(ServiceStatus.STOPPED);
+          });
+          this.process.on('close', (code) => {
+            this._logger.debug('Process closed', { code })
+            if (code === 0) {
+              this._logger.info(`Service ${this.name} exited with code ${code}`);
+              this._updateStatus(ServiceStatus.STOPPED);
+            } else {
+              this._logger.error(`Service ${this.name} exited with code ${code}`);
+              this._updateStatus(ServiceStatus.CRASHED);
+            }
+          });
+          // Make sure process released port
+          setTimeout(async () => {
+            this._logger.debug('Making sure process has released port');
+            const isAvailable = await isPortAvailable(this.port);
+            this._logger.debug('Is port available', isAvailable);
+            if (!isAvailable) {
+              this._logger.warn('Process has no released port within 200ms. Sending SIGKILL');
+              this._killProcessTree('SIGKILL');
+            }
+            observer.next(this);
+            return observer.complete();
+          }, 200);
+        }
+      }
       switch (this.status) {
         case ServiceStatus.RUNNING:
         case ServiceStatus.STARTING:
           if (this.process) {
-            this.process.kill();
+            this._logger.debug('Request to kill process');
+            watchKilled();
+            this._killProcessTree();
           } else {
             const msg = `No process found to kill ${this.getName()}`;
-            this.logger.error(msg);
+            this._logger.error(msg);
             observer.error(msg);
           }
           break;
         case ServiceStatus.STOPPING:
-          this.getGraph()
-            .logger.log('service')
-            .warn('Requested to stop a service that already stopping', this.name);
+          this._logger.warn('Requested to stop a service that already stopping', this.name);
+          watchKilled();
           break;
         case ServiceStatus.CRASHED:
         case ServiceStatus.STOPPED:
-          this.getGraph()
-            .logger.log('service')
-            .warn('Requested to stop a service that is not running', this.name);
+          this._logger.warn('Requested to stop a service that is not running', this.name);
           observer.next(this);
           return observer.complete();
-      }
-      if (this.process) {
-        this.process.on('close', (code) => {
-          if (code === 0) {
-            this.getGraph()
-              .logger.log('service')
-              .info(`Service ${this.name} exited with code ${code}`);
-            this._updateStatus(ServiceStatus.STOPPED);
-          } else {
-            this.getGraph()
-              .logger.log('service')
-              .error(`Service ${this.name} exited with code ${code}`);
-            this._updateStatus(ServiceStatus.CRASHED);
-          }
-          // this.process.removeAllListeners('close');
-          this.process = undefined;
-          observer.next(this);
-          return observer.complete();
-        });
       }
     });
   }
 
   public start(): Observable<Service> {
     return new Observable<Service>((observer) => {
-      this.getGraph()
-        .logger.log('service')
-        .debug('Requested to start', this.name, 'which status is', this.status);
+      this._logger.debug('Requested to start', this.name, 'which status is', this.status);
       switch (this.status) {
         case ServiceStatus.CRASHED:
         case ServiceStatus.STOPPED:
@@ -129,9 +145,7 @@ export class Service extends Node {
           );
           break;
         case ServiceStatus.STOPPING:
-          this.getGraph()
-            .logger.log('service')
-            .warn('Service is already stopping', this.name);
+          this._logger.warn('Service is already stopping', this.name);
           this.stop()
             .pipe(
               tap(() => this._startProcess()),
@@ -144,9 +158,7 @@ export class Service extends Node {
             );
           break;
         case ServiceStatus.STARTING:
-          this.getGraph()
-            .logger.log('service')
-            .warn('Service is already starting', this.name);
+          this._logger.warn('Service is already starting', this.name);
           this._watchStarted().subscribe(
             (next) => observer.next(next),
             (err) => observer.error(err),
@@ -154,9 +166,7 @@ export class Service extends Node {
           );
           break;
         case ServiceStatus.RUNNING:
-          this.getGraph()
-            .logger.log('service')
-            .warn('Service is already running', this.name);
+          this._logger.warn('Service is already running', this.name);
           observer.next(this);
           return observer.complete();
       }
@@ -166,9 +176,7 @@ export class Service extends Node {
   private _watchServerlessYaml(): void {
     this._slsYamlWatcher = watch(`${this.location}/serverless.{yml,yaml}`);
     this._slsYamlWatcher.on('change', (path) => {
-      this.getGraph()
-        .logger.log('node')
-        .info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+      this._logger.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
       this._scheduler.restartOne(this);
     });
   }
@@ -181,26 +189,22 @@ export class Service extends Node {
 
   private _startProcess(): void {
     this._updateStatus(ServiceStatus.STARTING);
+    this._startedBeganAt = Date.now();
+    this.setTranspilingStatus(TranspilingStatus.TRANSPILING);
     createLogFile(this.graph.getProjectRoot(), this.name, 'offline');
-    this.getGraph()
-      .logger.log('service')
-      .info(`Starting ${this.name} on localhost:${this.port}`);
-    this.getGraph()
-      .logger.log('service')
-      .debug('Location:', this.location);
-    this.getGraph()
-      .logger.log('service')
-      .debug('Env:', process.env.ENV);
+    this._logger.info(`Starting ${this.name} on localhost:${this.port}`);
+    this._logger.debug('Location:', this.location);
+    this._logger.debug('Env:', process.env.ENV);
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'offline'));
-    this.process = spawn('yarn', ['start', '--', '--port', this.port.toString()], {
+    // TODO: argument --port have been changed to --httpPort on serverless-offline@6
+    // We should either delegate to yarn start script to port mapping, either check sls version and choose appropriate arg
+    this.process = spawn('yarn', ['start', '--port', this.port.toString()], {
       cwd: this.location,
       env: { ...process.env, FORCE_COLOR: '2' },
     });
     if (this.process.stderr) {
       this.process.stderr.on('data', (data) => {
-        this.getGraph()
-          .logger.log('service')
-          .error(`${chalk.bold(this.name)}: ${data}`);
+        this._logger.error(`${chalk.bold(this.name)}: ${data}`);
         this._handleLogs(data);
       });
     }
@@ -210,7 +214,7 @@ export class Service extends Node {
     return new Observable<Service>((started) => {
       if (!this.process) {
         const msg = 'No starting process to watch';
-        this.logger.error(msg);
+        this._logger.error(msg);
         started.error(msg);
         return;
       }
@@ -218,10 +222,12 @@ export class Service extends Node {
         this.process.stdout.on('data', (data) => {
           this._handleLogs(data);
           if (data.includes('listening on')) {
-            this.getGraph()
-              .logger.log('service')
-              .info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
+            this._logger.info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
+            this._metrics.lastStarted = new Date();
+            this._metrics.startedTook = this._startedBeganAt ? Date.now() - this._startedBeganAt : null;
+            this._startedBeganAt = undefined;
             this._updateStatus(ServiceStatus.RUNNING);
+            this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
             started.next(this);
             return started.complete();
           }
@@ -229,19 +235,19 @@ export class Service extends Node {
       }
       this.process.on('close', (code) => {
         if (code !== 0) {
-          this.getGraph()
-            .logger.log('service')
-            .error(`Service ${this.name} exited with code ${code}`);
+          this._logger.error(`Service ${this.name} exited with code ${code}`);
+          this.setTranspilingStatus(TranspilingStatus.NOT_TRANSPILED);
           this._updateStatus(ServiceStatus.CRASHED);
+          this._startedBeganAt = undefined;
           // this.process.removeAllListeners('close');
           return started.error();
         }
       });
       this.process.on('error', (err) => {
-        this.getGraph()
-          .logger.log('service')
-          .error(`Could not start service ${this.name}`, err);
+        this._logger.error(`Could not start service ${this.name}`, err);
+        this.setTranspilingStatus(TranspilingStatus.NOT_TRANSPILED);
         this._updateStatus(ServiceStatus.CRASHED);
+        this._startedBeganAt = undefined;
         return started.error(err);
       });
     });
@@ -251,7 +257,7 @@ export class Service extends Node {
     if (this.logStream) {
       this.logStream.write(data);
     } else {
-      this.logger.warn('Cannot write logs file for node', this.getName());
+      this._logger.warn('Cannot write logs file for node', this.getName());
     }
     this._logs.offline.push(data.toString());
     this._slsLogs$.next(data.toString());
@@ -262,15 +268,14 @@ export class Service extends Node {
       this._watchServerlessYaml();
     } else {
       this._unwatchServerlessYaml().then(() => {
-        this.getGraph()
-          .logger.log('service')
-          .debug(`${this.name}: Unwatched serverless.yml`);
+        this._logger.debug(`${this.name}: Unwatched serverless.yml`);
       });
     }
     this.status = status;
     if (this._ipc) {
       this._ipc.graphUpdated();
     }
+    this._logger.debug('status updated', this.name, this.status);
     this._status$.next(this.status);
   }
 
@@ -301,7 +306,6 @@ export class Service extends Node {
           ...process.env,
           ENV: stage,
           FORCE_COLOR: '2',
-          MILA_REGION: region,
           AWS_REGION: region,
         },
         stdio: 'pipe',
@@ -333,7 +337,7 @@ export class Service extends Node {
       createLogFile(this.graph.getProjectRoot(), this.name, 'createDomain');
       const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'createDomain'));
       const createDomainProcess = spawn(
-        getBinary('sls', this.graph.getProjectRoot(), this.getGraph().logger, this),
+        getBinary('sls', this.graph.getProjectRoot(), this.graph.logger, this),
         ['create_domain'],
         {
           cwd: this.location,
@@ -341,7 +345,6 @@ export class Service extends Node {
             ...process.env,
             ENV: stage,
             FORCE_COLOR: '2',
-            MILA_REGION: region,
             AWS_REGION: region,
           },
           stdio: 'pipe',

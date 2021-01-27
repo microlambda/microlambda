@@ -8,6 +8,12 @@ import { sync as glob } from 'glob';
 import { ILogger, Logger } from '../logger';
 import { DependenciesGraph, Service } from '../graph';
 
+/**
+ * TODO: Use in memory FS to change node_modules and package.
+ * This would allow multiple concurrent package process to be run.
+ */
+
+
 export interface IPackage {
   name: string;
   version: string;

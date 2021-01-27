@@ -19,7 +19,7 @@ import {
 interface IStartOptions {
   interactive: boolean;
   recompile: boolean;
-  defaultPort: number;
+  port: number;
 }
 
 export const validateConfig = (config: ConfigReader, graph: DependenciesGraph): IConfig => {
@@ -105,12 +105,12 @@ export const start = async (
 ): Promise<void> => {
   console.info(showOff());
 
-  const { projectRoot, config, graph } = await init(logger, scheduler, options.defaultPort);
+  const { projectRoot, config, graph } = await init(logger, scheduler, 3000);
 
   // await yarnInstall(graph, logger);
 
   const startingServer = ora('Starting server').start();
-  const server = await startServer(graph, logger);
+  const server = await startServer(options.port, graph, scheduler, logger);
   startingServer.text = 'Mila server started on http://localhost:4545 ✨';
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
@@ -118,7 +118,8 @@ export const start = async (
 
   scheduler.setGraph(graph);
 
-  const io = new IOSocketManager(server, scheduler, logger, graph);
+  const io = new IOSocketManager(options.port, server, scheduler, logger, graph);
+  logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   graph.getServices().forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));
     service.slsLogs$.subscribe((log) => io.handleServiceLog(service.getName(), log));
@@ -128,6 +129,7 @@ export const start = async (
     node.typeCheck$.subscribe((typeCheckStatus) => io.typeCheckStatusUpdated(node, typeCheckStatus));
     node.transpiled$.subscribe((transpileStatus) => io.transpilingStatusUpdated(node, transpileStatus));
   });
+  scheduler.status$.subscribe((status) => io.schedulerStatusChanged(status));
 
   const ipc = new IPCSocketsManager(projectRoot, scheduler, logger, graph);
   await ipc.createServer();
@@ -140,7 +142,6 @@ export const start = async (
     enabledServices.map((s) => s.getName()),
   );
   enabledServices.forEach((s) => s.enable());
-  graph.enableNodes();
   logger.log('start').debug(
     'Enabled nodes',
     graph

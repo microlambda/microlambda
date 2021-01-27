@@ -7,7 +7,7 @@ const cpuCount = os.cpus().length;
  * which is half of CPU threads available on the machine
  */
 export const getDefaultThreads = (): number => {
-  return Math.floor(cpuCount / 2);
+  return Math.max(1, Math.floor(cpuCount * 0.5));
 };
 
 /**
@@ -18,10 +18,10 @@ export const getDefaultThreads = (): number => {
  * @param target - the number of thread we want to use.
  */
 export const getThreads = (target: number): number => {
-  if (target < 0 || !Number.isInteger(target)) {
+  if (target <= 0 || !Number.isInteger(target)) {
     throw Error('Number of threads must be a strictly positive integer');
   }
-  if (target > cpuCount) {
+  if (target === 0 && target > cpuCount) {
     return cpuCount;
   }
   return target;

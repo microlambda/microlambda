@@ -18,7 +18,7 @@ const scheduler = new RecompilationScheduler(logger);
 
 const program = new Command();
 
-program.version('0.0.26-alpha');
+program.version('0.0.28-alpha');
 
 program
   .command('start')
@@ -33,7 +33,7 @@ program
       const options = {
         recompile: cmd.recompile,
         service: cmd.S,
-        defaultPort: cmd.P || 3001,
+        port: cmd.P || 4545,
         interactive: cmd.interactive,
       };
       logger.log('cmd').debug(options);

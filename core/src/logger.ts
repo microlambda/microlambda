@@ -1,6 +1,7 @@
 import { blue, green, cyan, yellow, red, bold } from 'chalk';
 import { inspect } from 'util';
 import { Subject } from 'rxjs';
+import { IEventLog, LogLevel } from '@microlambda/types';
 
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 type LoggerFunction = (...args: any[]) => void;
@@ -17,15 +18,6 @@ export const prefix = {
   info: green('[INFO]'),
   error: red('[ERROR]'),
 };
-
-type LogLevel = 'silly' | 'debug' | 'info' | 'warn' | 'error';
-
-export interface IEventLog {
-  level: LogLevel;
-  date: string;
-  scope?: string;
-  args: string[];
-}
 
 export class Logger {
   private _logs: IEventLog[] = [];

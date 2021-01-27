@@ -11,6 +11,7 @@
   "scripts": {
     "test": "../node_modules/.bin/jest",
     "build": "yarn run pre:build && ../node_modules/.bin/tsc --build && yarn run post:build",
+    "build:watch": "../node_modules/.bin/tsc --watch",
     "pre:build": "rm -rf ./dist",
     "post:build": "cp -r ../client/dist ./dist/static",
     "start": "node dist/index.js",
@@ -25,7 +26,9 @@
   "dependencies": {
     "@microlambda/client": "workspace:*",
     "@microlambda/core": "workspace:*",
-    "express": "^4.17.1"
+    "@microlambda/types": "workspace:*",
+    "express": "^4.17.1",
+    "socket.io": "^3.1.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.9"

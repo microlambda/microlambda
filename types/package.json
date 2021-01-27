@@ -1,0 +1,28 @@
+{
+  "name": "@microlambda/types",
+  "version": "0.0.1-alpha",
+  "description": "Types definitions shared between node and browser environments",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+  },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "rm -rf ./lib && ../node_modules/.bin/tsc --build",
+    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
+  },
+  "keywords": [
+    "serverless",
+    "typescript",
+    "yarn",
+    "microservices",
+    "aws",
+    "monorepo"
+  ],
+  "devDependencies": {
+    "typescript": "^3.9.7"
+  }
+}

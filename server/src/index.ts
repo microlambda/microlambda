@@ -1,39 +1,59 @@
 import express from "express";
 import { createServer, Server } from "http";
-import { Logger, DependenciesGraph, Service } from "@microlambda/core";
+import { Logger, DependenciesGraph, Service, RecompilationScheduler } from '@microlambda/core';
+import cors from 'cors';
+import { json } from 'body-parser';
+import { INodeSummary } from '@microlambda/types';
 
 export * from "./socket";
 
 export const startServer = (
+  port: number,
   graph: DependenciesGraph,
+  scheduler: RecompilationScheduler,
   logger: Logger
 ): Promise<Server> => {
+  console.log(logger);
   const log = logger.log("api");
   // TODO: Arg de mila start --port
-  const port = 4545;
   const app = express();
+
+  app.use(cors({
+    origin: ['http://localhost:4200', 'http://localhost:' + port],
+    credentials: true,
+  }));
+  app.use(json());
 
   app.use("/", express.static(__dirname + "/static"));
 
   app.get("/api/graph", (req, res) => {
     log.debug("GET /api/graph");
-    res.json(
-      graph.getNodes().map(n => ({
-        name: n.getName(),
-        version: n.getVersion(),
-        port: n.isService() ? graph.getPort(n.getName()) : null,
-        enabled: n.isEnabled(),
-        transpiled: n.getTranspilingStatus(),
-        typeChecked: n.getTypeCheckStatus(),
-        lastTypeCheck: n.lastTypeCheck,
-        status: n.isService() ? (n as Service).getStatus() : null
-      }))
-    );
+    const response: INodeSummary[] = graph.getNodes().map(n => ({
+      name: n.getName(),
+      version: n.getVersion() || '',
+      type: n.isService() ? 'service' : 'package',
+      port: n.isService() ? graph.getPort(n.getName()) : null,
+      enabled: n.isEnabled(),
+      transpiled: n.getTranspilingStatus(),
+      typeChecked: n.getTypeCheckStatus(),
+      status: n.isService() ? (n as Service).getStatus() : null,
+      children: n.getChildren().map((n) => n.getName()),
+      metrics: {
+        lastTypeCheck: n.metrics.lastTypeCheck ? n.metrics.lastTypeCheck.toISOString() : null,
+        typeCheckTook: n.metrics.typeCheckTook,
+        typeCheckFromCache: n.metrics.typeCheckFromCache,
+        lastTranspiled: n.metrics.lastTranspiled ? n.metrics.lastTranspiled.toISOString() : null,
+        transpileTook: n.metrics.transpileTook,
+        lastStarted: n.metrics.lastStarted ? n.metrics.lastStarted.toISOString() : null,
+        startedTook: n.metrics.startedTook,
+      }
+    }))
+    res.json(response);
   });
 
   app.get("/api/logs", (req, res) => {
     log.debug("GET /api/logs");
-    res.json(graph.logger.logs);
+    res.json(graph.logger.logs.filter(log => ['warn', 'info', 'error'].includes(log.level)));
   });
 
   app.get("/api/services/:service/logs", (req, res) => {
@@ -42,9 +62,56 @@ export const startServer = (
     const service = graph.getServices().find(s => s.getName() === serviceName);
     if (!service) {
       log.error("GET /api/services/:service/logs - 404: No such service");
-      return res.status(404);
+      return res.status(404).send();
     }
     return res.json(service.logs);
+  });
+
+  app.put("/api/graph", (req, res) => {
+    log.debug("PUT /api/graph/");
+    log.debug('Body', req.body);
+    switch (req.body?.action) {
+      case 'startAll':
+        scheduler.startAll().subscribe();
+        break;
+      case 'stopAll':
+        scheduler.stopAll().subscribe();
+        break;
+      case 'restartAll':
+        scheduler.restartAll().subscribe();
+        break;
+      default:
+        return res.status(422).send('Invalid action');
+    }
+    return res.status(204).send();
+  });
+
+  app.put("/api/services/:service", (req, res) => {
+    const serviceName = req.params.service;
+    log.debug("PUT /api/services/:service", serviceName);
+    log.debug('Body', req.body);
+    const service = graph.getServices().find(s => s.getName() === serviceName);
+    if (!service) {
+      log.error("GET /api/services/:service/logs - 404: No such service");
+      return res.status(404).send();
+    }
+    switch (req.body?.action) {
+      case 'start':
+        scheduler.startOne(service).subscribe();
+        break;
+      case 'stop':
+        scheduler.stopOne(service).subscribe();
+        break;
+      case 'restart':
+        scheduler.restartOne(service).subscribe();
+        break;
+      case 'build':
+        scheduler.recompileSafe(service, req.body?.options?.force);
+        break;
+      default:
+        return res.status(422).send('Invalid action');
+    }
+    return res.status(204).send();
   });
 
   app.get("/api/nodes/:node/tsc/logs", (req, res) => {
@@ -67,6 +134,9 @@ export const startServer = (
       return res.status(404).send();
     }
     return res.json(node.tscLogs);
+  });
+  app.get("/api/scheduler/status", (req, res) => {
+    return res.json({status: scheduler.status});
   });
 
   const http = createServer(app);

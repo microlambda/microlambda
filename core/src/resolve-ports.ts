@@ -2,6 +2,7 @@ import { IConfig } from './config/config';
 import { Logger } from './logger';
 import { Workspace } from '@yarnpkg/core';
 import { getName } from './yarn/project';
+import { Socket } from 'net';
 
 type PortMap = { [key: string]: number };
 
@@ -28,4 +29,31 @@ export const resolvePorts = (services: Workspace[], config: IConfig, logger: Log
   });
   logger.log('port').debug('Ports resolved', result);
   return result;
+};
+
+export const isPortAvailable = async (port: number, host= '127.0.0.1', timeout = 400): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const socket = new Socket();
+    let status: 'open' | 'closed';
+    socket.on('connect', () => {
+      console.debug('socket connected');
+      status = 'open';
+      socket.destroy();
+    });
+    socket.setTimeout(timeout);
+    socket.on('timeout', () => {
+      console.debug('socket timedout');
+      status = 'closed';
+      socket.destroy();
+    });
+    socket.on('error', (e) => {
+      console.debug('socket error', e);
+      status = 'closed';
+    });
+    socket.on('close', (e) => {
+      console.debug('socket closed', e);
+      resolve(status === 'open');
+    });
+    socket.connect(port, host)
+  });
 };

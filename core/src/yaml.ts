@@ -139,6 +139,10 @@ const removePlugins = (doc: any): void => {
   }
 };
 
+const overwriteRegion = (doc: any, region: string): void => {
+  doc.provider.region = region;
+};
+
 const optionalRegion = (doc: any, region: string): void => {
   const toDelete = [];
   for (const functionName of Object.keys(doc.functions)) {
@@ -186,6 +190,7 @@ export const reformatYaml = async (
       }
       transformation.default(doc, region, env);
     }
+    overwriteRegion(doc, region);
     removePlugins(doc);
     optionalRegion(doc, region);
     writeFileSync(

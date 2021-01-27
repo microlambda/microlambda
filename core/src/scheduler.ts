@@ -1,15 +1,9 @@
-import { concat, from, merge, Observable, Subject } from 'rxjs';
-import { concatAll, debounceTime, filter, mergeMap, takeUntil } from 'rxjs/operators';
+import { BehaviorSubject, concat, from, merge, Observable, Subject } from 'rxjs';
+import { concatAll, debounceTime, filter, mergeAll, mergeMap, takeUntil } from 'rxjs/operators';
 import { ILogger, Logger } from './logger';
 import { getDefaultThreads } from './platform';
 import { DependenciesGraph, Node, Service } from './graph';
-import { ServiceStatus } from './graph/enums/service.status';
-
-enum SchedulerStatus {
-  READY,
-  BUSY,
-  ABORTED,
-}
+import { ServiceStatus, SchedulerStatus } from '@microlambda/types';
 
 enum RecompilationStatus {
   READY,
@@ -81,6 +75,22 @@ export class RecompilationScheduler {
     start: [],
     package: [],
   };
+
+  /**
+   *
+   * Run local
+   *
+   *                                 [tslib]                 [npm run start]
+   *                       ------- transpile (T) ------- start (//)
+   *  ------ stop (//) ----
+   *                      -------- typechecking (T)
+   *
+   *
+   * Deploy
+   *
+   * ----- typechecking (T) ---------- package (T) -------- deploy (//)
+   *
+   */
   private _status: SchedulerStatus = SchedulerStatus.READY;
   private _recompilation: RecompilationStatus = RecompilationStatus.READY;
   private _abort$: Subject<void> = new Subject<void>();
@@ -89,6 +99,9 @@ export class RecompilationScheduler {
   private _debounce: number;
   private _logger: ILogger;
   private _concurrency: number;
+  private _status$: BehaviorSubject<SchedulerStatus> = new BehaviorSubject<SchedulerStatus>(SchedulerStatus.READY);
+  public status$ = this._status$.asObservable();
+  get status() { return this._status };
 
   constructor(logger: Logger) {
     this._logger = logger.log('scheduler');
@@ -118,27 +131,18 @@ export class RecompilationScheduler {
 
   public startAll(): Observable<IRecompilationEvent> {
     if (this._graph) {
-      // Enable nodes that not already enabled
-      this._graph.enableAll();
-
       // Compile nodes that are not already compiled
       const toStart = this._graph.getServices().filter((s) => s.getStatus() !== ServiceStatus.RUNNING);
       const roots = toStart.filter((n) => n.isRoot());
       this._compile(roots);
 
       // Start services that are not already started
-      toStart.forEach((s) => this._requestStart(s));
+      toStart.filter(s => s.isEnabled()).forEach((s) => this._requestStart(s));
     }
     return this._exec();
   }
 
   public stopOne(service: Service): Observable<IRecompilationEvent> {
-    // Disable "orphan" nodes i.e. nodes that are descendant of the service to stop but used by no other
-    // enabled nodes
-    if (this._graph) {
-      // FIXME: Use disable status only for config explicit exclusion (use unwatch instead to stop watching unused dependencies)
-      this._graph.disableOne(service);
-    }
     // Stop the service
     this._requestStop(service);
     return this._exec();
@@ -155,11 +159,6 @@ export class RecompilationScheduler {
   }
 
   public stopAll(): Observable<IRecompilationEvent> {
-    // Disable all nodes
-    // FIXME: Use disable status only for config explicit exclusion (use unwatch instead to stop watching unused dependencies)
-    if (this._graph) {
-      this._graph.getNodes().forEach((n) => n.disable());
-    }
     // Stop all running services
     return this.gracefulShutdown();
   }
@@ -187,7 +186,7 @@ export class RecompilationScheduler {
       );
 
       // And restart them
-      toRestart.forEach((s) => this._requestStart(s));
+      toRestart.filter(s => s.isEnabled()).forEach((s) => this._requestStart(s));
     }
     return this._exec();
   }
@@ -225,7 +224,8 @@ export class RecompilationScheduler {
       this._jobs.start.map((n) => n.getName()),
     );
     this._logger.debug('Executing tasks');
-    const watch = (): void => {
+    await this._execPromise();
+    /*const watch = (): void => {
       this._logger.info('Watching for file changes');
       graph.getNodes().forEach((n) => n.watch());
     };
@@ -234,7 +234,7 @@ export class RecompilationScheduler {
       watch();
     } catch (e) {
       watch();
-    }
+    }*/
   }
 
   public stopProject(graph: DependenciesGraph): Promise<void> {
@@ -262,14 +262,12 @@ export class RecompilationScheduler {
           // TODO: Proper preemption
           // TODO: If is service leaf, only request type-check
           // TODO: If not, find impacted services, stop them, recompile from root to leaves (type check) and impacted files and restart
+          const changes = Array.from(this._changes);
           this._reset();
           // find all services that are impacted
-          this._logger.info(
-            'Changed nodes',
-            Array.from(this._changes).map((n) => n.getName()),
-          );
+          this._logger.info(   'Changed nodes', changes.map((n) => n.getName()));
           const impactedServices: Set<Service> = new Set<Service>();
-          for (const node of this._changes) {
+          for (const node of changes) {
             const isRunningService = (n: Node): boolean => {
               if (n.isService()) {
                 const s = n as Service;
@@ -291,10 +289,14 @@ export class RecompilationScheduler {
           impactedServices.forEach((s) => this._requestStop(s));
 
           // request recompilation
-          this._compile([...this._changes]);
+          this._compile([...changes]);
 
           // start the stopped services
-          impactedServices.forEach((s) => this._requestStart(s));
+          impactedServices.forEach((s) => {
+            if (s.isEnabled()) {
+              this._requestStart(s);
+            }
+          });
 
           // rerun recompilation
           this._exec().subscribe();
@@ -381,7 +383,7 @@ export class RecompilationScheduler {
   }
 
   private _reset(): void {
-    this._logger.debug('Resetting scheduler');
+    this._logger.info('Resetting scheduler');
     this._abort$.next();
     this._jobs = {
       stop: [],
@@ -392,6 +394,7 @@ export class RecompilationScheduler {
     };
     this._recompilation = RecompilationStatus.READY;
     this._status = SchedulerStatus.READY;
+    this._status$.next(SchedulerStatus.READY);
     this._changes = new Set<Node>();
   }
 
@@ -426,6 +429,10 @@ export class RecompilationScheduler {
   }
 
   private _requestStart(service: Service): void {
+    if (!service.isEnabled()) {
+      this._logger.warn('Trying to start a service disabled by config', service.getName());
+    }
+    this._requestTypeCheck(service, false, false);
     this._logger.debug(`Request to add start job`, service.getName());
     const inQueue = this._alreadyQueued(service, 'start');
     this._logger.debug('Already in start queue', inQueue);
@@ -476,6 +483,7 @@ export class RecompilationScheduler {
       this._logger.info('Previous recompilation has been preempted');
     }
     this._status = SchedulerStatus.BUSY;
+    this._status$.next(SchedulerStatus.BUSY);
     this._logger.info('Executing recompilation task');
     this._logger.info(
       'To stop',
@@ -765,7 +773,7 @@ export class RecompilationScheduler {
         return obs.complete();
       }
       from(startJobs$)
-        .pipe(mergeMap((startJob$) => startJob$))
+        .pipe(mergeAll(this._concurrency))
         .subscribe(
           (evt) => {
             obs.next(evt);

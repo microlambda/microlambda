@@ -1,11 +1,17 @@
 fix(server): serve correctly front-end
+fix(core): cancel pending start tasks on compile error
+fix(core): throw if compile error in build mode
+fix(core): invalidate dependent packages checksums
+perf: do not restart service on dependency change *
+fix(build): checksum caching for build cmd
+refactor(deploy): move yaml refactoring in core
 refactor: move test execution from cli to core
+refactor(client): less hacky element dimensions
 feat(core): add remove stack method to service
 feat(cli): add remove command
-perf(client): use CDN to serve fonts
+feat(client): see last published version on client
+perf(client): do not use CDN to serve fonts
 ci: lint and test code on push
-fix(client): rework logs display
-fix(client): repair action buttons
 perf(client): event log lazy-loading
 test(core): full-coverage
 test(cli): full-coverage
@@ -16,8 +22,6 @@ feat(core): add resources usage metrics
 feat(server): forward resources usage to client
 feat(cli): forward resources usage to server
 feat(client): display resources usage
-feat(server): create endpoint to get serialized graph
-feat(client): display graph using cola
 test(server): full-coverage
 test(client): full-coverage
 docs: motivation
@@ -31,4 +35,9 @@ refactor: extend prettier eslint default configurations
 perf: optimize npm packages with .npmignore
 chore: add licence in each package
 docs: add per package README
+ci: add coverall or codecov
+ci: add code climate or sonar
 docs: add badges
+ci: industrialize publish process
+
+* just try to trigger recompilation while service is running. See with webpack plugin for PR (or fork)

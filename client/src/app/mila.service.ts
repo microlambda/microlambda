@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import * as io from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { Service } from './service';
 import { Package } from './package';
 import { IEventLog, Log } from './log';

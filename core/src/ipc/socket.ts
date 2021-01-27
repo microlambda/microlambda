@@ -4,9 +4,8 @@ import { Observable, Subject } from 'rxjs';
 import { IRecompilationEvent, RecompilationEventType, RecompilationScheduler } from '../scheduler';
 import { v4 as uuid } from 'uuid';
 import { Logger } from '../logger';
-import { TranspilingStatus } from '../graph';
-import { ServiceStatus } from '../graph';
 import { DependenciesGraph, Service } from '../graph';
+import { ServiceStatus, TranspilingStatus } from '@microlambda/types';
 
 interface IGraphStatus {
   name: string;
