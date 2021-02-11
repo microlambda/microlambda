@@ -11,3 +11,4 @@ class DomainInfo {
     }
 }
 module.exports = DomainInfo;
+//# sourceMappingURL=DomainInfo.js.map

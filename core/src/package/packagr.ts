@@ -46,13 +46,13 @@ export class Packager {
   private readonly _shaken: Map<string, boolean>;
   private readonly _services: Service[];
   private readonly _graph: DependenciesGraph;
-  private readonly _logger: ILogger;
+  private readonly _logger: ILogger | undefined;
 
-  constructor(graph: DependenciesGraph, services: Service[] | Service, logger: Logger) {
+  constructor(graph: DependenciesGraph, services: Service[] | Service, logger?: Logger) {
     this._services = Array.isArray(services) ? services : [services];
     this._tree = new Map();
     this._shaken = new Map();
-    this._logger = logger.log('packagr');
+    this._logger = logger?.log('packagr');
     this._graph = graph;
   }
 
@@ -75,7 +75,7 @@ export class Packager {
     restore: boolean,
     stdio: 'ignore' | 'inherit',
   ): Promise<number> {
-    this._logger.info(
+    this._logger?.info(
       `${chalk.bold(service.getName())}: re-installing only workspace production dependencies with yarn`,
     );
     await command(`yarn workspaces focus ${service.getName()} --production`, {
@@ -100,21 +100,21 @@ export class Packager {
 
       output.on('close', () => {
         const megabytes = Math.round(100 * (archive.pointer() / 1000000)) / 100;
-        this._logger.info(`${chalk.bold(service.getName())}: Zip files successfully created (${megabytes}MB)`);
+        this._logger?.info(`${chalk.bold(service.getName())}: Zip files successfully created (${megabytes}MB)`);
         return resolve(megabytes);
       });
 
       archive.on('warning', (err) => {
         if (err.code === 'ENOENT') {
-          this._logger.warn(err);
+          this._logger?.warn(err);
         } else {
-          this._logger.error(err);
+          this._logger?.error(err);
           return reject(err);
         }
       });
 
       archive.on('error', (err) => {
-        this._logger.error(err);
+        this._logger?.error(err);
         return reject(err);
       });
 
@@ -158,7 +158,7 @@ export class Packager {
 
   public print(service: Service, printDuplicates = false): string {
     if (!this._tree) {
-      this._logger.debug(this._tree);
+      this._logger?.debug(this._tree);
     }
     let printable = '';
     const tree = this._tree.get(service.getName());

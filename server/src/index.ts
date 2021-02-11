@@ -53,7 +53,11 @@ export const startServer = (
 
   app.get("/api/logs", (req, res) => {
     log.debug("GET /api/logs");
-    res.json(graph.logger.logs.filter(log => ['warn', 'info', 'error'].includes(log.level)));
+    if (graph.logger) {
+      res.json(graph.logger.logs.filter(log => ['warn', 'info', 'error'].includes(log.level)));
+    } else {
+      res.json([]);
+    }
   });
 
   app.get("/api/services/:service/logs", (req, res) => {

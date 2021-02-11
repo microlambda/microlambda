@@ -36,7 +36,7 @@ const getVersion = (binary: string): string | null => {
  * @param projectRoot
  * @param node
  */
-export const getBinary = (cmd: Cmd, projectRoot: string, logger: Logger, node?: Node): string => {
+export const getBinary = (cmd: Cmd, projectRoot: string, logger?: Logger, node?: Node): string => {
   const cmdPath = ['node_modules', '.bin', cmd];
   const projectBinary = join(projectRoot, ...cmdPath);
   if (!node) {
@@ -45,8 +45,8 @@ export const getBinary = (cmd: Cmd, projectRoot: string, logger: Logger, node?: 
   const localBinary = join(node.getLocation(), ...cmdPath);
   const hasLocal = existsSync(localBinary);
   const binary = hasLocal ? localBinary : projectBinary;
-  logger.log('binaries').debug(`Using ${hasLocal ? 'local' : 'project'} ${cmd}`, getVersion(binary));
-  logger.log('binaries').debug('Path to binary', hasLocal ? localBinary : projectBinary);
+  logger?.log('binaries').debug(`Using ${hasLocal ? 'local' : 'project'} ${cmd}`, getVersion(binary));
+  logger?.log('binaries').debug('Path to binary', hasLocal ? localBinary : projectBinary);
   return binary;
 };
 
@@ -88,13 +88,13 @@ export const verifyBinaries = async (mode: CompilationMode, projectRoot: string,
     if (!testBinary(cmd, projectRoot, logger)) {
       const packagesToInstall = binaryPackages.get(cmd) || [];
       packagesToInstall.forEach((pkg) => {
-        logger.log('binaries').warn(`Missing peer dependency ${pkg}`);
+        logger?.log('binaries').warn(`Missing peer dependency ${pkg}`);
         deps.push(pkg);
       });
     }
   }
   if (deps.length > 0) {
-    logger.log('binaries').info('Installing missing peer dependencies');
+    logger?.log('binaries').info('Installing missing peer dependencies');
     await installBinary(deps, projectRoot);
   }
 };

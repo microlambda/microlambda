@@ -1,11 +1,11 @@
-export interface ServerlessInstance { // tslint:disable-line
+export interface ServerlessInstance {
     service: {
         service: string
         provider: {
             stage: string
             stackName: string
             compiledCloudFormationTemplate: {
-                Outputs: any,
+                Outputs: unknown,
             },
             apiGateway: {
                 restApiId: string,
@@ -30,24 +30,25 @@ export interface ServerlessInstance { // tslint:disable-line
     providers: {
         aws: {
             sdk: {
-                APIGateway: any,
-                Route53: any,
-                CloudFormation: any,
-                ACM: any,
+                APIGateway: unknown,
+                Route53: unknown,
+                CloudFormation: unknown,
+                ACM: unknown,
                 config: {
                     update(toUpdate: object): void,
                 },
              }
-            getCredentials(),
-            getRegion(),
+            getCredentials(): unknown,
+            getRegion(): unknown,
         },
     };
     cli: {
-        log(str: string, entity?: string),
-        consoleLog(str: any),
+        log(...args: unknown[]): unknown,
+        consoleLog(...args: unknown[]): unknown,
     };
+    [key: string]: unknown;
 }
 
-export interface ServerlessOptions { // tslint:disable-line
+export interface ServerlessOptions {
     stage: string;
 }

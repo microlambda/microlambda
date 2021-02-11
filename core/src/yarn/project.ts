@@ -29,11 +29,11 @@ export const getName = (entity: Workspace | Ident): string => {
 
 export const getGraphFromYarnProject = async (
   projectRoot: string,
-  scheduler: RecompilationScheduler,
   config: IConfig,
-  logger: Logger,
+  scheduler?: RecompilationScheduler,
+  logger?: Logger,
   defaultPort = 3001,
 ): Promise<DependenciesGraph> => {
   const project = await getYarnProject(projectRoot);
-  return new DependenciesGraph(scheduler, project, config, logger, defaultPort);
+  return new DependenciesGraph(project, config, scheduler, logger, defaultPort);
 };

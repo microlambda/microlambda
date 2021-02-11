@@ -10,7 +10,6 @@ import { IPCSocketsManager } from '../ipc/socket';
 import { RecompilationScheduler } from '../scheduler';
 import { Project } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
-import { BehaviorSubject, Observable } from 'rxjs';
 
 export const isService = (location: string): boolean => {
   return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
@@ -21,58 +20,58 @@ export class DependenciesGraph {
   private readonly projectRoot: string;
   private readonly ports: { [key: string]: number };
   private readonly nodes: Node[];
-  private readonly _logger: Logger;
-  private readonly _log: ILogger;
+  private readonly _logger: Logger | undefined;
+  private readonly _log: ILogger | undefined;
   private readonly _project: Project;
 
   get project(): Project {
     return this._project;
   }
 
-  get logger(): Logger {
+  get logger(): Logger | undefined {
     return this._logger;
   }
 
   constructor(
-    scheduler: RecompilationScheduler,
     project: Project,
     config: IConfig,
-    logger: Logger,
+    scheduler?: RecompilationScheduler,
+    logger?: Logger,
     defaultPort?: number,
   ) {
     this._logger = logger;
-    this._log = logger.log('graph');
+    this._log = logger?.log('graph');
     this._config = config;
     this._project = project;
-    this._log.debug('Building graph with', project);
+    this._log?.debug('Building graph with', project);
     this.projectRoot = project.cwd;
     const services = project.workspaces.filter((n) => isService(n.cwd));
     this.ports = resolvePorts(services, config, logger, defaultPort);
     const builtNodes: Set<Node> = new Set<Node>();
-    this._log.debug(project.workspaces.map((w) => getName(w)));
+    this._log?.debug(project.workspaces.map((w) => getName(w)));
     for (const node of project.workspaces) {
       if (project.topLevelWorkspace === node) {
-        this._log.info('Ignoring top-level workspace', getName(project.topLevelWorkspace));
+        this._log?.info('Ignoring top-level workspace', getName(project.topLevelWorkspace));
         continue;
       }
       if (!Array.from(builtNodes).some((n) => n.getName() === getName(node))) {
-        this._log.debug('Building node', getName(node));
-        this._log.debug(
+        this._log?.debug('Building node', getName(node));
+        this._log?.debug(
           'Already built',
           Array.from(builtNodes).map((b) => b.getName()),
         );
-        this._log.debug('Is service', isService(node.cwd));
+        this._log?.debug('Is service', isService(node.cwd));
         isService(node.cwd)
-          ? new Service(scheduler, this, node, builtNodes, project)
-          : new Package(scheduler, this, node, builtNodes, project);
+          ? new Service(this, node, builtNodes, project, scheduler)
+          : new Package(this, node, builtNodes, project, scheduler);
       }
     }
     this.nodes = Array.from(builtNodes);
-    this._log.debug(
+    this._log?.debug(
       'Built graph',
       this.nodes.map((n) => n.getName()),
     );
-    this._log.info(`Successfully built ${this.nodes.length} nodes`);
+    this._log?.info(`Successfully built ${this.nodes.length} nodes`);
     this._enableNodes();
   }
 

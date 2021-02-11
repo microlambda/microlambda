@@ -6,7 +6,6 @@ import chalk from 'chalk';
 import {
   getGraphFromYarnProject,
   getProjectRoot,
-  verifyBinaries,
   RecompilationScheduler,
   recreateLogDirectory,
   Logger,
@@ -63,7 +62,7 @@ export const getDependenciesGraph = async (
   defaultPort?: number,
 ): Promise<DependenciesGraph> => {
   const parsingGraph = ora('Parsing dependency graph 🧶').start();
-  const graph = await getGraphFromYarnProject(projectRoot, scheduler, config, logger, defaultPort);
+  const graph = await getGraphFromYarnProject(projectRoot, config, scheduler, logger, defaultPort);
   parsingGraph.succeed();
   return graph;
 };

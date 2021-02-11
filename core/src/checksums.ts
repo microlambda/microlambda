@@ -11,7 +11,7 @@ export interface IChecksums {
 
 export const checksums = (
   node: Node,
-  logger: Logger,
+  logger?: Logger,
 ): {
   calculate: () => Promise<IChecksums>;
   read: () => Promise<IChecksums | null>;
@@ -42,33 +42,33 @@ export const checksums = (
       };
       const dependencies = [node, ...node.getDependencies()];
       await Promise.all(dependencies.map((n) => calculateForNode(n)));
-      logger.log('checksum').debug(`Calculated checksum for ${node.getName()}`, hashes);
+      logger?.log('checksum').debug(`Calculated checksum for ${node.getName()}`, hashes);
       return hashes;
     },
     read: async (): Promise<IChecksums | null> => {
       if (!existsSync(hashPath)) {
-        logger.log('checksum').debug('cannot read, path does not exist');
+        logger?.log('checksum').debug('cannot read, path does not exist');
         return null;
       }
       return new Promise<IChecksums>((resolve, reject) => {
         readFile(hashPath, (err, data) => {
           if (err) {
-            logger.log('checksum').debug('cannot read', err);
+            logger?.log('checksum').debug('cannot read', err);
             return reject(err);
           }
           try {
             const hashes = JSON.parse(data.toString());
-            logger.log('checksum').debug(`Read checksum for ${node.getName()}`, hashes);
+            logger?.log('checksum').debug(`Read checksum for ${node.getName()}`, hashes);
             return resolve(hashes);
           } catch (e) {
-            logger.log('checksum').debug('cannot parse', e);
+            logger?.log('checksum').debug('cannot parse', e);
             return reject(e);
           }
         });
       });
     },
     compare: (old: IChecksums | null, current: IChecksums): boolean => {
-      logger.log('checksum').debug(`Comparing checksums for ${node.getName()}`, { old, current });
+      logger?.log('checksum').debug(`Comparing checksums for ${node.getName()}`, { old, current });
       if (!old) {
         return true;
       }
@@ -77,20 +77,20 @@ export const checksums = (
         current: Object.keys(current),
       };
       if (keys.old.length !== keys.current.length) {
-        logger.log('checksum').debug('Different # keys');
+        logger?.log('checksum').debug('Different # keys');
         return true;
       }
       for (const key of keys.current) {
         if (!keys.old.includes(key)) {
-          logger.log('checksum').debug('New key');
+          logger?.log('checksum').debug('New key');
           return true;
         }
         if (old[key] !== current[key]) {
-          logger.log('checksum').debug('New value');
+          logger?.log('checksum').debug('New value');
           return true;
         }
       }
-      logger.log('checksum').debug('Same hashes');
+      logger?.log('checksum').debug('Same hashes');
       return false;
     },
     write: async (data: IChecksums): Promise<void> => {
@@ -98,7 +98,7 @@ export const checksums = (
       return new Promise((resolve, reject) => {
         writeFile(hashPath, JSON.stringify(data), { encoding: 'utf-8', flag: 'w' }, (err) => {
           if (err) {
-            logger.log('checksum').error(err);
+            logger?.log('checksum').error(err);
             return reject(err);
           }
           return resolve();

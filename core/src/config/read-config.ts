@@ -38,10 +38,10 @@ export class ConfigReader {
   private _services: Service[] = [];
   private _config: IConfig | undefined;
   private _schema: Joi.ObjectSchema | undefined;
-  private readonly _logger: ILogger;
+  private readonly _logger: ILogger | undefined;
 
-  constructor(logger: Logger) {
-    this._logger = logger.log('config');
+  constructor(logger?: Logger) {
+    this._logger = logger?.log('config');
   }
 
   get config(): IConfig | undefined {
@@ -59,19 +59,19 @@ export class ConfigReader {
     if (!this._config) {
       this._config = this.readConfig();
     }
-    this._logger.debug('raw config', this._config);
+    this._logger?.debug('raw config', this._config);
     const { error, value } = this._schema.validate(this._config);
     if (error) {
-      this._logger.error('validation errors', error);
+      this._logger?.error('validation errors', error);
       throw error;
     }
-    this._logger.info('config valid');
+    this._logger?.info('config valid');
     this._config = value as IConfig;
     return this._config;
   }
 
   public getRegions(service: string, stage: string): string[] {
-    this._logger.debug('Resolving regions', { service, stage });
+    this._logger?.debug('Resolving regions', { service, stage });
     const config = this.readConfig();
     const formatRegion = (config: string | string[]): string[] => {
       if (Array.isArray(config)) {
@@ -89,22 +89,22 @@ export class ConfigReader {
       return null;
     };
     if (config.regions && config.regions[service]) {
-      this._logger.debug('Regions specified at service-level', config.regions[service]);
+      this._logger?.debug('Regions specified at service-level', config.regions[service]);
       const regions = getRegion(config.regions[service]);
-      this._logger.debug('Should be deployed @', regions);
+      this._logger?.debug('Should be deployed @', regions);
       if (regions) {
         return regions;
       }
     }
     if (config.defaultRegions) {
-      this._logger.debug('Fallback on default regions', config.defaultRegions);
+      this._logger?.debug('Fallback on default regions', config.defaultRegions);
       const regions = getRegion(config.defaultRegions);
-      this._logger.debug('Should be deployed @', regions);
+      this._logger?.debug('Should be deployed @', regions);
       if (regions) {
         return regions;
       }
     }
-    this._logger.debug('Fallback on user preferred region', process.env.AWS_REGION);
+    this._logger?.debug('Fallback on user preferred region', process.env.AWS_REGION);
     if (process.env.AWS_REGION) {
       return [process.env.AWS_REGION];
     }
@@ -112,7 +112,7 @@ export class ConfigReader {
   }
 
   public getAllRegions(stage: string): string[] {
-    this._logger.debug('Finding all region in config for stage', stage);
+    this._logger?.debug('Finding all region in config for stage', stage);
     const allRegions: Set<string> = new Set();
     const schedule = this.scheduleDeployments(stage);
     for (const step of schedule) {
@@ -120,14 +120,14 @@ export class ConfigReader {
         allRegions.add(region);
       }
     }
-    this._logger.debug('All regions', [...allRegions]);
+    this._logger?.debug('All regions', [...allRegions]);
     return [...allRegions];
   }
 
   public scheduleDeployments(stage: string): Step[] {
-    this._logger.info('Scheduling deployment steps', { stage });
+    this._logger?.info('Scheduling deployment steps', { stage });
     const steps = this.readConfig().steps;
-    this._logger.info('From config', steps);
+    this._logger?.info('From config', steps);
     const schedule = (services: string[]): Step => {
       const step: Step = new Map();
       services.forEach((s) => {
@@ -144,7 +144,7 @@ export class ConfigReader {
       return step;
     };
     if (!steps) {
-      this._logger.debug(
+      this._logger?.debug(
         'No specific config for steps. Using default',
         schedule(this._services.map((s) => s.getName())),
       );
@@ -153,20 +153,20 @@ export class ConfigReader {
     }
     const builtSteps: Step[] = [];
     for (const step of steps) {
-      this._logger.debug('Scheduling', step);
+      this._logger?.debug('Scheduling', step);
       let toSchedule: string[];
       if (step === '*') {
         toSchedule = this._services
           .map((s) => s.getName())
           .filter((s) => !steps.filter((step) => Array.isArray(step)).some((step) => step.includes(s)));
-        this._logger.debug('Is wildcard. Resolving all other services', toSchedule);
+        this._logger?.debug('Is wildcard. Resolving all other services', toSchedule);
       } else {
         toSchedule = step;
       }
       const scheduled = schedule(toSchedule);
       builtSteps.push(scheduled);
     }
-    this._logger.debug('Steps scheduled', builtSteps);
+    this._logger?.debug('Steps scheduled', builtSteps);
     return builtSteps;
   }
 

@@ -69,7 +69,7 @@ export abstract class Node {
   private nodeStatus: NodeStatus;
   protected _ipc: IPCSocketsManager | undefined;
 
-  protected _scheduler: RecompilationScheduler;
+  protected _scheduler: RecompilationScheduler | undefined;
   private _watchers: FSWatcher[] = [];
 
   private _tscLogs$: BehaviorSubject<string> = new BehaviorSubject('');
@@ -79,23 +79,23 @@ export abstract class Node {
   private _transpiled$: BehaviorSubject<TranspilingStatus> = new BehaviorSubject<TranspilingStatus>(
     TranspilingStatus.NOT_TRANSPILED,
   );
-  protected _logger: ILogger;
+  protected _logger: ILogger | undefined;
 
   public typeCheck$ = this._typeCheck$.asObservable();
   public transpiled$ = this._transpiled$.asObservable();
   public tscLogs$ = this._tscLogs$.asObservable();
 
   public constructor(
-    scheduler: RecompilationScheduler,
     graph: DependenciesGraph,
     node: Workspace,
     nodes: Set<Node>,
     project: Project,
+    scheduler?: RecompilationScheduler,
   ) {
     this.graph = graph;
     this.name = getName(node);
-    this._logger = this.graph.logger.log(this.name);
-    this._logger.debug('Building node', getName(node));
+    this._logger = this.graph.logger?.log(this.name);
+    this._logger?.debug('Building node', getName(node));
     this.version = node.manifest.version;
     this.private = node.manifest.private;
     this.location = node.cwd;
@@ -111,25 +111,25 @@ export abstract class Node {
       const name = getName(descriptor);
       const alreadyBuilt = Array.from(nodes).find((n) => n.name === name);
       if (alreadyBuilt) {
-        this._logger.debug('Dependency is already built', alreadyBuilt);
+        this._logger?.debug('Dependency is already built', alreadyBuilt);
         dependentWorkspaces.push(alreadyBuilt);
         continue;
       }
-      this._logger.debug('Building dependency', descriptor);
+      this._logger?.debug('Building dependency', descriptor);
       const workspace = workspaces.find((w) => getName(w) === name);
       if (!workspace) {
-        this._logger.debug('is external dependency', name);
+        this._logger?.debug('is external dependency', name);
         continue;
       }
-      this._logger.debug('Is service', { name, result: isService(workspace.cwd) });
+      this._logger?.debug('Is service', { name, result: isService(workspace.cwd) });
       dependentWorkspaces.push(
         isService(workspace.cwd)
-          ? new Service(scheduler, graph, workspace, nodes, project)
-          : new Package(scheduler, graph, workspace, nodes, project),
+          ? new Service(graph, workspace, nodes, project, scheduler)
+          : new Package(graph, workspace, nodes, project, scheduler),
       );
     }
     this.dependencies = dependentWorkspaces;
-    this._logger.debug('Node built', this.name);
+    this._logger?.debug('Node built', this.name);
     nodes.add(this);
   }
 
@@ -150,7 +150,7 @@ export abstract class Node {
   }
 
   public isService(): boolean {
-    this._logger.debug('Is service', {
+    this._logger?.debug('Is service', {
         node: this.getName(),
         location: join(this.location, 'serverless.yml'),
         result: existsSync(join(this.location, 'serverless.yml')),
@@ -185,7 +185,7 @@ export abstract class Node {
   public setTranspilingStatus(status: TranspilingStatus): void {
     this.transpilingStatus = status;
     if (this._ipc) {
-      this._logger.debug('Notifying IPC server of graph update');
+      this._logger?.debug('Notifying IPC server of graph update');
       this._ipc.graphUpdated();
     }
     this._transpiled$.next(this.transpilingStatus);
@@ -230,7 +230,7 @@ export abstract class Node {
         .map((n) => n.name)
         .includes(this.name),
     );
-    this._logger.silly(
+    this._logger?.silly(
         `Nodes depending upon ${this.name}`,
         dependent.map((d) => d.name),
       );
@@ -253,13 +253,13 @@ export abstract class Node {
           this.transpilingPromise = this._startTranspiling();
           break;
         case TranspilingStatus.TRANSPILING:
-          this._logger.info('Package already transpiling', this.name);
+          this._logger?.info('Package already transpiling', this.name);
           break;
       }
       if (this.transpilingPromise) {
         this.transpilingPromise
           .then(() => {
-            this._logger.info('Package transpiled', this.name);
+            this._logger?.info('Package transpiled', this.name);
             observer.next(this);
             this.setTranspilingStatus(TranspilingStatus.TRANSPILED);
             this._metrics.lastTranspiled = new Date();
@@ -268,7 +268,7 @@ export abstract class Node {
             return observer.complete();
           })
           .catch((err) => {
-            this._logger.info(`Error transpiling ${this.getName()}`, err);
+            this._logger?.info(`Error transpiling ${this.getName()}`, err);
             this.setTranspilingStatus(TranspilingStatus.ERROR_TRANSPILING);
             this._transpiledStartedAt = undefined;
             return observer.error(err);
@@ -297,16 +297,16 @@ export abstract class Node {
                   updateMetrics(false);
                   // Update checksums
                   if (action.checksums != null) {
-                    checksums(this, this.getGraph().logger)
+                    checksums(this, this.graph.logger)
                       .write(action.checksums)
                       .then(() => {
-                        this._logger.info('Checksum written', this.name);
+                        this._logger?.info('Checksum written', this.name);
                         this._checksums = action.checksums || {};
                         observer.complete();
                       })
                       .catch((e) => {
-                        this._logger.debug(e);
-                        this._logger.warn(
+                        this._logger?.debug(e);
+                        this._logger?.warn(
                             `Error caching checksum for node ${this.name}. Next time node will be recompiled event if source does not change`,
                           );
                         observer.complete();
@@ -318,7 +318,7 @@ export abstract class Node {
               );
             } else {
               updateMetrics(true);
-              this._logger.info(`Skipped type-checking of ${this.name}: sources did not change`);
+              this._logger?.info(`Skipped type-checking of ${this.name}: sources did not change`);
               this.setTypeCheckingStatus(TypeCheckStatus.SUCCESS);
               this._handleTscLogs('Safe-compilation skipped, sources did not change since last type check. Checksums:');
               this._handleTscLogs(JSON.stringify(this._checksums, null, 2));
@@ -343,9 +343,9 @@ export abstract class Node {
     this._transpiledStartedAt = Date.now();
     this.setTranspilingStatus(TranspilingStatus.TRANSPILING);
     // Using directly typescript API
-    this._logger.info('Fast-compiling using transpile-only', this.name);
+    this._logger?.info('Fast-compiling using transpile-only', this.name);
     this.watch();
-    return compileFiles(this.location, this.getGraph().logger);
+    return compileFiles(this.location, this.graph.logger);
   }
 
   private async _startTypeChecking(force = false): Promise<{ recompile: boolean; checksums: IChecksums | null }> {
@@ -354,7 +354,7 @@ export abstract class Node {
     this._metrics.lastTypeCheck = new Date();
     let recompile = true;
     let currentChecksums: IChecksums | null = {};
-    const checksumUtils = checksums(this, this.getGraph().logger);
+    const checksumUtils = checksums(this, this.graph.logger);
     if (!force) {
       // FIXME: IMPORTANT
       // FIXME: Checksums => all dependencies nodes must also have no changes to be considered no need to recompile
@@ -367,29 +367,29 @@ export abstract class Node {
         currentChecksums = await checksumUtils.calculate().catch(() => {
           return null;
         });
-        this._logger.warn('Error evaluating checksums for node', this.name);
-        this._logger.debug(e);
+        this._logger?.warn('Error evaluating checksums for node', this.name);
+        this._logger?.debug(e);
       }
-      this._logger.info('Safe-compiling performing type-checks', this.name);
+      this._logger?.info('Safe-compiling performing type-checks', this.name);
     } else {
       try {
         currentChecksums = await checksumUtils.calculate();
       } catch (e) {
-        this._logger.warn('Error evaluating checksums for node', this.name);
+        this._logger?.warn('Error evaluating checksums for node', this.name);
       }
     }
     if (recompile) {
-      this.typeCheckProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.getGraph().logger, this), {
+      this.typeCheckProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.graph.logger, this), {
         cwd: this.location,
         env: { ...process.env, FORCE_COLOR: '2' },
       });
       if (this.typeCheckProcess.stderr && this.typeCheckProcess.stdout) {
         this.typeCheckProcess.stderr.on('data', (data) => {
-          this._logger.error(`${chalk.bold(this.name)}: ${data}`);
+          this._logger?.error(`${chalk.bold(this.name)}: ${data}`);
           this._handleTscLogs(data);
         });
         this.typeCheckProcess.stdout.on('data', (data) => {
-          this._logger.info(`${chalk.bold(this.name)}: ${data}`);
+          this._logger?.info(`${chalk.bold(this.name)}: ${data}`);
           this._handleTscLogs(data);
         });
       }
@@ -409,26 +409,26 @@ export abstract class Node {
         return;
       }
       this.typeCheckProcess.on('close', (code) => {
-        this._logger.silly('npx tsc process closed');
+        this._logger?.silly('npx tsc process closed');
         if (code === 0) {
           this._handleTscLogs('Process exited with status 0');
           this.setTypeCheckingStatus(TypeCheckStatus.SUCCESS);
-          this._logger.info(`Package safe-compiled ${this.getName()}`);
+          this._logger?.info(`Package safe-compiled ${this.getName()}`);
           observer.next(this);
           // this.compilationProcess.removeAllListeners('close');
           return observer.complete();
         } else {
           this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
-          this._logger.info(`Error safe-compiling ${this.getName()}`);
+          this._logger?.info(`Error safe-compiling ${this.getName()}`);
           // this.compilationProcess.removeAllListeners('close');
           return observer.error();
         }
       });
       this.typeCheckProcess.on('error', (err) => {
-        this._logger.silly('npx tsc process error');
-        this._logger.error(err);
+        this._logger?.silly('npx tsc process error');
+        this._logger?.error(err);
         this.setTypeCheckingStatus(TypeCheckStatus.ERROR);
-        this._logger.info(`Error safe-compiling ${this.getName()}`, err);
+        this._logger?.info(`Error safe-compiling ${this.getName()}`, err);
         // this.compilationProcess.removeAllListeners('error');
         return observer.error(err);
       });
@@ -436,11 +436,13 @@ export abstract class Node {
   }
 
   watch(): void {
-    this._logger.info('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
+    this._logger?.info('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
     const watcher = watch(`${this.location}/src/**/*.{ts,js,json}`);
     watcher.on('change', (path) => {
-      this._logger.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-      this._scheduler.fileChanged(this);
+      if (this._scheduler) {
+        this._logger?.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
+        this._scheduler.fileChanged(this);
+      }
     });
     this._watchers.push(watcher);
   }

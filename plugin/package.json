@@ -1,6 +1,6 @@
 {
-  "name": "@microlambda/plugin",
-  "version": "0.0.1",
+  "name": "serverless-microlambda",
+  "version": "0.0.1-alpha",
   "engines": {
     "node": ">=8.0"
   },
@@ -24,7 +24,7 @@
   "scripts": {
     "test": "tsc --project . && nyc mocha -r ts-node/register test/unit-tests/index.test.ts && nyc report --reporter=text-summary",
     "integration-test": "node ./node_modules/istanbul/lib/cli.js test _mocha test/integration-tests -- -R spec",
-    "build:wip": "tsc --project ."
+    "build:wip": "npx tsc --project ."
   },
   "files": [
     "*.js",
@@ -36,5 +36,11 @@
     "extension": [
       ".ts"
     ]
+  },
+  "devDependencies": {
+    "typescript": "^4.1.5"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.1"
   }
 }

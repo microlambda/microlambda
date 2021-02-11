@@ -18,7 +18,7 @@ interface IActionRequest {
   execId: string;
 }
 
-type Action = 'stop' | 'start' | 'restart';
+type Action = 'stop' | 'start' | 'restart' | 'serviceRecompilation';
 type RequestEvent = 'requestStop' | 'requestStart' | 'requestRestart';
 type ResponseEvent = 'stopped' | 'started' | 'restarted';
 type ErrorEvent = 'errorStopping' | 'errorStarting' | 'errorRestarting';
@@ -33,14 +33,14 @@ export class IPCSocketsManager {
 
   constructor(projectRoot: string, scheduler: RecompilationScheduler, logger: Logger, graph: DependenciesGraph) {
     this._logger = logger;
-    this._logger.log('ipc').debug('Creating socket', projectRoot);
+    this._logger.log('ipc').info('Creating socket', projectRoot);
     this._ipc.config.silent = !process.env.MILA_DEBUG;
     this._ipc.config.appspace = 'mila.';
     this._graph = graph;
     const projectPathSegments = projectRoot.split('/');
-    this._logger.log('ipc').debug('Path', projectPathSegments);
+    this._logger.log('ipc').info('Path', projectPathSegments);
     this._id = projectPathSegments[projectPathSegments.length - 1];
-    this._logger.log('ipc').debug('ID', this._id);
+    this._logger.log('ipc').info('ID', this._id);
     this._ipc.config.id = this._id;
     this._scheduler = scheduler;
   }
@@ -75,6 +75,9 @@ export class IPCSocketsManager {
         } else {
           this._restartAll(request.execId);
         }
+      });
+      this._ipc.server.on('serviceRecompiled', () => {
+
       });
       this._ipc.server.start();
     });
@@ -188,6 +191,10 @@ export class IPCSocketsManager {
     this._sockets.forEach((s) => this._emitGraph(s));
   }
 
+  public async requestServiceRecompilation(service: string): Promise<void> {
+    return this._requestAction('serviceRecompilation', service);
+  }
+
   public async requestStop(service?: string): Promise<void> {
     return this._requestAction('stop', service);
   }
@@ -204,7 +211,7 @@ export class IPCSocketsManager {
     const execId = uuid();
     return new Promise((resolve, reject) => {
       this._ipc.connectTo(this._id, () => {
-        this._logger.log('ipc').debug('socket connected');
+        this._logger.log('ipc').info('socket connected');
         this._ipc.of[this._id].emit(IPCSocketsManager._requestEvent(action), {
           service,
           execId,
