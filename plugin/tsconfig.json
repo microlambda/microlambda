@@ -1,16 +1,9 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": ".",
-    "target": "es6",
-    "sourceMap": false,
-    "outDir": "dist",
-    "types": ["node"]
+    "rootDir": "./src",
+    "outDir": "./dist"
   },
-  "include": [
-    "*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["./src"],
+  "exclude": ["**/*.spec.ts"]
 }

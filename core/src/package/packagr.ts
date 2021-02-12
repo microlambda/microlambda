@@ -13,7 +13,6 @@ import { DependenciesGraph, Service } from '../graph';
  * This would allow multiple concurrent package process to be run.
  */
 
-
 export interface IPackage {
   name: string;
   version: string;

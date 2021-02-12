@@ -106,7 +106,9 @@ export class RecompilationScheduler {
   private _concurrency: number;
   private _status$: BehaviorSubject<SchedulerStatus> = new BehaviorSubject<SchedulerStatus>(SchedulerStatus.READY);
   public status$ = this._status$.asObservable();
-  get status() { return this._status };
+  get status(): SchedulerStatus {
+    return this._status;
+  }
 
   constructor(logger: Logger) {
     this._logger = logger.log('scheduler');
@@ -142,7 +144,7 @@ export class RecompilationScheduler {
       this._compile(roots);
 
       // Start services that are not already started
-      toStart.filter(s => s.isEnabled()).forEach((s) => this._requestStart(s));
+      toStart.filter((s) => s.isEnabled()).forEach((s) => this._requestStart(s));
     }
     return this._exec();
   }
@@ -191,7 +193,7 @@ export class RecompilationScheduler {
       );
 
       // And restart them
-      toRestart.filter(s => s.isEnabled()).forEach((s) => this._requestStart(s));
+      toRestart.filter((s) => s.isEnabled()).forEach((s) => this._requestStart(s));
     }
     return this._exec();
   }
@@ -270,7 +272,10 @@ export class RecompilationScheduler {
           const changes = Array.from(this._changes);
           this._reset();
           // find all services that are impacted
-          this._logger.info(   'Changed nodes', changes.map((n) => n.getName()));
+          this._logger.info(
+            'Changed nodes',
+            changes.map((n) => n.getName()),
+          );
           const impactedServices: Set<Service> = new Set<Service>();
           for (const node of changes) {
             const isRunningService = (n: Node): boolean => {
@@ -553,7 +558,9 @@ export class RecompilationScheduler {
       });
     });
 
-    const triggerServiceRecompilationJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.serviceRecompilation.map((service) => {
+    const triggerServiceRecompilationJobs$: Array<
+      Observable<IRecompilationEvent>
+    > = this._jobs.serviceRecompilation.map((service) => {
       return new Observable<IRecompilationEvent>((obs) => {
         obs.next({ node: service, type: RecompilationEventType.TRIGGER_SERVICE_RECOMPILATION_IN_PROGRESS });
         const now = Date.now();
@@ -761,7 +768,9 @@ export class RecompilationScheduler {
             obs.next(evt);
             if (evt.type === RecompilationEventType.TRIGGER_SERVICE_RECOMPILATION_SUCCESS) {
               triggered++;
-              this._logger.info(`Trigger re-compilation for ${triggered}/${triggerServiceRecompilationJobs$.length} services`);
+              this._logger.info(
+                `Trigger re-compilation for ${triggered}/${triggerServiceRecompilationJobs$.length} services`,
+              );
               if (triggered >= stopJobs$.length) {
                 allDone();
                 return obs.complete();

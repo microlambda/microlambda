@@ -1,9 +1,15 @@
 fix(server): serve correctly front-end
+ci(gitlab): fix lint, build and make a pipeline, release master and tag
+feat(core): transpile everything parallel (as order does not matter)
+feat(plugin): only watch service source
+feat(plugin): communicate transpile status and metrics over IPC
 fix(core): cancel pending start tasks on compile error
 fix(core): throw if compile error in build mode
 fix(core): invalidate dependent packages checksums
-perf: do not restart service on dependency change *
 fix(build): checksum caching for build cmd
+fix(core): allow safe recompilation preemption
+
+feat(plugin): manage create custom domain
 refactor(deploy): move yaml refactoring in core
 refactor: move test execution from cli to core
 refactor(client): less hacky element dimensions
@@ -39,5 +45,3 @@ ci: add coverall or codecov
 ci: add code climate or sonar
 docs: add badges
 ci: industrialize publish process
-
-* just try to trigger recompilation while service is running. See with webpack plugin for PR (or fork)

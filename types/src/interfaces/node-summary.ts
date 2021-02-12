@@ -12,10 +12,10 @@ export interface INodeSummary {
   metrics: {
     lastTypeCheck: string | null;
     typeCheckTook: number | null;
-    typeCheckFromCache: boolean,
+    typeCheckFromCache: boolean;
     lastTranspiled: string | null;
     transpileTook: number | null;
     lastStarted: string | null;
     startedTook: number | null;
-  }
+  };
 }

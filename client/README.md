@@ -1,27 +1,29 @@
-# Client
+# New Project
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.2.
+> ✨ Bootstrapped with Create Snowpack App (CSA).
 
-## Development server
+## Available Scripts
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+### npm start
 
-## Code scaffolding
+Runs the app in the development mode.
+Open http://localhost:8080 to view it in the browser.
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+The page will reload if you make edits.
+You will also see any lint errors in the console.
 
-## Build
+### npm test
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+Launches the test runner in the interactive watch mode.
+See the section about running tests for more information.
 
-## Running unit tests
+### npm run build
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Builds a static copy of your site to the `build/` folder.
+Your app is ready to be deployed!
 
-## Running end-to-end tests
+**For the best production performance:** Add a build bundler plugin like [@snowpack/plugin-webpack](https://github.com/snowpackjs/snowpack/tree/main/plugins/plugin-webpack) or [snowpack-plugin-rollup-bundle](https://github.com/ParamagicDev/snowpack-plugin-rollup-bundle) to your `snowpack.config.json` config file.
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+### Q: What about Eject?
 
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+No eject needed! Snowpack guarantees zero lock-in, and CSA strives for the same.

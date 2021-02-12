@@ -77,7 +77,7 @@ export class IPCSocketsManager {
         }
       });
       this._ipc.server.on('serviceRecompiled', () => {
-
+        // TODO: Handle plugin recompilation here
       });
       this._ipc.server.start();
     });

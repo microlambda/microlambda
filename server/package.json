@@ -13,7 +13,7 @@
     "build": "yarn run pre:build && ../node_modules/.bin/tsc --build && yarn run post:build",
     "build:watch": "../node_modules/.bin/tsc --watch",
     "pre:build": "rm -rf ./dist",
-    "post:build": "cp -r ../client/dist ./dist/static",
+    "post:build": "cp -r ../client/build ./dist/static",
     "start": "node dist/index.js",
     "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"

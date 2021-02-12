@@ -22,9 +22,9 @@
   ],
   "main": "dist/index.js",
   "scripts": {
-    "test": "tsc --project . && nyc mocha -r ts-node/register test/unit-tests/index.test.ts && nyc report --reporter=text-summary",
-    "integration-test": "node ./node_modules/istanbul/lib/cli.js test _mocha test/integration-tests -- -R spec",
-    "build:wip": "npx tsc --project ."
+    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "build": "../node_modules/.bin/tsc --build"
   },
   "files": [
     "*.js",
@@ -41,6 +41,7 @@
     "typescript": "^4.1.5"
   },
   "dependencies": {
+    "@microlambda/core": "workspace:*",
     "chokidar": "^3.5.1"
   }
 }

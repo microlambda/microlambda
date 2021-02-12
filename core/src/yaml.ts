@@ -184,7 +184,7 @@ export const reformatYaml = async (
         throw Error(`YAML Transforms: Script ${path} does not exists`);
       }
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const transformation: { default: Function } = require(path);
+      const transformation: { default: (...args: unknown[]) => void } = require(path);
       if (typeof transformation.default !== 'function') {
         throw Error(`YAML Transforms: Default export of script must be a function @ ${script}`);
       }

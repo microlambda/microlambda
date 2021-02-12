@@ -81,9 +81,7 @@ export const compileFile = (
       const outDir = compilerOptions.outDir || join(cwd, 'lib');
       const js = transpileModule(buffer.toString(), { compilerOptions });
       const dest = join(outDir, relative(cwd, absolutePath.replace(/\.ts$/, '.js')));
-      copyFile(dest, js.outputText, logger)
-        .then(resolve)
-        .catch(reject);
+      copyFile(dest, js.outputText, logger).then(resolve).catch(reject);
     });
   });
 };

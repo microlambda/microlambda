@@ -14,7 +14,7 @@ import { FSWatcher, watch } from 'chokidar';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
 import { TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
-import { ILogger, Logger } from '../logger';
+import { ILogger } from '../logger';
 
 enum NodeStatus {
   DISABLED,
@@ -24,7 +24,7 @@ enum NodeStatus {
 interface INodeMetrics {
   lastTypeCheck: Date | null;
   typeCheckTook: number | null;
-  typeCheckFromCache: boolean,
+  typeCheckFromCache: boolean;
   lastTranspiled: Date | null;
   transpileTook: number | null;
 }
@@ -60,11 +60,13 @@ export abstract class Node {
     transpileTook: null,
     lastStarted: null,
     startedTook: null,
-  }
+  };
   private _typeCheckStartedAt: number | undefined;
   private _transpiledStartedAt: number | undefined;
 
-  get metrics(): IServiceMetrics { return this._metrics }
+  get metrics(): IServiceMetrics {
+    return this._metrics;
+  }
 
   private nodeStatus: NodeStatus;
   protected _ipc: IPCSocketsManager | undefined;
@@ -151,10 +153,10 @@ export abstract class Node {
 
   public isService(): boolean {
     this._logger?.debug('Is service', {
-        node: this.getName(),
-        location: join(this.location, 'serverless.yml'),
-        result: existsSync(join(this.location, 'serverless.yml')),
-      });
+      node: this.getName(),
+      location: join(this.location, 'serverless.yml'),
+      result: existsSync(join(this.location, 'serverless.yml')),
+    });
     return existsSync(join(this.location, 'serverless.yml')) || existsSync(join(this.location, 'serverless.yaml'));
   }
 
@@ -231,9 +233,9 @@ export abstract class Node {
         .includes(this.name),
     );
     this._logger?.silly(
-        `Nodes depending upon ${this.name}`,
-        dependent.map((d) => d.name),
-      );
+      `Nodes depending upon ${this.name}`,
+      dependent.map((d) => d.name),
+    );
     return dependent;
   }
 
@@ -284,11 +286,11 @@ export abstract class Node {
         case TypeCheckStatus.ERROR:
         case TypeCheckStatus.NOT_CHECKED:
           this._startTypeChecking(force).then((action) => {
-            const updateMetrics = (fromCache: boolean) => {
+            const updateMetrics = (fromCache: boolean): void => {
               this._metrics.typeCheckFromCache = fromCache;
               this._metrics.typeCheckTook = this._typeCheckStartedAt ? Date.now() - this._typeCheckStartedAt : null;
               this._typeCheckStartedAt = undefined;
-            }
+            };
             if (action.recompile) {
               this._watchTypeChecking().subscribe(
                 (next) => observer.next(next),
@@ -307,8 +309,8 @@ export abstract class Node {
                       .catch((e) => {
                         this._logger?.debug(e);
                         this._logger?.warn(
-                            `Error caching checksum for node ${this.name}. Next time node will be recompiled event if source does not change`,
-                          );
+                          `Error caching checksum for node ${this.name}. Next time node will be recompiled event if source does not change`,
+                        );
                         observer.complete();
                       });
                   } else {

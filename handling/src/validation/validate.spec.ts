@@ -9,10 +9,7 @@ describe('validation', () => {
           email: '  foo@example.com  ',
         },
         object({
-          email: string()
-            .required()
-            .email()
-            .trim(),
+          email: string().required().email().trim(),
         }),
       );
 

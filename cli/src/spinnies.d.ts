@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/interface-name-prefix */
+/* eslint-disable @typescript-eslint/naming-convention */
 declare module 'spinnies' {
   type StopAllStatus = 'succeed' | 'fail' | 'stopped';
   type SpinnerStatus = StopAllStatus | 'spinning' | 'non-spinnable';

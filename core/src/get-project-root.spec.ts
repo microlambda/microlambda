@@ -31,9 +31,9 @@ describe('[method] findProjectRoot', () => {
     stubs = {
       cwd: stub(process, 'cwd'),
       existSync: stub(fs, 'existsSync'),
-    }
+    };
     stubs.existSync.returns(false);
-    stubs.existSync.withArgs('/users/john/project-1/lerna.json').returns(true);
+    stubs.existSync.withArgs('/users/john/project-1/.microlambdarc').returns(true);
   });
   afterEach(() => {
     stubs.cwd.restore();

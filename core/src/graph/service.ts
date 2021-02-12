@@ -27,7 +27,6 @@ export class Service extends Node {
   public status$ = this._status$.asObservable();
   public slsLogs$ = this._slsLogs$.asObservable();
   private _startedBeganAt: number | undefined;
-  private _ipc: any;
 
   constructor(
     graph: DependenciesGraph,
@@ -58,7 +57,7 @@ export class Service extends Node {
     return this._port;
   }
 
-  private _killProcessTree(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM') {
+  private _killProcessTree(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
     if (this.process) {
       processTree(this.process.pid, (err, children) => {
         if (err) {
@@ -75,7 +74,7 @@ export class Service extends Node {
   public stop(): Observable<Service> {
     return new Observable<Service>((observer) => {
       this._logger?.debug('Requested to stop', this.name, 'which status is', this.status);
-      const watchKilled = () => {
+      const watchKilled = (): void => {
         if (this.process) {
           this._logger?.debug('Waiting for process to be killed');
           this.process.on('exit', () => {
@@ -83,7 +82,7 @@ export class Service extends Node {
             this._updateStatus(ServiceStatus.STOPPED);
           });
           this.process.on('close', (code) => {
-            this._logger?.debug('Process closed', { code })
+            this._logger?.debug('Process closed', { code });
             if (code === 0) {
               this._logger?.info(`Service ${this.name} exited with code ${code}`);
               this._updateStatus(ServiceStatus.STOPPED);
@@ -105,7 +104,7 @@ export class Service extends Node {
             return observer.complete();
           }, 200);
         }
-      }
+      };
       switch (this.status) {
         case ServiceStatus.RUNNING:
         case ServiceStatus.STARTING:

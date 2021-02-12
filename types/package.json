@@ -21,8 +21,5 @@
     "microservices",
     "aws",
     "monorepo"
-  ],
-  "devDependencies": {
-    "typescript": "^3.9.7"
-  }
+  ]
 }

@@ -31,29 +31,25 @@ export const resolvePorts = (services: Workspace[], config: IConfig, logger?: Lo
   return result;
 };
 
-export const isPortAvailable = async (port: number, host= '127.0.0.1', timeout = 400): Promise<boolean> => {
+export const isPortAvailable = async (port: number, host = '127.0.0.1', timeout = 400): Promise<boolean> => {
   return new Promise((resolve) => {
     const socket = new Socket();
     let status: 'open' | 'closed';
     socket.on('connect', () => {
-      console.debug('socket connected');
       status = 'open';
       socket.destroy();
     });
     socket.setTimeout(timeout);
     socket.on('timeout', () => {
-      console.debug('socket timedout');
       status = 'closed';
       socket.destroy();
     });
-    socket.on('error', (e) => {
-      console.debug('socket error', e);
+    socket.on('error', () => {
       status = 'closed';
     });
-    socket.on('close', (e) => {
-      console.debug('socket closed', e);
+    socket.on('close', () => {
       resolve(status === 'open');
     });
-    socket.connect(port, host)
+    socket.connect(port, host);
   });
 };

@@ -1,14 +1,16 @@
 {
   "name": "microlambda",
   "version": "0.0.1-alpha",
-  "description": "Microlambda framework (a.k.a µlambda or mila) monorepo main package",
-  "author": "Mario Arnautou & Arthur Brunck",
+  "description": "Microlambda framework (a.k.a µlambda or mila) monorepo main package.",
+  "author": "Mario Arnautou",
   "repository": {
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "scripts": {
-    "build": "yarn workspaces foreach -ptv run build",
-    "test": "yarn workspaces foreach -pv run test",
+    "postinstall": "husky install",
+    "lint": "yarn workspaces foreach -pv run lint",
+    "build": "yarn workspaces foreach -pv --topological-dev run build",
+    "test": "yarn workspaces foreach -ptv run test",
     "build:core": "yarn workspace @microlambda/core run build",
     "lint:core": "yarn workspace @microlambda/core run lint",
     "test:core": "yarn workspace @microlambda/core run test",
@@ -27,7 +29,15 @@
     "publish:handling": "yarn workspace @microlambda/handling npm publish --access public",
     "build:client": "yarn workspace @microlambda/client run build",
     "lint:client": "yarn workspace @microlambda/client run lint",
-    "test:client": "yarn workspace @microlambda/client run test"
+    "test:client": "yarn workspace @microlambda/client run test",
+    "build:plugin": "yarn workspace serverless-microlambda run build",
+    "lint:plugin": "yarn workspace serverless-microlambda run lint",
+    "test:plugin": "yarn workspace serverless-microlambda run test",
+    "publish:plugin": "yarn workspace serverless-microlambda npm publish --access public",
+    "build:types": "yarn workspace @microlambda/types run build",
+    "lint:types": "yarn workspace @microlambda/types run lint",
+    "test:types": "yarn workspace @microlambda/types run test",
+    "publish:types": "yarn workspace @microlambda/types npm publish --access public"
   },
   "workspaces": [
     "types",
@@ -39,36 +49,45 @@
     "handling",
     "plugin",
     "testing",
-    "server",
-    "clientv2"
+    "server"
   ],
   "license": "MIT",
   "devDependencies": {
     "@types/sinon": "^9.0.10",
-    "@typescript-eslint/eslint-plugin": "^2.21.0",
-    "@typescript-eslint/parser": "^2.21.0",
-    "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.10.0",
-    "eslint-plugin-prettier": "^3.1.2",
-    "eslint-plugin-react": "^7.20.6",
-    "husky": "^4.2.3",
-    "jest": "^26.4.1",
+    "@typescript-eslint/eslint-plugin": "^4.15.0",
+    "@typescript-eslint/parser": "^4.15.0",
+    "eslint": "^7.19.0",
+    "eslint-config-prettier": "^7.2.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "husky": "^5.0.9",
+    "jest": "^26.6.3",
     "lint-staged": "^10.0.8",
-    "prettier": "^1.19.1",
+    "prettier": "^2.2.1",
     "sinon": "^9.2.3",
     "ts-jest": "^26.2.0",
-    "typescript": "^3.9.7"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "yarn workspace foreach run lint -p"
-    }
+    "typescript": "^4.1.5"
   },
   "lint-staged": {
-    "*.{js,ts,tsx}": [
-      "npx eslint --fix",
-      "git add"
+    "types/**/*.{}": [
+      "yarn lint:types"
+    ],
+    "cli/**/*.{}": [
+      "yarn lint:cli"
+    ],
+    "core/**/*.{}": [
+      "yarn lint:core"
+    ],
+    "client/**/*.{}": [
+      "yarn lint:client"
+    ],
+    "handling/**/*.{}": [
+      "yarn lint:handling"
+    ],
+    "plugin/**/*.{}": [
+      "yarn lint:plugin"
+    ],
+    "server/**/*.{}": [
+      "yarn lint:server"
     ]
   }
 }

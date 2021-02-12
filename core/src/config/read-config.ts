@@ -185,39 +185,17 @@ export class ConfigReader {
     ]);
     const schema = Joi.object()
       .keys({
-        stages: Joi.array()
-          .items(Joi.string())
-          .optional()
-          .allow(null),
+        stages: Joi.array().items(Joi.string()).optional().allow(null),
         compilationMode: Joi.string().valid('safe', 'fast'),
-        ports: Joi.object().pattern(
-          services,
-          Joi.number()
-            .integer()
-            .greater(0)
-            .less(64738),
-        ),
-        noStart: Joi.array()
-          .items(services)
-          .optional(),
+        ports: Joi.object().pattern(services, Joi.number().integer().greater(0).less(64738)),
+        noStart: Joi.array().items(services).optional(),
         defaultRegions: regionSchema.optional().allow(null),
-        regions: Joi.object()
-          .pattern(services, regionSchema)
-          .optional(),
+        regions: Joi.object().pattern(services, regionSchema).optional(),
         steps: Joi.array()
           .items(Joi.alternatives([Joi.string().valid('*'), Joi.array().items(services)]))
           .optional(),
-        domains: Joi.object()
-          .pattern(
-            services,
-            Joi.object()
-              .pattern(Joi.string(), Joi.string())
-              .optional(),
-          )
-          .optional(),
-        yamlTransforms: Joi.array()
-          .items(Joi.string())
-          .optional(),
+        domains: Joi.object().pattern(services, Joi.object().pattern(Joi.string(), Joi.string()).optional()).optional(),
+        yamlTransforms: Joi.array().items(Joi.string()).optional(),
       })
       .unknown(true);
     this._schema = schema;
