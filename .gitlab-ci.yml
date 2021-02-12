@@ -16,7 +16,7 @@ install:
   cache:
     <<: *global_cache
   script:
-    - yarn
+    - yarn install --immutable --skip-builds
 
 build:
   stage: build
