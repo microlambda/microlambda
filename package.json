@@ -68,25 +68,25 @@
     "typescript": "^4.1.5"
   },
   "lint-staged": {
-    "types/**/*.{}": [
+    "types/**/*.{ts,tsx,json,yml}": [
       "yarn lint:types"
     ],
-    "cli/**/*.{}": [
+    "cli/**/*.{ts,tsx,json,yml}": [
       "yarn lint:cli"
     ],
-    "core/**/*.{}": [
+    "core/**/*.{ts,tsx,json,yml}": [
       "yarn lint:core"
     ],
-    "client/**/*.{}": [
+    "client/**/*.{ts,tsx,json,yml}": [
       "yarn lint:client"
     ],
-    "handling/**/*.{}": [
+    "handling/**/*.{ts,tsx,json,yml}": [
       "yarn lint:handling"
     ],
-    "plugin/**/*.{}": [
+    "plugin/**/*.{ts,tsx,json,yml}": [
       "yarn lint:plugin"
     ],
-    "server/**/*.{}": [
+    "server/**/*.{ts,tsx,json,yml}": [
       "yarn lint:server"
     ]
   }

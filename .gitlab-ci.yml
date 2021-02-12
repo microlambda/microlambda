@@ -1,0 +1,124 @@
+image: node:alpine
+
+cache: &global_cache
+  paths:
+    - node_modules/
+
+stages:
+  - install
+  - lint
+  - build
+  - test
+  - publish
+
+install:
+  stage: install
+  cache:
+    <<: *global_cache
+  script:
+    - yarn
+
+build:
+  stage: build
+  cache:
+    <<: *global_cache
+  script:
+    - yarn build
+  artifacts:
+    public: false
+    paths:
+      - /*/dist
+      - /*/lib
+    expire_in: 20 min
+
+publish:
+  stage: publish
+  cache:
+    <<: *global_cache
+  script:
+    - echo todo
+
+lint-cli:
+  stage: lint
+  cache:
+    <<: *global_cache
+  script:
+    - yarn lint:cli
+
+lint-client:
+  stage: lint
+  cache:
+    <<: *global_cache
+  script:
+    - yarn lint:client
+
+lint-core:
+  stage: lint
+  cache:
+    <<: *global_cache
+  script:
+    - yarn lint:core
+
+lint-plugin:
+  stage: lint
+  cache:
+    <<: *global_cache
+  script:
+    - yarn lint:plugin
+
+lint-server:
+  stage: lint
+  cache:
+    <<: *global_cache
+  script:
+    - yarn lint:server
+
+lint-types:
+  stage: lint
+  cache:
+    <<: *global_cache
+  script:
+    - yarn lint:types
+
+test-cli:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - yarn test:cli
+
+test-client:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - yarn test:client
+
+test-core:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - yarn test:core
+
+test-plugin:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - yarn test:plugin
+
+test-server:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - yarn test:server
+
+test-types:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - yarn test:types
+
