@@ -115,10 +115,10 @@ test-server:
   script:
     - yarn test:server
 
-test-types:
+test-handling:
   stage: test
   cache:
     <<: *global_cache
   script:
-    - yarn test:types
+    - yarn test:handling
 

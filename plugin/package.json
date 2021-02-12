@@ -24,7 +24,8 @@
   "scripts": {
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'",
     "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "build": "../node_modules/.bin/tsc --build"
+    "build": "../node_modules/.bin/tsc --build",
+    "test": "echo ToDo"
   },
   "files": [
     "*.js",
