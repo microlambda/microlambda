@@ -1,6 +1,6 @@
 {
   "name": "serverless-microlambda",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2-alpha",
   "engines": {
     "node": ">=8.0"
   },
@@ -24,12 +24,10 @@
   "scripts": {
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'",
     "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "build": "../node_modules/.bin/tsc --build"
+    "build": "../node_modules/.bin/tsc --build",
+    "test": "echo ToDo"
   },
   "files": [
-    "*.js",
-    "*.ts",
-    "*.json",
     "dist/*.js"
   ],
   "nyc": {

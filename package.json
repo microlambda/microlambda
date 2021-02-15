@@ -1,6 +1,7 @@
 {
   "name": "microlambda",
   "version": "0.0.1-alpha",
+  "private": true,
   "description": "Microlambda framework (a.k.a µlambda or mila) monorepo main package.",
   "author": "Mario Arnautou",
   "repository": {
@@ -11,6 +12,7 @@
     "lint": "yarn workspaces foreach -pv run lint",
     "build": "yarn workspaces foreach -pv --topological-dev run build",
     "test": "yarn workspaces foreach -ptv run test",
+    "publish:all": "yarn ts-node ./scripts/publish.ts",
     "build:core": "yarn workspace @microlambda/core run build",
     "lint:core": "yarn workspace @microlambda/core run lint",
     "test:core": "yarn workspace @microlambda/core run test",
@@ -65,29 +67,30 @@
     "prettier": "^2.2.1",
     "sinon": "^9.2.3",
     "ts-jest": "^26.2.0",
+    "ts-node": "^9.1.1",
     "typescript": "^4.1.5"
   },
   "lint-staged": {
-    "types/**/*.{}": [
-      "yarn lint:types"
+    "types/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:types --fix"
     ],
-    "cli/**/*.{}": [
-      "yarn lint:cli"
+    "cli/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:cli --fix"
     ],
-    "core/**/*.{}": [
-      "yarn lint:core"
+    "core/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:core --fix"
     ],
-    "client/**/*.{}": [
-      "yarn lint:client"
+    "client/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:client --fix"
     ],
-    "handling/**/*.{}": [
-      "yarn lint:handling"
+    "handling/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:handling --fix"
     ],
-    "plugin/**/*.{}": [
-      "yarn lint:plugin"
+    "plugin/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:plugin --fix"
     ],
-    "server/**/*.{}": [
-      "yarn lint:server"
+    "server/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:server --fix"
     ]
   }
 }

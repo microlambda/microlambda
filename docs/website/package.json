@@ -1,10 +1,11 @@
 {
   "name": "@microlambda/docs",
+  "private": true,
   "version": "0.0.1-alpha",
   "scripts": {
     "examples": "docusaurus-examples",
     "start": "docusaurus-start",
-    "build": "docusaurus-build",
+    "doc:build": "docusaurus-build",
     "publish-gh-pages": "docusaurus-publish",
     "write-translations": "docusaurus-write-translations",
     "version": "docusaurus-version",
