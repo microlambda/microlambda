@@ -8,8 +8,7 @@ import { readJSONSync } from 'fs-extra';
     // Foreach workspace topologically sorted
     const project = await getYarnProject(join(__dirname, '..'));
     const workspaces = getTopologicallySortedWorkspaces(project);
-
-    for (const workspace of project.workspaces) {
+    for (const workspace of workspaces) {
       // Check latest version on npm
       console.info('-------------------------------------------------------------------')
       console.info('Analyzing workspace', getName(workspace), workspace.manifest.version);
