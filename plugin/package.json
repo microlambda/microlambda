@@ -28,9 +28,6 @@
     "test": "echo ToDo"
   },
   "files": [
-    "*.js",
-    "*.ts",
-    "*.json",
     "dist/*.js"
   ],
   "nyc": {

@@ -12,6 +12,7 @@
     "lint": "yarn workspaces foreach -pv run lint",
     "build": "yarn workspaces foreach -pv --topological-dev run build",
     "test": "yarn workspaces foreach -ptv run test",
+    "publish:all": "yarn ts-node ./scripts/publish.ts",
     "build:core": "yarn workspace @microlambda/core run build",
     "lint:core": "yarn workspace @microlambda/core run lint",
     "test:core": "yarn workspace @microlambda/core run test",
@@ -66,6 +67,7 @@
     "prettier": "^2.2.1",
     "sinon": "^9.2.3",
     "ts-jest": "^26.2.0",
+    "ts-node": "^9.1.1",
     "typescript": "^4.1.5"
   },
   "lint-staged": {
