@@ -37,6 +37,7 @@ build:
   artifacts:
     public: false
     paths:
+      - cli/dist
       - types/lib
       - server/dist
       - core/lib
