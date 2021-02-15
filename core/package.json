@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/core",
-  "version": "0.0.23-alpha",
+  "version": "0.1.0-alpha",
   "description": "µlambda framework core",
   "author": "Mario Arnautou",
   "repository": {
