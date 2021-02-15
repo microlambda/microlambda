@@ -70,25 +70,25 @@
   },
   "lint-staged": {
     "types/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:types"
+      "yarn lint:types --fix"
     ],
     "cli/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:cli"
+      "yarn lint:cli --fix"
     ],
     "core/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:core"
+      "yarn lint:core --fix"
     ],
     "client/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:client"
+      "yarn lint:client --fix"
     ],
     "handling/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:handling"
+      "yarn lint:handling --fix"
     ],
     "plugin/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:plugin"
+      "yarn lint:plugin --fix"
     ],
     "server/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:server"
+      "yarn lint:server --fix"
     ]
   }
 }
