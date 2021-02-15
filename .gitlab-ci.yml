@@ -1,4 +1,4 @@
-image: node:alpine
+image: marioarnautou/node-chrome
 
 cache: &global_cache
   paths:
@@ -49,8 +49,8 @@ publish:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
-    - yarn build
+    - yarn install --immutable
+    - echo "npmAuthToken: $NPM_TOKEN" >> .yarnrc.yml
     - yarn publish:all
   only:
     - master
@@ -60,7 +60,7 @@ lint-cli:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn lint:cli
 
 lint-client:
@@ -68,7 +68,7 @@ lint-client:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn lint:client
 
 lint-core:
@@ -76,7 +76,7 @@ lint-core:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn lint:core
 
 lint-plugin:
@@ -84,7 +84,7 @@ lint-plugin:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn lint:plugin
 
 lint-server:
@@ -92,7 +92,7 @@ lint-server:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn lint:server
 
 lint-types:
@@ -100,7 +100,7 @@ lint-types:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn lint:types
 
 test-cli:
@@ -108,7 +108,7 @@ test-cli:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn test:cli
 
 test-client:
@@ -116,7 +116,7 @@ test-client:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn test:client
 
 test-core:
@@ -124,7 +124,7 @@ test-core:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn test:core
 
 test-plugin:
@@ -132,7 +132,7 @@ test-plugin:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn test:plugin
 
 test-server:
@@ -140,7 +140,7 @@ test-server:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn test:server
 
 test-handling:
@@ -148,6 +148,6 @@ test-handling:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
     - yarn test:handling
 
