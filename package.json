@@ -1,6 +1,7 @@
 {
   "name": "microlambda",
   "version": "0.0.1-alpha",
+  "private": true,
   "description": "Microlambda framework (a.k.a µlambda or mila) monorepo main package.",
   "author": "Mario Arnautou",
   "repository": {

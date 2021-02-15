@@ -1,6 +1,7 @@
 fix(server): serve correctly front-end
 ci(gitlab): fix lint, build and make a pipeline, release master and tag
-feat(core): transpile everything parallel (as order does not matter)
+fix(core): transpile everything parallel (as order does not matter)
+fix(core): remove trigger service recompilation jobs
 feat(plugin): only watch service source
 feat(plugin): communicate transpile status and metrics over IPC
 fix(core): cancel pending start tasks on compile error
