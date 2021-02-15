@@ -25,6 +25,13 @@ build:
   script:
     - yarn install --immutable --skip-builds
     - yarn build
+  artifacts:
+    public: false
+    paths:
+      - types/lib
+      - server/dist
+      - core/lib
+    expire_in: 1h
 
 publish:
   stage: publish
