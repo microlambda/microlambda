@@ -16,21 +16,32 @@ install:
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
+    - yarn install --immutable
 
 build:
   stage: build
   cache:
     <<: *global_cache
   script:
-    - yarn install --immutable --skip-builds
-    - yarn build
+    - yarn install --immutable
+    - yarn workspaces list --json
+    # FIXME: For some reason, the following command do not work, so build each workspace separately
+    # - yarn workspaces foreach -pv --topological-dev run build
+    - yarn workspace @microlambda/types run build
+    - yarn workspace @microlambda/core run build
+    - yarn workspace @microlambda/client run build
+    - yarn workspace @microlambda/server run build
+    - yarn workspace @microlambda/cli run build
+    - yarn workspace @microlambda/handling run build
+    - yarn workspace serverless-microlambda run build
   artifacts:
     public: false
     paths:
       - types/lib
       - server/dist
       - core/lib
+      - plugin/dist
+      - handling/dist
     expire_in: 1h
 
 publish:
