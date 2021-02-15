@@ -50,7 +50,7 @@ publish:
     <<: *global_cache
   script:
     - yarn install --immutable
-    - echo "npmAuthToken: $NPM_TOKEN" >> .yarnrc.yml
+    - 'echo "npmAuthToken: $NPM_TOKEN" >> .yarnrc.yml'
     - yarn publish:all
   only:
     - master
