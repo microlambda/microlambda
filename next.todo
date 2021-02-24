@@ -1,5 +1,3 @@
-fix(server): serve correctly front-end
-ci(gitlab): fix lint, build and make a pipeline, release master and tag
 fix(core): transpile everything parallel (as order does not matter)
 fix(core): remove trigger service recompilation jobs
 feat(plugin): only watch service source
@@ -18,7 +16,6 @@ feat(core): add remove stack method to service
 feat(cli): add remove command
 feat(client): see last published version on client
 perf(client): do not use CDN to serve fonts
-ci: lint and test code on push
 perf(client): event log lazy-loading
 test(core): full-coverage
 test(cli): full-coverage
@@ -38,8 +35,6 @@ docs: handling guide
 docs: testing guide
 docs: cookbook multiple regions
 docs: custom domain
-refactor: extend prettier eslint default configurations
-perf: optimize npm packages with .npmignore
 chore: add licence in each package
 docs: add per package README
 ci: add coverall or codecov
