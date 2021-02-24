@@ -1,4 +1,4 @@
-import { APIGateway, Route53 } from 'aws-sdk';
+import { APIGateway, AWSError, Route53 } from 'aws-sdk';
 import { Change, HostedZone, ListHostedZonesResponse, ResourceRecordSet } from 'aws-sdk/clients/route53';
 import { inspect } from 'util';
 import { DomainName } from 'aws-sdk/clients/apigateway';
@@ -6,6 +6,7 @@ import { ConfigReader } from '../../config/read-config';
 import { Service } from '../../graph';
 import { getServiceName } from '../../yaml';
 import { ILogger, Logger } from '../../logger';
+import { PromiseResult } from 'aws-sdk/lib/request';
 
 export class RecordsManager {
   private readonly _route53 = new Route53();
@@ -13,6 +14,53 @@ export class RecordsManager {
 
   constructor(logger: Logger) {
     this._logger = logger.log('dns');
+  }
+
+  public async _exponentialBackoff<T>(action: () => Promise<PromiseResult<T, AWSError>>): Promise<T> {
+    const maxRetries = 5;
+    let tries = 0;
+    const firstIncrement = 500;
+    let delay = 0;
+    let hasSucceed = false;
+    let result: T | null = null;
+    let lastError: Error = new Error(`Action failed after ${maxRetries} tries`);
+    this._logger.debug(`Performing action with exponential backoff`, { maxRetries, firstIncrement });
+    while (tries < maxRetries && !hasSucceed) {
+      this._logger.debug(`Performing action: try ${tries}/${maxRetries} (delayed ${delay}ms)`);
+      tries++;
+      await new Promise<void>((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            result = await action();
+            this._logger.debug('Action has succeed !');
+            hasSucceed = true;
+            return resolve();
+          } catch (e) {
+            this._logger.debug('Action has failed !', e);
+            lastError = e;
+            if (e.retryable) {
+              this._logger.debug('Action is retryable');
+              if (e.retryDelay) {
+                delay = 1000 * e.retryDelay;
+              } else {
+                delay = !delay ? firstIncrement : 2 * delay;
+              }
+              this._logger.debug('Delay updated, ready for another try');
+              return resolve();
+            } else {
+              this._logger.error('Action is not retryable, rejecting', e);
+              return reject(e);
+            }
+          }
+        }, delay);
+      });
+    }
+    if (!hasSucceed) {
+      this._logger.error(`Action failed after ${maxRetries} tries, rejecting`);
+      throw lastError;
+    } else {
+      return (result as unknown) as T;
+    }
   }
 
   public async createRecords(configReader: ConfigReader, stage: string, services: Service[]): Promise<void> {
@@ -56,14 +104,16 @@ export class RecordsManager {
       this._logger.debug(inspect(toCreate, false, null, true));
       if (toCreate.length > 0) {
         this._logger.info('Creating missing records');
-        await this._route53
-          .changeResourceRecordSets({
-            HostedZoneId: hostedZone.Id,
-            ChangeBatch: {
-              Changes: toCreate,
-            },
-          })
-          .promise();
+        await this._exponentialBackoff(async () => {
+          return this._route53
+            .changeResourceRecordSets({
+              HostedZoneId: hostedZone.Id,
+              ChangeBatch: {
+                Changes: toCreate,
+              },
+            })
+            .promise();
+        });
       }
     }
   }
@@ -85,13 +135,15 @@ export class RecordsManager {
     const nextRecord: { name?: string; type?: string } = {};
     const records: ResourceRecordSet[] = [];
     do {
-      const result = await this._route53
-        .listResourceRecordSets({
-          HostedZoneId: hz.Id,
-          StartRecordType: nextRecord.type,
-          StartRecordName: nextRecord.name,
-        })
-        .promise();
+      const result = await this._exponentialBackoff(() => {
+        return this._route53
+          .listResourceRecordSets({
+            HostedZoneId: hz.Id,
+            StartRecordType: nextRecord.type,
+            StartRecordName: nextRecord.name,
+          })
+          .promise();
+      });
       records.push(...result.ResourceRecordSets);
       if (result.IsTruncated) {
         nextRecord.type = result.NextRecordType;
@@ -164,14 +216,16 @@ export class RecordsManager {
   }
 
   private async _listHostedZones(): Promise<Array<HostedZone>> {
-    let nextToken;
+    let nextToken: string | undefined;
     const hostedZones: HostedZone[] = [];
     do {
-      const result: ListHostedZonesResponse = await this._route53
-        .listHostedZones({
-          Marker: nextToken,
-        })
-        .promise();
+      const result: ListHostedZonesResponse = await this._exponentialBackoff(() => {
+        return this._route53
+          .listHostedZones({
+            Marker: nextToken,
+          })
+          .promise();
+      });
       hostedZones.push(...result.HostedZones);
       nextToken = result.NextMarker;
     } while (nextToken != null);
