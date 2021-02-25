@@ -80,7 +80,7 @@ export class RecordsManager {
       const serviceName = getServiceName(service) + '-' + stage;
 
       for (const region of regions) {
-        const apiGatewayDomain = await this._getDomain(region, domain);
+        const apiGatewayDomain = await RecordsManager._getDomain(region, domain);
         if (!apiGatewayDomain) {
           throw Error('API Gateway domain does not exist');
         }
@@ -91,7 +91,7 @@ export class RecordsManager {
         }
         const hasRecord = await this._recordExists(records, domain, apiGatewayUrl, region);
         if (!hasRecord) {
-          const record = await this._createRecord(domain, apiGatewayUrl, region, serviceName);
+          const record = await RecordsManager._createRecord(domain, apiGatewayUrl, region, serviceName);
           toCreate.push(record);
         } else {
           this._logger.info('Record already exist', {
@@ -134,7 +134,11 @@ export class RecordsManager {
   public async listRecords(hz: HostedZone): Promise<ResourceRecordSet[]> {
     const nextRecord: { name?: string; type?: string } = {};
     const records: ResourceRecordSet[] = [];
+    this._logger.debug('Listing records for hosted zone', hz);
+    let i = 0;
     do {
+      i++;
+      this._logger.debug('Listing hosted zone', { page: i, nextRecord });
       const result = await this._exponentialBackoff(() => {
         return this._route53
           .listResourceRecordSets({
@@ -145,15 +149,20 @@ export class RecordsManager {
           .promise();
       });
       records.push(...result.ResourceRecordSets);
+      this._logger.debug(`Found ${result.ResourceRecordSets.length} results`);
+      this._logger.debug('Has next page', result.IsTruncated);
       if (result.IsTruncated) {
         nextRecord.type = result.NextRecordType;
         nextRecord.name = result.NextRecordName;
+      } else {
+        nextRecord.type = undefined;
+        nextRecord.name = undefined;
       }
     } while (nextRecord.type && nextRecord.name);
     return records;
   }
 
-  private async _getDomain(region: string, domainName: string): Promise<DomainName | null> {
+  private static async _getDomain(region: string, domainName: string): Promise<DomainName | null> {
     const apiGateway = new APIGateway({ region });
     try {
       return apiGateway.getDomainName({ domainName }).promise();
@@ -164,21 +173,6 @@ export class RecordsManager {
       throw e;
     }
   }
-
-  /*private async _getApiGatewayUrl(region: string, serviceName: string): Promise<string> {
-    const cf = new CloudFormation({ region });
-    const stacks = await cf
-      .describeStacks({
-        StackName: serviceName,
-      })
-      .promise();
-    const outputs = stacks.Stacks[0].Outputs;
-    const output = outputs.find((o) => o.OutputKey === 'ServiceEndpoint');
-    if (output != null) {
-      this._logger.info(`${serviceName} [${region}] -> ${output.OutputValue}`);
-    }
-    return output != null ? output.OutputValue : null;
-  }*/
 
   private async _recordExists(
     records: ResourceRecordSet[],
@@ -196,7 +190,7 @@ export class RecordsManager {
     );
   }
 
-  private async _createRecord(
+  private static async _createRecord(
     domain: string,
     apiGateWayUrl: string,
     region: string,
@@ -218,7 +212,11 @@ export class RecordsManager {
   private async _listHostedZones(): Promise<Array<HostedZone>> {
     let nextToken: string | undefined;
     const hostedZones: HostedZone[] = [];
+    let i = 0;
+    this._logger.debug('Fetching hosted zones');
     do {
+      i++;
+      this._logger.debug('Listing hosted zone', { page: i, nextToken });
       const result: ListHostedZonesResponse = await this._exponentialBackoff(() => {
         return this._route53
           .listHostedZones({
@@ -227,6 +225,7 @@ export class RecordsManager {
           .promise();
       });
       hostedZones.push(...result.HostedZones);
+      this._logger.debug(`Found ${result.HostedZones.length} results, updating next token`, result.NextMarker);
       nextToken = result.NextMarker;
     } while (nextToken != null);
     return hostedZones;
