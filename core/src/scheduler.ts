@@ -35,9 +35,6 @@ export enum RecompilationEventType {
   DEPLOY_IN_PROGRESS,
   DEPLOY_SUCCESS,
   DEPLOY_FAILURE,
-  TRIGGER_SERVICE_RECOMPILATION_IN_PROGRESS,
-  TRIGGER_SERVICE_RECOMPILATION_SUCCESS,
-  TRIGGER_SERVICE_RECOMPILATION_FAILURES,
 }
 
 export enum RecompilationErrorType {
@@ -69,14 +66,12 @@ export class RecompilationScheduler {
     stop: Service[];
     transpile: Node[];
     typeCheck: { node: Node; force: boolean; throws: boolean }[];
-    serviceRecompilation: Service[];
     start: Service[];
     package: { service: Service; level: number }[];
   } = {
     stop: [],
     transpile: [],
     typeCheck: [],
-    serviceRecompilation: [],
     start: [],
     package: [],
   };
@@ -276,37 +271,9 @@ export class RecompilationScheduler {
             'Changed nodes',
             changes.map((n) => n.getName()),
           );
-          const impactedServices: Set<Service> = new Set<Service>();
-          for (const node of changes) {
-            const isRunningService = (n: Node): boolean => {
-              if (n.isService()) {
-                const s = n as Service;
-                return s.isRunning();
-              }
-              return false;
-            };
-            if (isRunningService(node)) {
-              impactedServices.add(node as Service);
-            }
-            const dependantServices = node.getDependent().filter((n) => isRunningService(n));
-            dependantServices.forEach((s) => impactedServices.add(s as Service));
-          }
-          this._logger.info(
-            'Restarting impacted running services',
-            Array.from(impactedServices).map((n) => n.getName()),
-          );
-          // stop them
-          impactedServices.forEach((s) => this._requestStop(s));
 
           // request recompilation
           this._compile([...changes]);
-
-          // start the stopped services
-          impactedServices.forEach((s) => {
-            if (s.isEnabled()) {
-              this._requestServiceRecompilation(s);
-            }
-          });
 
           // rerun recompilation
           this._exec().subscribe();
@@ -401,7 +368,6 @@ export class RecompilationScheduler {
       typeCheck: [],
       start: [],
       package: [],
-      serviceRecompilation: [],
     };
     this._recompilation = RecompilationStatus.READY;
     this._status = SchedulerStatus.READY;
@@ -453,16 +419,6 @@ export class RecompilationScheduler {
     }
   }
 
-  private _requestServiceRecompilation(service: Service): void {
-    this._logger.debug(`Request to add service recompilation trigger job`, service.getName());
-    const inQueue = this._alreadyQueued(service, 'serviceRecompilation');
-    this._logger.debug('Already in service recompilation trigger queue', inQueue);
-    if (!inQueue) {
-      this._logger.debug('Adding service in service recompilation trigger job queue', service.getName());
-      this._jobs.serviceRecompilation.push(service);
-    }
-  }
-
   private _requestPackage(service: Service, level = 4): void {
     this._logger.debug(`Request to add package job`, service.getName());
     const inQueue = this._jobs.package.some((n) => n.service.getName() === service.getName());
@@ -473,7 +429,7 @@ export class RecompilationScheduler {
     }
   }
 
-  private _alreadyQueued(node: Node, queue: 'transpile' | 'start' | 'stop' | 'serviceRecompilation'): boolean {
+  private _alreadyQueued(node: Node, queue: 'transpile' | 'start' | 'stop'): boolean {
     return this._jobs[queue].some((n) => n.getName() === node.getName());
   }
 
@@ -523,10 +479,6 @@ export class RecompilationScheduler {
       this._jobs.start.map((n) => n.getName()),
     );
     this._logger.info(
-      'To trigger service recompilation',
-      this._jobs.serviceRecompilation.map((n) => n.getName()),
-    );
-    this._logger.info(
       'To package',
       this._jobs.package.map((n) => n.service.getName()),
     );
@@ -552,35 +504,6 @@ export class RecompilationScheduler {
               took: Date.now() - now,
             });
             this._logger.error('Error stopping', node.getName(), err);
-            return obs.error(err);
-          },
-        );
-      });
-    });
-
-    const triggerServiceRecompilationJobs$: Array<
-      Observable<IRecompilationEvent>
-    > = this._jobs.serviceRecompilation.map((service) => {
-      return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({ node: service, type: RecompilationEventType.TRIGGER_SERVICE_RECOMPILATION_IN_PROGRESS });
-        const now = Date.now();
-        service.triggerRecompilation().subscribe(
-          (node) => {
-            this._logger.debug('Triggered recompilation for', node.getName());
-            obs.next({
-              node: node,
-              type: RecompilationEventType.TRIGGER_SERVICE_RECOMPILATION_SUCCESS,
-              took: Date.now() - now,
-            });
-            return obs.complete();
-          },
-          (err) => {
-            obs.next({
-              node: service,
-              type: RecompilationEventType.TRIGGER_SERVICE_RECOMPILATION_FAILURES,
-              took: Date.now() - now,
-            });
-            this._logger.error('Error triggered recompilation for', service.getName(), err);
             return obs.error(err);
           },
         );
@@ -752,38 +675,6 @@ export class RecompilationScheduler {
         );
     });
 
-    const triggerServiceRecompilation$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
-      let triggered = 0;
-      const allDone = (): void => {
-        this._logger.info('All services recompilation triggered');
-      };
-      if (triggerServiceRecompilationJobs$.length === 0) {
-        allDone();
-        return obs.complete();
-      }
-      from(triggerServiceRecompilationJobs$)
-        .pipe(mergeAll())
-        .subscribe(
-          (evt) => {
-            obs.next(evt);
-            if (evt.type === RecompilationEventType.TRIGGER_SERVICE_RECOMPILATION_SUCCESS) {
-              triggered++;
-              this._logger.info(
-                `Trigger re-compilation for ${triggered}/${triggerServiceRecompilationJobs$.length} services`,
-              );
-              if (triggered >= stopJobs$.length) {
-                allDone();
-                return obs.complete();
-              }
-            }
-          },
-          (err) => {
-            this._logger.error('Error stopping service', err);
-            return obs.error(err);
-          },
-        );
-    });
-
     const transpile$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
       let transpiled = 0;
       const allDone = (): void => {
@@ -913,7 +804,7 @@ export class RecompilationScheduler {
     });
 
     const recompilationProcess$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
-      concat([stop$, merge(concat(typeCheck$, package$), concat(transpile$, start$, triggerServiceRecompilation$))])
+      concat([stop$, merge(concat(typeCheck$, package$), concat(transpile$, start$))])
         .pipe(concatAll(), takeUntil(this._abort$))
         .subscribe(
           (evt) => obs.next(evt),
