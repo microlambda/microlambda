@@ -685,8 +685,8 @@ export class RecompilationScheduler {
         allDone();
         return obs.complete();
       }
-      concat(transpilingJobs$)
-        .pipe(concatAll())
+      from(transpilingJobs$)
+        .pipe(mergeAll(this._concurrency))
         .subscribe(
           (evt) => {
             obs.next(evt);
