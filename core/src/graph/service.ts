@@ -76,8 +76,11 @@ export class Service extends Node {
       this._logger?.debug('Requested to stop', this.name, 'which status is', this.status);
       const watchKilled = (): void => {
         if (this.process) {
+          let killed = false;
           this._logger?.debug('Waiting for process to be killed');
           this.process.on('exit', () => {
+            // Child process exited, this means the process is over but some not all process in process tree are killed
+            // i.e. hapi server spawn by sls offline still alive and still occupying his port
             this._logger?.debug('Process exited');
             this._updateStatus(ServiceStatus.STOPPED);
           });
@@ -90,19 +93,33 @@ export class Service extends Node {
               this._logger?.error(`Service ${this.name} exited with code ${code}`);
               this._updateStatus(ServiceStatus.CRASHED);
             }
+            // On close, we are sure that every process in process tree has exited, so we can complete observable
+            // This is the most common scenario, where sls offline gracefully shutdown underlying hapi server and
+            // close properly with status 0
+            killed = true;
+            observer.next(this);
+            return observer.complete();
           });
-          // Make sure process released port
+          // This is a security to make child process release port, we give 5s to sls offline to gracefully
+          // shutdown underlying hapi server (this is more than enough). Other wise we send SIGKILL to the whole
+          // process tree to free the port (#Rampage)
+          const FIVE_SECONDS = 5 * 1000;
           setTimeout(async () => {
-            this._logger?.debug('Making sure process has released port');
-            const isAvailable = await isPortAvailable(this.port);
-            this._logger?.debug('Is port available', isAvailable);
-            if (!isAvailable) {
-              this._logger?.warn('Process has no released port within 200ms. Sending SIGKILL');
+            this._logger?.debug('Making sure process has released ports');
+
+            const areAvailable = await Promise.all([
+              isPortAvailable(this.port.http),
+              isPortAvailable(this.port.lambda),
+              isPortAvailable(this.port.websocket),
+            ]);
+            this._logger?.debug('Is port available', areAvailable);
+            if (areAvailable.some((a) => !a) && !killed) {
+              this._logger?.warn('Process has no released port within 5000ms. Sending SIGKILL');
               this._killProcessTree('SIGKILL');
             }
             observer.next(this);
             return observer.complete();
-          }, 200);
+          }, FIVE_SECONDS);
         }
       };
       switch (this.status) {
