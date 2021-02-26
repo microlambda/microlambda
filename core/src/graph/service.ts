@@ -12,12 +12,12 @@ import { Packager } from '../package/packagr';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
 import { IServiceLogs, ServiceStatus, TranspilingStatus } from '@microlambda/types';
-import { isPortAvailable } from '../resolve-ports';
+import { IServicePortsConfig, isPortAvailable } from '../resolve-ports';
 import processTree from 'ps-tree';
 
 export class Service extends Node {
   private status: ServiceStatus;
-  private readonly _port: number;
+  private readonly _port: IServicePortsConfig;
   private process: ChildProcess | undefined;
   private logStream: WriteStream | undefined;
   private readonly _logs: IServiceLogs;
@@ -53,7 +53,7 @@ export class Service extends Node {
     return this._logs;
   }
 
-  get port(): number {
+  get port(): IServicePortsConfig {
     return this._port;
   }
 
@@ -198,12 +198,23 @@ export class Service extends Node {
     this._logger?.debug('Location:', this.location);
     this._logger?.debug('Env:', process.env.ENV);
     this.logStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'offline'));
-    // TODO: argument --port have been changed to --httpPort on serverless-offline@6
-    // We should either delegate to yarn start script to port mapping, either check sls version and choose appropriate arg
-    this.process = spawn('yarn', ['start', '--port', this.port.toString()], {
-      cwd: this.location,
-      env: { ...process.env, FORCE_COLOR: '2' },
-    });
+    // TODO: specify peer dependency serverless-offline@>=6
+    this.process = spawn(
+      'yarn',
+      [
+        'start',
+        '--httpPort',
+        this.port.http.toString(),
+        '--lambdaPort',
+        this.port.lambda.toString(),
+        '--websocketPort',
+        this.port.websocket.toString(),
+      ],
+      {
+        cwd: this.location,
+        env: { ...process.env, FORCE_COLOR: '2' },
+      },
+    );
     if (this.process.stderr) {
       this.process.stderr.on('data', (data) => {
         this._logger?.error(`${chalk.bold(this.name)}: ${data}`);
@@ -224,7 +235,9 @@ export class Service extends Node {
         this.process.stdout.on('data', (data) => {
           this._handleLogs(data);
           if (data.includes('listening on')) {
-            this._logger?.info(`${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port}`);
+            this._logger?.info(
+              `${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port.http}`,
+            );
             this._metrics.lastStarted = new Date();
             this._metrics.startedTook = this._startedBeganAt ? Date.now() - this._startedBeganAt : null;
             this._startedBeganAt = undefined;

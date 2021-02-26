@@ -4,7 +4,15 @@ import { Workspace } from '@yarnpkg/core';
 import { getName } from './yarn/project';
 import { Socket } from 'net';
 
-type PortMap = { [key: string]: number };
+export interface IServicePortsConfig {
+  lambda: number;
+  http: number;
+  websocket: number;
+}
+
+export type PortMap = {
+  [service: string]: IServicePortsConfig;
+};
 
 /**
  * Resolve ports for a given array  of services
@@ -13,19 +21,31 @@ type PortMap = { [key: string]: number };
  * @param services
  * @param config
  * @param logger
- * @param defaultPort
+ * @param defaultPorts
  */
-export const resolvePorts = (services: Workspace[], config: IConfig, logger?: Logger, defaultPort = 3001): PortMap => {
+export const resolvePorts = (
+  services: Workspace[],
+  config: IConfig,
+  logger?: Logger,
+  defaultPorts = { lambda: 2001, http: 3001, websocket: 6001 },
+): PortMap => {
   logger?.log('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {
     const name = getName(service);
     const inConfig = config.ports[name] != null;
-    const port = inConfig ? config.ports[name] : defaultPort;
-    if (!inConfig) {
-      defaultPort++;
+    let fromConfig: Partial<IServicePortsConfig> = {};
+    if (inConfig) {
+      const ports = config.ports[name];
+      fromConfig = typeof ports === 'number' ? { http: ports } : ports;
     }
-    result[name] = port;
+    result[name] = {
+      ...defaultPorts,
+      ...fromConfig,
+    };
+    defaultPorts.http++;
+    defaultPorts.lambda++;
+    defaultPorts.websocket++;
   });
   logger?.log('port').debug('Ports resolved', result);
   return result;

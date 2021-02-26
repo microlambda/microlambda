@@ -33,7 +33,7 @@ export const startServer = (
       name: n.getName(),
       version: n.getVersion() || '',
       type: n.isService() ? 'service' : 'package',
-      port: n.isService() ? graph.getPort(n.getName()) : null,
+      port: n.isService() ? graph.getPort(n.getName()).http : null,
       enabled: n.isEnabled(),
       transpiled: n.getTranspilingStatus(),
       typeChecked: n.getTypeCheckStatus(),

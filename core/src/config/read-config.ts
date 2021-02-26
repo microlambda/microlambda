@@ -187,7 +187,17 @@ export class ConfigReader {
       .keys({
         stages: Joi.array().items(Joi.string()).optional().allow(null),
         compilationMode: Joi.string().valid('safe', 'fast'),
-        ports: Joi.object().pattern(services, Joi.number().integer().greater(0).less(64738)),
+        ports: Joi.object().pattern(
+          services,
+          Joi.alternatives(
+            Joi.number().integer().greater(0).less(64738),
+            Joi.object().keys({
+              http: Joi.number().integer().greater(0).less(64738).optional(),
+              lambda: Joi.number().integer().greater(0).less(64738).optional(),
+              websocket: Joi.number().integer().greater(0).less(64738).optional(),
+            }),
+          ),
+        ),
         noStart: Joi.array().items(services).optional(),
         defaultRegions: regionSchema.optional().allow(null),
         regions: Joi.object().pattern(services, regionSchema).optional(),

@@ -3,7 +3,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package } from './';
 import { Service } from './';
-import { resolvePorts } from '../resolve-ports';
+import { IServicePortsConfig, PortMap, resolvePorts } from '../resolve-ports';
 import { IConfig } from '../config/config';
 import { ILogger, Logger } from '../logger';
 import { IPCSocketsManager } from '../ipc/socket';
@@ -18,7 +18,7 @@ export const isService = (location: string): boolean => {
 export class DependenciesGraph {
   private readonly _config: IConfig;
   private readonly projectRoot: string;
-  private readonly ports: { [key: string]: number };
+  private readonly ports: PortMap;
   private readonly nodes: Node[];
   private readonly _logger: Logger | undefined;
   private readonly _log: ILogger | undefined;
@@ -46,7 +46,7 @@ export class DependenciesGraph {
     this._log?.debug('Building graph with', project);
     this.projectRoot = project.cwd;
     const services = project.workspaces.filter((n) => isService(n.cwd));
-    this.ports = resolvePorts(services, config, logger, defaultPort);
+    this.ports = resolvePorts(services, config, logger);
     const builtNodes: Set<Node> = new Set<Node>();
     this._log?.debug(project.workspaces.map((w) => getName(w)));
     for (const node of project.workspaces) {
@@ -75,7 +75,7 @@ export class DependenciesGraph {
     this._enableNodes();
   }
 
-  public getPort(service: string): number {
+  public getPort(service: string): IServicePortsConfig {
     return this.ports[service];
   }
 

@@ -1,3 +1,5 @@
+import { IServicePortsConfig } from '../resolve-ports';
+
 export type CompilationMode = 'safe' | 'fast';
 
 export interface IRegionConfig {
@@ -25,7 +27,7 @@ export type Microservice = string;
 export interface IConfig extends IDeployConfig {
   stages: string[];
   compilationMode: CompilationMode;
-  ports: { [key: string]: number };
+  ports: { [key: string]: number | Partial<IServicePortsConfig> };
   noStart: string[];
   domains: {
     [service: string]: {
