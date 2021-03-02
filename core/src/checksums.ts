@@ -67,6 +67,7 @@ export const checksums = (
         });
       });
     },
+    // FIXME: rename isDifferent its clearer
     compare: (old: IChecksums | null, current: IChecksums): boolean => {
       logger?.log('checksum').debug(`Comparing checksums for ${node.getName()}`, { old, current });
       if (!old) {

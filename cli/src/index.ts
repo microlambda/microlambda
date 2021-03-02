@@ -10,6 +10,7 @@ import { packagr } from './cmd/package';
 import { runTests } from './cmd/test';
 import { deploy } from './cmd/deploy';
 import { getDefaultThreads, RecompilationScheduler, Logger } from '@microlambda/core';
+import { remove } from './cmd/remove';
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -142,17 +143,19 @@ program
     await deploy(cmd, logger, scheduler);
   });
 
-// TODO Remove deployed stack
-
-/*
-// TODO: IPC and background mode
 program
-  .command('status')
-  .description('see the microservices status')
-  .action(async () => {
-    await status(scheduler, logger);
+  .command('remove')
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion', null)
+  .option(
+    '-s <service>, --service <service>',
+    'the service you want to remove. If no specified all services will be removed.',
+    null,
+  )
+  .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .description('remove services from AWS')
+  .action(async (cmd) => {
+    await remove(cmd, logger, scheduler);
   });
-*/
 
 program
   .command('test')

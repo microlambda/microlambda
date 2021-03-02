@@ -63,6 +63,28 @@ export class RecordsManager {
     }
   }
 
+  public async deleteBasePathMapping(region: string, domain: string): Promise<void> {
+    const apiGateway = new APIGateway({ region });
+    const params = {
+      domainName: domain /* required */,
+    };
+    const data = await apiGateway.getBasePathMappings(params).promise();
+    this._logger.info('Found base path mappings', data);
+    if (!data.items) {
+      this._logger.info('Nothing to do');
+      return;
+    }
+    for (const item of data.items) {
+      if (item.basePath) {
+        const params = {
+          basePath: item.basePath /* required */,
+          domainName: domain /* required */,
+        };
+        await apiGateway.deleteBasePathMapping(params).promise();
+      }
+    }
+  }
+
   public async createRecords(configReader: ConfigReader, stage: string, services: Service[]): Promise<void> {
     for (const service of services) {
       const regions = await configReader.getRegions(service.getName(), stage);
@@ -115,6 +137,59 @@ export class RecordsManager {
             .promise();
         });
       }
+    }
+  }
+
+  public async deleteRecords(region: string, domain: string): Promise<void> {
+    const hostedZone = await this.getHostedZone(domain);
+    if (!hostedZone) {
+      throw Error(`Cannot find hosted zone for domain ${domain}`);
+    }
+    const nextRecord: { name: string | undefined; type: string | undefined } = {
+      name: undefined,
+      type: undefined,
+    };
+    const records: ResourceRecordSet[] = [];
+    do {
+      const result = await this._route53
+        .listResourceRecordSets({
+          HostedZoneId: hostedZone.Id,
+          StartRecordType: nextRecord.type,
+          StartRecordName: nextRecord.name,
+        })
+        .promise();
+      records.push(...result.ResourceRecordSets);
+      if (result.IsTruncated) {
+        nextRecord.type = result.NextRecordType;
+        nextRecord.name = result.NextRecordName;
+      } else {
+        nextRecord.name = undefined;
+        nextRecord.type = undefined;
+      }
+    } while (nextRecord.type && nextRecord.name);
+    const toDelete = records.filter((r) => r.Name.startsWith(domain) && r.Region === region);
+    this._logger.info({ toDelete });
+    const actions = toDelete.map((r) => ({
+      Action: 'DELETE',
+      ResourceRecordSet: {
+        Name: domain,
+        Type: 'CNAME',
+        TTL: 300,
+        SetIdentifier: r.SetIdentifier,
+        Region: r.Region,
+        ResourceRecords: r.ResourceRecords,
+      },
+    }));
+    this._logger.info({ actions });
+    if (actions.length > 0) {
+      await this._route53
+        .changeResourceRecordSets({
+          HostedZoneId: hostedZone.Id,
+          ChangeBatch: {
+            Changes: actions,
+          },
+        })
+        .promise();
     }
   }
 

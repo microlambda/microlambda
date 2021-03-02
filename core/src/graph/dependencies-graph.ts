@@ -32,6 +32,10 @@ export class DependenciesGraph {
     return this._logger;
   }
 
+  get config(): IConfig {
+    return this._config;
+  }
+
   constructor(
     project: Project,
     config: IConfig,

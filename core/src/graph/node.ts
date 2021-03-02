@@ -358,9 +358,12 @@ export abstract class Node {
     let currentChecksums: IChecksums | null = {};
     const checksumUtils = checksums(this, this.graph.logger);
     if (!force) {
-      // FIXME: IMPORTANT
-      // FIXME: Checksums => all dependencies nodes must also have no changes to be considered no need to recompile
       try {
+        // FIXME: MILA-73
+        // FIXME: Checksums => all dependencies nodes must also have no changes to be considered no need to recompile
+        // Keep history of two last recompilation checksums
+        // For current node, check that current checksum and n-1 are same
+        // For all dependencies, check that two archived checksums are same (meaning that it has not changed)
         const oldChecksums = await checksumUtils.read();
         currentChecksums = await checksumUtils.calculate();
         this._checksums = currentChecksums;

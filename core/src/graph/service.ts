@@ -14,6 +14,31 @@ import { getName } from '../yarn/project';
 import { IServiceLogs, ServiceStatus, TranspilingStatus } from '@microlambda/types';
 import { IServicePortsConfig, isPortAvailable } from '../resolve-ports';
 import processTree from 'ps-tree';
+import { ConfigReader } from '../';
+import { RecordsManager } from '../deploy/utils/create-cname-records';
+import { Logger } from '../logger';
+import { readJSONSync } from 'fs-extra';
+import { join } from 'path';
+
+export enum IRemoveEventEnum {
+  DELETING_BASE_PATH_MAPPING,
+  DELETED_BASE_PATH_MAPPING,
+  ERROR_DELETING_BASE_PATH_MAPPING,
+  DELETING_DNS_RECORDS,
+  DELETED_DNS_RECORDS,
+  ERROR_DELETING_DNS_RECORDS,
+  DELETING_CLOUD_FORMATION_STACK,
+  DELETED_CLOUD_FORMATION_STACK,
+  ERROR_DELETING_CLOUD_FORMATION_STACK,
+}
+
+export interface IRemoveEvent {
+  status: 'add' | 'update' | 'succeed' | 'fail';
+  region: string;
+  event: IRemoveEventEnum;
+  service: Service;
+  error?: unknown;
+}
 
 export class Service extends Node {
   private status: ServiceStatus;
@@ -42,6 +67,7 @@ export class Service extends Node {
       offline: [],
       createDomain: [],
       deploy: [],
+      remove: [],
     };
   }
 
@@ -418,6 +444,161 @@ export class Service extends Node {
           this._logger?.warn('Service is already running', this.name);
           observer.next(this);
           return observer.complete();
+      }
+    });
+  }
+
+  private async _removeStack(region: string, stage: string): Promise<string[]> {
+    return new Promise<Array<string>>((resolve, reject) => {
+      createLogFile(this.graph.getProjectRoot(), this.name, 'remove');
+      const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'remove'));
+      // TODO Apply this strategy for starting / deploying / packaging and testing
+      const hasRemoveScript = (): boolean => {
+        try {
+          const scripts = readJSONSync(join(this.location, 'package.json')).scripts;
+          return scripts.remove != null;
+        } catch (e) {
+          this._logger?.warn('Cannot determine if service has remove script');
+          return false;
+        }
+      };
+      const useYarn = hasRemoveScript();
+      const cmd = useYarn ? 'yarn' : getBinary('sls', this.graph.getProjectRoot());
+      const args = useYarn ? ['run', 'remove'] : ['remove'];
+
+      const deployProcess = spawn(cmd, args, {
+        cwd: this.location,
+        env: {
+          ...process.env,
+          ENV: stage,
+          FORCE_COLOR: '2',
+          AWS_REGION: region,
+        },
+        stdio: 'pipe',
+      });
+      deployProcess.stderr.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.remove.push(data);
+      });
+      deployProcess.stdout.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.remove.push(data);
+      });
+      deployProcess.on('close', (code) => {
+        writeStream.close();
+        if (code !== 0) {
+          return reject(`Process exited with status ${code}`);
+        }
+        return resolve(this._logs.remove);
+      });
+      deployProcess.on('error', (err) => {
+        writeStream.close();
+        return reject(err);
+      });
+    });
+  }
+
+  remove(stage: string): Observable<IRemoveEvent> {
+    return new Observable<IRemoveEvent>((obs) => {
+      const reader = new ConfigReader();
+      const regions = reader.getRegions(this.getName(), stage);
+      const recordsManager = new RecordsManager(this.graph.logger as Logger);
+      for (const region of regions) {
+        const domain = reader.getCustomDomain(this.getName(), stage);
+        const deleteDnsRecords = (): void => {
+          if (domain) {
+            obs.next({
+              status: 'update',
+              region,
+              event: IRemoveEventEnum.DELETING_DNS_RECORDS,
+              service: this,
+            });
+            recordsManager
+              .deleteRecords(region, domain)
+              .then(() => {
+                obs.next({
+                  status: 'succeed',
+                  region,
+                  event: IRemoveEventEnum.DELETED_DNS_RECORDS,
+                  service: this,
+                });
+                obs.complete();
+              })
+              .catch((e) => {
+                obs.next({
+                  status: 'fail',
+                  region,
+                  event: IRemoveEventEnum.ERROR_DELETING_DNS_RECORDS,
+                  service: this,
+                  error: e,
+                });
+                obs.complete();
+              });
+          }
+        };
+        const removeStackAndRecords = (): void => {
+          obs.next({
+            status: domain ? 'update' : 'add',
+            region,
+            event: IRemoveEventEnum.DELETING_CLOUD_FORMATION_STACK,
+            service: this,
+          });
+          this._removeStack(region, stage)
+            .then((logs) => {
+              obs.next({
+                status: domain ? 'update' : 'succeed',
+                region,
+                event: IRemoveEventEnum.DELETED_CLOUD_FORMATION_STACK,
+                service: this,
+              });
+              if (domain) {
+                deleteDnsRecords();
+              } else {
+                obs.complete();
+              }
+            })
+            .catch((e) => {
+              obs.next({
+                status: 'fail',
+                region,
+                event: IRemoveEventEnum.ERROR_DELETING_CLOUD_FORMATION_STACK,
+                service: this,
+                error: e,
+              });
+              obs.complete();
+            });
+        };
+        if (domain) {
+          obs.next({
+            status: 'add',
+            region,
+            event: IRemoveEventEnum.DELETING_BASE_PATH_MAPPING,
+            service: this,
+          });
+          recordsManager
+            .deleteBasePathMapping(region, domain)
+            .then(() => {
+              obs.next({
+                status: 'update',
+                region,
+                event: IRemoveEventEnum.DELETED_BASE_PATH_MAPPING,
+                service: this,
+              });
+              removeStackAndRecords();
+            })
+            .catch((e) => {
+              obs.next({
+                status: 'fail',
+                region,
+                event: IRemoveEventEnum.ERROR_DELETING_BASE_PATH_MAPPING,
+                service: this,
+                error: e,
+              });
+              obs.complete();
+            });
+        } else {
+          removeStackAndRecords();
+        }
       }
     });
   }

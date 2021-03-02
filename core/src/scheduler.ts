@@ -2,7 +2,7 @@ import { BehaviorSubject, concat, from, merge, Observable, Subject } from 'rxjs'
 import { concatAll, debounceTime, filter, mergeAll, mergeMap, takeUntil } from 'rxjs/operators';
 import { ILogger, Logger } from './logger';
 import { getDefaultThreads } from './platform';
-import { DependenciesGraph, Node, Service } from './graph';
+import { DependenciesGraph, IRemoveEvent, Node, Service } from './graph';
 import { ServiceStatus, SchedulerStatus } from '@microlambda/types';
 
 enum RecompilationStatus {
@@ -729,7 +729,8 @@ export class RecompilationScheduler {
           },
           () => {
             this._logger.warn('Typechecking failed !');
-            // TODO: Fault tolerant in start mode, not in build mode
+            // FIXME: MILA-72 Fault tolerant in start mode, not in build mode
+            // return obs.error() if the
             return obs.complete();
           },
           () => {
@@ -852,9 +853,16 @@ export class RecompilationScheduler {
     graph.getServices().forEach((s) => this._requestPackage(s, level));
     return this._exec();
   }
+
+  remove(services: Service | Service[], stage: string): Observable<IRemoveEvent> {
+    const toRemove = Array.isArray(services) ? services : [services];
+    const removeJobs$: Array<Observable<IRemoveEvent>> = toRemove.map((s) => s.remove(stage));
+    return from(removeJobs$).pipe(mergeAll(this._concurrency));
+  }
 }
 
 /*
 TODO:
 - Unit tests
+-  Deploy
  */

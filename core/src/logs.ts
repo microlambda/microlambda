@@ -9,7 +9,7 @@ export const getLogsDirectory = (projectRoot: string): string => join(projectRoo
 export const getLogsPath = (
   projectRoot: string,
   service: string,
-  type: 'offline' | 'deploy' | 'createDomain',
+  type: 'offline' | 'deploy' | 'createDomain' | 'remove',
 ): string => {
   const segments = service.split('/');
   const name = segments[segments.length - 1];
@@ -35,7 +35,7 @@ export const recreateLogDirectory = (projectRoot: string, logger: Logger): void 
 export const createLogFile = (
   projectRoot: string,
   service: string,
-  type: 'offline' | 'deploy' | 'createDomain',
+  type: 'offline' | 'deploy' | 'createDomain' | 'remove',
 ): void => {
   const logsPath = getLogsPath(projectRoot, service, type);
   if (!existsSync(dirname(logsPath))) {

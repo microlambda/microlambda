@@ -17,6 +17,7 @@ import {
   backupYaml,
   reformatYaml,
   restoreYaml,
+  IConfig,
 } from '@microlambda/core';
 
 interface IDeployCmd extends IPackageCmd {
@@ -92,12 +93,9 @@ export const requestCertificates = (certificateManager: CertificateManager): Pro
   });
 };
 
-export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
-  const log = logger.log('deploy');
-  const reader = new ConfigReader(logger);
-  const config = reader.readConfig();
+export const checkEnv = (config: IConfig, cmd: { E: string | null }, msg: string): void => {
   if (!cmd.E) {
-    console.error(chalk.red('You must provide a target stage to deploy services'));
+    console.error(chalk.red(msg));
     process.exit(1);
   }
   if (config.stages && !config.stages.includes(cmd.E)) {
@@ -105,11 +103,22 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     console.error(chalk.red('Allowed stages are:', config.stages));
     process.exit(1);
   }
-  const currentIAM = await getAccountIAM().catch((err) => {
+};
+
+export const getCurrentUserIAM = async (): Promise<string> => {
+  return getAccountIAM().catch((err) => {
     console.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
     console.error(chalk.red('Original error: ' + err));
     process.exit(1);
   });
+};
+
+export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
+  const log = logger.log('deploy');
+  const reader = new ConfigReader(logger);
+  const config = reader.readConfig();
+  checkEnv(config, cmd, 'You must provide a target stage to deploy services');
+  const currentIAM = await getCurrentUserIAM();
 
   console.info(chalk.bold('\nDeployment information'));
   console.info('Stage:', cmd.E);
