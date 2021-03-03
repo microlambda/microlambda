@@ -500,13 +500,18 @@ export class Service extends Node {
 
   remove(stage: string): Observable<IRemoveEvent> {
     return new Observable<IRemoveEvent>((obs) => {
+      this._logger?.info('Removing', this.name);
       const reader = new ConfigReader();
       const regions = reader.getRegions(this.getName(), stage);
+      this._logger?.info(`Removing ${this.name} in ${regions.length} regions`, regions);
       const recordsManager = new RecordsManager(this.graph.logger as Logger);
       for (const region of regions) {
+        this._logger?.info('Removing', this.name, 'in', region);
         const domain = reader.getCustomDomain(this.getName(), stage);
+        this._logger?.info('Domain', domain);
         const deleteDnsRecords = (): void => {
           if (domain) {
+            this._logger?.info('Deleting DNS records', { region, domain, service: this.name });
             obs.next({
               status: 'update',
               region,
@@ -516,6 +521,7 @@ export class Service extends Node {
             recordsManager
               .deleteRecords(region, domain)
               .then(() => {
+                this._logger?.info('Deleted DNS records', { region, domain, service: this.name });
                 obs.next({
                   status: 'succeed',
                   region,
@@ -525,6 +531,7 @@ export class Service extends Node {
                 obs.complete();
               })
               .catch((e) => {
+                this._logger?.info('Failed to delete DNS records', { region, domain, service: this.name });
                 obs.next({
                   status: 'fail',
                   region,
@@ -537,6 +544,7 @@ export class Service extends Node {
           }
         };
         const removeStackAndRecords = (): void => {
+          this._logger?.info('Deleting CF stack', { region, domain, service: this.name });
           obs.next({
             status: domain ? 'update' : 'add',
             region,
@@ -545,6 +553,7 @@ export class Service extends Node {
           });
           this._removeStack(region, stage)
             .then((logs) => {
+              this._logger?.info('Deleted CF stack', { region, domain, service: this.name });
               obs.next({
                 status: domain ? 'update' : 'succeed',
                 region,
@@ -558,6 +567,7 @@ export class Service extends Node {
               }
             })
             .catch((e) => {
+              this._logger?.info('Failed to delete CF stack', { region, domain, service: this.name });
               obs.next({
                 status: 'fail',
                 region,
@@ -569,6 +579,7 @@ export class Service extends Node {
             });
         };
         if (domain) {
+          this._logger?.info('Deleting base path mapping', { region, domain, service: this.name });
           obs.next({
             status: 'add',
             region,
@@ -578,6 +589,7 @@ export class Service extends Node {
           recordsManager
             .deleteBasePathMapping(region, domain)
             .then(() => {
+              this._logger?.info('Deleted base path mapping', { region, domain, service: this.name });
               obs.next({
                 status: 'update',
                 region,
@@ -587,6 +599,7 @@ export class Service extends Node {
               removeStackAndRecords();
             })
             .catch((e) => {
+              this._logger?.info('Failed to delete base path mapping', { region, domain, service: this.name });
               obs.next({
                 status: 'fail',
                 region,

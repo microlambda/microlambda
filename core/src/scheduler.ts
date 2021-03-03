@@ -856,6 +856,10 @@ export class RecompilationScheduler {
 
   remove(services: Service | Service[], stage: string): Observable<IRemoveEvent> {
     const toRemove = Array.isArray(services) ? services : [services];
+    this._logger.info(
+      'Requested to remove',
+      toRemove.map((s) => s.getName()),
+    );
     const removeJobs$: Array<Observable<IRemoveEvent>> = toRemove.map((s) => s.remove(stage));
     return from(removeJobs$).pipe(mergeAll(this._concurrency));
   }
