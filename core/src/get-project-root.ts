@@ -24,7 +24,7 @@ export const getProjectRoot = (logger?: Logger): string => {
   try {
     return findProjectRoot();
   } catch (e) {
-    logger?.log('project-root').error('Cannot find project root. Make sure it is a valid lerna project.');
+    logger?.log('project-root').error('Cannot find project root. Make sure it is a valid microlambda project.');
     logger?.log('project-root').error(e);
     if (e instanceof MilaError) {
       console.error(chalk.red(e.message));

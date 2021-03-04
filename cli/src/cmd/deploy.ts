@@ -24,6 +24,7 @@ interface IDeployCmd extends IPackageCmd {
   E: string;
   package: boolean;
   prompt: boolean;
+  verbose: boolean;
 }
 
 enum IDeployEventType {
@@ -210,6 +211,9 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
               try {
                 log.info(service.getName(), 'Creating Custom domain', customDomain);
                 await service.createCustomDomain(region, cmd.E);
+                if (cmd.verbose) {
+                  console.log(service.logs.createDomain.join(''));
+                }
               } catch (e) {
                 failed('creatingDomain', e);
                 return obs.complete();
@@ -222,6 +226,9 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
             try {
               log.info(service.getName(), 'running npm run deploy');
               await service.deploy(region, cmd.E);
+              if (cmd.verbose) {
+                console.log(service.logs.deploy.join(''));
+              }
             } catch (e) {
               failed('deploying', e);
               return obs.complete();
