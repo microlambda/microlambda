@@ -3,4 +3,5 @@ export interface IServiceLogs {
   createDomain: string[];
   deploy: string[];
   remove: string[];
+  deleteDomain: string[];
 }

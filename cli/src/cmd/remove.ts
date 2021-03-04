@@ -74,6 +74,12 @@ export const remove = async (
             return 'DNS records deleted';
           case IRemoveEventEnum.ERROR_DELETING_DNS_RECORDS:
             return 'Error deleting DNS records';
+          case IRemoveEventEnum.DELETING_CUSTOM_DOMAIN:
+            return 'Deleting custom domain';
+          case IRemoveEventEnum.DELETED_CUSTOM_DOMAIN:
+            return 'Custom domain deleted';
+          case IRemoveEventEnum.ERROR_DELETING_CUSTOM_DOMAIN:
+            return 'Error deleting custom domain';
         }
         return 'UNKNOWN_ACTION';
       };

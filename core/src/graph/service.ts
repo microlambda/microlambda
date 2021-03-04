@@ -30,6 +30,9 @@ export enum IRemoveEventEnum {
   DELETING_CLOUD_FORMATION_STACK,
   DELETED_CLOUD_FORMATION_STACK,
   ERROR_DELETING_CLOUD_FORMATION_STACK,
+  DELETING_CUSTOM_DOMAIN,
+  DELETED_CUSTOM_DOMAIN,
+  ERROR_DELETING_CUSTOM_DOMAIN,
 }
 
 export interface IRemoveEvent {
@@ -68,6 +71,7 @@ export class Service extends Node {
       createDomain: [],
       deploy: [],
       remove: [],
+      deleteDomain: [],
     };
   }
 
@@ -430,21 +434,43 @@ export class Service extends Node {
     });
   }
 
-  triggerRecompilation(): Observable<Service> {
-    return new Observable<Service>((observer) => {
-      this._logger?.debug('Requested to trigger recompilation for', this.name, 'which status is', this.status);
-      switch (this.status) {
-        case ServiceStatus.CRASHED:
-        case ServiceStatus.STOPPED:
-        case ServiceStatus.STOPPING:
-        case ServiceStatus.STARTING:
-          this._logger?.warn('Service is not running', this.name);
-          break;
-        case ServiceStatus.RUNNING:
-          this._logger?.warn('Service is already running', this.name);
-          observer.next(this);
-          return observer.complete();
-      }
+  private async _deleteCustomDomain(region: string, stage: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      createLogFile(this.graph.getProjectRoot(), this.name, 'deleteDomain');
+      const writeStream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'deleteDomain'));
+      const deleteDomainProcess = spawn(
+        getBinary('sls', this.graph.getProjectRoot(), this.graph.logger, this),
+        ['delete_domain'],
+        {
+          cwd: this.location,
+          env: {
+            ...process.env,
+            ENV: stage,
+            FORCE_COLOR: '2',
+            AWS_REGION: region,
+          },
+          stdio: 'pipe',
+        },
+      );
+      deleteDomainProcess.stderr.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.deleteDomain.push(data);
+      });
+      deleteDomainProcess.stdout.on('data', (data) => {
+        writeStream.write(data);
+        this._logs.deleteDomain.push(data);
+      });
+      deleteDomainProcess.on('close', (code) => {
+        writeStream.close();
+        if (code !== 0) {
+          return reject(code);
+        }
+        return resolve();
+      });
+      deleteDomainProcess.on('error', (err) => {
+        writeStream.close();
+        return reject(err);
+      });
     });
   }
 
@@ -543,6 +569,39 @@ export class Service extends Node {
               });
           }
         };
+        const deleteCustomDomain = (): void => {
+          if (domain) {
+            this._logger?.info('Deleting custom domain', { region, domain, service: this.name });
+            obs.next({
+              status: 'update',
+              region,
+              event: IRemoveEventEnum.DELETING_CUSTOM_DOMAIN,
+              service: this,
+            });
+            this._deleteCustomDomain(region, stage)
+              .then(() => {
+                this._logger?.info('Deleted custom domain', { region, domain, service: this.name });
+                obs.next({
+                  status: 'update',
+                  region,
+                  event: IRemoveEventEnum.DELETING_CUSTOM_DOMAIN,
+                  service: this,
+                });
+                deleteDnsRecords();
+              })
+              .catch((e) => {
+                this._logger?.info('Failed to delete custom domain', { region, domain, service: this.name });
+                obs.next({
+                  status: 'fail',
+                  region,
+                  event: IRemoveEventEnum.ERROR_DELETING_CUSTOM_DOMAIN,
+                  service: this,
+                  error: e,
+                });
+                obs.complete();
+              });
+          }
+        };
         const removeStackAndRecords = (): void => {
           this._logger?.info('Deleting CF stack', { region, domain, service: this.name });
           obs.next({
@@ -561,7 +620,7 @@ export class Service extends Node {
                 service: this,
               });
               if (domain) {
-                deleteDnsRecords();
+                deleteCustomDomain();
               } else {
                 obs.complete();
               }

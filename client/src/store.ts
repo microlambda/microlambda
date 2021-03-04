@@ -96,6 +96,7 @@ function createServiceLogs(): ICreateWritable<IServiceLogs, string> {
     deploy: [],
     createDomain: [],
     remove: [],
+    deleteDomain: [],
   });
   return {
     subscribe,
@@ -177,6 +178,7 @@ selected.subscribe((node) => {
           deploy: current.deploy,
           offline: [...current.offline, data],
           remove: [],
+          deleteDomain: [],
         }));
       });
     });
