@@ -153,6 +153,7 @@ program
     null,
   )
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')
   .action(async (cmd) => {
     await remove(cmd, logger, scheduler);

@@ -7,7 +7,7 @@ import { init } from './start';
 import Spinnies from 'spinnies';
 
 export const remove = async (
-  cmd: { S: string | null; E: string | null; prompt: boolean },
+  cmd: { S: string | null; E: string | null; prompt: boolean; verbose: boolean },
   logger: Logger,
   scheduler: RecompilationScheduler,
 ): Promise<void> => {
@@ -84,23 +84,47 @@ export const remove = async (
         return 'UNKNOWN_ACTION';
       };
 
+      const tty = process.stdout.isTTY;
+
       switch (evt.status) {
         case 'add':
         case 'update':
-          spinnies[evt.status](evt.service.getName(), {
-            text: `Removing ${evt.service.getName()} ${chalk.cyan(action())} ${chalk.magenta(`[${evt.region}]`)}`,
-          });
+          if (tty) {
+            spinnies[evt.status](evt.service.getName(), {
+              text: `Removing ${evt.service.getName()} ${chalk.cyan(action())} ${chalk.magenta(`[${evt.region}]`)}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - ${chalk.cyan(action())} ${chalk.magenta(`[${evt.region}]`)}`,
+            );
+          }
           break;
         case 'succeed':
-          spinnies.succeed(evt.service.getName(), {
-            text: `Removed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
-          });
+          if (tty) {
+            spinnies.succeed(evt.service.getName(), {
+              text: `Removed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - Successfully removed ${chalk.magenta(`[${evt.region}]`)}`,
+            );
+          }
           break;
         case 'fail':
           failures.add(evt);
-          spinnies.fail(evt.service.getName(), {
-            text: `Error removing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
-          });
+          if (tty) {
+            spinnies.fail(evt.service.getName(), {
+              text: `Error removing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
+            });
+          } else {
+            console.info(`${chalk.bold(evt.service.getName())} - Remove failed ${chalk.magenta(`[${evt.region}]`)}`);
+          }
+      }
+      if (evt.event === IRemoveEventEnum.DELETED_CUSTOM_DOMAIN && cmd.verbose) {
+        console.log(evt.service.logs.deleteDomain.join(''));
+      }
+      if (evt.event === IRemoveEventEnum.DELETED_CLOUD_FORMATION_STACK && cmd.verbose) {
+        console.log(evt.service.logs.remove.join(''));
       }
     },
     (err) => {

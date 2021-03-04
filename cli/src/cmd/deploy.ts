@@ -53,6 +53,7 @@ type ErrorType = 'other' | 'reformatting' | 'creatingDomain' | 'deploying' | 'cr
 
 export const requestCertificates = (certificateManager: CertificateManager): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
+    const tty = process.stdout.isTTY;
     const spinnies = new Spinnies({
       failColor: 'white',
       succeedColor: 'white',
@@ -62,29 +63,49 @@ export const requestCertificates = (certificateManager: CertificateManager): Pro
       const key = `${evt.domain}@${evt.region}`;
       switch (evt.type) {
         case CertificateEventType.CREATING: {
-          spinnies.add(key, { text: `${chalk.cyan(`[${evt.region}]`)} Creating certificate for ${evt.domain}` });
+          const text = `${chalk.cyan(`[${evt.region}]`)} Creating certificate for ${evt.domain}`;
+          if (tty) {
+            spinnies.add(key, { text });
+          } else {
+            console.info(text);
+          }
           break;
         }
         case CertificateEventType.ACTIVATING: {
-          spinnies.update(key, {
-            text: `${chalk.cyan(`[${evt.region}]`)} Activating certificate for ${evt.domain} ${chalk.gray(
-              'Please be patient, this can take up to thirty minutes',
-            )}`,
-          });
+          const text = `${chalk.cyan(`[${evt.region}]`)} Activating certificate for ${evt.domain} ${chalk.gray(
+            'Please be patient, this can take up to thirty minutes',
+          )}`;
+          if (tty) {
+            spinnies.update(key, {
+              text,
+            });
+          } else {
+            console.info(text);
+          }
           break;
         }
         case CertificateEventType.ACTIVATED: {
-          spinnies.add(key, {
-            text: `${chalk.cyan(`[${evt.region}]`)} Successfully created certificate for ${evt.domain}`,
-          });
+          const text = `${chalk.cyan(`[${evt.region}]`)} Successfully created certificate for ${evt.domain}`;
+          if (tty) {
+            spinnies.add(key, {
+              text,
+            });
+          } else {
+            console.info(text);
+          }
           break;
         }
       }
     };
     const onError = async (evt: { domain: string; region: string; error: Error }): Promise<void> => {
       const key = `${evt.domain}@${evt.region}`;
-      spinnies.fail(key, { text: `${chalk.cyan(`[${evt.region}]`)} Error creating certificate for ${evt.domain}` });
-      spinnies.stopAll();
+      const text = `${chalk.cyan(`[${evt.region}]`)} Error creating certificate for ${evt.domain}`;
+      if (tty) {
+        spinnies.fail(key, { text });
+        spinnies.stopAll();
+      } else {
+        console.info(text);
+      }
       return reject(evt.error);
     };
     const onComplete = (): void => {
@@ -115,13 +136,15 @@ export const getCurrentUserIAM = async (): Promise<string> => {
 };
 
 export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
+  console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
   const log = logger.log('deploy');
   const reader = new ConfigReader(logger);
   const config = reader.readConfig();
   checkEnv(config, cmd, 'You must provide a target stage to deploy services');
   const currentIAM = await getCurrentUserIAM();
 
-  console.info(chalk.bold('\nDeployment information'));
+  console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
+  console.info(chalk.bold('The following services will be deployed'));
   console.info('Stage:', cmd.E);
   console.info('Services:', cmd.S != null ? cmd.S : 'all');
   console.info('As:', currentIAM);
@@ -139,11 +162,16 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     }
   }
 
-  console.log('\n');
+  console.info('');
   const { projectRoot, concurrency, graph, service } = await beforePackage(cmd, scheduler, logger);
   reader.validate(graph);
+
+  /*
+  FIXME: Should use scheduler, if a service fails to package for instance others should not been impacted
+   */
+
   if (cmd.package) {
-    console.info('\nPackaging services\n');
+    console.info('\n▼ Packaging services\n');
     await packageService(scheduler, concurrency, cmd.S ? (service as Service) : graph).catch((e) => {
       console.error(chalk.red('Error packaging services'));
       console.error(e);
@@ -167,7 +195,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
 
   if (needActions) {
     try {
-      console.info('\nGenerating certificates\n');
+      console.info('\n▼ Generating certificates\n');
       await requestCertificates(certificateManager);
     } catch (e) {
       console.error(chalk.red('Error generating certificates'));
@@ -266,7 +294,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     });
   };
 
-  console.info('\nDeploying services\n');
+  console.info('\n▼ Deploying services\n');
   let deployments: Observable<IDeployEvent>;
 
   if (service) {
@@ -304,6 +332,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     deployments = concat(...steps);
   }
 
+  const tty = process.stdout.isTTY;
   const spinnies = new Spinnies({
     failColor: 'white',
     succeedColor: 'white',
@@ -314,63 +343,113 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     (evt) => {
       switch (evt.type) {
         case IDeployEventType.BACKING_UP_YAML: {
-          spinnies.add(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Backing-up YAML')} ${chalk.magenta(
-              `[${evt.region}]`,
-            )}`,
-          });
+          if (tty) {
+            spinnies.add(evt.service.getName(), {
+              text: `Deploying ${evt.service.getName()} ${chalk.cyan('Backing-up YAML')} ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            });
+          } else {
+            console.info(`${chalk.bold(evt.service.getName())} - Backing-up YAML ${chalk.magenta(`[${evt.region}]`)}`);
+          }
           break;
         }
         case IDeployEventType.REFORMATTING_YAML: {
-          spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Reformatting YAML')} ${chalk.magenta(
-              `[${evt.region}]`,
-            )}`,
-          });
+          if (tty) {
+            spinnies.update(evt.service.getName(), {
+              text: `Deploying ${evt.service.getName()} ${chalk.cyan('Reformatting YAML')} ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - Reformatting YAML ${chalk.magenta(`[${evt.region}]`)}`,
+            );
+          }
           break;
         }
         case IDeployEventType.CREATING_CUSTOM_DOMAIN: {
-          spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating custom domain')} ${chalk.magenta(
-              `[${evt.region}]`,
-            )}`,
-          });
+          if (tty) {
+            spinnies.update(evt.service.getName(), {
+              text: `Deploying ${evt.service.getName()} ${chalk.cyan('Creating custom domain')} ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - Creating custom domain ${chalk.magenta(`[${evt.region}]`)}`,
+            );
+          }
           break;
         }
         case IDeployEventType.DEPLOYING: {
-          spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Updating CloudFormation stack')} ${chalk.magenta(
-              `[${evt.region}]`,
-            )}`,
-          });
+          if (tty) {
+            spinnies.update(evt.service.getName(), {
+              text: `Deploying ${evt.service.getName()} ${chalk.cyan('Updating CloudFormation stack')} ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - Deploying CloudFormation stack ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            );
+          }
           break;
         }
         case IDeployEventType.RESTORING_YAML: {
-          spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan('Restoring YAML')} ${chalk.magenta(
-              `[${evt.region}]`,
-            )}`,
-          });
+          if (tty) {
+            spinnies.update(evt.service.getName(), {
+              text: `Deploying ${evt.service.getName()} ${chalk.cyan('Restoring YAML')} ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            });
+          } else {
+            console.info(`${chalk.bold(evt.service.getName())} - Restoring YAML ${chalk.magenta(`[${evt.region}]`)}`);
+          }
           break;
         }
         case IDeployEventType.CREATING_RECORDS: {
-          spinnies.update(evt.service.getName(), {
-            text: `Deploying ${evt.service.getName()} ${chalk.cyan(
-              'Creating latency-based DNS records',
-            )} ${chalk.magenta(`[${evt.region}]`)}`,
-          });
+          if (tty) {
+            spinnies.update(evt.service.getName(), {
+              text: `Deploying ${evt.service.getName()} ${chalk.cyan(
+                'Creating latency-based DNS records',
+              )} ${chalk.magenta(`[${evt.region}]`)}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - Creating latency-based DNS records ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            );
+          }
           break;
         }
         case IDeployEventType.SUCCESS: {
-          spinnies.succeed(evt.service.getName(), {
-            text: `Successfully deployed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
-          });
+          if (tty) {
+            spinnies.succeed(evt.service.getName(), {
+              text: `Successfully deployed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - Successfully deployed ${chalk.magenta(`[${evt.region}]`)}`,
+            );
+          }
           break;
         }
         case IDeployEventType.FAILURE: {
-          spinnies.fail(evt.service.getName(), {
-            text: `Failed to deploy ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
-          });
+          if (tty) {
+            spinnies.fail(evt.service.getName(), {
+              text: `Failed to deploy ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+            });
+          } else {
+            console.info(
+              `${chalk.bold(evt.service.getName())} - ${chalk.bgRed('Failed to deploy !')} ${chalk.magenta(
+                `[${evt.region}]`,
+              )}`,
+            );
+          }
           break;
         }
       }
@@ -413,6 +492,18 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       }
       console.info(`Successfully deployed to ${cmd.E} :rocket:`);
       process.exit(0);
+
+      /*
+            console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
+      console.info(`Successfully removed ${toRemove.length - failures.size}/${toRemove.length} services`);
+      console.info(`Error occurred when removing ${failures.size} services\n`);
+      if (failures.size) {
+        console.error(chalk.red('Process exited with errors'));
+        process.exit(1);
+      }
+      console.error(chalk.green('Process exited without errors'));
+      process.exit(0);
+       */
     },
   );
 };
