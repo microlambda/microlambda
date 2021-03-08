@@ -1,0 +1,16 @@
+{
+  "testEnvironment": "node",
+  "roots": ["<rootDir>/src"],
+  "transform": {
+    "^.+\\.tsx?$": "ts-jest"
+  },
+  "maxConcurrency": 5,
+  "testRegex": ".+\\.(test|spec)\\.tsx?$",
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+  "moduleNameMapper": {
+    "@/(.*)": "<rootDir>/src/$1"
+  },
+  "collectCoverage": true,
+  "collectCoverageFrom": ["src/**/*.ts"],
+  "verbose": true
+}

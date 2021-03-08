@@ -12,19 +12,7 @@ export interface ServerlessInstance {
       };
     };
     custom: {
-      customDomain: {
-        domainName: string;
-        basePath: string | undefined;
-        stage: string | undefined;
-        certificateName: string | undefined;
-        certificateArn: string | undefined;
-        createRoute53Record: boolean | undefined;
-        endpointType: string | undefined;
-        hostedZoneId: string | undefined;
-        hostedZonePrivate: boolean | undefined;
-        enabled: boolean | string | undefined;
-        securityPolicy: string | undefined;
-      };
+      [key: string]: unknown;
     };
   };
   providers: {
@@ -39,8 +27,11 @@ export interface ServerlessInstance {
         };
       };
       getCredentials(): unknown;
-      getRegion(): unknown;
+      getRegion(): string;
     };
+  };
+  pluginManager: {
+    spawn: (plugin: string) => Promise<void>;
   };
   cli: {
     log(...args: unknown[]): unknown;
