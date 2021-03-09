@@ -121,7 +121,7 @@ export const start = async (
   logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   graph.getServices().forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));
-    service.slsLogs$.subscribe((log) => io.handleServiceLog(service.getName(), log));
+    service.logs$.start.subscribe((log) => io.handleServiceLog(service.getName(), log));
   });
   graph.getNodes().forEach((node) => {
     node.tscLogs$.subscribe((log) => io.handleTscLogs(node.getName(), log));

@@ -37,7 +37,7 @@ export const startServer = (
       enabled: n.isEnabled(),
       transpiled: n.getTranspilingStatus(),
       typeChecked: n.getTypeCheckStatus(),
-      status: n.isService() ? (n as Service).getStatus() : null,
+      status: n.isService() ? (n as Service).status : null,
       children: n.getChildren().map((n) => n.getName()),
       metrics: {
         lastTypeCheck: n.metrics.lastTypeCheck ? n.metrics.lastTypeCheck.toISOString() : null,

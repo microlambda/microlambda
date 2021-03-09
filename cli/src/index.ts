@@ -152,6 +152,7 @@ program
     'the service you want to remove. If no specified all services will be removed.',
     null,
   )
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')

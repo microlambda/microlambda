@@ -1,8 +1,8 @@
 import { BehaviorSubject, concat, from, merge, Observable, Subject } from 'rxjs';
 import { concatAll, debounceTime, filter, mergeAll, mergeMap, takeUntil } from 'rxjs/operators';
 import { ILogger, Logger } from './logger';
-import { getDefaultThreads } from './platform';
-import { DependenciesGraph, IRemoveEvent, Node, Service } from './graph';
+import { getDefaultThreads, getThreads } from './platform';
+import { DependenciesGraph, IDeployEvent, Node, Service } from './graph';
 import { ServiceStatus, SchedulerStatus } from '@microlambda/types';
 
 enum RecompilationStatus {
@@ -119,7 +119,7 @@ export class RecompilationScheduler {
   }
 
   public setConcurrency(threads: number): void {
-    this._concurrency = threads;
+    this._concurrency = getThreads(threads);
   }
 
   public startOne(service: Service): Observable<IRecompilationEvent> {
@@ -134,7 +134,7 @@ export class RecompilationScheduler {
   public startAll(): Observable<IRecompilationEvent> {
     if (this._graph) {
       // Compile nodes that are not already compiled
-      const toStart = this._graph.getServices().filter((s) => s.getStatus() !== ServiceStatus.RUNNING);
+      const toStart = this._graph.getServices().filter((s) => s.status !== ServiceStatus.RUNNING);
       const roots = toStart.filter((n) => n.isRoot());
       this._compile(roots);
 
@@ -154,7 +154,7 @@ export class RecompilationScheduler {
     if (this._graph) {
       this._graph
         .getServices()
-        .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()))
+        .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.status))
         .forEach((s) => this._requestStop(s));
     }
     return this._exec();
@@ -177,7 +177,7 @@ export class RecompilationScheduler {
       // Stop all running/starting services
       const toRestart = this._graph
         .getServices()
-        .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.getStatus()));
+        .filter((s) => [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes(s.status));
       toRestart.forEach((s) => this._requestStop(s));
 
       // Recompile their dependencies tree
@@ -611,15 +611,13 @@ export class RecompilationScheduler {
         });
         const now = Date.now();
         let i = 1;
-        const isLast = i === packageJobs$.length;
-        job.service.package(isLast, job.level).subscribe(
+        job.service.package().subscribe(
           (output) => {
             this._logger.debug('Service packaged', job.service.getName());
             obs.next({
-              node: output.service,
+              node: output,
               type: RecompilationEventType.PACKAGE_SUCCESS,
               took: Date.now() - now,
-              megabytes: output.megabytes,
             });
             i++;
             return obs.complete();
@@ -854,14 +852,24 @@ export class RecompilationScheduler {
     return this._exec();
   }
 
-  remove(services: Service | Service[], stage: string): Observable<IRemoveEvent> {
+  remove(services: Service | Service[], stage: string): Observable<IDeployEvent> {
     const toRemove = Array.isArray(services) ? services : [services];
     this._logger.info(
       'Requested to remove',
       toRemove.map((s) => s.getName()),
     );
-    const removeJobs$: Array<Observable<IRemoveEvent>> = toRemove.map((s) => s.remove(stage));
+    const removeJobs$: Array<Observable<IDeployEvent>> = toRemove.map((s) => s.remove(stage));
     return from(removeJobs$).pipe(mergeAll(this._concurrency));
+  }
+
+  deploy(services: Service | Service[], stage: string): Observable<IDeployEvent> {
+    const toDeploy = Array.isArray(services) ? services : [services];
+    this._logger.info(
+      'Requested to remove',
+      toDeploy.map((s) => s.getName()),
+    );
+    const deployJobs$: Array<Observable<IDeployEvent>> = toDeploy.map((s) => s.deploy(stage));
+    return from(deployJobs$).pipe(mergeAll(this._concurrency));
   }
 }
 

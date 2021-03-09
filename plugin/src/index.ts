@@ -21,6 +21,8 @@ import {
 import { IPluginConfig } from "./config";
 import { validateConfig } from "./utils/validate-config";
 import { inspect } from "util";
+import { assign } from "./utils/assign";
+import { packageService } from "./package";
 
 const stringify = (input: unknown): string => {
   if (typeof input === "object") {
@@ -33,6 +35,7 @@ const stringify = (input: unknown): string => {
 };
 
 class ServerlessMilaOffline {
+  private static _pluginName = "Serverless Microlambda";
   public serverless: ServerlessInstance;
   public options: ServerlessOptions;
   public commands: Record<string, unknown>;
@@ -50,26 +53,26 @@ class ServerlessMilaOffline {
           `${chalk.cyan("[debug]")}  ${args
             .map((a) => stringify(a))
             .join(" ")}`,
-          "Serverless Microlambda"
+          ServerlessMilaOffline._pluginName
         );
       }
     },
     info: (...args: any[]): void => {
       this.serverless.cli.log(
         `${chalk.blue("[info]")}  ${args.map((a) => stringify(a)).join(" ")}`,
-        "Serverless Microlambda"
+        ServerlessMilaOffline._pluginName
       );
     },
     warn: (...args: any[]): void => {
       this.serverless.cli.log(
         `${chalk.yellow("[warn]")}  ${args.map((a) => stringify(a)).join(" ")}`,
-        "Serverless Microlambda"
+        ServerlessMilaOffline._pluginName
       );
     },
     error: (...args: unknown[]): void => {
       this.serverless.cli.log(
         `${chalk.red("[error]")}  ${args.map((a) => stringify(a)).join(" ")}`,
-        "Serverless Microlambda"
+        ServerlessMilaOffline._pluginName
       );
     },
   };
@@ -96,21 +99,19 @@ class ServerlessMilaOffline {
         this.serverless.cli.log("before:offline:start:init");
         await this._beforeOffline();
       },
-      "aws:common:validate": async (): Promise<void> => {
-        // Packagr v4 with memfs
-        this.serverless.cli.log("aws:common:validate");
-      },
       "before:package:createDeploymentArtifacts": async (): Promise<void> => {
-        // Packagr v4 with memfs
-        this.serverless.cli.log("before:package:createDeploymentArtifacts");
+        await this._getDependenciesGraph();
+        this._resolveCurrentService();
+        await packageService(this.serverless, this._service, this._log);
       },
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
         // Cleanup
         this.serverless.cli.log("after:package:createDeploymentArtifacts");
       },
       "before:deploy:function:packageFunction": async (): Promise<void> => {
-        // Packagr v4 with memfs
-        this.serverless.cli.log("before:deploy:function:packageFunction");
+        await this._getDependenciesGraph();
+        this._resolveCurrentService();
+        await packageService(this.serverless, this._service, this._log);
       },
       "before:deploy:deploy": async (): Promise<void> => {
         this._loadConfig();
@@ -153,29 +154,13 @@ class ServerlessMilaOffline {
     this._resolveCurrentService();
     this._resolveOutDir();
     await this._transpile();
-    this._assign(
+    assign(
       this.serverless,
       "service.custom.serverless-offline.location",
       relative(process.cwd(), this._outDir || "lib")
     );
     this._watch();
   }
-
-  private _assign = (
-    obj: { [key: string]: any },
-    path: string,
-    value: any
-  ): void => {
-    const segments = path.split(".");
-    let ref: any = obj;
-    for (const segment of segments.slice(0, segments.length - 1)) {
-      if (!ref[segment]) {
-        ref[segment] = {};
-      }
-      ref = ref[segment];
-    }
-    ref[segments[segments.length - 1]] = value;
-  };
 
   private async _getDependenciesGraph(): Promise<void> {
     const projectRoot = getProjectRoot();

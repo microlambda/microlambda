@@ -11,7 +11,7 @@ import {
 import type {
   IEventLog,
   INodeSummary,
-  IServiceLogs,
+  ServiceLogs,
   SchedulerStatus,
 } from "@microlambda/types";
 import { Debouncer } from "./utils/debouncer";
@@ -90,13 +90,12 @@ function createEventsLog(): ICreateWritable<IEventLog[]> {
   };
 }
 
-function createServiceLogs(): ICreateWritable<IServiceLogs, string> {
-  const { subscribe, set, update } = writable<IServiceLogs>({
-    offline: [],
+function createServiceLogs(): ICreateWritable<ServiceLogs, string> {
+  const { subscribe, set, update } = writable<ServiceLogs>({
+    start: [],
     deploy: [],
-    createDomain: [],
     remove: [],
-    deleteDomain: [],
+    package: [],
   });
   return {
     subscribe,
@@ -142,7 +141,7 @@ function createSchedulerStatus(): ICreateWritable<SchedulerStatus | null> {
 export const logs = createServiceLogs();
 export const schedulerStatus = createSchedulerStatus();
 export const tscLogs = createCompilationLogs();
-export const offlineLogs = derived(logs, ($logs) => $logs.offline);
+export const offlineLogs = derived(logs, ($logs) => $logs.start);
 export const eventsLog = createEventsLog();
 export const graph = createGraph();
 export const services = derived(graph, ($graph) =>
@@ -174,11 +173,10 @@ selected.subscribe((node) => {
       socket.on(service.name + ".log.added", (data: string) => {
         log.debug("Received log", data);
         logs.update((current) => ({
-          createDomain: current.createDomain,
           deploy: current.deploy,
-          offline: [...current.offline, data],
+          start: [...current.start, data],
           remove: [],
-          deleteDomain: [],
+          package: [],
         }));
       });
     });

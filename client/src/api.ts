@@ -6,7 +6,7 @@ import { env } from "./env/dev.env";
 import type {
   IEventLog,
   INodeSummary,
-  IServiceLogs,
+  ServiceLogs,
   LogLevel,
   SchedulerStatus,
 } from "@microlambda/types";
@@ -72,7 +72,7 @@ export async function stopAll(): Promise<void> {
   return _doActionOnGraph("stopAll");
 }
 
-export async function fetchServiceLogs(service: string): Promise<IServiceLogs> {
+export async function fetchServiceLogs(service: string): Promise<ServiceLogs> {
   const response = await fetch(
     `${env.apiUrl}/api/services/${encodeURIComponent(service)}/logs`
   );

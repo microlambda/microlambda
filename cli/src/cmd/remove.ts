@@ -1,13 +1,13 @@
 /* eslint-disable no-console */
 import inquirer from 'inquirer';
-import { IRemoveEvent, IRemoveEventEnum, Logger, RecompilationScheduler } from '@microlambda/core';
+import { Logger, RecompilationScheduler, IDeployEvent, Service } from '@microlambda/core';
 import chalk from 'chalk';
-import { checkEnv, getCurrentUserIAM } from './deploy';
+import { checkEnv, getCurrentUserIAM, handleNext, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
 
 export const remove = async (
-  cmd: { S: string | null; E: string | null; prompt: boolean; verbose: boolean },
+  cmd: { S: string | null; E: string | null; prompt: boolean; C: number; verbose: boolean },
   logger: Logger,
   scheduler: RecompilationScheduler,
 ): Promise<void> => {
@@ -50,116 +50,25 @@ export const remove = async (
 
   const toRemove = service ? [service] : services;
 
-  const failures: Set<IRemoveEvent> = new Set();
+  const failures: Set<IDeployEvent> = new Set();
+  const spinners = new Set<string>();
+
+  if (cmd.C) {
+    scheduler.setConcurrency(cmd.C);
+  }
 
   scheduler.remove(toRemove, String(cmd.E)).subscribe(
     (evt) => {
-      const action = (): string => {
-        switch (evt.event) {
-          case IRemoveEventEnum.DELETING_BASE_PATH_MAPPING:
-            return 'Deleting base path mapping';
-          case IRemoveEventEnum.DELETED_BASE_PATH_MAPPING:
-            return 'Base path mapping deleted';
-          case IRemoveEventEnum.ERROR_DELETING_BASE_PATH_MAPPING:
-            return 'Error deleting base path mapping';
-          case IRemoveEventEnum.DELETING_CLOUD_FORMATION_STACK:
-            return 'Deleting CloudFormation stack';
-          case IRemoveEventEnum.DELETED_CLOUD_FORMATION_STACK:
-            return 'CloudFormation stack deleted';
-          case IRemoveEventEnum.ERROR_DELETING_CLOUD_FORMATION_STACK:
-            return 'Error deleting CloudFormation stack';
-          case IRemoveEventEnum.DELETING_DNS_RECORDS:
-            return 'Deleting DNS records';
-          case IRemoveEventEnum.DELETED_DNS_RECORDS:
-            return 'DNS records deleted';
-          case IRemoveEventEnum.ERROR_DELETING_DNS_RECORDS:
-            return 'Error deleting DNS records';
-          case IRemoveEventEnum.DELETING_CUSTOM_DOMAIN:
-            return 'Deleting custom domain';
-          case IRemoveEventEnum.DELETED_CUSTOM_DOMAIN:
-            return 'Custom domain deleted';
-          case IRemoveEventEnum.ERROR_DELETING_CUSTOM_DOMAIN:
-            return 'Error deleting custom domain';
-        }
-        return 'UNKNOWN_ACTION';
-      };
-
-      const tty = process.stdout.isTTY;
-
-      switch (evt.status) {
-        case 'add':
-        case 'update':
-          if (tty) {
-            spinnies[evt.status](evt.service.getName(), {
-              text: `Removing ${evt.service.getName()} ${chalk.cyan(action())} ${chalk.magenta(`[${evt.region}]`)}`,
-            });
-          } else {
-            console.info(
-              `${chalk.bold(evt.service.getName())} - ${chalk.cyan(action())} ${chalk.magenta(`[${evt.region}]`)}`,
-            );
-          }
-          break;
-        case 'succeed':
-          if (tty) {
-            spinnies.succeed(evt.service.getName(), {
-              text: `Removed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
-            });
-          } else {
-            console.info(
-              `${chalk.bold(evt.service.getName())} - Successfully removed ${chalk.magenta(`[${evt.region}]`)}`,
-            );
-          }
-          break;
-        case 'fail':
-          failures.add(evt);
-          if (tty) {
-            spinnies.fail(evt.service.getName(), {
-              text: `Error removing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
-            });
-          } else {
-            console.info(`${chalk.bold(evt.service.getName())} - Remove failed ${chalk.magenta(`[${evt.region}]`)}`);
-          }
-      }
-      if (evt.event === IRemoveEventEnum.DELETED_CUSTOM_DOMAIN && cmd.verbose) {
-        console.log(evt.service.logs.deleteDomain.join(''));
-      }
-      if (evt.event === IRemoveEventEnum.DELETED_CLOUD_FORMATION_STACK && cmd.verbose) {
-        console.log(evt.service.logs.remove.join(''));
-      }
+      handleNext(evt, spinnies, spinners, failures, cmd.verbose, 'remove');
     },
     (err) => {
+      console.error(chalk.red('Error removing services'));
       console.error(err);
       process.exit(1);
     },
     () => {
-      if (failures.size) {
-        console.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
-      }
-      let i = 0;
-      for (const evt of failures) {
-        i++;
-        console.error(
-          chalk.bold(chalk.red(`#${i} - Failed to remove ${evt.service.getName()} in ${evt.region} region\n`)),
-        );
-        if (evt.error) {
-          console.error(chalk.bold(`#${i} - Error details:`));
-          console.error(evt.error);
-          console.log('');
-        }
-        if (evt.service.logs.remove) {
-          console.error(chalk.bold(`#${i} - Execution logs:`));
-          console.log(evt.service.logs.remove.join(''));
-          console.log('');
-        }
-      }
-      console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
-      console.info(`Successfully removed ${toRemove.length - failures.size}/${toRemove.length} services`);
-      console.info(`Error occurred when removing ${failures.size} services\n`);
-      if (failures.size) {
-        console.error(chalk.red('Process exited with errors'));
-        process.exit(1);
-      }
-      console.error(chalk.green('Process exited without errors'));
+      printReport(failures, toRemove, 'remove');
+      console.info(`Successfully remove from ${cmd.E} :boom:`);
       process.exit(0);
     },
   );

@@ -305,7 +305,7 @@ export class IPCSocketsManager {
       this._graph.getNodes().map((n) => ({
         name: n.getName(),
         compiled: n.getTranspilingStatus(),
-        status: n.isService() ? (n as Service).getStatus() : null,
+        status: n.isService() ? (n as Service).status : null,
       })),
     );
   }
