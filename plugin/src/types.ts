@@ -14,6 +14,13 @@ export interface ServerlessInstance {
     custom: {
       [key: string]: unknown;
     };
+    getAllFunctions: () => string[];
+    functions: {
+      [key: string]: {
+        name: string;
+        events: Array<{ http?: { authorizer?: Partial<IAuthorizerConfig> } }>;
+      };
+    };
   };
   providers: {
     aws: {
@@ -42,4 +49,13 @@ export interface ServerlessInstance {
 
 export interface ServerlessOptions {
   stage: string;
+}
+
+export interface IAuthorizerConfig {
+  name: string;
+  arn: string;
+  resultTtlInSeconds: number;
+  identitySource: string;
+  identityValidationExpression: string;
+  type: "token" | "request";
 }

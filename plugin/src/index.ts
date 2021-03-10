@@ -23,6 +23,7 @@ import { validateConfig } from "./utils/validate-config";
 import { inspect } from "util";
 import { assign } from "./utils/assign";
 import { packageService } from "./package";
+import { replaceAuthorizer } from "./local-authorizer/replace-authorizer";
 
 const stringify = (input: unknown): string => {
   if (typeof input === "object") {
@@ -92,17 +93,15 @@ class ServerlessMilaOffline {
         this.serverless.cli.log("after:invoke:local:invoke");
       },
       "before:offline:start": async (): Promise<void> => {
-        this.serverless.cli.log("before:offline:start");
         await this._beforeOffline();
       },
       "before:offline:start:init": async (): Promise<void> => {
-        this.serverless.cli.log("before:offline:start:init");
         await this._beforeOffline();
       },
       "before:package:createDeploymentArtifacts": async (): Promise<void> => {
         await this._getDependenciesGraph();
         this._resolveCurrentService();
-        await packageService(this.serverless, this._service, this._log);
+        // await packageService(this.serverless, this._service, this._log);
       },
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
         // Cleanup
@@ -111,10 +110,11 @@ class ServerlessMilaOffline {
       "before:deploy:function:packageFunction": async (): Promise<void> => {
         await this._getDependenciesGraph();
         this._resolveCurrentService();
-        await packageService(this.serverless, this._service, this._log);
+        // await packageService(this.serverless, this._service, this._log);
       },
       "before:deploy:deploy": async (): Promise<void> => {
         this._loadConfig();
+        replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         await createUpdateSecrets(
           region,
           this._pluginConfig?.secrets || [],
@@ -145,7 +145,9 @@ class ServerlessMilaOffline {
   }
 
   private _loadConfig(): void {
-    this._pluginConfig = validateConfig(this.serverless.service.custom);
+    this._pluginConfig = validateConfig(
+      this.serverless.service.custom.microlambda
+    );
     this._log.debug("Configuration validated", this._pluginConfig);
   }
 
