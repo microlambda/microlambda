@@ -1,7 +1,5 @@
 export * from './config/read-config';
 export * from './config/config';
-export * from './deploy/utils/create-cname-records';
-export * from './deploy/utils/generate-certificates';
 export * from './graph';
 export * from './ipc/socket';
 export * from './package/packagr';
