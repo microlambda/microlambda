@@ -1,6 +1,6 @@
 {
   "name": "serverless-microlambda",
-  "version": "0.0.5-alpha",
+  "version": "0.2.0-alpha",
   "engines": {
     "node": ">=8.0"
   },
