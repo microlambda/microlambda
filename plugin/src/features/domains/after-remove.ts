@@ -14,6 +14,8 @@ export const afterRemove = async (
     logger?.info("No custom domain configured");
     return;
   }
+  // delete DNS records
+  await deleteLatencyRecords(region, domain, logger);
   // delete custom domains
   const customDomain = await getCustomDomain(region, domain, logger);
   if (customDomain) {
@@ -22,6 +24,4 @@ export const afterRemove = async (
   } else {
     logger?.info("No custom domain to remove");
   }
-  // delete DNS records
-  await deleteLatencyRecords(region, domain, logger);
 };
