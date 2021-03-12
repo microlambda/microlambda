@@ -129,6 +129,10 @@ class ServerlessMicrolambdaPlugin {
 
   private _loadConfig(): void {
     if (!this._pluginConfig) {
+      if (!this.serverless.service.custom?.microlambda) {
+        this._pluginConfig = {};
+        return;
+      }
       this._pluginConfig = validateConfig(
         this.serverless.service.custom.microlambda
       );
