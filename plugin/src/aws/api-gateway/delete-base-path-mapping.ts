@@ -6,6 +6,7 @@ import {
 } from "@aws-sdk/client-apigatewayv2";
 import { ILogger } from "../../types";
 import { getBasePathMapping } from "./get-base-path-mapping";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const deleteBasePathMapping = async (
   region: string,
@@ -13,7 +14,7 @@ export const deleteBasePathMapping = async (
   basePath?: string,
   logger?: ILogger
 ): Promise<void> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
   const mapping = await getBasePathMapping(region, domainName, basePath);
   if (!mapping) {
     logger?.info("Base path mapping does not exists, nothing to delete");

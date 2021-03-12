@@ -6,6 +6,7 @@ import {
   UpdateApiMappingRequest,
   UpdateApiMappingResponse,
 } from "@aws-sdk/client-apigatewayv2";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const updateBasePathMapping = async (
   region: string,
@@ -16,7 +17,7 @@ export const updateBasePathMapping = async (
   stage?: string,
   logger?: ILogger
 ): Promise<UpdateApiMappingResponse> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
   const params: UpdateApiMappingRequest = {
     ApiId: apiId,
     DomainName: domainName,

@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-apigatewayv2";
 import { serviceName } from "./service-name";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const createCustomDomain = async (
   region: string,
@@ -14,7 +15,10 @@ export const createCustomDomain = async (
   certificateArn: string,
   logger?: ILogger
 ): Promise<CreateDomainNameResponse> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 1 / 30 }, logger),
+  });
   const params: CreateDomainNameRequest = {
     DomainName: domainName,
     DomainNameConfigurations: [

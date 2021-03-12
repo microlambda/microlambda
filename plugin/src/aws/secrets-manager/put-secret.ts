@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-secrets-manager";
 import { checkSecretExists } from "./check-secret-exists";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 /**
  * Create/update a secret in a specific region.
@@ -23,7 +24,10 @@ export const putSecret = async (
   options?: { description?: string; kmsKeyId?: string },
   logger?: ILogger
 ): Promise<void> => {
-  const secretManager = new SecretsManagerClient({ region, maxAttempts: 5 });
+  const secretManager = new SecretsManagerClient({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   const exists = await checkSecretExists(region, name);
   if (!exists) {
     const createParams = {

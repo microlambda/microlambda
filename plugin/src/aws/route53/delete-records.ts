@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-route-53";
 import { serviceName } from "./service-name";
 import { beforeChangeRecords } from "./before-change-records";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const deleteLatencyRecords = async (
   region: string,
@@ -29,7 +30,9 @@ export const deleteLatencyRecords = async (
     logger?.info("Latency DNS Record does not exists. Nothing to do.");
     return;
   }
-  const route53 = new Route53Client({ maxAttempts: 5 });
+  const route53 = new Route53Client({
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   const params: ChangeResourceRecordSetsRequest = {
     HostedZoneId: hostedZoneId,
     ChangeBatch: {

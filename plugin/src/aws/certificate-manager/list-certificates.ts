@@ -6,12 +6,16 @@ import {
 } from "@aws-sdk/client-acm";
 import { ILogger } from "../../types";
 import { serviceName } from "./service-name";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const listCertificates = async (
   region: string,
   logger?: ILogger
 ): Promise<CertificateSummary[]> => {
-  const certificateManager = new ACMClient({ region, maxAttempts: 5 });
+  const certificateManager = new ACMClient({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   let nextToken;
   const certificates: CertificateSummary[] = [];
   do {

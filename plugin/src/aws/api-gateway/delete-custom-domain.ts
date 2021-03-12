@@ -6,13 +6,17 @@ import {
 } from "@aws-sdk/client-apigatewayv2";
 import { ILogger } from "../../types";
 import { getCustomDomain } from "./get-custom-domain";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const deleteCustomDomain = async (
   region: string,
   domainName: string,
   logger?: ILogger
 ): Promise<void> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 1 / 30 }, logger),
+  });
   const exists = await getCustomDomain(region, domainName, logger);
   if (!exists) {
     logger?.info("Custom domain does not exists, nothing to delete");

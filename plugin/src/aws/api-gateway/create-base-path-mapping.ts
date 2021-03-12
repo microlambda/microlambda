@@ -6,6 +6,7 @@ import {
 } from "@aws-sdk/client-apigatewayv2";
 import { serviceName } from "./service-name";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const createBasePathMapping = async (
   region: string,
@@ -15,7 +16,7 @@ export const createBasePathMapping = async (
   basePath?: string,
   logger?: ILogger
 ): Promise<CreateApiMappingCommandOutput> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
   const params: CreateApiMappingRequest = {
     ApiId: apiId,
     ApiMappingKey: basePath,

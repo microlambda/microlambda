@@ -6,6 +6,7 @@ import {
   ListResourceRecordSetsCommand,
 } from "@aws-sdk/client-route-53";
 import { serviceName } from "./service-name";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const getLatencyRecord = async (
   hostedZoneId: string,
@@ -14,7 +15,9 @@ export const getLatencyRecord = async (
   region: string,
   logger?: ILogger
 ): Promise<ResourceRecordSet | undefined> => {
-  const route53 = new Route53Client({ maxAttempts: 5 });
+  const route53 = new Route53Client({
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   let nextRecordName: string | undefined;
   let nextRecordType: string | undefined;
   let isTruncated: boolean | undefined;

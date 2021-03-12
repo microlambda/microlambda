@@ -3,6 +3,7 @@ import {
   ListSecretsCommand,
 } from "@aws-sdk/client-secrets-manager";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 /**
  * Check if a secret with a given name exists in a given region
@@ -15,7 +16,10 @@ export const checkSecretExists = async (
   name: string,
   logger?: ILogger
 ): Promise<boolean> => {
-  const secretManager = new SecretsManagerClient({ region, maxAttempts: 5 });
+  const secretManager = new SecretsManagerClient({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 50 }, logger),
+  });
   let nextToken: string | undefined;
   let found = false;
   let page = 0;

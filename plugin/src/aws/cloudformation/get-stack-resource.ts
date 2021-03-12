@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-cloudformation";
 import { serviceName } from "./service-name";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const getStackResource = async (
   region: string,
@@ -12,7 +13,10 @@ export const getStackResource = async (
   stackName: string,
   logger?: ILogger
 ): Promise<DescribeStackResourceCommandOutput> => {
-  const client = new CloudFormationClient({ region, maxAttempts: 5 });
+  const client = new CloudFormationClient({
+    region,
+    maxAttempts: maxAttempts(),
+  });
   try {
     const params = {
       LogicalResourceId: logicalResourceId,

@@ -6,6 +6,7 @@ import {
   GetApiMappingsRequest,
 } from "@aws-sdk/client-apigatewayv2";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const getBasePathMapping = async (
   region: string,
@@ -13,7 +14,7 @@ export const getBasePathMapping = async (
   basePath = "",
   logger?: ILogger
 ): Promise<ApiMapping | undefined> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
   const params: GetApiMappingsRequest = {
     DomainName: domainName,
   };

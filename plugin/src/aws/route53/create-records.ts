@@ -7,6 +7,7 @@ import {
 import { serviceName } from "./service-name";
 import { beforeChangeRecords } from "./before-change-records";
 import { getLatencyRecord } from "./get-latency-record";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const createLatencyRecord = async (
   region: string,
@@ -30,7 +31,9 @@ export const createLatencyRecord = async (
     logger?.info("Latency DNS Record already exists");
     return;
   }
-  const route53 = new Route53Client({ maxAttempts: 5 });
+  const route53 = new Route53Client({
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   const params: ChangeResourceRecordSetsRequest = {
     HostedZoneId: hostedZoneId,
     ChangeBatch: {

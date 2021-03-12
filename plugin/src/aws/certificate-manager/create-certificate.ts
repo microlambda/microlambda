@@ -6,13 +6,17 @@ import {
 } from "@aws-sdk/client-acm";
 import { ILogger } from "../../types";
 import { serviceName } from "./service-name";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const createCertificate = async (
   region: string,
   targetDomain: string,
   logger?: ILogger
 ): Promise<RequestCertificateResponse> => {
-  const certificateManager = new ACMClient({ region, maxAttempts: 5 });
+  const certificateManager = new ACMClient({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   const params: RequestCertificateRequest = {
     DomainName: targetDomain,
     ValidationMethod: "DNS",

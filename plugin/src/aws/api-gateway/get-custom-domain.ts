@@ -6,13 +6,14 @@ import {
   GetDomainNameResponse,
 } from "@aws-sdk/client-apigatewayv2";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const getCustomDomain = async (
   region: string,
   domainName: string,
   logger?: ILogger
 ): Promise<GetDomainNameResponse | undefined> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: 5 });
+  const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
   const params: GetDomainNameRequest = {
     DomainName: domainName,
   };

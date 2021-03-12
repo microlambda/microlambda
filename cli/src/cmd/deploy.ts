@@ -164,6 +164,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   const spinners = new Set<string>();
 
   if (cmd.C) {
+    process.env.MILA_SERVICES_LENGTH = String(services.length);
     scheduler.setConcurrency(cmd.C);
   }
   const failures: Set<IDeployEvent> = new Set();

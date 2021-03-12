@@ -6,11 +6,14 @@ import {
   Route53Client,
 } from "@aws-sdk/client-route-53";
 import { serviceName } from "./service-name";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const listHostedZones = async (
   logger?: ILogger
 ): Promise<Array<HostedZone>> => {
-  const route53 = new Route53Client({ maxAttempts: 5 });
+  const route53 = new Route53Client({
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   let nextToken: string | undefined;
   const hostedZones: HostedZone[] = [];
   let i = 0;

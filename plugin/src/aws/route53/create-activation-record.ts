@@ -7,13 +7,16 @@ import {
 import { ResourceRecord } from "@aws-sdk/client-acm";
 import { serviceName } from "../certificate-manager/service-name";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const createActivationRecord = async (
   hostedZone: HostedZone,
   record: ResourceRecord,
   logger?: ILogger
 ): Promise<void> => {
-  const route53 = new Route53Client({ maxAttempts: 5 });
+  const route53 = new Route53Client({
+    maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
+  });
   const request: ChangeResourceRecordSetsRequest = {
     HostedZoneId: hostedZone.Id,
     ChangeBatch: {

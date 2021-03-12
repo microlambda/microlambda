@@ -6,6 +6,7 @@ import {
 import { getStackResource } from "./get-stack-resource";
 import { serviceName } from "./service-name";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 export const getNestedStackResource = async (
   region: string,
@@ -14,7 +15,10 @@ export const getNestedStackResource = async (
   logger?: ILogger
 ): Promise<StackResourceDetail | undefined> => {
   // get all stacks from the CloudFormation
-  const client = new CloudFormationClient({ region, maxAttempts: 5 });
+  const client = new CloudFormationClient({
+    region,
+    maxAttempts: maxAttempts(),
+  });
   let nextToken: string | undefined;
   let page = 0;
   let resource: StackResourceDetail | undefined;

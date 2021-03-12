@@ -3,6 +3,7 @@ import {
   SecretsManagerClient,
 } from "@aws-sdk/client-secrets-manager";
 import { ILogger } from "../../types";
+import { maxAttempts } from "../../utils/max-attempts";
 
 /**
  * Delete a secret in a given region by a given name or ARN
@@ -15,7 +16,10 @@ export const deleteSecret = async (
   name: string,
   logger?: ILogger
 ): Promise<void> => {
-  const secretManager = new SecretsManagerClient({ region, maxAttempts: 5 });
+  const secretManager = new SecretsManagerClient({
+    region,
+    maxAttempts: maxAttempts({ apiRateLimit: 50 }, logger),
+  });
   logger?.debug("DeleteSecretCommand", { SecretId: name });
   await secretManager.send(new DeleteSecretCommand({ SecretId: name }));
 };
