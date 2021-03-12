@@ -1,4 +1,8 @@
-import { deleteBasePathMapping, getBasePathMapping } from "../../aws";
+import {
+  deleteBasePathMapping,
+  getBasePathMapping,
+  getCustomDomain,
+} from "../../aws";
 import { IDomainConfig } from "../../config";
 import { ILogger } from "../../types";
 
@@ -10,6 +14,11 @@ export const beforeRemove = async (
   // delete base path mapping if exists
   if (!domain) {
     logger?.info("No custom domain configured");
+    return;
+  }
+  const domainExists = await getCustomDomain(region, domain.domainName, logger);
+  if (!domainExists) {
+    logger?.info("No related domain found. Skipping...");
     return;
   }
   const mapping = await getBasePathMapping(
