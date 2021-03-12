@@ -14,14 +14,13 @@ export const afterRemove = async (
     logger?.info("No custom domain configured");
     return;
   }
+  const domainExists = await getCustomDomain(region, domain, logger);
+  if (!domainExists) {
+    logger?.info("No related domain found. Skipping...");
+    return;
+  }
   // delete DNS records
   await deleteLatencyRecords(region, domain, logger);
   // delete custom domains
-  const customDomain = await getCustomDomain(region, domain, logger);
-  if (customDomain) {
-    logger?.info("Removing custom domain");
-    await deleteCustomDomain(region, domain, logger);
-  } else {
-    logger?.info("No custom domain to remove");
-  }
+  await deleteCustomDomain(region, domain, logger);
 };
