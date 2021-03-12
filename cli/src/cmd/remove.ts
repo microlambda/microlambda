@@ -66,8 +66,8 @@ export const remove = async (
       console.error(err);
       process.exit(1);
     },
-    () => {
-      printReport(failures, toRemove, 'remove');
+    async () => {
+      await printReport(failures, toRemove, 'remove');
       console.info(`Successfully remove from ${cmd.E} :boom:`);
       process.exit(0);
     },

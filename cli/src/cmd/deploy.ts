@@ -87,7 +87,11 @@ export const handleNext = (
   }
 };
 
-export const printReport = (failures: Set<IDeployEvent>, targets: Service[], action: 'deploy' | 'remove'): void => {
+export const printReport = async (
+  failures: Set<IDeployEvent>,
+  targets: Service[],
+  action: 'deploy' | 'remove',
+): Promise<void> => {
   if (failures.size) {
     console.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
   }
@@ -106,6 +110,8 @@ export const printReport = (failures: Set<IDeployEvent>, targets: Service[], act
       console.error(chalk.bold(`#${i} - Execution logs:`));
       console.log(evt.service.logs[action].join(''));
       console.log('');
+      // wait a bit otherwise console do not have time to print message
+      await new Promise<void>((resolve) => setTimeout(() => resolve(), 300));
     }
   }
   console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
@@ -171,8 +177,8 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       console.error(err);
       process.exit(1);
     },
-    () => {
-      printReport(failures, services, 'deploy');
+    async () => {
+      await printReport(failures, services, 'deploy');
       console.info(`Successfully deployed to ${cmd.E} :rocket:`);
       process.exit(0);
     },
