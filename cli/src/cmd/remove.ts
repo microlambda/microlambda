@@ -2,15 +2,11 @@
 import inquirer from 'inquirer';
 import { Logger, RecompilationScheduler, IDeployEvent, Service } from '@microlambda/core';
 import chalk from 'chalk';
-import { checkEnv, getCurrentUserIAM, handleNext, printReport } from './deploy';
+import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
 
-export const remove = async (
-  cmd: { S: string | null; E: string | null; prompt: boolean; C: number; verbose: boolean },
-  logger: Logger,
-  scheduler: RecompilationScheduler,
-): Promise<void> => {
+export const remove = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
   console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
   const { config, graph } = await init(logger, scheduler, 3000);
   checkEnv(config, cmd, 'You must provide a target stage to remove services');
@@ -26,6 +22,11 @@ export const remove = async (
   console.info('Stage:', cmd.E);
   console.info('Services:', cmd.S != null ? cmd.S : 'all');
   console.info('As:', currentIAM);
+
+  if (cmd.onlyPrompt) {
+    process.exit(0);
+  }
+
   if (cmd.prompt) {
     const confirm = await inquirer.prompt([
       {

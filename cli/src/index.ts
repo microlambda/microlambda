@@ -139,6 +139,7 @@ program
   .option('-s <service>, --service <service>', 'the service you want to deploy', null)
   .option('-e <stage>, --stage <stage>', 'target stage for deployment', null)
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
   .action(async (cmd) => {
     await deploy(cmd, logger, scheduler);
@@ -154,6 +155,7 @@ program
   )
   .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')
   .action(async (cmd) => {

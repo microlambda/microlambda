@@ -6,10 +6,11 @@ import { prompt } from 'inquirer';
 import { ConfigReader, RecompilationScheduler, Logger, Service, getAccountIAM, IConfig } from '@microlambda/core';
 import { IDeployEvent } from '@microlambda/core/lib';
 
-interface IDeployCmd extends IPackageCmd {
+export interface IDeployCmd extends IPackageCmd {
   E: string;
   prompt: boolean;
   verbose: boolean;
+  onlyPrompt: boolean;
 }
 
 export const checkEnv = (config: IConfig, cmd: { E: string | null }, msg: string): void => {
@@ -136,6 +137,10 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   console.info('Stage:', cmd.E);
   console.info('Services:', cmd.S != null ? cmd.S : 'all');
   console.info('As:', currentIAM);
+
+  if (cmd.onlyPrompt) {
+    process.exit(0);
+  }
 
   if (cmd.prompt) {
     const answers = await prompt([
