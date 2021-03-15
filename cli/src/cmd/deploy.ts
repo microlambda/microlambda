@@ -48,26 +48,27 @@ export const handleNext = (
     }
     return alreadyExists;
   };
+  const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
   const tty = process.stdout.isTTY;
   const capitalize = (input: string): string => input.slice(0, 1).toUpperCase() + input.slice(1);
   switch (evt.type) {
     case 'started':
       if (tty) {
         spinnies[hasSpinner(evt.service) ? 'update' : 'add'](evt.service.getName(), {
-          text: `${capitalize(action)}ing ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+          text: `${capitalize(actionVerbBase)}ing ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
-        console.info(`${chalk.bold(evt.service.getName())} ${action}ing ${chalk.magenta(`[${evt.region}]`)}`);
+        console.info(`${chalk.bold(evt.service.getName())} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
       }
       break;
     case 'succeeded':
       if (tty) {
         spinnies.succeed(evt.service.getName(), {
-          text: `${capitalize(action)}ed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+          text: `${capitalize(actionVerbBase)}ed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
         console.info(
-          `${chalk.bold(evt.service.getName())} - Successfully ${action}ed ${chalk.magenta(`[${evt.region}]`)}`,
+          `${chalk.bold(evt.service.getName())} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.region}]`)}`,
         );
       }
       break;
@@ -75,7 +76,7 @@ export const handleNext = (
       failures.add(evt);
       if (tty) {
         spinnies.fail(evt.service.getName(), {
-          text: `Error ${action}ing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
+          text: `Error ${actionVerbBase}ing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
         console.info(
@@ -96,6 +97,7 @@ export const printReport = async (
   if (failures.size) {
     console.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
   }
+  const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
   let i = 0;
   for (const evt of failures) {
     i++;
@@ -116,8 +118,8 @@ export const printReport = async (
     }
   }
   console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
-  console.info(`Successfully ${action}ed ${targets.length - failures.size}/${targets.length} services`);
-  console.info(`Error occurred when ${action}ing ${failures.size} services\n`);
+  console.info(`Successfully ${actionVerbBase}ed ${targets.length - failures.size}/${targets.length} services`);
+  console.info(`Error occurred when ${actionVerbBase}ing ${failures.size} services\n`);
   if (failures.size) {
     console.error(chalk.red('Process exited with errors'));
     process.exit(1);
