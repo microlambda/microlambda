@@ -20,7 +20,10 @@ export interface ServerlessInstance {
     functions: {
       [key: string]: {
         name: string;
-        events: Array<{ http?: { authorizer?: Partial<IAuthorizerConfig> } }>;
+        events: Array<{
+          http?: { authorizer?: Partial<IAuthorizerConfig> };
+          websocket?: { authorizer?: Partial<IAuthorizerConfig> };
+        }>;
       };
     };
   };
