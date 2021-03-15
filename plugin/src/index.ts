@@ -150,6 +150,9 @@ class ServerlessMicrolambdaPlugin {
       this._log.info(
         `Dependencies graph resolved: ${this._graph.getNodes().length} nodes`
       );
+      process.env.MILA_SERVICES_LENGTH = this._graph
+        .getServices()
+        .length.toString();
     }
   }
 

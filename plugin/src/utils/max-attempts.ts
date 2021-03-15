@@ -1,6 +1,7 @@
 import { ILogger } from "../types";
 
 const DEFAULT_ATTEMPTS = 10;
+const DEFAULT_CONCURRENCY = 100;
 
 /**
  * Choose the correct number of attempts according to Amazon API quotas
@@ -27,17 +28,15 @@ export const maxAttempts = (
   if (!options) {
     return DEFAULT_ATTEMPTS;
   }
-  const nbActions =
-    options.nbActions ||
-    (process.env.MILA_SERVICES_LENGTH &&
-      Number.isInteger(Number(process.env.MILA_SERVICES_LENGTH)))
-      ? Number(process.env.MILA_SERVICES_LENGTH)
-      : 100;
+  const nbServices = Number.isInteger(Number(process.env.MILA_SERVICE_LENGTH))
+    ? Number(process.env.MILA_SERVICE_LENGTH)
+    : DEFAULT_CONCURRENCY;
+  const nbActions = options.nbActions ? options.nbActions : nbServices;
   const secondsRequired = Math.round(nbActions / options.apiRateLimit);
   const iterationsRequired = 10 + secondsRequired / 20;
   const result = Math.floor(1.2 * iterationsRequired);
   logger?.debug(
-    `Requested to perform ${nbActions} with an API limit rate of ${options.apiRateLimit}req/s. Max attempts has been set to ${result}`
+    `Should be able to perform ${nbActions} with an API limit rate of ${options.apiRateLimit}req/s. Max attempts has been set to ${result}`
   );
   return result;
 };

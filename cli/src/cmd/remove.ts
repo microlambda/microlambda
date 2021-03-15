@@ -57,7 +57,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   if (cmd.C) {
     scheduler.setConcurrency(cmd.C);
   }
-  process.env.MILA_SERVICES_LENGTH = String(toRemove.length);
+
   scheduler.remove(toRemove, String(cmd.E)).subscribe(
     (evt) => {
       handleNext(evt, spinnies, spinners, failures, cmd.verbose, 'remove');
