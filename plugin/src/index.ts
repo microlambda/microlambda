@@ -63,19 +63,20 @@ class ServerlessMicrolambdaPlugin {
       "before:offline:start:init": this._plugHook(async () =>
         beforeOffline(this.serverless, this._service, this._log)
       ),
-      "before:package:createDeploymentArtifacts": this._plugHook(async () =>
-        packageService(this.serverless, this._service, this._log)
-      ),
+      "before:package:createDeploymentArtifacts": this._plugHook(async () => {
+        replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
+        await packageService(this.serverless, this._service, this._log);
+      }),
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
         // Cleanup
         this.serverless.cli.log("after:package:createDeploymentArtifacts");
       },
-      "before:deploy:function:packageFunction": this._plugHook(async () =>
-        packageService(this.serverless, this._service, this._log)
-      ),
+      "before:deploy:function:packageFunction": this._plugHook(async () => {
+        replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
+        await packageService(this.serverless, this._service, this._log);
+      }),
       "before:deploy:deploy": this._plugHook(
         async (): Promise<void> => {
-          replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
           await createUpdateSecrets(
             region,
             this._pluginConfig?.secrets || [],
