@@ -44,10 +44,13 @@ class ServerlessMicrolambdaPlugin {
     );
     this.commands = {};
     const region = this.serverless.providers.aws.getRegion();
+    this._log.info("Region resolved", region);
     const stage = this.serverless.service.provider.stage;
+    this._log.info("Stage resolved", stage);
     const stackName =
       this.serverless.service.provider.stackName ||
       `${this.serverless.service.service}-${stage}`;
+    this._log.info("Stack name resolved", stackName);
     // Check that valid microlambda service
     // Validate configuration
     this.hooks = {
@@ -102,8 +105,8 @@ class ServerlessMicrolambdaPlugin {
             this.serverless.service.service,
             this._log
           );
-          const customBucket = this.serverless.service.provider.deploymentBucket
-            ?.name;
+          const customBucket = this.serverless.service.provider
+            .deploymentBucket;
           if (customBucket) {
             this._log.debug(
               "Uploading code in bucket",

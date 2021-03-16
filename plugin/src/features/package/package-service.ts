@@ -18,15 +18,18 @@ export const packageService = (
   if (!service) {
     throw new Error("Assertion failed: service not resolved");
   }
-  const isPackaging = existsSync(
-    join(service.getLocation(), ".package", "tmp")
-  );
+
   const bundleLocation = join(service.getLocation(), ".package", "bundle.zip");
   const bundleMetadataLocation = join(
     service.getLocation(),
     ".package",
     "bundle-metadata.json"
   );
+  const isPackaging = existsSync(
+    join(service.getLocation(), ".package", "tmp")
+  );
+  const isPackaged = existsSync(bundleLocation);
+
   const setArtifact = (): void => {
     assign(serverless, "service.package.artifact", bundleLocation);
   };
@@ -39,7 +42,12 @@ export const packageService = (
       logger?.error("[package] Packaging timed out");
       return reject();
     }, FIVE_MINUTES);
-    if (isPackaging) {
+    if (isPackaged) {
+      logger?.info("[package] Already packaged. Using existing bundle.zip");
+      setArtifact();
+      clearTimeout(timeoutCatcher);
+      return resolve();
+    } else if (isPackaging) {
       logger?.info("[package] A packaging process is already running");
       logger?.debug(
         "[package] Watching",
