@@ -250,6 +250,7 @@ export class Service extends Node {
           });
       }
       Promise.all(processed).finally(() => {
+        this._logsStreams[action === 'Deploying' ? 'deploy' : 'remove'].close();
         obs.complete();
       });
     });
@@ -364,7 +365,15 @@ export class Service extends Node {
   }
 
   private _handleLogs(data: Buffer, action: ServerlessAction, region?: string): void {
-    const prefixedLog = region ? `[${region}] ` + data.toString() : data.toString();
+    const getPrefix = (region?: string): string => {
+      if (!region) {
+        return '';
+      }
+      const prefixLength = '[ap-southeast-2]'.length;
+      const prefix = `[${region}]`.substr(0, prefixLength);
+      return chalk.grey(prefix + ' '.repeat(prefixLength - prefix.length) + ' ');
+    };
+    const prefixedLog = getPrefix(region) + data.toString();
     if (this._logsStreams[action]) {
       this._logsStreams[action].write(prefixedLog);
     } else {
@@ -435,7 +444,7 @@ export class Service extends Node {
   ): Promise<string[]> {
     return new Promise<Array<string>>((resolve, reject) => {
       const { cmd, args } = this._getCommand(action);
-      const deployProcess = spawn(cmd, args, {
+      const cmdProcess = spawn(cmd, args, {
         cwd: this.location,
         env: {
           ...process.env,
@@ -444,21 +453,25 @@ export class Service extends Node {
         },
         stdio: 'pipe',
       });
-      deployProcess.stderr.on('data', (data) => {
+      cmdProcess.stderr.on('data', (data) => {
         this._handleLogs(data, action, region);
       });
-      deployProcess.stdout.on('data', (data) => {
+      cmdProcess.stdout.on('data', (data) => {
         this._handleLogs(data, action, region);
       });
-      deployProcess.on('close', (code) => {
-        this._logsStreams[action].close();
+      cmdProcess.on('close', (code) => {
+        if (!region) {
+          this._logsStreams[action].close();
+        }
         if (code !== 0) {
           return reject(`Process exited with status ${code}`);
         }
         return resolve(this._logs[action]);
       });
-      deployProcess.on('error', (err) => {
-        this._logsStreams[action].close();
+      cmdProcess.on('error', (err) => {
+        if (!region) {
+          this._logsStreams[action].close();
+        }
         return reject(err);
       });
     });
