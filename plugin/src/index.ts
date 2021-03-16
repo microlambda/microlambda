@@ -52,31 +52,45 @@ class ServerlessMicrolambdaPlugin {
     // Validate configuration
     this.hooks = {
       "before:invoke:local:invoke": async (): Promise<void> => {
-        this.serverless.cli.log("before:invoke:local:invoke");
+        this._log.debug("Hook triggered", "before:invoke:local:invoke");
       },
       "after:invoke:local:invoke": async (): Promise<void> => {
-        this.serverless.cli.log("after:invoke:local:invoke");
+        this._log.debug("Hook triggered", "after:invoke:local:invoke");
       },
-      "before:offline:start": this._plugHook(async () =>
-        beforeOffline(this.serverless, this._service, this._log)
-      ),
-      "before:offline:start:init": this._plugHook(async () =>
-        beforeOffline(this.serverless, this._service, this._log)
-      ),
+      "before:offline:start": this._plugHook(async () => {
+        this._log.debug("Hook triggered", "before:offline:start");
+        await beforeOffline(this.serverless, this._service, this._log);
+      }),
+      "before:offline:start:init": this._plugHook(async () => {
+        this._log.debug("Hook triggered", "before:offline:start:init");
+        await beforeOffline(this.serverless, this._service, this._log);
+      }),
       "before:package:createDeploymentArtifacts": this._plugHook(async () => {
+        this._log.debug(
+          "Hook triggered",
+          "before:package:createDeploymentArtifacts"
+        );
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         await packageService(this.serverless, this._service, this._log);
       }),
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
         // Cleanup
-        this.serverless.cli.log("after:package:createDeploymentArtifacts");
+        this._log.debug(
+          "Hook triggered",
+          "after:package:createDeploymentArtifacts"
+        );
       },
       "before:deploy:function:packageFunction": this._plugHook(async () => {
+        this._log.debug(
+          "Hook triggered",
+          "before:deploy:function:packageFunction"
+        );
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         await packageService(this.serverless, this._service, this._log);
       }),
       "before:deploy:deploy": this._plugHook(
         async (): Promise<void> => {
+          this._log.debug("Hook triggered", "before:deploy:deploy");
           await createUpdateSecrets(
             region,
             this._pluginConfig?.secrets || [],
@@ -90,16 +104,18 @@ class ServerlessMicrolambdaPlugin {
           );
         }
       ),
-      "after:deploy:deploy": this._plugHook(async () =>
-        afterDeploy(
+      "after:deploy:deploy": this._plugHook(async () => {
+        this._log.debug("Hook triggered", "after:deploy:deploy");
+        await afterDeploy(
           region,
           stackName,
           stage,
           this._pluginConfig?.domain,
           this._log
-        )
-      ),
+        );
+      }),
       "before:remove:remove": this._plugHook(async () => {
+        this._log.debug("Hook triggered", "before:remove:remove");
         this._loadConfig();
         await deleteSecrets(
           region,
@@ -108,9 +124,14 @@ class ServerlessMicrolambdaPlugin {
         );
         await beforeRemove(region, this._pluginConfig?.domain, this._log);
       }),
-      "after:remove:remove": this._plugHook(async () =>
-        afterRemove(region, this._pluginConfig?.domain?.domainName, this._log)
-      ),
+      "after:remove:remove": this._plugHook(async () => {
+        this._log.debug("Hook triggered", "after:remove:remove");
+        await afterRemove(
+          region,
+          this._pluginConfig?.domain?.domainName,
+          this._log
+        );
+      }),
     };
   }
 
