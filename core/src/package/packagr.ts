@@ -4,7 +4,7 @@ import { Configuration, LightReport, Project, Workspace, Cache } from '@yarnpkg/
 import { getProjectRoot } from '../get-project-root';
 import { getName } from '../yarn/project';
 import { dirname, join, relative } from 'path';
-import { copyFile, mkdirp, pathExists, copy, remove, statSync } from 'fs-extra';
+import { copyFile, mkdirp, pathExists, copy, remove, statSync, writeJSONSync } from 'fs-extra';
 import { getTsConfig } from '../typescript';
 import { createWriteStream } from 'fs';
 import archiver from 'archiver';
@@ -42,6 +42,10 @@ export class Packager {
         now = Date.now();
         const megabytes = await this._generateZip(toPackageOriginal, level);
         obs.next({ message: 'Zip file generated', took: Date.now() - now, megabytes, overall: Date.now() - started });
+        if (!this._packagePath) {
+          throw new Error('Assertion failed: package path should have been resolved');
+        }
+        writeJSONSync(join(this._packagePath, 'bundle-metadata.json'), { megabytes, took: Date.now() - started });
       };
       pkg()
         .then(() => obs.complete())

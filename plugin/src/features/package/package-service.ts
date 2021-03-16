@@ -8,6 +8,7 @@ import { assign } from "../../utils";
 import { join, resolve as pathResolve } from "path";
 import { existsSync } from "fs";
 import { watch } from "chokidar";
+import { readJSONSync } from "fs-extra";
 
 export const packageService = (
   serverless: ServerlessInstance,
@@ -21,6 +22,11 @@ export const packageService = (
     join(service.getLocation(), ".package", "tmp")
   );
   const bundleLocation = join(service.getLocation(), ".package", "bundle.zip");
+  const bundleMetadataLocation = join(
+    service.getLocation(),
+    ".package",
+    "bundle-metadata.json"
+  );
   const setArtifact = (): void => {
     assign(serverless, "service.package.artifact", bundleLocation);
   };
@@ -29,7 +35,7 @@ export const packageService = (
     // In multi-region deployment scenario, region are deployed concurrently
     // If a deployment for a region already launched a packaging process, we wait for it to finish and resolve
     const FIVE_MINUTES = 5 * 60 * 1000;
-    setTimeout(() => {
+    const timeoutCatcher = setTimeout(() => {
       logger?.error("[package] Packaging timed out");
       return reject();
     }, FIVE_MINUTES);
@@ -41,9 +47,18 @@ export const packageService = (
       );
       const watcher = watch(join(service.getLocation(), ".package"));
       watcher.on("add", (path) => {
-        if (pathResolve(path) === pathResolve(bundleLocation)) {
+        if (pathResolve(path) === pathResolve(bundleMetadataLocation)) {
           logger?.info("[package] Bundle has been created by other process");
+          const metadata: { took: number; megabytes: number } = readJSONSync(
+            bundleMetadataLocation
+          );
+          logger?.info(
+            `[package] Zip file generated in ${(0.5 * metadata.took).toFixed(
+              2
+            )}s - ${chalk.magenta(metadata.megabytes + "MB")}`
+          );
           setArtifact();
+          clearTimeout(timeoutCatcher);
           return resolve();
         }
       });
@@ -64,10 +79,12 @@ export const packageService = (
         (err) => {
           logger?.error("Error happen during packaging process");
           logger?.error(err);
+          clearTimeout(timeoutCatcher);
           return reject(err);
         },
         () => {
           setArtifact();
+          clearTimeout(timeoutCatcher);
           return resolve();
         }
       );
