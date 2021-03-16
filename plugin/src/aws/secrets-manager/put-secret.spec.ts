@@ -16,7 +16,7 @@ describe("[function] putSecret", () => {
   });
   it("should create secret if it does not already exist", async () => {
     exists.resolves(false);
-    putRequests.resolves();
+    putRequests.resolves({ ARN: "$arn" });
     await putSecret("local", "$name", "$value");
     expect(putRequests.callCount).toBe(1);
     expect(putRequests.getCall(0).args[0]).toBeInstanceOf(CreateSecretCommand);
@@ -27,7 +27,7 @@ describe("[function] putSecret", () => {
   });
   it("should update secret if it already exist", async () => {
     exists.resolves(true);
-    putRequests.resolves();
+    putRequests.resolves({ ARN: "$arn" });
     await putSecret("local", "$name", "$value", {
       description: "this is top secret",
       kmsKeyId: "$arn",
