@@ -6,20 +6,22 @@ export const createUpdateSecrets = async (
   region: string,
   secrets: ISecretConfig[],
   logger?: ILogger
-): Promise<void> => {
+): Promise<Map<ISecretConfig, string | undefined>> => {
   let failures = 0;
   logger?.info("Creating/updating secrets", secrets);
+  const secretsArn = new Map();
   await Promise.all(
     secrets.map(async (secret) => {
       try {
         logger?.debug("Creating/updating secret", secret);
-        await putSecret(
+        const arn = await putSecret(
           region,
           secret.name,
           secret.value,
           { description: secret.description, kmsKeyId: secret.kmsKeyId },
           logger
         );
+        secretsArn.set(secret, arn);
         logger?.debug("Secret created/updated", secret);
       } catch (e) {
         failures++;
@@ -31,4 +33,5 @@ export const createUpdateSecrets = async (
   if (failures) {
     throw Error("Some secrets has not been created");
   }
+  return secretsArn;
 };

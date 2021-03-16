@@ -23,7 +23,7 @@ export const putSecret = async (
   value: string,
   options?: { description?: string; kmsKeyId?: string },
   logger?: ILogger
-): Promise<void> => {
+): Promise<string | undefined> => {
   const secretManager = new SecretsManagerClient({
     region,
     maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
@@ -40,7 +40,10 @@ export const putSecret = async (
       region,
       ...createParams,
     });
-    await secretManager.send(new CreateSecretCommand(createParams));
+    const response = await secretManager.send(
+      new CreateSecretCommand(createParams)
+    );
+    return response.ARN;
   } else {
     const updateParams = {
       SecretId: name,
@@ -52,6 +55,9 @@ export const putSecret = async (
       region,
       ...updateParams,
     });
-    await secretManager.send(new UpdateSecretCommand(updateParams));
+    const response = await secretManager.send(
+      new UpdateSecretCommand(updateParams)
+    );
+    return response.ARN;
   }
 };
