@@ -6,6 +6,7 @@ import chalk from "chalk";
 import { ILogger, ServerlessInstance } from "../../types";
 import { assign } from "../../utils";
 import { join } from "path";
+import { existsSync } from "fs";
 
 export const packageService = (
   serverless: ServerlessInstance,
@@ -15,7 +16,20 @@ export const packageService = (
   if (!service) {
     throw new Error("Assertion failed: service not resolved");
   }
+  const bundleLocation = join(service.getLocation(), ".package", "bundle.zip");
+  const setArtifact = (): void => {
+    assign(serverless, "service.package.artifact", bundleLocation);
+  };
+
   return new Promise((resolve, reject) => {
+    if (existsSync(bundleLocation)) {
+      logger?.info(
+        "[package] Using Artifact already existing @",
+        bundleLocation
+      );
+      setArtifact();
+      return resolve();
+    }
     // Find all service's internal dependencies
     const packager = new Packager();
     packager.bundle(service.getName(), 4).subscribe(
@@ -35,11 +49,7 @@ export const packageService = (
         return reject(err);
       },
       () => {
-        assign(
-          serverless,
-          "service.package.artifact",
-          join(service.getLocation(), ".package", "bundle.zip")
-        );
+        setArtifact();
         return resolve();
       }
     );

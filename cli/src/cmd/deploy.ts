@@ -5,6 +5,8 @@ import chalk from 'chalk';
 import { prompt } from 'inquirer';
 import { ConfigReader, RecompilationScheduler, Logger, Service, getAccountIAM, IConfig } from '@microlambda/core';
 import { IDeployEvent } from '@microlambda/core/lib';
+import { join } from 'path';
+import { pathExists, remove } from 'fs-extra';
 
 export interface IDeployCmd extends IPackageCmd {
   E: string;
@@ -160,6 +162,19 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
   reader.validate(graph);
 
   const services = cmd.S ? [service as Service] : graph.getServices();
+
+  // We clean here artifacts instead in plugin, so that it can be used in all regions
+  console.info('\n▼ Cleaning up\n');
+  await Promise.all(
+    services.map(async (service) => {
+      const artefactLocation = join(service.getLocation(), '.package');
+      const exists = await pathExists(artefactLocation);
+      if (exists) {
+        console.info('Cleaning artifact directory', artefactLocation);
+        await remove(artefactLocation);
+      }
+    }),
+  );
 
   console.info('\n▼ Deploying services\n');
 
