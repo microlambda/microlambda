@@ -363,14 +363,15 @@ export class Service extends Node {
     });
   }
 
-  private _handleLogs(data: Buffer, action: ServerlessAction): void {
+  private _handleLogs(data: Buffer, action: ServerlessAction, region?: string): void {
+    const prefixedLog = region ? `[${region}] ` + data.toString() : data.toString();
     if (this._logsStreams[action]) {
-      this._logsStreams[action].write(data);
+      this._logsStreams[action].write(prefixedLog);
     } else {
       this._logger?.warn('Cannot write logs file for node', this.getName());
     }
-    this._logs[action].push(data.toString());
-    this._logs$[action].next(data.toString());
+    this._logs[action].push(prefixedLog);
+    this._logs$[action].next(prefixedLog);
   }
 
   private _updateStatus(status: ServiceStatus): void {
@@ -427,7 +428,11 @@ export class Service extends Node {
     ];
   }
 
-  private async _runCommand(action: ServerlessAction, env: { [key: string]: string } = {}): Promise<string[]> {
+  private async _runCommand(
+    action: ServerlessAction,
+    env: { [key: string]: string } = {},
+    region?: string,
+  ): Promise<string[]> {
     return new Promise<Array<string>>((resolve, reject) => {
       const { cmd, args } = this._getCommand(action);
       const deployProcess = spawn(cmd, args, {
@@ -440,10 +445,10 @@ export class Service extends Node {
         stdio: 'pipe',
       });
       deployProcess.stderr.on('data', (data) => {
-        this._handleLogs(data, action);
+        this._handleLogs(data, action, region);
       });
       deployProcess.stdout.on('data', (data) => {
-        this._handleLogs(data, action);
+        this._handleLogs(data, action, region);
       });
       deployProcess.on('close', (code) => {
         this._logsStreams[action].close();
@@ -460,16 +465,24 @@ export class Service extends Node {
   }
 
   private async _deploy(region: string, stage: string): Promise<Array<string>> {
-    return this._runCommand('deploy', {
-      ENV: stage,
-      AWS_REGION: region,
-    });
+    return this._runCommand(
+      'deploy',
+      {
+        ENV: stage,
+        AWS_REGION: region,
+      },
+      region,
+    );
   }
 
   private async _remove(region: string, stage: string): Promise<string[]> {
-    return this._runCommand('remove', {
-      ENV: stage,
-      AWS_REGION: region,
-    });
+    return this._runCommand(
+      'remove',
+      {
+        ENV: stage,
+        AWS_REGION: region,
+      },
+      region,
+    );
   }
 }
