@@ -102,6 +102,16 @@ class ServerlessMicrolambdaPlugin {
             this.serverless.service.service,
             this._log
           );
+          const customBucket = this.serverless.service.provider.deploymentBucket
+            ?.name;
+          if (customBucket) {
+            this._log.debug(
+              "Uploading code in bucket",
+              customBucket,
+              "at",
+              this.serverless.service.provider.deploymentPrefix || "/"
+            );
+          }
         }
       ),
       "after:deploy:deploy": this._plugHook(async () => {

@@ -12,6 +12,8 @@ export interface ServerlessInstance {
       apiGateway: {
         restApiId: string;
       };
+      deploymentBucket: { name: string } | undefined;
+      deploymentPrefix: string | undefined;
     };
     custom: {
       [key: string]: unknown;
