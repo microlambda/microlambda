@@ -21,6 +21,17 @@ const program = new Command();
 
 program.version('0.2.3-alpha');
 
+const commandWrapper = async (fn: () => Promise<void> | void): Promise<void> => {
+  try {
+    await fn();
+    process.exit(0);
+  } catch (e) {
+    console.error(chalk.bgRedBright('Uncaught error:'));
+    console.error(e);
+    process.exit(1);
+  }
+};
+
 program
   .command('start')
   .option('-i, --interactive', 'interactively choose microservices', false)
@@ -29,21 +40,19 @@ program
   .option('-n, --no-recompile', 'avoid recompiling dependency graph before starting microservices')
   .option('-s <service>, --service <service>', 'the service for which you want to start', false)
   .description('start microlambda services')
-  .action(async (cmd) => {
-    try {
-      const options = {
-        recompile: cmd.recompile,
-        service: cmd.S,
-        port: cmd.P || 4545,
-        interactive: cmd.interactive,
-      };
-      logger.log('cmd').debug(options);
-      await start(scheduler, options, logger);
-    } catch (e) {
-      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
-      process.exit(1);
-    }
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        const options = {
+          recompile: cmd.recompile,
+          service: cmd.S,
+          port: cmd.P || 4545,
+          interactive: cmd.interactive,
+        };
+        logger.log('cmd').debug(options);
+        await start(scheduler, options, logger);
+      }),
+  );
 
 /*
 // TODO: IPC and background mode
@@ -58,26 +67,22 @@ program
 program
   .command('check-stage <stage>')
   .description('check if stage is allowed')
-  .action(async (cmd) => {
-    try {
-      await checkStage(cmd);
-    } catch (e) {
-      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
-      process.exit(1);
-    }
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await checkStage(cmd);
+      }),
+  );
 
 program
   .command('check-service <service>')
   .description('check if service is valid')
-  .action(async (cmd) => {
-    try {
-      await checkService(cmd);
-    } catch (e) {
-      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
-      process.exit(1);
-    }
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await checkService(cmd);
+      }),
+  );
 
 /*
 // TODO: IPC and background mode
@@ -107,14 +112,12 @@ program
   .option('--only-self', 'skip compiling service dependencies', false)
   .option('-s <service>, --service <service>', 'the service you want to build', false)
   .description('compile packages and services')
-  .action(async (cmd) => {
-    try {
-      await build(cmd, scheduler, logger);
-    } catch (e) {
-      console.error(`\n${chalk.bgRedBright('Fatal Error')}`, e);
-      process.exit(1);
-    }
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await build(cmd, scheduler, logger);
+      }),
+  );
 
 program
   .command('package')
@@ -124,9 +127,12 @@ program
   .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
-  .action(async (cmd) => {
-    await packagr(cmd, logger, scheduler);
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await packagr(cmd, logger, scheduler);
+      }),
+  );
 
 program
   .command('deploy')
@@ -141,9 +147,12 @@ program
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
-  .action(async (cmd) => {
-    await deploy(cmd, logger, scheduler);
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await deploy(cmd, logger, scheduler);
+      }),
+  );
 
 program
   .command('remove')
@@ -158,9 +167,12 @@ program
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')
-  .action(async (cmd) => {
-    await remove(cmd, logger, scheduler);
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await remove(cmd, logger, scheduler);
+      }),
+  );
 
 program
   .command('test')
@@ -173,11 +185,15 @@ program
   .option('--stdio <stdio>', 'whether to print or not test command stdout', 'ignore')
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
   .option('-s <service>, --service <service>', 'the service for which you want to test', null)
-  .action(async (cmd) => {
-    await runTests(cmd, scheduler, logger);
-  });
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await runTests(cmd, scheduler, logger);
+      }),
+  );
 
 /*
+
 // TODO: Generator
 program
   .command('init')
