@@ -2,7 +2,7 @@ import { BehaviorSubject, concat, from, merge, Observable, Subject } from 'rxjs'
 import { concatAll, debounceTime, filter, mergeAll, mergeMap, takeUntil } from 'rxjs/operators';
 import { ILogger, Logger } from './logger';
 import { getDefaultThreads, getThreads } from './platform';
-import { DependenciesGraph, IDeployEvent, Node, Service } from './graph';
+import { DependenciesGraph, IDeployEvent, IPackageEvent, Node, Service } from './graph';
 import { ServiceStatus, SchedulerStatus } from '@microlambda/types';
 
 enum RecompilationStatus {
@@ -29,9 +29,6 @@ export enum RecompilationEventType {
   START_IN_PROGRESS,
   START_SUCCESS,
   START_FAILURE,
-  PACKAGE_IN_PROGRESS,
-  PACKAGE_SUCCESS,
-  PACKAGE_FAILURE,
   DEPLOY_IN_PROGRESS,
   DEPLOY_SUCCESS,
   DEPLOY_FAILURE,
@@ -39,7 +36,6 @@ export enum RecompilationEventType {
 
 export enum RecompilationErrorType {
   TYPE_CHECK_ERROR,
-  PACKAGE_ERROR,
 }
 
 export enum RecompilationMode {
@@ -67,13 +63,11 @@ export class RecompilationScheduler {
     transpile: Node[];
     typeCheck: { node: Node; force: boolean; throws: boolean }[];
     start: Service[];
-    package: { service: Service; level: number }[];
   } = {
     stop: [],
     transpile: [],
     typeCheck: [],
     start: [],
-    package: [],
   };
 
   /**
@@ -367,7 +361,6 @@ export class RecompilationScheduler {
       transpile: [],
       typeCheck: [],
       start: [],
-      package: [],
     };
     this._recompilation = RecompilationStatus.READY;
     this._status = SchedulerStatus.READY;
@@ -419,16 +412,6 @@ export class RecompilationScheduler {
     }
   }
 
-  private _requestPackage(service: Service, level = 4): void {
-    this._logger.debug(`Request to add package job`, service.getName());
-    const inQueue = this._jobs.package.some((n) => n.service.getName() === service.getName());
-    this._logger.debug('Already in package queue', inQueue);
-    if (!inQueue) {
-      this._logger.debug('Adding service in package job queue', service.getName());
-      this._jobs.package.push({ service, level });
-    }
-  }
-
   private _alreadyQueued(node: Node, queue: 'transpile' | 'start' | 'stop'): boolean {
     return this._jobs[queue].some((n) => n.getName() === node.getName());
   }
@@ -477,10 +460,6 @@ export class RecompilationScheduler {
     this._logger.info(
       'To start',
       this._jobs.start.map((n) => n.getName()),
-    );
-    this._logger.info(
-      'To package',
-      this._jobs.package.map((n) => n.service.getName()),
     );
 
     const stopJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.stop.map((node) => {
@@ -598,43 +577,6 @@ export class RecompilationScheduler {
               };
               return obs.error(evt);
             }
-          },
-        );
-      });
-    });
-
-    const packageJobs$: Array<Observable<IRecompilationEvent>> = this._jobs.package.map((job) => {
-      return new Observable<IRecompilationEvent>((obs) => {
-        obs.next({
-          node: job.service,
-          type: RecompilationEventType.PACKAGE_IN_PROGRESS,
-        });
-        const now = Date.now();
-        let i = 1;
-        job.service.package().subscribe(
-          (output) => {
-            this._logger.debug('Service packaged', job.service.getName());
-            obs.next({
-              node: output,
-              type: RecompilationEventType.PACKAGE_SUCCESS,
-              took: Date.now() - now,
-            });
-            i++;
-            return obs.complete();
-          },
-          (err) => {
-            obs.next({
-              node: job.service,
-              type: RecompilationEventType.PACKAGE_FAILURE,
-              took: Date.now() - now,
-            });
-            this._logger.error('Error packaging', err);
-            const evt: IRecompilationError = {
-              type: RecompilationErrorType.PACKAGE_ERROR,
-              node: job.service,
-              logs: [err],
-            };
-            return obs.error(evt);
           },
         );
       });
@@ -772,38 +714,8 @@ export class RecompilationScheduler {
         );
     });
 
-    const package$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
-      let packaged = 0;
-      const allDone = (): void => {
-        this._logger.info('All services packaged');
-      };
-      if (packageJobs$.length === 0) {
-        allDone();
-        return obs.complete();
-      }
-      concat(packageJobs$)
-        .pipe(concatAll())
-        .subscribe(
-          (evt) => {
-            obs.next(evt);
-            if (evt.type === RecompilationEventType.PACKAGE_SUCCESS) {
-              packaged++;
-              this._logger.info(`Packaged ${packaged}/${packageJobs$.length} services`);
-              if (packaged >= packageJobs$.length) {
-                allDone();
-                return obs.complete();
-              }
-            }
-          },
-          (err) => {
-            this._logger.error('Error packaging services');
-            return obs.error(err);
-          },
-        );
-    });
-
     const recompilationProcess$: Observable<IRecompilationEvent> = new Observable<IRecompilationEvent>((obs) => {
-      concat([stop$, merge(concat(typeCheck$, package$), concat(transpile$, start$))])
+      concat([stop$, merge(typeCheck$, concat(transpile$, start$))])
         .pipe(concatAll(), takeUntil(this._abort$))
         .subscribe(
           (evt) => obs.next(evt),
@@ -842,14 +754,14 @@ export class RecompilationScheduler {
     return this._exec();
   }
 
-  packageOne(service: Service, level = 4): Observable<IRecompilationEvent> {
-    this._requestPackage(service, level);
-    return this._exec();
-  }
-
-  packageAll(graph: DependenciesGraph, level = 4): Observable<IRecompilationEvent> {
-    graph.getServices().forEach((s) => this._requestPackage(s, level));
-    return this._exec();
+  package(services: Service | Service[]): Observable<IPackageEvent> {
+    const toPackage = Array.isArray(services) ? services : [services];
+    this._logger.info(
+      'Requested to package',
+      toPackage.map((s) => s.getName()),
+    );
+    const packageJobs$: Array<Observable<IPackageEvent>> = toPackage.map((s) => s.package());
+    return from(packageJobs$).pipe(mergeAll(this._concurrency));
   }
 
   remove(services: Service | Service[], stage: string): Observable<IDeployEvent> {
@@ -876,5 +788,4 @@ export class RecompilationScheduler {
 /*
 TODO:
 - Unit tests
--  Deploy
  */

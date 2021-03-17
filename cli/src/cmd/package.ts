@@ -1,19 +1,17 @@
 /* eslint-disable no-console */
 import {
-  IRecompilationError,
-  IRecompilationEvent,
-  RecompilationEventType,
   RecompilationScheduler,
   getDefaultThreads,
   getThreads,
   Logger,
   DependenciesGraph,
-  Node,
   Service,
+  IPackageEvent,
 } from '@microlambda/core';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
+import { printReport } from './deploy';
 
 export interface IPackageCmd extends IBuildCmd {
   C: number;
@@ -25,10 +23,23 @@ export const beforePackage = async (
   cmd: IPackageCmd,
   scheduler: RecompilationScheduler,
   logger: Logger,
-): Promise<{ projectRoot: string; concurrency: number; graph: DependenciesGraph; service: Node | undefined }> => {
+): Promise<{ projectRoot: string; concurrency: number; services: Service[]; graph: DependenciesGraph }> => {
   const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
-  const { projectRoot, graph, service } = await beforeBuild(cmd, scheduler, logger);
-  const target = service ? service : graph;
+  const { projectRoot, graph } = await beforeBuild(cmd, scheduler, logger);
+  const service = cmd.S ? graph.getServices().find((s) => s.getName() === cmd.S) : undefined;
+  let services: Service[];
+  let target: Service | DependenciesGraph;
+  if (cmd.S) {
+    if (!service) {
+      console.error(chalk.red('Unknown service'), cmd.S);
+      process.exit(1);
+    }
+    services = [service];
+    target = service;
+  } else {
+    services = graph.getServices();
+    target = graph;
+  }
   if (cmd.recompile) {
     try {
       console.info('\nBuilding dependency graph\n');
@@ -37,62 +48,70 @@ export const beforePackage = async (
       process.exit(1);
     }
   }
-  return { projectRoot, concurrency, graph, service };
+  return { projectRoot, concurrency, services, graph };
 };
 
-export const packageService = (
+export const packageServices = (
   scheduler: RecompilationScheduler,
   concurrency: number,
-  target: Service | DependenciesGraph,
-): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
+  target: Array<Service>,
+): Promise<Set<IPackageEvent>> => {
+  return new Promise<Set<IPackageEvent>>((resolve, reject) => {
+    const failures: Set<IPackageEvent> = new Set();
     const spinnies = new Spinnies({
       failColor: 'white',
       succeedColor: 'white',
       spinnerColor: 'cyan',
     });
-    const onNext = (evt: IRecompilationEvent): void => {
+    const onNext = (evt: IPackageEvent): void => {
       switch (evt.type) {
-        case RecompilationEventType.PACKAGE_IN_PROGRESS: {
-          spinnies.add(evt.node.getName(), { text: `Packaging ${evt.node.getName()}` });
+        case 'started': {
+          spinnies.add(evt.service.getName(), { text: `Packaging ${evt.service.getName()}` });
           break;
         }
-        case RecompilationEventType.PACKAGE_SUCCESS: {
-          spinnies.succeed(evt.node.getName(), {
-            text: `${evt.node.getName()} packaged ${chalk.cyan(evt.megabytes + 'MB')} ${chalk.gray(evt.took + 'ms')}`,
+        case 'succeeded': {
+          spinnies.succeed(evt.service.getName(), {
+            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes + 'MB')} ${chalk.gray(
+              evt.took + 'ms',
+            )}`,
+          });
+          break;
+        }
+        case 'failed': {
+          failures.add(evt);
+          spinnies.fail(evt.service.getName(), {
+            text: `Failed to package ${evt.service.getName()}`,
           });
           break;
         }
       }
     };
-    const onError = async (evt: IRecompilationError): Promise<void> => {
-      spinnies.fail(evt.node.getName(), { text: `Error packaging ${evt.node.getName()}` });
+    const onError = async (error: unknown): Promise<void> => {
       spinnies.stopAll();
-      console.log('\n');
-      evt.logs.forEach((l) => {
-        console.info(chalk.bold(evt.node.getName()));
-        console.log(chalk.red(l));
-      });
-      return reject(evt);
+      return reject(error);
     };
     const onComplete = (): void => {
-      return resolve();
+      if (!failures.size) {
+        console.info('\nSuccessfully packaged 📦');
+      } else {
+        console.error('\nError packaging', failures.size, 'packages !');
+      }
+      return resolve(failures);
     };
     scheduler.setConcurrency(concurrency);
-    if (target instanceof Service) {
-      scheduler.packageOne(target).subscribe(onNext, onError, onComplete);
-    } else {
-      scheduler.packageAll(target).subscribe(onNext, onError, onComplete);
-    }
+    scheduler.package(target).subscribe(onNext, onError, onComplete);
   });
 };
 
 export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
   try {
-    const { concurrency, graph, service } = await beforePackage(cmd, scheduler, logger);
+    const { concurrency, services } = await beforePackage(cmd, scheduler, logger);
     console.info('\nPackaging services\n');
-    await packageService(scheduler, concurrency, cmd.S ? (service as Service) : graph);
-    console.info('\nSuccessfully packaged 📦');
+    const failures = await packageServices(scheduler, concurrency, services);
+    if (failures.size) {
+      await printReport(failures, services, 'package');
+      process.exit(1);
+    }
     process.exit(0);
   } catch (e) {
     console.error(e);

@@ -2,9 +2,9 @@ import { DependenciesGraph, Node } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../logs';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, concat, Observable, from } from 'rxjs';
 import chalk from 'chalk';
-import { concatMap, tap } from 'rxjs/operators';
+import { concatMap, mergeAll, tap } from 'rxjs/operators';
 import { getBinary } from '../external-binaries';
 import { FSWatcher, watch } from 'chokidar';
 import { RecompilationScheduler } from '../scheduler';
@@ -13,9 +13,17 @@ import { getName } from '../yarn/project';
 import { ServiceLogs, ServerlessAction, ServiceStatus, TranspilingStatus } from '@microlambda/types';
 import { IServicePortsConfig, isPortAvailable } from '../resolve-ports';
 import processTree from 'ps-tree';
-import { ConfigReader } from '../';
+import { ConfigReader, Packager } from '../';
 import { readJSONSync } from 'fs-extra';
 import { join } from 'path';
+
+export interface IPackageEvent {
+  type: 'started' | 'failed' | 'succeeded';
+  service: Service;
+  took?: number;
+  megabytes?: number;
+  error?: unknown;
+}
 
 export interface IDeployEvent {
   type: 'started' | 'failed' | 'succeeded';
@@ -210,14 +218,19 @@ export class Service extends Node {
     });
   }
 
-  package(): Observable<Service> {
-    return new Observable<Service>((obs) => {
+  package(): Observable<IPackageEvent> {
+    return new Observable<IPackageEvent>((obs) => {
+      obs.next({ type: 'started', service: this });
       this._runCommand('package')
         .then(() => {
-          obs.next(this);
-          obs.complete();
+          const metadata = Packager.readMetadata(this);
+          obs.next({ type: 'succeeded', service: this, ...metadata });
+          return obs.complete();
         })
-        .catch((err) => obs.error(err));
+        .catch((err) => {
+          obs.next({ type: 'failed', service: this, error: err });
+          return obs.complete();
+        });
     });
   }
 
@@ -230,30 +243,19 @@ export class Service extends Node {
   }
 
   private _stackUpdateRemove(action: 'Deploying' | 'Removing', stage: string): Observable<IDeployEvent> {
-    return new Observable<IDeployEvent>((obs) => {
-      this._logger?.info(action, this.name);
-      const reader = new ConfigReader();
-      const regions = reader.getRegions(this.getName(), stage);
-      this._logger?.info(`${action} ${this.name} in ${regions.length} regions`, regions);
-      const processed: Array<Promise<Array<string>>> = [];
-      for (const region of regions) {
-        this._logger?.info(action, this.name, 'in', region);
-        obs.next({ type: 'started', region, service: this });
-        const promise = action === 'Deploying' ? this._deploy(region, stage) : this._remove(region, stage);
-        processed.push(promise);
-        promise
-          .then(() => {
-            obs.next({ type: 'succeeded', region, service: this });
-          })
-          .catch((e) => {
-            obs.next({ type: 'failed', region, service: this, error: e });
-          });
-      }
-      Promise.all(processed).finally(() => {
-        this._logsStreams[action === 'Deploying' ? 'deploy' : 'remove'].close();
-        obs.complete();
-      });
-    });
+    this._logger?.info(action, this.name);
+    const reader = new ConfigReader();
+    const regions = reader.getRegions(this.getName(), stage);
+    this._logger?.info(`${action} ${this.name} in ${regions.length} regions`, regions);
+    const regionalDeployments$: Array<Observable<IDeployEvent>> = [];
+    let firstService = true;
+    for (const region of regions) {
+      this._logger?.info(action, this.name, 'in', region);
+      const regionalDeployment$ = action === 'Deploying' ? this._deploy(region, stage) : this._remove(region, stage);
+      regionalDeployments$.push(regionalDeployment$);
+      firstService = false;
+    }
+    return from(regionalDeployments$).pipe(mergeAll());
   }
 
   private _killProcessTree(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
@@ -373,11 +375,13 @@ export class Service extends Node {
       const prefix = `[${region}]`.substr(0, prefixLength);
       return chalk.grey(prefix + ' '.repeat(prefixLength - prefix.length) + ' ');
     };
-    const prefixedLog = getPrefix(region) + data.toString();
-    if (this._logsStreams[action]) {
+    const lines: string[] = data.toString().split('\n');
+    const prefixedLog = lines.map((line) => getPrefix(region) + line).join('\n');
+    try {
       this._logsStreams[action].write(prefixedLog);
-    } else {
+    } catch (e) {
       this._logger?.warn('Cannot write logs file for node', this.getName());
+      this._logger?.warn(e);
     }
     this._logs[action].push(prefixedLog);
     this._logs$[action].next(prefixedLog);
@@ -477,25 +481,47 @@ export class Service extends Node {
     });
   }
 
-  private async _deploy(region: string, stage: string): Promise<Array<string>> {
-    return this._runCommand(
-      'deploy',
-      {
-        ENV: stage,
-        AWS_REGION: region,
-      },
-      region,
-    );
+  private _deploy(region: string, stage: string): Observable<IDeployEvent> {
+    return new Observable<IDeployEvent>((obs) => {
+      obs.next({ type: 'started', service: this, region });
+      this._runCommand(
+        'deploy',
+        {
+          ENV: stage,
+          AWS_REGION: region,
+        },
+        region,
+      )
+        .then((logs) => {
+          obs.next({ type: 'succeeded', service: this, region });
+          return obs.complete();
+        })
+        .catch((e) => {
+          obs.next({ type: 'failed', service: this, region, error: e });
+          return obs.complete();
+        });
+    });
   }
 
-  private async _remove(region: string, stage: string): Promise<string[]> {
-    return this._runCommand(
-      'remove',
-      {
-        ENV: stage,
-        AWS_REGION: region,
-      },
-      region,
-    );
+  private _remove(region: string, stage: string): Observable<IDeployEvent> {
+    return new Observable<IDeployEvent>((obs) => {
+      obs.next({ type: 'started', service: this, region });
+      this._runCommand(
+        'remove',
+        {
+          ENV: stage,
+          AWS_REGION: region,
+        },
+        region,
+      )
+        .then((logs) => {
+          obs.next({ type: 'succeeded', service: this, region });
+          return obs.complete();
+        })
+        .catch((e) => {
+          obs.next({ type: 'failed', service: this, region, error: e });
+          return obs.complete();
+        });
+    });
   }
 }

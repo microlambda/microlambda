@@ -1,15 +1,16 @@
 import { convertPath, PortablePath, ppath } from '@yarnpkg/fslib/lib/path';
 import { getPluginConfiguration, openWorkspace } from '@yarnpkg/cli';
-import { Configuration, LightReport, Project, Workspace, Cache } from '@yarnpkg/core';
+import { Cache, Configuration, LightReport, Project, Workspace } from '@yarnpkg/core';
 import { getProjectRoot } from '../get-project-root';
 import { getName } from '../yarn/project';
 import { dirname, join, relative } from 'path';
-import { copyFile, mkdirp, pathExists, copy, remove, statSync, writeJSONSync } from 'fs-extra';
+import { copy, copyFile, mkdirp, pathExists, readJSONSync, remove, statSync, writeJSONSync } from 'fs-extra';
 import { getTsConfig } from '../typescript';
 import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
+import { Service } from '../graph';
 
 export class Packager {
   private readonly _projectRoot: string;
@@ -18,6 +19,14 @@ export class Packager {
 
   constructor() {
     this._projectRoot = getProjectRoot();
+  }
+
+  static readMetadata(service: Service): { took: number; megabytes: number } {
+    try {
+      return readJSONSync(join(service.getLocation(), '.package', 'bundle-metadata.json'));
+    } catch (e) {
+      return { took: 0, megabytes: 0 };
+    }
   }
 
   bundle(service: string, level = 4): Observable<IPackageEvent> {

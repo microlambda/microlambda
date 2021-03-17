@@ -1,9 +1,17 @@
 /* eslint-disable no-console */
-import { beforePackage, IPackageCmd } from './package';
+import { beforePackage, IPackageCmd, packageServices } from './package';
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import { prompt } from 'inquirer';
-import { ConfigReader, RecompilationScheduler, Logger, Service, getAccountIAM, IConfig } from '@microlambda/core';
+import {
+  ConfigReader,
+  RecompilationScheduler,
+  Logger,
+  Service,
+  getAccountIAM,
+  IConfig,
+  IPackageEvent,
+} from '@microlambda/core';
 import { IDeployEvent } from '@microlambda/core/lib';
 import { join } from 'path';
 import { pathExists, remove } from 'fs-extra';
@@ -92,20 +100,36 @@ export const handleNext = (
 };
 
 export const printReport = async (
-  failures: Set<IDeployEvent>,
+  failures: Set<IDeployEvent | IPackageEvent>,
   targets: Service[],
-  action: 'deploy' | 'remove',
+  action: 'deploy' | 'remove' | 'package',
 ): Promise<void> => {
   if (failures.size) {
     console.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
   }
-  const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
+  const getActionVerbBase = (action: 'deploy' | 'remove' | 'package'): string => {
+    switch (action) {
+      case 'remove':
+        return 'remov';
+      case 'package':
+        return 'packag';
+      default:
+        return action;
+    }
+  };
+  const actionVerbBase = getActionVerbBase(action);
   let i = 0;
   for (const evt of failures) {
     i++;
-    console.error(
-      chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.service.getName()} in ${evt.region} region\n`)),
-    );
+    const region = (evt as IDeployEvent).region;
+    if (region) {
+      console.error(
+        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.service.getName()} in ${region} region\n`)),
+      );
+    } else {
+      console.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.service.getName()}\n`)));
+    }
+
     if (evt.error) {
       console.error(chalk.bold(`#${i} - Error details:`));
       console.error(evt.error);
@@ -158,13 +182,12 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       process.exit(0);
     }
   }
-  const { graph, service } = await beforePackage(cmd, scheduler, logger);
+  const { graph, services } = await beforePackage(cmd, scheduler, logger);
   reader.validate(graph);
 
-  const services = cmd.S ? [service as Service] : graph.getServices();
+  console.info('\n▼ Packaging services\n');
 
-  // We clean here artifacts instead in plugin, so that it can be used in all regions
-  console.info('\n▼ Cleaning up\n');
+  // Cleaning artifact location
   await Promise.all(
     services.map(async (service) => {
       const artefactLocation = join(service.getLocation(), '.package');
@@ -175,6 +198,12 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       }
     }),
   );
+
+  const packageFailures = await packageServices(scheduler, cmd.C, services);
+  if (packageFailures.size) {
+    await printReport(packageFailures, services, 'package');
+    process.exit(1);
+  }
 
   console.info('\n▼ Deploying services\n');
 
