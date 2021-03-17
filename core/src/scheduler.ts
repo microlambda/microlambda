@@ -112,8 +112,10 @@ export class RecompilationScheduler {
     this._graph = graph;
   }
 
-  public setConcurrency(threads: number): void {
-    this._concurrency = getThreads(threads);
+  public setConcurrency(threads?: number): void {
+    if (threads) {
+      this._concurrency = getThreads(threads);
+    }
   }
 
   public startOne(service: Service): Observable<IRecompilationEvent> {
