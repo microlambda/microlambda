@@ -89,7 +89,7 @@ export const handleNext = (
         );
       }
   }
-  const regionalDeployLogs = evt.service.logs.deploy[evt.region];
+  const regionalDeployLogs = evt.service.logs[action][evt.region];
   if (verbose && regionalDeployLogs) {
     console.log(regionalDeployLogs.join(''));
   } else if (verbose) {
@@ -133,7 +133,7 @@ export const printReport = async (
       console.error(evt.error);
       console.log('');
     }
-    const regionalDeployLogs = evt.service.logs[action][region];
+    const regionalDeployLogs = evt.service.logs[action][region || 'default'];
     if (regionalDeployLogs) {
       console.error(chalk.bold(`#${i} - Execution logs:`));
       console.log(regionalDeployLogs.join(''));
