@@ -2,9 +2,9 @@ import { DependenciesGraph, Node } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
 import { createLogFile, getLogsPath } from '../logs';
-import { BehaviorSubject, concat, Observable, from } from 'rxjs';
+import { BehaviorSubject, concat, Observable } from 'rxjs';
 import chalk from 'chalk';
-import { concatMap, mergeAll, tap } from 'rxjs/operators';
+import { concatAll, concatMap, tap } from 'rxjs/operators';
 import { getBinary } from '../external-binaries';
 import { FSWatcher, watch } from 'chokidar';
 import { RecompilationScheduler } from '../scheduler';
@@ -251,7 +251,7 @@ export class Service extends Node {
       regionalDeployments$.push(regionalDeployment$);
       firstService = false;
     }
-    return from(regionalDeployments$).pipe(mergeAll());
+    return concat(regionalDeployments$).pipe(concatAll());
   }
 
   private _killProcessTree(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
