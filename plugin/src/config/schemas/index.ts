@@ -2,6 +2,7 @@ import joi from "joi";
 import { domainConfig } from "./domain";
 import { replaceAuthorizerConfig } from "./authorizer-replace";
 import { secretsConfig } from "./secrets";
+import { conditionsSchema } from "./conditions";
 
 export const configSchema = joi.object().keys({
   domain: domainConfig.optional(),
@@ -12,4 +13,5 @@ export const configSchema = joi.object().keys({
     )
     .optional(),
   secrets: secretsConfig.optional(),
+  conditions: conditionsSchema.optional(),
 });

@@ -22,6 +22,7 @@ import {
   packageService,
   replaceAuthorizer,
 } from "./features";
+import { applyConditions } from "./features/conditions/apply-conditions";
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -33,7 +34,6 @@ class ServerlessMicrolambdaPlugin {
   private _graph: DependenciesGraph | undefined;
   private _config: IConfig | undefined;
   private _service: Service | undefined;
-  private _outDir: string | undefined;
   private readonly _log: ILogger;
 
   constructor(serverless: ServerlessInstance) {
@@ -74,6 +74,11 @@ class ServerlessMicrolambdaPlugin {
           "before:package:createDeploymentArtifacts"
         );
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
+        applyConditions(
+          this.serverless,
+          this._pluginConfig?.conditions || [],
+          this._log
+        );
         await packageService(this.serverless, this._service, this._log);
       }),
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
@@ -89,6 +94,11 @@ class ServerlessMicrolambdaPlugin {
           "before:deploy:function:packageFunction"
         );
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
+        applyConditions(
+          this.serverless,
+          this._pluginConfig?.conditions || [],
+          this._log
+        );
         await packageService(this.serverless, this._service, this._log);
       }),
       "before:deploy:deploy": this._plugHook(
