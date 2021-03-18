@@ -121,7 +121,12 @@ export const start = async (
   logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   graph.getServices().forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));
-    service.logs$.start.subscribe((log) => io.handleServiceLog(service.getName(), log));
+    const offlineLogs$ = service.logs$.start.default;
+    if (offlineLogs$) {
+      offlineLogs$.subscribe((log) => io.handleServiceLog(service.getName(), log));
+    } else {
+      logger.log('start').error('Cannot subscribe to offline logs');
+    }
   });
   graph.getNodes().forEach((node) => {
     node.tscLogs$.subscribe((log) => io.handleTscLogs(node.getName(), log));

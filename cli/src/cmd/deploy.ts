@@ -46,34 +46,29 @@ export const getCurrentUserIAM = async (): Promise<string> => {
 export const handleNext = (
   evt: IDeployEvent,
   spinnies: Spinnies,
-  spinners: Set<string>,
   failures: Set<IDeployEvent>,
+  actions: Set<IDeployEvent>,
   verbose: boolean,
   action: 'deploy' | 'remove',
 ): void => {
-  const hasSpinner = (service: Service): boolean => {
-    const alreadyExists = spinners.has(service.getName());
-    if (!alreadyExists) {
-      spinners.add(service.getName());
-    }
-    return alreadyExists;
-  };
+  const key = (evt: IDeployEvent): string => `${evt.service.getName()}|${evt.region}`;
   const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
   const tty = process.stdout.isTTY;
   const capitalize = (input: string): string => input.slice(0, 1).toUpperCase() + input.slice(1);
   switch (evt.type) {
     case 'started':
       if (tty) {
-        spinnies[hasSpinner(evt.service) ? 'update' : 'add'](evt.service.getName(), {
+        spinnies.add(key(evt), {
           text: `${capitalize(actionVerbBase)}ing ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
         console.info(`${chalk.bold(evt.service.getName())} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
       }
+      actions.add(evt);
       break;
     case 'succeeded':
       if (tty) {
-        spinnies.succeed(evt.service.getName(), {
+        spinnies.succeed(key(evt), {
           text: `${capitalize(actionVerbBase)}ed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
@@ -85,7 +80,7 @@ export const handleNext = (
     case 'failed':
       failures.add(evt);
       if (tty) {
-        spinnies.fail(evt.service.getName(), {
+        spinnies.fail(key(evt), {
           text: `Error ${actionVerbBase}ing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
@@ -94,14 +89,17 @@ export const handleNext = (
         );
       }
   }
-  if (verbose) {
-    console.log(evt.service.logs.deploy.join(''));
+  const regionalDeployLogs = evt.service.logs.deploy[evt.region];
+  if (verbose && regionalDeployLogs) {
+    console.log(regionalDeployLogs.join(''));
+  } else if (verbose) {
+    console.warn(chalk.yellow('Cannot print deploy logs'));
   }
 };
 
 export const printReport = async (
   failures: Set<IDeployEvent | IPackageEvent>,
-  targets: Service[],
+  total: number,
   action: 'deploy' | 'remove' | 'package',
 ): Promise<void> => {
   if (failures.size) {
@@ -135,17 +133,18 @@ export const printReport = async (
       console.error(evt.error);
       console.log('');
     }
-    if (evt.service.logs.deploy) {
+    const regionalDeployLogs = evt.service.logs[action][region];
+    if (regionalDeployLogs) {
       console.error(chalk.bold(`#${i} - Execution logs:`));
-      console.log(evt.service.logs[action].join(''));
+      console.log(regionalDeployLogs.join(''));
       console.log('');
       // wait a bit otherwise console do not have time to print message
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 300));
     }
   }
   console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
-  console.info(`Successfully ${actionVerbBase}ed ${targets.length - failures.size}/${targets.length} services`);
-  console.info(`Error occurred when ${actionVerbBase}ing ${failures.size} services\n`);
+  console.info(`Successfully ${actionVerbBase}ed ${total - failures.size}/${total} stacks`);
+  console.info(`Error occurred when ${actionVerbBase}ing ${failures.size} stacks\n`);
   if (failures.size) {
     console.error(chalk.red('Process exited with errors'));
     process.exit(1);
@@ -154,84 +153,105 @@ export const printReport = async (
 };
 
 export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
-  console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
-  const reader = new ConfigReader(logger);
-  const config = reader.readConfig();
-  checkEnv(config, cmd, 'You must provide a target stage to deploy services');
-  const currentIAM = await getCurrentUserIAM();
+  return new Promise(async () => {
+    console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
+    const reader = new ConfigReader(logger);
+    const config = reader.readConfig();
+    checkEnv(config, cmd, 'You must provide a target stage to deploy services');
+    const currentIAM = await getCurrentUserIAM();
 
-  console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
-  console.info(chalk.bold('The following services will be deployed'));
-  console.info('Stage:', cmd.E);
-  console.info('Services:', cmd.S != null ? cmd.S : 'all');
-  console.info('As:', currentIAM);
+    console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
+    console.info(chalk.bold('The following services will be deployed'));
+    console.info('Stage:', cmd.E);
+    console.info('Services:', cmd.S != null ? cmd.S : 'all');
+    console.info('As:', currentIAM);
 
-  if (cmd.onlyPrompt) {
-    process.exit(0);
-  }
-
-  if (cmd.prompt) {
-    const answers = await prompt([
-      {
-        type: 'confirm',
-        name: 'ok',
-        message: 'Are you sure you want to execute this deployment',
-      },
-    ]);
-    if (!answers.ok) {
+    if (cmd.onlyPrompt) {
       process.exit(0);
     }
-  }
-  const { graph, services } = await beforePackage(cmd, scheduler, logger);
-  reader.validate(graph);
 
-  console.info('\n▼ Packaging services\n');
-
-  // Cleaning artifact location
-  await Promise.all(
-    services.map(async (service) => {
-      const artefactLocation = join(service.getLocation(), '.package');
-      const exists = await pathExists(artefactLocation);
-      if (exists) {
-        console.info('Cleaning artifact directory', artefactLocation);
-        await remove(artefactLocation);
+    if (cmd.prompt) {
+      const answers = await prompt([
+        {
+          type: 'confirm',
+          name: 'ok',
+          message: 'Are you sure you want to execute this deployment',
+        },
+      ]);
+      if (!answers.ok) {
+        process.exit(0);
       }
-    }),
-  );
+    }
+    const { graph, services } = await beforePackage(cmd, scheduler, logger);
+    reader.validate(graph);
 
-  const packageFailures = await packageServices(scheduler, cmd.C, services);
-  if (packageFailures.size) {
-    await printReport(packageFailures, services, 'package');
-    process.exit(1);
-  }
+    console.info('\n▼ Packaging services\n');
 
-  console.info('\n▼ Deploying services\n');
-
-  const spinnies = new Spinnies({
-    failColor: 'white',
-    succeedColor: 'white',
-    spinnerColor: 'cyan',
-  });
-  const spinners = new Set<string>();
-
-  if (cmd.C) {
-    scheduler.setConcurrency(cmd.C);
-  }
-  const failures: Set<IDeployEvent> = new Set();
-
-  scheduler.deploy(services, cmd.E).subscribe(
-    (evt) => {
-      handleNext(evt, spinnies, spinners, failures, cmd.verbose, 'deploy');
-    },
-    (err) => {
-      console.error(chalk.red('Error deploying services'));
-      console.error(err);
+    // TODO: Move this in core wih an option clean: boolean, so that package cmd can clean or not with option
+    // Cleaning artifact location
+    const cleaningSpinnies = new Spinnies({
+      failColor: 'white',
+      succeedColor: 'white',
+      spinnerColor: 'cyan',
+    });
+    let hasCleanErrored = false;
+    await Promise.all(
+      services.map(async (service) => {
+        const artefactLocation = join(service.getLocation(), '.package');
+        const exists = await pathExists(artefactLocation);
+        if (exists) {
+          cleaningSpinnies.add(service.getName(), {
+            text: `Cleaning artifact directory ${chalk.grey(artefactLocation)}`,
+          });
+          try {
+            await remove(artefactLocation);
+            cleaningSpinnies.succeed(service.getName());
+          } catch (e) {
+            cleaningSpinnies.fail(service.getName());
+            hasCleanErrored = true;
+          }
+        }
+      }),
+    );
+    if (hasCleanErrored) {
+      console.error(chalk.red('Error cleaning previous artifacts'));
       process.exit(1);
-    },
-    async () => {
-      await printReport(failures, services, 'deploy');
-      console.info(`Successfully deployed to ${cmd.E} :rocket:`);
-      process.exit(0);
-    },
-  );
+    }
+
+    const packageFailures = await packageServices(scheduler, cmd.C, services);
+    if (packageFailures.size) {
+      await printReport(packageFailures, services.length, 'package');
+      process.exit(1);
+    }
+
+    console.info('\n▼ Deploying services\n');
+
+    const spinnies = new Spinnies({
+      failColor: 'white',
+      succeedColor: 'white',
+      spinnerColor: 'cyan',
+    });
+
+    if (cmd.C) {
+      scheduler.setConcurrency(cmd.C);
+    }
+    const failures: Set<IDeployEvent> = new Set();
+    const actions: Set<IDeployEvent> = new Set();
+
+    scheduler.deploy(services, cmd.E).subscribe(
+      (evt) => {
+        handleNext(evt, spinnies, failures, actions, cmd.verbose, 'deploy');
+      },
+      (err) => {
+        console.error(chalk.red('Error deploying services'));
+        console.error(err);
+        process.exit(1);
+      },
+      async () => {
+        await printReport(failures, actions.size, 'deploy');
+        console.info(`Successfully deployed to ${cmd.E} :rocket:`);
+        process.exit(0);
+      },
+    );
+  });
 };

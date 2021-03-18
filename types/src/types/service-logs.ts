@@ -1,3 +1,4 @@
 import { ServerlessAction } from './serverless-action';
 
-export type ServiceLogs = Record<ServerlessAction, Array<string>>;
+export type AwsRegion = string;
+export type ServiceLogs = Record<ServerlessAction, Record<string, Array<string> | undefined>>;

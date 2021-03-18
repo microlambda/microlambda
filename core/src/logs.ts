@@ -7,10 +7,11 @@ import { ServerlessAction } from '@microlambda/types';
 
 // TODO: Move in $service/.microlambda/{logs,hashes,package}
 export const getLogsDirectory = (projectRoot: string): string => join(projectRoot, '.mila', 'logs');
-export const getLogsPath = (projectRoot: string, service: string, type: ServerlessAction): string => {
+export const getLogsPath = (projectRoot: string, service: string, type: ServerlessAction, region?: string): string => {
   const segments = service.split('/');
   const name = segments[segments.length - 1];
-  return join(getLogsDirectory(projectRoot), `${name}.${type}.log`);
+  const fieName = region ? `${name}.${type}.${region}.log` : `${name}.${type}.log`;
+  return join(getLogsDirectory(projectRoot), fieName);
 };
 
 export const recreateLogDirectory = (projectRoot: string, logger: Logger): void => {
@@ -29,8 +30,8 @@ export const recreateLogDirectory = (projectRoot: string, logger: Logger): void 
   mkdirSync(logsDirectory);
 };
 
-export const createLogFile = (projectRoot: string, service: string, type: ServerlessAction): void => {
-  const logsPath = getLogsPath(projectRoot, service, type);
+export const createLogFile = (projectRoot: string, service: string, type: ServerlessAction, region?: string): void => {
+  const logsPath = getLogsPath(projectRoot, service, type, region);
   if (!existsSync(dirname(logsPath))) {
     mkdirSync(dirname(logsPath), { recursive: true });
   }

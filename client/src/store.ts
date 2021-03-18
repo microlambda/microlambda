@@ -92,10 +92,10 @@ function createEventsLog(): ICreateWritable<IEventLog[]> {
 
 function createServiceLogs(): ICreateWritable<ServiceLogs, string> {
   const { subscribe, set, update } = writable<ServiceLogs>({
-    start: [],
-    deploy: [],
-    remove: [],
-    package: [],
+    start: { default: [] },
+    deploy: {},
+    remove: {},
+    package: { default: [] },
   });
   return {
     subscribe,
@@ -141,7 +141,7 @@ function createSchedulerStatus(): ICreateWritable<SchedulerStatus | null> {
 export const logs = createServiceLogs();
 export const schedulerStatus = createSchedulerStatus();
 export const tscLogs = createCompilationLogs();
-export const offlineLogs = derived(logs, ($logs) => $logs.start);
+export const offlineLogs = derived(logs, ($logs) => $logs.start.default);
 export const eventsLog = createEventsLog();
 export const graph = createGraph();
 export const services = derived(graph, ($graph) =>
@@ -172,12 +172,16 @@ selected.subscribe((node) => {
       log.info("Subscribing socket event", service.name + ".log.added");
       socket.on(service.name + ".log.added", (data: string) => {
         log.debug("Received log", data);
-        logs.update((current) => ({
-          deploy: current.deploy,
-          start: [...current.start, data],
-          remove: [],
-          package: [],
-        }));
+        logs.update((current) => {
+          const currentOffline = current.start.default || [];
+          const updatedLogs: ServiceLogs = {
+            deploy: current.deploy,
+            start: { default: [...currentOffline, data] },
+            remove: current.remove,
+            package: current.package,
+          };
+          return updatedLogs;
+        });
       });
     });
     if (previousService) {

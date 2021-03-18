@@ -10,7 +10,7 @@ import { FSWatcher, watch } from 'chokidar';
 import { RecompilationScheduler } from '../scheduler';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
-import { ServiceLogs, ServerlessAction, ServiceStatus, TranspilingStatus } from '@microlambda/types';
+import { ServiceLogs, ServerlessAction, ServiceStatus, TranspilingStatus, AwsRegion } from '@microlambda/types';
 import { IServicePortsConfig, isPortAvailable } from '../resolve-ports';
 import processTree from 'ps-tree';
 import { ConfigReader, Packager } from '../';
@@ -37,15 +37,15 @@ export class Service extends Node {
   private readonly _port: IServicePortsConfig;
   private _offlineProcess: ChildProcess | undefined;
   private readonly _logs: ServiceLogs;
-  private readonly _logsStreams: Record<ServerlessAction, WriteStream>;
-  private readonly _logs$: Record<ServerlessAction, BehaviorSubject<string>>;
+  private readonly _logsStreams: Record<ServerlessAction, Record<AwsRegion, WriteStream | undefined>>;
+  private readonly _logs$: Record<ServerlessAction, Record<AwsRegion, BehaviorSubject<string> | undefined>>;
 
   private readonly _status$: BehaviorSubject<ServiceStatus> = new BehaviorSubject<ServiceStatus>(ServiceStatus.STOPPED);
   private _slsYamlWatcher: FSWatcher | undefined;
   private _startedBeganAt: number | undefined;
 
   readonly status$ = this._status$.asObservable();
-  readonly logs$: Record<ServerlessAction, Observable<string>>;
+  readonly logs$: Record<ServerlessAction, Record<AwsRegion, Observable<string> | undefined>>;
 
   constructor(
     graph: DependenciesGraph,
@@ -58,32 +58,28 @@ export class Service extends Node {
     this._status = ServiceStatus.STOPPED;
     this._port = graph.getPort(getName(workspace));
     this._logs = {
-      start: [],
-      package: [],
-      deploy: [],
-      remove: [],
+      start: {},
+      package: {},
+      deploy: {},
+      remove: {},
     };
-    createLogFile(this.graph.getProjectRoot(), this.name, 'start');
-    createLogFile(this.graph.getProjectRoot(), this.name, 'package');
-    createLogFile(this.graph.getProjectRoot(), this.name, 'deploy');
-    createLogFile(this.graph.getProjectRoot(), this.name, 'remove');
     this._logsStreams = {
-      start: createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'start')),
-      package: createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'package')),
-      deploy: createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'deploy')),
-      remove: createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, 'remove')),
+      start: {},
+      package: {},
+      deploy: {},
+      remove: {},
     };
     this._logs$ = {
-      start: new BehaviorSubject<string>(''),
-      package: new BehaviorSubject<string>(''),
-      deploy: new BehaviorSubject<string>(''),
-      remove: new BehaviorSubject<string>(''),
+      start: { default: new BehaviorSubject<string>('') },
+      package: {},
+      deploy: {},
+      remove: {},
     };
     this.logs$ = {
-      start: this._logs$.start.asObservable(),
-      package: this._logs$.package.asObservable(),
-      deploy: this._logs$.deploy.asObservable(),
-      remove: this._logs$.remove.asObservable(),
+      start: { default: this._logs$.start.default?.asObservable() },
+      package: {},
+      deploy: {},
+      remove: {},
     };
   }
 
@@ -366,25 +362,40 @@ export class Service extends Node {
     });
   }
 
+  private static _getLogsRegion(region?: string): string {
+    return region || 'default';
+  }
+
   private _handleLogs(data: Buffer, action: ServerlessAction, region?: string): void {
-    const getPrefix = (region?: string): string => {
-      if (!region) {
-        return '';
-      }
-      const prefixLength = '[ap-southeast-2]'.length;
-      const prefix = `[${region}]`.substr(0, prefixLength);
-      return chalk.grey(prefix + ' '.repeat(prefixLength - prefix.length) + ' ');
-    };
-    const lines: string[] = data.toString().split('\n');
-    const prefixedLog = lines.map((line) => getPrefix(region) + line).join('\n');
+    const logsRegion = Service._getLogsRegion(region);
     try {
-      this._logsStreams[action].write(prefixedLog);
+      let stream: WriteStream;
+      const existingStream = this._logsStreams[action][logsRegion];
+      if (!existingStream) {
+        createLogFile(this.graph.getProjectRoot(), this.name, action, region);
+        stream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, action, region));
+        this._logsStreams[action][logsRegion] = stream;
+      } else {
+        stream = existingStream;
+      }
+      stream.write(data);
     } catch (e) {
       this._logger?.warn('Cannot write logs file for node', this.getName());
       this._logger?.warn(e);
     }
-    this._logs[action].push(prefixedLog);
-    this._logs$[action].next(prefixedLog);
+    const inMemoryLogs = this._logs[action][logsRegion];
+    const logsReceived$ = this._logs$[action][logsRegion];
+    if (inMemoryLogs) {
+      inMemoryLogs.push(data.toString());
+    } else {
+      this._logs[action][logsRegion] = [data.toString()];
+    }
+    if (logsReceived$) {
+      logsReceived$.next(data.toString());
+    } else {
+      this._logs$[action][logsRegion] = new BehaviorSubject<string>(data.toString());
+      this.logs$[action][logsRegion] = this._logs$[action][logsRegion]?.asObservable();
+    }
   }
 
   private _updateStatus(status: ServiceStatus): void {
@@ -448,6 +459,7 @@ export class Service extends Node {
   ): Promise<string[]> {
     return new Promise<Array<string>>((resolve, reject) => {
       const { cmd, args } = this._getCommand(action);
+      const logsRegion = Service._getLogsRegion(region);
       const cmdProcess = spawn(cmd, args, {
         cwd: this.location,
         env: {
@@ -464,18 +476,14 @@ export class Service extends Node {
         this._handleLogs(data, action, region);
       });
       cmdProcess.on('close', (code) => {
-        if (!region) {
-          this._logsStreams[action].close();
-        }
+        this._logsStreams[action][logsRegion]?.close();
         if (code !== 0) {
           return reject(`Process exited with status ${code}`);
         }
-        return resolve(this._logs[action]);
+        return resolve(this._logs[action][logsRegion] || []);
       });
       cmdProcess.on('error', (err) => {
-        if (!region) {
-          this._logsStreams[action].close();
-        }
+        this._logsStreams[action][logsRegion]?.close();
         return reject(err);
       });
     });

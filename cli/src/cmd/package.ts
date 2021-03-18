@@ -109,7 +109,7 @@ export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: Recom
     console.info('\nPackaging services\n');
     const failures = await packageServices(scheduler, concurrency, services);
     if (failures.size) {
-      await printReport(failures, services, 'package');
+      await printReport(failures, services.length, 'package');
       process.exit(1);
     }
     process.exit(0);
