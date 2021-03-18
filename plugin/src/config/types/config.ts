@@ -8,4 +8,5 @@ export interface IPluginConfig {
   domain?: IDomainConfig;
   localAuthorizer?: ILocalAuthorizerConfig[] | ILocalAuthorizerConfig;
   conditions?: Condition[];
+  transforms?: string;
 }

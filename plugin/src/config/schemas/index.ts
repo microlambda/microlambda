@@ -14,4 +14,5 @@ export const configSchema = joi.object().keys({
     .optional(),
   secrets: secretsConfig.optional(),
   conditions: conditionsSchema.optional(),
+  transforms: joi.array().items(joi.string().required()).optional(),
 });
