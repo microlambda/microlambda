@@ -86,6 +86,7 @@ program
 
 /*
 // TODO: IPC and background mode
+// See   https://stackoverflow.com/questions/12871740/how-to-detach-a-spawned-child-process-in-a-node-js-script
 program
   .command('stop')
   .option('-i, --interactive', 'interactively choose microservices', false)
