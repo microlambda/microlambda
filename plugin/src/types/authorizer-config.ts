@@ -2,7 +2,7 @@ export interface IAuthorizerConfig {
   name: string;
   arn: string;
   resultTtlInSeconds: number;
-  identitySource: string;
+  identitySource: string | string[];
   identityValidationExpression: string;
   type: "token" | "request";
 }
