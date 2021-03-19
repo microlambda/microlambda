@@ -130,81 +130,83 @@ class TestRunner {
 }
 
 export const runTests = async (cmd: ITestOptions, scheduler: RecompilationScheduler, logger: Logger): Promise<void> => {
-  const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
-  let type: 'functional' | 'unit' | undefined;
-  if (cmd.functional && cmd.unit) {
-    console.error(chalk.red('Cannot use both --unit and --functional flags'));
-    process.exit(1);
-  } else if (cmd.functional) {
-    type = 'functional';
-  } else if (cmd.unit) {
-    type = 'unit';
-  }
-  if (!['inherit', 'ignore'].includes(cmd.stdio)) {
-    console.error(chalk.red('Invalid --stdio flag', cmd.stdio));
-    console.error(chalk.red('Should be whether inherit or ignore'));
-    process.exit(1);
-  }
-  const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
-  const target = service ? service : graph;
-  if (cmd.recompile) {
-    try {
-      console.info('\nBuilding dependency graph\n');
-      await typeCheck(scheduler, target, cmd.onlySelf, false);
-    } catch (e) {
+  return new Promise(async () => {
+    const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
+    let type: 'functional' | 'unit' | undefined;
+    if (cmd.functional && cmd.unit) {
+      console.error(chalk.red('Cannot use both --unit and --functional flags'));
+      process.exit(1);
+    } else if (cmd.functional) {
+      type = 'functional';
+    } else if (cmd.unit) {
+      type = 'unit';
+    }
+    if (!['inherit', 'ignore'].includes(cmd.stdio)) {
+      console.error(chalk.red('Invalid --stdio flag', cmd.stdio));
+      console.error(chalk.red('Should be whether inherit or ignore'));
       process.exit(1);
     }
-  }
-  console.info('\nRunning tests\n');
-  const spinnies = new Spinnies({
-    failColor: 'white',
-    succeedColor: 'white',
-    spinnerColor: 'cyan',
+    const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
+    const target = service ? service : graph;
+    if (cmd.recompile) {
+      try {
+        console.info('\nBuilding dependency graph\n');
+        await typeCheck(scheduler, target, cmd.onlySelf, false);
+      } catch (e) {
+        process.exit(1);
+      }
+    }
+    console.info('\nRunning tests\n');
+    const spinnies = new Spinnies({
+      failColor: 'white',
+      succeedColor: 'white',
+      spinnerColor: 'cyan',
+    });
+    const runner = new TestRunner(service ? service : graph.getNodes(), concurrency, type);
+    const failures: Node[] = [];
+    const onNext = (evt: ITestEvent): void => {
+      switch (evt.status) {
+        case TestStatus.TESTING: {
+          spinnies.add(evt.node.getName(), { text: `[${evt.type}] Testing ${evt.node.getName()}` });
+          break;
+        }
+        case TestStatus.PASS: {
+          spinnies.succeed(evt.node.getName(), {
+            text: `${chalk.black.bgGreen(' PASS ')} [${chalk.cyan(evt.type)}] ${evt.node.getName()} ${chalk.gray(
+              evt.took + 'ms',
+            )}`,
+          });
+          break;
+        }
+        case TestStatus.SKIPPED: {
+          spinnies.succeed(evt.node.getName(), {
+            text: `${chalk.black.bgYellow(' SKIPPED ')} [${chalk.cyan(
+              evt.type,
+            )}] ${evt.node.getName()} - No script test:${evt.type} in package.json`,
+          });
+          break;
+        }
+        case TestStatus.FAIL: {
+          failures.push(evt.node);
+          spinnies.succeed(evt.node.getName(), {
+            text: `${chalk.black.bgRedBright(' FAIL ')} [${chalk.cyan(evt.type)}] ${evt.node.getName()} ${chalk.gray(
+              evt.took + 'ms',
+            )}`,
+          });
+        }
+      }
+    };
+    const onError = (evt: ITestEvent): void => {
+      spinnies.fail(evt.node.getName(), { text: `[${evt.type}]  Error testing ${evt.node.getName()}` });
+      failures.push(evt.node);
+    };
+    const onComplete = (): void => {
+      if (failures.length) {
+        failures.forEach((s) => runner.printLogs(s));
+        process.exit(1);
+      }
+      process.exit(0);
+    };
+    runner.runTests(cmd.stdio).subscribe(onNext, onError, onComplete);
   });
-  const runner = new TestRunner(service ? service : graph.getNodes(), concurrency, type);
-  const failures: Node[] = [];
-  const onNext = (evt: ITestEvent): void => {
-    switch (evt.status) {
-      case TestStatus.TESTING: {
-        spinnies.add(evt.node.getName(), { text: `[${evt.type}] Testing ${evt.node.getName()}` });
-        break;
-      }
-      case TestStatus.PASS: {
-        spinnies.succeed(evt.node.getName(), {
-          text: `${chalk.black.bgGreen(' PASS ')} [${chalk.cyan(evt.type)}] ${evt.node.getName()} ${chalk.gray(
-            evt.took + 'ms',
-          )}`,
-        });
-        break;
-      }
-      case TestStatus.SKIPPED: {
-        spinnies.succeed(evt.node.getName(), {
-          text: `${chalk.black.bgYellow(' SKIPPED ')} [${chalk.cyan(
-            evt.type,
-          )}] ${evt.node.getName()} - No script test:${evt.type} in package.json`,
-        });
-        break;
-      }
-      case TestStatus.FAIL: {
-        failures.push(evt.node);
-        spinnies.succeed(evt.node.getName(), {
-          text: `${chalk.black.bgRedBright(' FAIL ')} [${chalk.cyan(evt.type)}] ${evt.node.getName()} ${chalk.gray(
-            evt.took + 'ms',
-          )}`,
-        });
-      }
-    }
-  };
-  const onError = (evt: ITestEvent): void => {
-    spinnies.fail(evt.node.getName(), { text: `[${evt.type}]  Error testing ${evt.node.getName()}` });
-    failures.push(evt.node);
-  };
-  const onComplete = (): void => {
-    if (failures.length) {
-      failures.forEach((s) => runner.printLogs(s));
-      process.exit(1);
-    }
-    process.exit(0);
-  };
-  runner.runTests(cmd.stdio).subscribe(onNext, onError, onComplete);
 };
