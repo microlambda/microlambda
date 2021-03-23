@@ -12,6 +12,7 @@ import { compileFiles } from '../typescript';
 import { checksums, IChecksums } from '../checksums';
 import { FSWatcher, watch } from 'chokidar';
 import { Project, Workspace } from '@yarnpkg/core';
+import { npath } from '@yarnpkg/fslib';
 import { getName } from '../yarn/project';
 import { TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
 import { ILogger } from '../logger';
@@ -100,7 +101,7 @@ export abstract class Node {
     this._logger?.debug('Building node', getName(node));
     this.version = node.manifest.version;
     this.private = node.manifest.private;
-    this.location = node.cwd;
+    this.location = npath.fromPortablePath(node.cwd);
     this.nodeStatus = NodeStatus.DISABLED;
     this.transpilingStatus = TranspilingStatus.NOT_TRANSPILED;
     this.typeCheckStatus = TypeCheckStatus.NOT_CHECKED;

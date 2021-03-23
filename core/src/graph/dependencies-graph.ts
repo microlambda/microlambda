@@ -9,10 +9,12 @@ import { ILogger, Logger } from '../logger';
 import { IPCSocketsManager } from '../ipc/socket';
 import { RecompilationScheduler } from '../scheduler';
 import { Project } from '@yarnpkg/core';
+import { npath } from '@yarnpkg/fslib';
 import { getName } from '../yarn/project';
 
 export const isService = (location: string): boolean => {
-  return existsSync(join(location, 'serverless.yml')) || existsSync(join(location, 'serverless.yaml'));
+  const loc = npath.fromPortablePath(location);
+  return existsSync(join(loc, 'serverless.yml')) || existsSync(join(loc, 'serverless.yaml'));
 };
 
 export class DependenciesGraph {
@@ -48,7 +50,7 @@ export class DependenciesGraph {
     this._config = config;
     this._project = project;
     this._log?.debug('Building graph with', project);
-    this.projectRoot = project.cwd;
+    this.projectRoot = npath.fromPortablePath(project.cwd);
     const services = project.workspaces.filter((n) => isService(n.cwd));
     this.ports = resolvePorts(services, config, logger);
     const builtNodes: Set<Node> = new Set<Node>();
