@@ -21,10 +21,12 @@ const program = new Command();
 
 program.version('0.2.3-alpha');
 
-const commandWrapper = async (fn: () => Promise<void> | void): Promise<void> => {
+const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false): Promise<void> => {
   try {
     await fn();
-    process.exit(0);
+    if (!keepOpen) {
+      process.exit(0);
+    }
   } catch (e) {
     console.error(chalk.bgRedBright('Uncaught error:'));
     console.error(e);
@@ -51,7 +53,7 @@ program
         };
         logger.log('cmd').debug(options);
         await start(scheduler, options, logger);
-      }),
+      }, true),
   );
 
 /*
