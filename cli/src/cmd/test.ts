@@ -80,6 +80,7 @@ class TestRunner {
           cwd: node.getLocation(),
           env: { ...process.env, FORCE_COLOR: '2' },
           stdio: stdio === 'ignore' ? 'pipe' : 'inherit',
+          shell: process.platform === 'win32',
         });
         if (testProcess.stderr && testProcess.stdout) {
           const appendLogs = (data: Buffer): void => {

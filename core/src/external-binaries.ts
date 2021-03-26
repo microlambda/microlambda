@@ -56,18 +56,19 @@ const testBinary = (cmd: Cmd, projectRoot: string, logger: Logger): boolean => {
 
 //FIXME: Deprecated
 const installBinary = async (deps: string[], projectRoot: string): Promise<void> => {
-  const process = spawn('npm', ['i', '-D', ...deps], {
+  const ps = spawn('npm', ['i', '-D', ...deps], {
     cwd: projectRoot,
     stdio: 'inherit',
+    shell: process.platform === 'win32',
   });
   return new Promise((resolve, reject) => {
-    process.on('close', (code) => {
+    ps.on('close', (code) => {
       if (code === 0) {
         return resolve();
       }
       return reject();
     });
-    process.on('error', (err) => reject(err));
+    ps.on('error', (err) => reject(err));
   });
 };
 

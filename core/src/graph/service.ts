@@ -307,6 +307,7 @@ export class Service extends Node {
       {
         cwd: this.location,
         env: { ...process.env, FORCE_COLOR: '2' },
+        shell: process.platform === 'win32',
       },
     );
     if (this._offlineProcess.stderr) {
@@ -468,6 +469,7 @@ export class Service extends Node {
           ...env,
         },
         stdio: 'pipe',
+        shell: process.platform === 'win32',
       });
       cmdProcess.stderr.on('data', (data) => {
         this._handleLogs(data, action, region);
