@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/client",
-  "version": "0.2.22-alpha.0",
+  "version": "0.2.22-alpha.1",
   "scripts": {
     "start": "snowpack dev",
     "build": "snowpack build",
