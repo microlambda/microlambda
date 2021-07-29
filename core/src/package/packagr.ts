@@ -11,14 +11,18 @@ import archiver from 'archiver';
 import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
 import { Service } from '../graph';
+import { ILogger, Logger } from '../logger';
 
 export class Packager {
   private readonly _projectRoot: string;
   private _packagePath: string | undefined;
   private _tmpPath: string | undefined;
+  private _logger: ILogger;
 
   constructor() {
+    this._logger = new Logger().log('packagr');
     this._projectRoot = getProjectRoot();
+    this._logger.debug('Initialized packagr on project', this._projectRoot);
   }
 
   static readMetadata(service: Service): { took: number; megabytes: number } {
@@ -31,24 +35,33 @@ export class Packager {
 
   bundle(service: string, level = 4): Observable<IPackageEvent> {
     return new Observable<IPackageEvent>((obs) => {
+      this._logger.debug('Requested to package service', service, '(compression level', level, ')');
       const pkg = async (): Promise<void> => {
         const started = Date.now();
         let now = Date.now();
+        this._logger.debug('Analysing yarn workspaces...');
         const originalProject = await this._getOriginalYarnProject();
+        this._logger.debug('Found', originalProject.workspaces.length, 'workspaces');
+        this._logger.debug('Workspaces:', originalProject.workspaces.map((w) => getName(w)));
         const toPackageOriginal = originalProject.workspaces.find((w) => getName(w) === service);
         if (!toPackageOriginal) {
           throw new Error(
             `Cannot package service ${service}. This service does not exist in current project. Make sure project is initialized with yarn install`,
           );
         }
+        this._logger.debug('Creating transient project...');
         const transientProject = await this._createTransientProject(originalProject, toPackageOriginal);
+        this._logger.debug('Focusing workspace', getName(toPackageOriginal), '...');
         const dependentWorkspaces = this._focusWorkspace(transientProject, toPackageOriginal);
+        this._logger.debug('Copying compiled code of dependent workspaces');
         await this._copyCompiledFiles(originalProject, dependentWorkspaces);
         obs.next({ message: 'Transient project created', took: Date.now() - now });
         now = Date.now();
+        this._logger.debug('Running yarn install on patched transient project...')
         await this._yarnInstall(transientProject);
         obs.next({ message: 'Dependencies resolved', took: Date.now() - now });
         now = Date.now();
+        this._logger.debug('Generating zip file...');
         const megabytes = await this._generateZip(toPackageOriginal, level);
         obs.next({ message: 'Zip file generated', took: Date.now() - now, megabytes, overall: Date.now() - started });
         if (!this._packagePath) {
@@ -73,11 +86,14 @@ export class Packager {
   private async _createTransientProject(originalProject: Project, toPackage: Workspace): Promise<Project> {
     this._packagePath = join(toPackage.cwd, '.package');
     this._tmpPath = join(this._packagePath, 'tmp');
+    this._logger.debug('Creating transient project in', this._tmpPath);
     const packagePathExists = await pathExists(this._tmpPath);
     if (packagePathExists) {
+      this._logger.debug('Temporary path already exists, removing it');
       await remove(this._tmpPath);
     }
     await mkdirp(this._tmpPath);
+    this._logger.debug('Temporary directory successfully created');
     const manifests = originalProject.workspaces.map((w) => join(w.cwd, 'package.json'));
     await Promise.all(
       manifests.map(async (path) => {
@@ -87,22 +103,31 @@ export class Packager {
         if (!exists) {
           await mkdirp(targetDir);
         }
+        this._logger.debug('Copying workspaces manifests', path, '->', dest);
         await copyFile(path, dest);
       }),
     );
+    this._logger.debug('Copying yarn lock, cache and config');
+    this._logger.debug(join(this._projectRoot, '.yarnrc.yml'), '->',join(this._tmpPath, '.yarnrc.yml'));
+    this._logger.debug(join(this._projectRoot, '.yarn'), '->', join(this._tmpPath, '.yarn'));
+    this._logger.debug(join(this._projectRoot, 'yarn.lock'), '->', join(this._tmpPath, 'yarn.lock'));
     await copyFile(join(this._projectRoot, '.yarnrc.yml'), join(this._tmpPath, '.yarnrc.yml'));
     await copy(join(this._projectRoot, '.yarn'), join(this._tmpPath, '.yarn'));
     await copy(join(this._projectRoot, 'yarn.lock'), join(this._tmpPath, 'yarn.lock'));
 
     // Get transient yarn project
+    this._logger.debug('Verifying transient project...');
     const backupDir = process.cwd();
     process.chdir(this._tmpPath);
+    this._logger.debug('Current directory updated', process.cwd());
     const portablePackagePath = convertPath<PortablePath>(ppath, this._tmpPath);
     const plugins = getPluginConfiguration();
     const transientConfiguration = await Configuration.find(portablePackagePath, plugins);
     const transientMainWorkspace = await openWorkspace(transientConfiguration, portablePackagePath);
     const transientProject = transientMainWorkspace.project;
     process.chdir(backupDir);
+    this._logger.debug('Current directory restored', process.cwd());
+    this._logger.debug('Transient project workspaces', transientProject.workspaces.map((w) => getName(w)));
     return transientProject;
   }
 
@@ -113,6 +138,7 @@ export class Packager {
     if (!toPackageTransient) {
       throw new Error(`Assertion failed: Cannot package workspace ${toFocus} in transient project`);
     }
+    this._logger.debug('Find dependencies of workspace to focus', getName(toFocus));
     const requiredWorkspaces: Set<Workspace> = new Set([toPackageTransient]);
     const addWorkspacesDependencies = (workspace: Workspace): void => {
       for (const dep of workspace.manifest.dependencies.values()) {
@@ -126,12 +152,16 @@ export class Packager {
       }
     };
     addWorkspacesDependencies(toPackageTransient);
+    this._logger.debug('Dependencies workspaces', Array.from(requiredWorkspaces).map((w) => getName(w)));
     const isRequired = (workspace: Workspace): boolean =>
       Array.from(requiredWorkspaces).some((w) => w?.manifest?.name?.identHash === workspace?.manifest?.name?.identHash);
+    this._logger.debug('Patching manifests')
     for (const workspace of transientProject.workspaces) {
       if (isRequired(workspace)) {
+        this._logger.debug(getName(workspace), 'is dependency of', getName(toPackageTransient), 'removing only devDeps');
         workspace.manifest.devDependencies.clear();
       } else {
+        this._logger.debug(getName(workspace), 'is not dependency of', getName(toPackageTransient), 'removing all dependencies');
         workspace.manifest.dependencies.clear();
         workspace.manifest.devDependencies.clear();
         workspace.manifest.peerDependencies.clear();
@@ -144,6 +174,7 @@ export class Packager {
   private async _copyCompiledFiles(originalProject: Project, workspaces: Workspace[]): Promise<void> {
     await Promise.all(
       workspaces.map(async (w) => {
+        this._logger.debug('Copying compiled files of', getName(w));
         const originalWorkspace = originalProject.workspaces.find(
           (ow) => ow?.manifest?.name?.identHash === w?.manifest?.name?.identHash,
         );
@@ -151,6 +182,7 @@ export class Packager {
           throw new Error(`Assertion failed: originalWorkspace not found`);
         }
         const config = getTsConfig(originalWorkspace.cwd);
+        this._logger.debug('outDir resolved', config?.options?.outDir);
         if (!config?.options?.outDir) {
           throw new Error(
             `Out directory could be resolve for ${getName(
@@ -158,6 +190,7 @@ export class Packager {
             )}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
           );
         }
+        this._logger.debug('Copying', config.options.outDir, '->', join(w.cwd, relative(originalWorkspace.cwd, config.options.outDir)))
         await copy(config.options.outDir, join(w.cwd, relative(originalWorkspace.cwd, config.options.outDir)));
       }),
     );
@@ -186,6 +219,7 @@ export class Packager {
       }
       const zipName = 'bundle.zip';
       const output = createWriteStream(join(this._packagePath, zipName));
+      this._logger.debug('Opening write stream on', join(this._packagePath, zipName));
       const archive = archiver('zip', {
         zlib: { level }, // Sets the compression level.
       });
@@ -220,20 +254,26 @@ export class Packager {
       const toZip: Map<string, string> = new Map();
 
       // Copy dependencies
+      this._logger.debug('Copying node_modules');
       const dependencies = glob(join(this._tmpPath, 'node_modules', '**', '*'), {
         follow: true,
       });
       dependencies.forEach((path) => {
+        this._logger.debug(relative(String(this._tmpPath), path), '->', path);
         toZip.set(relative(String(this._tmpPath), path), path);
       });
+
+      this._logger.debug('Copying service to package compiled code. outDir =', lib);
 
       // Also package compiled service sources
       const compiledSources = glob(join(lib, '**', '*.js'));
       compiledSources.forEach((js) => {
+        this._logger.debug(relative(lib, js), '->', js)
         toZip.set(relative(lib, js), js);
       });
 
       // Apply correct permissions to compressed files
+      this._logger.debug('Applying correct chmod');
       toZip.forEach((from, dest) => {
         const stats = statSync(from);
         if (stats.isFile()) {
@@ -243,6 +283,7 @@ export class Packager {
           });
         }
       });
+      this._logger.debug('Finalize');
       archive.finalize();
     });
   }
