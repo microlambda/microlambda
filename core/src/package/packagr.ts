@@ -160,13 +160,17 @@ export class Packager {
     for (const workspace of transientProject.workspaces) {
       if (isRequired(workspace)) {
         this._logger.debug(getName(workspace), 'is dependency of', getName(toPackageTransient), 'removing only devDeps');
-        workspace.manifest.devDependencies.clear();
+        const manifest = readJSONSync(join(workspace.cwd, 'package.json'));
+        delete manifest.devDependencies;
+        writeJSONSync(join(workspace.cwd, 'package.json'), manifest, { spaces: 2 });
       } else {
         this._logger.debug(getName(workspace), 'is not dependency of', getName(toPackageTransient), 'removing all dependencies');
-        workspace.manifest.dependencies.clear();
-        workspace.manifest.devDependencies.clear();
-        workspace.manifest.peerDependencies.clear();
-        workspace.manifest.scripts.clear();
+        const manifest = readJSONSync(join(workspace.cwd, 'package.json'));
+        delete manifest.dependencies;
+        delete manifest.devDependencies;
+        delete manifest.peerDependencies;
+        delete manifest.scripts;
+        writeJSONSync(join(workspace.cwd, 'package.json'), manifest, { spaces: 2 });
       }
     }
     return Array.from(requiredWorkspaces);
