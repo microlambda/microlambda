@@ -425,7 +425,7 @@ export class Service extends Node {
         const scripts = readJSONSync(join(this.location, 'package.json')).scripts;
         return scripts[key] != null;
       } catch (e) {
-        this._logger?.warn('Cannot determine if service has remove script');
+        this._logger?.warn(`Cannot determine if service has ${action} script`);
         return false;
       }
     };
@@ -472,9 +472,11 @@ export class Service extends Node {
         shell: process.platform === 'win32',
       });
       cmdProcess.stderr.on('data', (data) => {
+        this.graph.logger?.log('sub-process')?.debug(data.toString());
         this._handleLogs(data, action, region);
       });
       cmdProcess.stdout.on('data', (data) => {
+        this.graph.logger?.log('sub-process')?.debug(data.toString());
         this._handleLogs(data, action, region);
       });
       cmdProcess.on('close', (code) => {
