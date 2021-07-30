@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/server",
-  "version": "0.2.22-alpha.1",
+  "version": "0.2.23-alpha.0",
   "description": "µlambda framework server",
   "author": "Mario Arnautou",
   "repository": {
