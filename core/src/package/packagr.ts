@@ -1,6 +1,6 @@
 import { convertPath, PortablePath, ppath } from '@yarnpkg/fslib/lib/path';
 import { getPluginConfiguration, openWorkspace } from '@yarnpkg/cli';
-import { Cache, Configuration, LightReport, Project, Workspace } from '@yarnpkg/core';
+import { Configuration, Project, Workspace } from '@yarnpkg/core';
 import { getProjectRoot } from '../get-project-root';
 import { getName } from '../yarn/project';
 import { dirname, join, relative } from 'path';
@@ -12,6 +12,7 @@ import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
 import { Service } from '../graph';
 import { ILogger, Logger } from '../logger';
+import { command } from 'execa';
 
 export class Packager {
   private readonly _projectRoot: string;
@@ -197,16 +198,15 @@ export class Packager {
   }
 
   private async _yarnInstall(project: Project): Promise<void> {
-    const cache = await Cache.find(project.configuration);
-    await LightReport.start(
-      {
-        configuration: project.configuration,
-        stdout: process.stdout,
-      },
-      async (report: LightReport) => {
-        await project.install({ cache, report, persistProject: false, lockfileOnly: false });
-      },
-    );
+    try {
+      await command('yarn install', {
+        cwd: project.cwd,
+        stdio: process.env.MILA_DEBUG?.split(',').includes('packagr') ? 'inherit' : 'pipe',
+      });
+    } catch (e) {
+      this._logger.error(e);
+      throw Error('Yarn install failed in transient project');
+    }
   }
 
   private async _generateZip(toPackageOriginal: Workspace, level: number): Promise<number> {
