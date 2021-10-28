@@ -71,7 +71,7 @@ export const packageServices = (
         }
         case 'succeeded': {
           spinnies.succeed(evt.service.getName(), {
-            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes + 'MB')} ${chalk.gray(
+            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes?.code + 'MB')}${evt.megabytes?.layer ? chalk.cyan(` (using ${evt.megabytes?.layer + 'MB'} layer)`) : ''} ${chalk.gray(
               evt.took + 'ms',
             )}`,
           });

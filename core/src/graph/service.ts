@@ -21,7 +21,7 @@ export interface IPackageEvent {
   type: 'started' | 'failed' | 'succeeded';
   service: Service;
   took?: number;
-  megabytes?: number;
+  megabytes?: { code: number, layer?: number };
   error?: unknown;
 }
 

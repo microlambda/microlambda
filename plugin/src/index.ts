@@ -43,14 +43,6 @@ class ServerlessMicrolambdaPlugin {
       ServerlessMicrolambdaPlugin._pluginName
     );
     this.commands = {};
-    const region = this.serverless.providers.aws.getRegion();
-    this._log.info("Region resolved", region);
-    const stage = this.serverless.service.provider.stage;
-    this._log.info("Stage resolved", stage);
-    const stackName =
-      this.serverless.service.provider.stackName ||
-      `${this.serverless.service.service}-${stage}`;
-    this._log.info("Stack name resolved", stackName);
     // Check that valid microlambda service
     // Validate configuration
     this.hooks = {
@@ -79,7 +71,8 @@ class ServerlessMicrolambdaPlugin {
           this._pluginConfig?.conditions || [],
           this._log
         );
-        await packageService(this.serverless, this._service, this._log);
+        const { stackName } = this._resolveBasicInformation();
+        await packageService(this.serverless, stackName, this._pluginConfig, this._service, this._log);
       }),
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
         // Cleanup
@@ -99,10 +92,12 @@ class ServerlessMicrolambdaPlugin {
           this._pluginConfig?.conditions || [],
           this._log
         );
-        await packageService(this.serverless, this._service, this._log);
+        const { stackName } = this._resolveBasicInformation();
+        await packageService(this.serverless, stackName, this._pluginConfig, this._service, this._log);
       }),
       "before:deploy:deploy": this._plugHook(
         async (): Promise<void> => {
+          const { region } = this._resolveBasicInformation();
           this._log.debug("Hook triggered", "before:deploy:deploy");
           await createUpdateSecrets(
             region,
@@ -129,6 +124,7 @@ class ServerlessMicrolambdaPlugin {
       ),
       "after:deploy:deploy": this._plugHook(async () => {
         this._log.debug("Hook triggered", "after:deploy:deploy");
+        const { region, stage, stackName } = this._resolveBasicInformation();
         await afterDeploy(
           region,
           stackName,
@@ -139,6 +135,7 @@ class ServerlessMicrolambdaPlugin {
       }),
       "before:remove:remove": this._plugHook(async () => {
         this._log.debug("Hook triggered", "before:remove:remove");
+        const { region } = this._resolveBasicInformation();
         this._loadConfig();
         await deleteSecrets(
           region,
@@ -149,6 +146,7 @@ class ServerlessMicrolambdaPlugin {
       }),
       "after:remove:remove": this._plugHook(async () => {
         this._log.debug("Hook triggered", "after:remove:remove");
+        const { region } = this._resolveBasicInformation();
         await afterRemove(
           region,
           this._pluginConfig?.domain?.domainName,
@@ -156,6 +154,18 @@ class ServerlessMicrolambdaPlugin {
         );
       }),
     };
+  }
+
+  private _resolveBasicInformation(): { region: string, stage: string, stackName: string } {
+    const region = this.serverless.providers.aws.getRegion();
+    this._log.info("Region resolved", region);
+    const stage = this.serverless.service.provider.stage;
+    this._log.info("Stage resolved", stage);
+    const stackName =
+        this.serverless.service.provider.stackName ||
+        `${this.serverless.service.service}-${stage}`;
+    this._log.info("Stack name resolved", stackName);
+    return { region, stage, stackName };
   }
 
   private _plugHook(

@@ -20,17 +20,17 @@ export class Packager {
   private _tmpPath: string | undefined;
   private _logger: ILogger;
 
-  constructor() {
+  constructor(private readonly _useLayers = false, private readonly _buildLayer = true) {
     this._logger = new Logger().log('packagr');
     this._projectRoot = getProjectRoot();
     this._logger.debug('Initialized packagr on project', this._projectRoot);
   }
 
-  static readMetadata(service: Service): { took: number; megabytes: number } {
+  static readMetadata(service: Service): { took: number; megabytes: { code: number, layer?: number} } {
     try {
       return readJSONSync(join(service.getLocation(), '.package', 'bundle-metadata.json'));
     } catch (e) {
-      return { took: 0, megabytes: 0 };
+      return { took: 0, megabytes: { code: 0} };
     }
   }
 
@@ -38,7 +38,9 @@ export class Packager {
     return new Observable<IPackageEvent>((obs) => {
       this._logger.debug('Requested to package service', service, '(compression level', level, ')');
       const pkg = async (): Promise<void> => {
+
         const started = Date.now();
+        const shouldResolvesServiceNodeModules = !this._useLayers || this._buildLayer;
         let now = Date.now();
         this._logger.debug('Analysing yarn workspaces...');
         const originalProject = await this._getOriginalYarnProject();
@@ -47,23 +49,28 @@ export class Packager {
         const toPackageOriginal = originalProject.workspaces.find((w) => getName(w) === service);
         if (!toPackageOriginal) {
           throw new Error(
-            `Cannot package service ${service}. This service does not exist in current project. Make sure project is initialized with yarn install`,
+              `Cannot package service ${service}. This service does not exist in current project. Make sure project is initialized with yarn install`,
           );
         }
-        this._logger.debug('Creating transient project...');
-        const transientProject = await this._createTransientProject(originalProject, toPackageOriginal);
-        this._logger.debug('Focusing workspace', getName(toPackageOriginal), '...');
-        const dependentWorkspaces = this._focusWorkspace(transientProject, toPackageOriginal);
-        this._logger.debug('Copying compiled code of dependent workspaces');
-        await this._copyCompiledFiles(originalProject, dependentWorkspaces);
-        obs.next({ message: 'Transient project created', took: Date.now() - now });
-        now = Date.now();
-        this._logger.debug('Running yarn install on patched transient project...')
-        await this._yarnInstall(transientProject);
-        obs.next({ message: 'Dependencies resolved', took: Date.now() - now });
-        now = Date.now();
+        this._packagePath = join(toPackageOriginal.cwd, '.package');
+        if (shouldResolvesServiceNodeModules) {
+          this._logger.debug('Creating transient project...');
+          const transientProject = await this._createTransientProject(originalProject, toPackageOriginal);
+          this._logger.debug('Focusing workspace', getName(toPackageOriginal), '...');
+          const dependentWorkspaces = this._focusWorkspace(transientProject, toPackageOriginal);
+          this._logger.debug('Copying compiled code of dependent workspaces');
+          await this._copyCompiledFiles(originalProject, dependentWorkspaces);
+          obs.next({ message: 'Transient project created', took: Date.now() - now });
+          now = Date.now();
+          this._logger.debug('Running yarn install on patched transient project...')
+          await this._yarnInstall(transientProject);
+          obs.next({ message: 'Dependencies resolved', took: Date.now() - now });
+          now = Date.now();
+        } else {
+          await mkdirp(this._packagePath);
+        }
         this._logger.debug('Generating zip file...');
-        const megabytes = await this._generateZip(toPackageOriginal, level);
+        const megabytes = await this._generateArchives(toPackageOriginal, level);
         obs.next({ message: 'Zip file generated', took: Date.now() - now, megabytes, overall: Date.now() - started });
         if (!this._packagePath) {
           throw new Error('Assertion failed: package path should have been resolved');
@@ -85,7 +92,9 @@ export class Packager {
   }
 
   private async _createTransientProject(originalProject: Project, toPackage: Workspace): Promise<Project> {
-    this._packagePath = join(toPackage.cwd, '.package');
+    if (!this._packagePath) {
+      throw new Error('Assertion failed: temporary path should have been resolved');
+    }
     this._tmpPath = join(this._packagePath, 'tmp');
     this._logger.debug('Creating transient project in', this._tmpPath);
     const packagePathExists = await pathExists(this._tmpPath);
@@ -213,17 +222,74 @@ export class Packager {
     }
   }
 
-  private async _generateZip(toPackageOriginal: Workspace, level: number): Promise<number> {
+  private async _generateArchives(toPackageOriginal: Workspace, level: number): Promise<{ layer?: number, code: number}> {
+    const megabytes: { layer?: number, code: number} = {
+      code: await this._generateCodeArchive(toPackageOriginal, level),
+    }
+    if (this._useLayers && this._buildLayer) {
+      megabytes.layer = await this._generateLayerArchive(level);
+    }
+    return megabytes;
+  }
+
+  private async _generateLayerArchive(level: number): Promise<number> {
+    const layerZipName = 'layer.zip';
+    const toZip: Map<string, string> = new Map();
+    this._copyDependencies(toZip);
+    return this._generateZip(toZip, layerZipName, level);
+  }
+
+  private _copyDependencies(toZip: Map<string, string>): void {
+    if (!this._tmpPath) {
+      throw new Error('Assertion failed: temporary path should have been resolved');
+    }
+    // Copy dependencies
+    this._logger.debug('Copying node_modules');
+    const dependencies = glob(join(this._tmpPath, 'node_modules', '**', '*'), {
+      follow: true,
+    });
+    dependencies.forEach((path) => {
+      this._logger.debug(relative(String(this._tmpPath), path), '->', path);
+      toZip.set(relative(String(this._tmpPath), path), path);
+    });
+  }
+
+  private _copyCompiledSources(toZip: Map<string, string>, toPackageOriginal: Workspace): void {
+    const tsConfig = getTsConfig(toPackageOriginal.cwd);
+    const lib = tsConfig?.options?.outDir;
+    if (!lib) {
+      throw new Error(
+          `Out directory could be resolve for ${getName(
+              toPackageOriginal,
+          )}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
+      );
+    }
+    this._logger.debug('Copying service to package compiled code. outDir =', lib);
+    // Also package compiled service sources
+    const compiledSources = glob(join(lib, '**', '*.js'));
+    compiledSources.forEach((js) => {
+      this._logger.debug(relative(lib, js), '->', js)
+      toZip.set(relative(lib, js), js);
+    });
+  }
+
+  private async _generateCodeArchive(toPackageOriginal: Workspace, level: number): Promise<number> {
+    const zipName = 'bundle.zip';
+    const toZip: Map<string, string> = new Map();
+    if (!this._useLayers) {
+      this._copyDependencies(toZip);
+    }
+    this._copyCompiledSources(toZip, toPackageOriginal);
+    return this._generateZip(toZip, zipName, level);
+  }
+
+  private async _generateZip(toZip: Map<string, string>, zipName: string, level: number): Promise<number> {
     return new Promise<number>((resolve, reject) => {
       if (!this._packagePath) {
         throw new Error('Assertion failed: package path should have been resolved');
       }
-      if (!this._tmpPath) {
-        throw new Error('Assertion failed: temporary path should have been resolved');
-      }
-      const zipName = 'bundle.zip';
-      const output = createWriteStream(join(this._packagePath, zipName));
       this._logger.debug('Opening write stream on', join(this._packagePath, zipName));
+      const output = createWriteStream(join(this._packagePath, zipName));
       const archive = archiver('zip', {
         zlib: { level }, // Sets the compression level.
       });
@@ -245,36 +311,6 @@ export class Packager {
       });
 
       archive.pipe(output);
-
-      const tsConfig = getTsConfig(toPackageOriginal.cwd);
-      const lib = tsConfig?.options?.outDir;
-      if (!lib) {
-        throw new Error(
-          `Out directory could be resolve for ${getName(
-            toPackageOriginal,
-          )}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
-        );
-      }
-      const toZip: Map<string, string> = new Map();
-
-      // Copy dependencies
-      this._logger.debug('Copying node_modules');
-      const dependencies = glob(join(this._tmpPath, 'node_modules', '**', '*'), {
-        follow: true,
-      });
-      dependencies.forEach((path) => {
-        this._logger.debug(relative(String(this._tmpPath), path), '->', path);
-        toZip.set(relative(String(this._tmpPath), path), path);
-      });
-
-      this._logger.debug('Copying service to package compiled code. outDir =', lib);
-
-      // Also package compiled service sources
-      const compiledSources = glob(join(lib, '**', '*.js'));
-      compiledSources.forEach((js) => {
-        this._logger.debug(relative(lib, js), '->', js)
-        toZip.set(relative(lib, js), js);
-      });
 
       // Apply correct permissions to compressed files
       this._logger.debug('Applying correct chmod');

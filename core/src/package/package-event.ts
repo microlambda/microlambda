@@ -1,6 +1,9 @@
 interface IPackageEvent {
   message: string;
   took?: number;
-  megabytes?: number;
+  megabytes?: {
+    code: number;
+    layer?: number;
+  };
   overall?: number;
 }

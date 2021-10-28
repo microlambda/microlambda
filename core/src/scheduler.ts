@@ -47,7 +47,7 @@ export interface IRecompilationEvent {
   type: RecompilationEventType;
   node: Node;
   took?: number;
-  megabytes?: number;
+  megabytes?: { code: number, layer?: number };
 }
 
 export interface IRecompilationError {

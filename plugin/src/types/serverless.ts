@@ -1,4 +1,5 @@
 import type { IAuthorizerConfig } from "./authorizer-config";
+import {LambdaRuntimes} from "../config/types/packagr";
 
 export interface ServerlessInstance {
   service: {
@@ -14,6 +15,8 @@ export interface ServerlessInstance {
       };
       deploymentBucket: { name: string } | undefined;
       deploymentPrefix: string | undefined;
+      architecture: 'x86_64' | 'arm64';
+      runtime: LambdaRuntimes;
     };
     custom: {
       [key: string]: unknown;
@@ -22,6 +25,8 @@ export interface ServerlessInstance {
     functions: {
       [key: string]: {
         name: string;
+        architecture: 'x86_64' | 'arm64';
+        runtime: LambdaRuntimes;
         events: Array<{
           http?: { authorizer?: Partial<IAuthorizerConfig> };
           websocket?: { authorizer?: Partial<IAuthorizerConfig> };
