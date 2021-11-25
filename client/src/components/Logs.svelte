@@ -45,7 +45,7 @@
 
 <div class="wrapper" bind:this={container} style="{`height: ${height}px; width: ${width}px`}">
   <div class="scrollable" bind:this={div}>
-    {#if logs.length}
+    {#if logs && logs.length}
     <pre>{ @html fromAnsi(logs.join('')) }</pre>
     {:else }
     <pre>No logs to show ¯\_(ツ)_/¯</pre>

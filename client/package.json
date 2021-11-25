@@ -23,7 +23,6 @@
     "@testing-library/svelte": "^3.0.0",
     "@types/chai": "^4.2.13",
     "@types/dagre-d3": "^0.6.2",
-    "@types/mocha": "^8.2.0",
     "@types/snowpack-env": "^2.3.2",
     "@web/test-runner": "^0.12.0",
     "@web/test-runner-playwright": "^0.8.4",
