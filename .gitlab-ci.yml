@@ -114,14 +114,6 @@ test-cli:
     - yarn install --immutable
     - yarn test:cli
 
-test-client:
-  stage: test
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn test:client
-
 test-core:
   stage: test
   cache:

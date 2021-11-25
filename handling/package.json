@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/handling",
-  "version": "2.0.4",
+  "version": "3.0.0",
   "description": "Helpers to simplify nodejs code on FASS environments",
   "author": "Thomas Ruiz <contact@thomasruiz.eu>",
   "license": "ISC",
@@ -9,6 +9,9 @@
   "repository": {
     "type": "git",
     "url": "https://bitbucket.org/MarioArnt/microlambda/src/master/handling/"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   },
   "keywords": [
     "node",
@@ -33,13 +36,13 @@
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
-    "deepmerge": "^3.3.0"
+    "deepmerge": "^4.2.2"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.33",
-    "@types/hapi__joi": "^17.1.4",
-    "@types/node": "^10.14.21",
-    "ts-node": "^8.4.1",
-    "typescript": "^3.9.7"
+    "@types/aws-lambda": "^8.10.85",
+    "@types/hapi__joi": "^17.1.7",
+    "@types/node": "^16.11.10",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.2"
   }
 }

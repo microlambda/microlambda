@@ -1,4 +1,4 @@
-<script>
+<script lang='ts'>
   import Graph from './Graph.svelte';
   import { selected, tabMounted } from '../store';
   import { logger } from '../logger';

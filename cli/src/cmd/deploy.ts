@@ -3,15 +3,7 @@ import { beforePackage, IPackageCmd, packageServices } from './package';
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import { prompt } from 'inquirer';
-import {
-  ConfigReader,
-  RecompilationScheduler,
-  Logger,
-  Service,
-  getAccountIAM,
-  IConfig,
-  IPackageEvent,
-} from '@microlambda/core';
+import { ConfigReader, RecompilationScheduler, Logger, getAccountIAM, IConfig, IPackageEvent } from '@microlambda/core';
 import { IDeployEvent } from '@microlambda/core/lib';
 import { join } from 'path';
 import { pathExists, remove } from 'fs-extra';
@@ -53,11 +45,11 @@ export const handleNext = (
 ): void => {
   const key = (evt: IDeployEvent): string => `${evt.service.getName()}|${evt.region}`;
   const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
-  const tty = process.stdout.isTTY;
+  const isTty = process.stdout.isTTY;
   const capitalize = (input: string): string => input.slice(0, 1).toUpperCase() + input.slice(1);
   switch (evt.type) {
     case 'started':
-      if (tty) {
+      if (isTty) {
         spinnies.add(key(evt), {
           text: `${capitalize(actionVerbBase)}ing ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
         });
@@ -67,7 +59,7 @@ export const handleNext = (
       actions.add(evt);
       break;
     case 'succeeded':
-      if (tty) {
+      if (isTty) {
         spinnies.succeed(key(evt), {
           text: `${capitalize(actionVerbBase)}ed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
         });
@@ -79,7 +71,7 @@ export const handleNext = (
       break;
     case 'failed':
       failures.add(evt);
-      if (tty) {
+      if (isTty) {
         spinnies.fail(key(evt), {
           text: `Error ${actionVerbBase}ing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
         });
@@ -198,8 +190,8 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     await Promise.all(
       services.map(async (service) => {
         const artefactLocation = join(service.getLocation(), '.package');
-        const exists = await pathExists(artefactLocation);
-        if (exists) {
+        const doesExist = await pathExists(artefactLocation);
+        if (doesExist) {
           cleaningSpinnies.add(service.getName(), {
             text: `Cleaning artifact directory ${chalk.grey(artefactLocation)}`,
           });
@@ -218,7 +210,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       process.exit(1);
     }
 
-    const packageFailures = await packageServices(scheduler, cmd.C, services);
+    const packageFailures = await packageServices(scheduler, Number(cmd.C), services);
     if (packageFailures.size) {
       await printReport(packageFailures, services.length, 'package');
       process.exit(1);
@@ -233,7 +225,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     });
 
     if (cmd.C) {
-      scheduler.setConcurrency(cmd.C);
+      scheduler.setConcurrency(Number(cmd.C));
     }
     const failures: Set<IDeployEvent> = new Set();
     const actions: Set<IDeployEvent> = new Set();

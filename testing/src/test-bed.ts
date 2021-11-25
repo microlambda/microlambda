@@ -3,7 +3,7 @@ import {
   APIGatewayEventRequestContextWithAuthorizer,
   APIGatewayEventDefaultAuthorizerContext,
   Context,
-  Handler,
+  Handler, Callback,
 } from 'aws-lambda';
 
 interface ITestBedOptions<TRequest = unknown, TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext> {
@@ -41,11 +41,11 @@ export class TestBed<
   private readonly _handler: Handler;
 
   private _event: APIGatewayEvent;
-  private _context: Context;
+  private _context: Context | undefined;
 
   constructor(handler: Handler, options?: ITestBedOptions) {
     this._handler = handler;
-    this._reset();
+    this._event = TestBed._defaultEvent;
     if (options) {
       this._event = {
         ...options,
@@ -54,35 +54,49 @@ export class TestBed<
     }
   }
 
-  private _reset(): void {
-    this._event = {
-      body: null,
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: null,
-      isBase64Encoded: null,
-      path: null,
-      pathParameters: {},
-      queryStringParameters: {},
-      multiValueQueryStringParameters: {},
-      stageVariables: {},
-      requestContext: {
+  private static _defaultEvent: APIGatewayEvent = {
+    body: null,
+    headers: {},
+    multiValueHeaders: {},
+    httpMethod: '',
+    isBase64Encoded: false,
+    path: '',
+    pathParameters: {},
+    queryStringParameters: {},
+    multiValueQueryStringParameters: {},
+    stageVariables: {},
+    requestContext: {
+      accountId: '',
+      protocol: 'http',
+      authorizer: null,
+      apiId: '',
+      httpMethod: '',
+      identity: {
+        apiKey: null,
         accountId: null,
-        protocol: 'http',
-        authorizer: null,
-        apiId: null,
-        httpMethod: null,
-        identity: null,
-        path: null,
-        stage: 'test',
-        resourceId: null,
-        resourcePath: null,
-        requestId: 'test-request-' + Date.now(),
-        requestTimeEpoch: Date.now(),
+        accessKey: null,
+        caller: null,
+        clientCert: null,
+        cognitoAuthenticationProvider: null,
+        cognitoIdentityId: null,
+        cognitoAuthenticationType: null,
+        cognitoIdentityPoolId: null,
+        apiKeyId: null,
+        principalOrgId: null,
+        sourceIp: '',
+        user: null,
+        userAgent: null,
+        userArn: null,
       },
-      resource: null,
-    };
-  }
+      path: '',
+      stage: 'test',
+      resourceId: '',
+      resourcePath: '',
+      requestId: 'test-request-' + Date.now(),
+      requestTimeEpoch: Date.now(),
+    },
+    resource: '',
+  };
 
   public pathParameters(params: { [name: string]: string }): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.pathParameters = {
@@ -178,7 +192,7 @@ export class TestBed<
     this._event.httpMethod = method;
     this._event.requestContext.httpMethod = method;
     const response = await this._callHandler();
-    this._reset();
+    this._event = TestBed._defaultEvent;
     return response;
   }
 
@@ -207,7 +221,7 @@ export class TestBed<
   }
 
   private async _callHandler(): Promise<IHandlerResponse> {
-    const response = await this._handler(this._event, this._context, null);
+    const response = await this._handler(this._event, this._context as Context, null as unknown as Callback);
     return {
       statusCode: response.statusCode,
       body: response.body ? JSON.parse(response.body) : null,

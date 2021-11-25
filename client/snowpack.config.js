@@ -4,6 +4,7 @@ module.exports = {
     public: {url: '/', static: true},
     src: {url: '/dist'},
   },
+  workspaceRoot: '../',
   plugins: [
     '@snowpack/plugin-svelte',
     '@snowpack/plugin-dotenv',

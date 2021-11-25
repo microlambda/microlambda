@@ -388,7 +388,7 @@ export abstract class Node {
       this.typeCheckProcess = spawn(getBinary('tsc', this.graph.getProjectRoot(), this.graph.logger, this), {
         cwd: this.location,
         env: { ...process.env, FORCE_COLOR: '2' },
-        shell: process.platform === 'win32'
+        shell: process.platform === 'win32',
       });
       if (this.typeCheckProcess.stderr && this.typeCheckProcess.stdout) {
         this.typeCheckProcess.stderr.on('data', (data) => {

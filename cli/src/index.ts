@@ -11,7 +11,7 @@ import { runTests } from './cmd/test';
 import { deploy } from './cmd/deploy';
 import { getDefaultThreads, RecompilationScheduler, Logger } from '@microlambda/core';
 import { remove } from './cmd/remove';
-import {generate} from "./cmd/generate";
+import { generate } from './cmd/generate';
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -39,7 +39,7 @@ program
   .command('start')
   .option('-i, --interactive', 'interactively choose microservices', false)
   .option('-d, --discrete', 'start the app in background without logging in console', false)
-  .option('-p <port>, --port <port>', 'start mila server on given port', 4545)
+  .option('-p <port>, --port <port>', 'start mila server on given port', '4545')
   .option('-n, --no-recompile', 'avoid recompiling dependency graph before starting microservices')
   .option('-s <service>, --service <service>', 'the service for which you want to start', false)
   .description('start microlambda services')
@@ -128,7 +128,7 @@ program
   // .option('-i, --interactive', 'interactively choose microservices', false)
   .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
   .option('--no-recompile', 'skip package and service recompilation', false)
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
   .option('-s <service>, --service <service>', 'the service you want to package', false)
   .description('package services source code')
   .action(
@@ -144,10 +144,10 @@ program
   .option('--verbose', 'print child processes stdout and stderr', false)
   .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
   .option('--no-recompile', 'skip package and service recompilation', false)
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
   .option('--no-package', 'skip bundling service deployment package', false)
-  .option('-s <service>, --service <service>', 'the service you want to deploy', null)
-  .option('-e <stage>, --stage <stage>', 'target stage for deployment', null)
+  .option('-s <service>, --service <service>', 'the service you want to deploy')
+  .option('-e <stage>, --stage <stage>', 'target stage for deployment')
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
@@ -160,13 +160,12 @@ program
 
 program
   .command('remove')
-  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion', null)
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion')
   .option(
     '-s <service>, --service <service>',
     'the service you want to remove. If no specified all services will be removed.',
-    null,
   )
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads())
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
@@ -187,8 +186,8 @@ program
   .option('--unit', 'only run unit tests', false)
   .option('--functional', 'only run functional tests', false)
   .option('--stdio <stdio>', 'whether to print or not test command stdout', 'ignore')
-  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested', null)
-  .option('-s <service>, --service <service>', 'the service for which you want to test', null)
+  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
+  .option('-s <service>, --service <service>', 'the service for which you want to test')
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
@@ -197,14 +196,14 @@ program
   );
 
 program
-    .command('generate [blueprint]')
-    .description('generate code from a blueprint')
-    .action(
-        async (blueprint: string) =>
-            await commandWrapper(async () => {
-                await generate(blueprint, logger);
-            }),
-    );
+  .command('generate [blueprint]')
+  .description('generate code from a blueprint')
+  .action(
+    async (blueprint: string) =>
+      await commandWrapper(async () => {
+        await generate(blueprint, logger);
+      }),
+  );
 
 /*
 
@@ -217,4 +216,4 @@ program
   });
 */
 
-(async (): Promise<void> => program.parseAsync(process.argv))();
+(async (): Promise<Command> => program.parseAsync(process.argv))();

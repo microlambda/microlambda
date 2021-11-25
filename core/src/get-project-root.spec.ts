@@ -52,7 +52,7 @@ describe('[method] findProjectRoot', () => {
     try {
       projectRoot.findProjectRoot();
     } catch (e) {
-      expect(e.code).toBe(MilaErrorCode.NOT_IN_A_VALID_LERNA_PROJECT);
+      expect((e as MilaError).code).toBe(MilaErrorCode.NOT_IN_A_VALID_LERNA_PROJECT);
     }
   });
 });

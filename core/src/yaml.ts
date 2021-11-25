@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { dump, load, Schema, Type } from 'js-yaml';
+import {DEFAULT_SCHEMA, dump, load, Schema, Type } from 'js-yaml';
 import { copySync, existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
 import { join, dirname } from 'path';
 import { Service } from './graph';
@@ -73,7 +73,7 @@ const customTags: Array<{
   { name: '!Transform', instanceOf: Transform, kind: 'mapping' },
 ];
 
-export const CUSTOM_SCHEMA = Schema.create(
+export const CUSTOM_SCHEMA = DEFAULT_SCHEMA.extend(
   customTags.map(
     (tag) =>
       new Type(tag.name, {
@@ -207,6 +207,6 @@ export const getServiceName = (service: Service): string => {
   if (!existsSync(path)) {
     throw Error('Error: serverless.yml not found @ ' + path);
   }
-  const yaml = parseServerlessYaml(path);
+  const yaml = parseServerlessYaml(path) as { service: string } & unknown;
   return yaml.service;
 };

@@ -108,7 +108,7 @@ const format = (event: ApiHandlerEvent, response: Response, content: any): APIGa
 const formatError = (
   event: APIGatewayProxyEvent,
   response: Response,
-  err: { name: string; details: any; statusCode?: number; body?: any },
+  err: { name: string; details?: any; statusCode?: number; body?: any },
 ): APIGatewayProxyResult => {
   log.debug('[API] Error name', err.name);
   switch (err.name) {
@@ -130,6 +130,12 @@ const formatError = (
   }
 };
 
+export class HandlingError extends Error {
+  statusCode?: number;
+  body?: any;
+  details?: any;
+}
+
 export const apiHandler = (next: ApiHandler): APIGatewayProxyHandler => {
   return async (event: APIGatewayEvent, context: Context): Promise<APIGatewayProxyResult> => {
     log.debug('[API] Initializing response');
@@ -146,7 +152,8 @@ export const apiHandler = (next: ApiHandler): APIGatewayProxyHandler => {
       log.debug('[API] Calling after middleware');
       await callAfterMiddleware<ApiAfterMiddleware>('ApiGateway', [normalizedEvent, result]);
       return result;
-    } catch (err) {
+    } catch (e) {
+      const err = e as HandlingError;
       log.debug('[API] Error happened !', err);
       const result = formatError(event, response, err);
       log.debug('[API] Formatted', result);

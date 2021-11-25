@@ -14,7 +14,7 @@ import Spinnies from 'spinnies';
 import { printReport } from './deploy';
 
 export interface IPackageCmd extends IBuildCmd {
-  C: number;
+  C: string;
   level: number;
   recompile: boolean;
 }
@@ -71,9 +71,9 @@ export const packageServices = (
         }
         case 'succeeded': {
           spinnies.succeed(evt.service.getName(), {
-            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes?.code + 'MB')}${evt.megabytes?.layer ? chalk.cyan(` (using ${evt.megabytes?.layer + 'MB'} layer)`) : ''} ${chalk.gray(
-              evt.took + 'ms',
-            )}`,
+            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes?.code + 'MB')}${
+              evt.megabytes?.layer ? chalk.cyan(` (using ${evt.megabytes?.layer + 'MB'} layer)`) : ''
+            } ${chalk.gray(evt.took + 'ms')}`,
           });
           break;
         }

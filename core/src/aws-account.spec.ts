@@ -1,6 +1,6 @@
 import { SinonStub, stub } from 'sinon';
 import aws from 'aws-sdk';
-import { getAccountIAM } from './aws-account';
+import {getAccountIAM, IAmazonError} from './aws-account';
 
 describe('[method] getAccountIAM', () => {
   let awsStub: SinonStub;
@@ -48,7 +48,7 @@ describe('[method] getAccountIAM', () => {
       await getAccountIAM();
       fail();
     } catch (e) {
-      expect(e.code).toBe('TokenExpired');
+      expect((e as IAmazonError).code).toBe('TokenExpired');
     }
   });
 });

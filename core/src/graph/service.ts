@@ -21,7 +21,7 @@ export interface IPackageEvent {
   type: 'started' | 'failed' | 'succeeded';
   service: Service;
   took?: number;
-  megabytes?: { code: number, layer?: number };
+  megabytes?: { code: number; layer?: number };
   error?: unknown;
 }
 
@@ -255,7 +255,7 @@ export class Service extends Node {
   }
 
   private _killProcessTree(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
-    if (this._offlineProcess) {
+    if (this._offlineProcess?.pid) {
       processTree(this._offlineProcess.pid, (err, children) => {
         if (err) {
           this._logger?.error('Cannot get process tree', err);

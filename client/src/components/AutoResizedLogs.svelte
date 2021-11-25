@@ -1,4 +1,4 @@
-<script>
+<script lang='ts'>
   import Logs from './Logs.svelte';
   import { offlineLogs, tabMounted } from '../store';
   import { tscLogs } from '../store';

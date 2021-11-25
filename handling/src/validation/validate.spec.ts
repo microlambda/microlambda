@@ -1,5 +1,6 @@
-import { string, object } from '@hapi/joi';
+import joi from '@hapi/joi';
 import { validate } from './validate';
+import {HandlingError} from "../handling/api";
 
 describe('validation', () => {
   describe('validate', () => {
@@ -8,8 +9,8 @@ describe('validation', () => {
         {
           email: '  foo@example.com  ',
         },
-        object({
-          email: string().required().email().trim(),
+        joi.object({
+          email: joi.string().required().email().trim(),
         }),
       );
 
@@ -22,12 +23,13 @@ describe('validation', () => {
       try {
         await validate(
           {},
-          object({
-            email: string().required(),
+          joi.object({
+            email: joi.string().required(),
           }),
         );
         fail();
-      } catch (e) {
+      } catch (err) {
+        const e = err as HandlingError;
         expect(e.name).toBe('ValidationError');
         expect(e.details).toEqual([
           {

@@ -49,7 +49,7 @@ export class ConfigReader {
   }
 
   public readConfig(): IConfig {
-    this._config = rc('microlambda', fallback) as IConfig;
+    this._config = rc<IConfig>('microlambda', fallback as IConfig);
     return this._config;
   }
 

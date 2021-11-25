@@ -1,19 +1,9 @@
 {
+  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": ".",
-    "outDir": "./lib",
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "target": "es6",
-    "lib": ["es6", "esnext"],
-    "noImplicitAny": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "sourceMap": false,
+    "rootDir": "./src",
+    "outDir": "./dist"
   },
-  "include": ["./src"]
+  "include": ["./src"],
+  "exclude": ["**/*.spec.ts"]
 }

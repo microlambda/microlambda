@@ -1,9 +1,9 @@
 {
-  "stages": null,
+  "stages": [],
   "compilationMode": "safe",
   "ports": {},
   "noStart": [],
-  "defaultRegions": null,
+  "defaultRegions": [],
   "regions": {},
   "steps": ["*"],
   "domains": {},

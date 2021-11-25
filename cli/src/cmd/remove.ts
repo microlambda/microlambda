@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import inquirer from 'inquirer';
-import { Logger, RecompilationScheduler, IDeployEvent, Service } from '@microlambda/core';
+import { Logger, RecompilationScheduler, IDeployEvent } from '@microlambda/core';
 import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
@@ -56,7 +56,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     const actions: Set<IDeployEvent> = new Set();
 
     if (cmd.C) {
-      scheduler.setConcurrency(cmd.C);
+      scheduler.setConcurrency(Number(cmd.C));
     }
 
     scheduler.remove(toRemove, String(cmd.E)).subscribe(

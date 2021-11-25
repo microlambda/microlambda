@@ -1,16 +1,17 @@
 /* eslint-disable no-console */
-import {findProjectRoot, Logger} from "@microlambda/core";
-import {join, relative} from "path";
-import {prompt} from "inquirer";
+import { findProjectRoot, Logger } from '@microlambda/core';
+import { join, relative } from 'path';
+import { prompt } from 'inquirer';
 import {
   findBlueprints,
   findTemplates,
   interpolateYaml,
-  postProcessing, renderTemplates,
+  postProcessing,
+  renderTemplates,
   resolveDestinations,
-  resolveInputs
-} from "@microlambda/generators";
-import chalk from "chalk";
+  resolveInputs,
+} from '@microlambda/generators';
+import chalk from 'chalk';
 
 export const generate = async (blueprint: string, logger: Logger): Promise<void> => {
   console.info('🧙 Microlambda code generator');
@@ -34,7 +35,7 @@ export const generate = async (blueprint: string, logger: Logger): Promise<void>
         name: 'blueprint',
         message: 'What kind of entity do you want to generate ?',
         choices: Array.from(blueprints.entries()).map(([path, yaml]) => ({ name: yaml.name, value: path })),
-      }
+      },
     ]);
     log.debug(answers);
     blueprintPath = answers.blueprint;
@@ -59,6 +60,6 @@ export const generate = async (blueprint: string, logger: Logger): Promise<void>
   await renderTemplates(templates, destinations, inputs);
   destinations.forEach((created) => {
     console.info(chalk.green('[CREATED]'), relative(projectRoot, created));
-  })
+  });
   await postProcessing(blueprintPath, inputs);
 };

@@ -1,4 +1,4 @@
-<script lang='typescript'>
+<script lang='ts'>
   import Disconnected from './components/Disconnected.svelte';
   import { connected, selected } from './store';
   import Sidebar from './components/Sidebar.svelte';

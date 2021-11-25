@@ -1,5 +1,5 @@
 import { runInitializers } from '../init';
-import { apiHandler } from './api';
+import {apiHandler, HandlingError} from './api';
 import { handle } from './index';
 import Mock = jest.Mock;
 
@@ -34,7 +34,8 @@ describe('handling', () => {
       try {
         await handler({});
         fail();
-      } catch (e) {
+      } catch (err) {
+        const e = err as HandlingError;
         expect(e.name).toBe('UnhandledEvent');
         expect(called).toBe(false);
       }

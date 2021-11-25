@@ -5,4 +5,4 @@ export const interpolate = (str: string, inputs: Record<string, unknown>): strin
     interpolated = interpolated.replace(match[0], inputs[match[1]].toString());
   }
   return interpolated;
-}
+};
