@@ -1,0 +1,22 @@
+# Editors
+.idea/
+.vs_code/
+.vscode/
+
+# MacOS
+**/.DS_Store
+
+# External dependencies
+node_modules/
+
+# Built code
+/lib/
+
+# Generated test cases
+test/generated-cases/
+
+# Tests secrets
+test/.ssh/
+test/.env
+
+.npmrc

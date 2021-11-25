@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2017",
+    "lib": [
+      "es2020",
+      "dom"
+    ],
+    "declaration": true,
+    "sourceMap": false,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/generators/swagger/base/model.js",
+    "src/generators/swagger/base/path.js"
+  ]
+}

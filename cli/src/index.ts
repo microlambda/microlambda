@@ -11,6 +11,7 @@ import { runTests } from './cmd/test';
 import { deploy } from './cmd/deploy';
 import { getDefaultThreads, RecompilationScheduler, Logger } from '@microlambda/core';
 import { remove } from './cmd/remove';
+import {generate} from "./cmd/generate";
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -195,6 +196,16 @@ program
       }),
   );
 
+program
+    .command('generate [blueprint]')
+    .description('generate code from a blueprint')
+    .action(
+        async (blueprint: string) =>
+            await commandWrapper(async () => {
+                await generate(blueprint, logger);
+            }),
+    );
+
 /*
 
 // TODO: Generator
@@ -202,14 +213,6 @@ program
   .command('init')
   .description('initialize new project with the CLI wizard')
   .action(async () => {
-    logger.log('cmd').error('Not implemented');
-  });
-
-program
-  .command('new <service-name>')
-  .description('initialize a new service with the CLI wizard')
-  .action(async (cmd) => {
-    logger.log('cmd').debug(cmd);
     logger.log('cmd').error('Not implemented');
   });
 */

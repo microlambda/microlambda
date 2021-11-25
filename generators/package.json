@@ -1,0 +1,37 @@
+{
+  "name": "@microlambda/generators",
+  "version": "0.1.0-alpha.0",
+  "description": "Generates services, packages, handlers and serverless components",
+  "authors": [
+    {
+      "name": "Mario Arnautou",
+      "email": "mario.arnautou@gmail.com",
+      "url": "https://github.com/MarioArnt"
+    }
+  ],
+  "main": "lib/index.js",
+  "keywords": [
+    "node",
+    "typescript",
+    "serverless",
+    "lambda",
+    "aws"
+  ],
+  "engines": {
+    "npm": ">= 5.0.0",
+    "node": ">=12.14.1"
+  },
+  "dependencies": {
+    "ejs": "^3.1.6",
+    "inquirer": "^8.2.0",
+    "joi": "^17.4.2",
+    "js-yaml": "^4.1.0",
+    "typescript": "^3.9.10"
+  },
+  "devDependencies": {
+    "@types/ejs": "^3.1.0"
+  },
+  "scripts": {
+    "build": "../node_modules/.bin/tsc"
+  }
+}

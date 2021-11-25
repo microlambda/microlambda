@@ -47,7 +47,7 @@
     "core",
     "client",
     "docs/website",
-    "generator",
+    "generators",
     "handling",
     "plugin",
     "testing",

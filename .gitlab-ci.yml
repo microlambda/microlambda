@@ -29,6 +29,7 @@ build:
     # - yarn workspaces foreach -pv --topological-dev run build
     - yarn workspace @microlambda/types run build
     - yarn workspace @microlambda/core run build
+    - yarn workspace @microlambda/generators run build
     - yarn workspace @microlambda/client run build
     - yarn workspace @microlambda/server run build
     - yarn workspace @microlambda/cli run build
@@ -39,6 +40,7 @@ build:
     paths:
       - cli/dist
       - types/lib
+      - generators/lib
       - server/dist
       - core/lib
       - plugin/dist
