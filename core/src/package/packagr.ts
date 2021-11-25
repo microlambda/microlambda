@@ -12,7 +12,7 @@ import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
 import { Service } from '../graph';
 import { ILogger, Logger } from '../logger';
-import { execa as command } from 'execa';
+import { command } from 'execa';
 
 export class Packager {
   private readonly _projectRoot: string;
