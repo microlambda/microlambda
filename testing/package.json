@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/testing",
-  "version": "0.0.1-alpha",
+  "version": "0.0.1-alpha.0",
   "description": "Microlambda testing utilities",
   "author": "Mario Arnautou",
   "repository": {
