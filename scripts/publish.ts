@@ -1,5 +1,5 @@
 import { getName, getTopologicallySortedWorkspaces, getYarnProject } from '@microlambda/core';
-import { commandSync } from 'execa';
+import { execaSync } from 'execa';
 import { join } from 'path';
 import { readJSONSync } from 'fs-extra';
 
@@ -19,7 +19,7 @@ import { readJSONSync } from 'fs-extra';
       }
       let rawOutput: string;
       try {
-        rawOutput = commandSync(`npm view ${getName(workspace)} --json`).stdout.toString();
+        rawOutput = execaSync(`npm view ${getName(workspace)} --json`).stdout.toString();
       } catch (e) {
         rawOutput = e.stdout.toString();
       }
@@ -33,7 +33,7 @@ import { readJSONSync } from 'fs-extra';
       // If current version > latest: publish
       if (!isPublished || latest !== workspace.manifest.version) {
         console.info('Publishing', getName(workspace), '@', workspace.manifest.version);
-        commandSync(`yarn workspace ${getName(workspace)} npm publish --access public`, { stdio: 'inherit' });
+        execaSync(`yarn workspace ${getName(workspace)} npm publish --access public`, { stdio: 'inherit' });
       } else {
         console.info('Skipping', getName(workspace), '@', workspace.manifest.version);
       }
