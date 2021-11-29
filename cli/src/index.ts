@@ -7,16 +7,13 @@ import { checkService } from './cmd/check-service';
 import { build } from './cmd/build';
 import chalk from 'chalk';
 import { packagr } from './cmd/package';
-import { runTests } from './cmd/test';
 import { deploy } from './cmd/deploy';
-import { getDefaultThreads, RecompilationScheduler, Logger } from '@microlambda/core';
+import { getDefaultThreads, Logger } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 
 // Logger must be a singleton
 const logger = new Logger();
-// Recompilation Scheduler must be a singleton
-const scheduler = new RecompilationScheduler(logger);
 
 const program = new Command();
 
@@ -53,7 +50,7 @@ program
           interactive: cmd.interactive,
         };
         logger.log('cmd').debug(options);
-        await start(scheduler, options, logger);
+        await start();
       }, true),
   );
 
@@ -119,7 +116,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await build(cmd, scheduler, logger);
+        await build(cmd, logger);
       }),
   );
 
@@ -134,7 +131,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await packagr(cmd, logger, scheduler);
+        await packagr(cmd, logger);
       }),
   );
 
@@ -154,7 +151,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await deploy(cmd, logger, scheduler);
+        await deploy(cmd, logger);
       }),
   );
 
@@ -173,7 +170,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await remove(cmd, logger, scheduler);
+        await remove(cmd, logger);
       }),
   );
 
@@ -191,7 +188,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await runTests(cmd, scheduler, logger);
+        //await runTests(cmd, scheduler, logger);
       }),
   );
 

@@ -1,10 +1,10 @@
 /* eslint-disable no-console */
-import {getDefaultThreads, getThreads, Logger, Packager, Workspace } from '@microlambda/core';
+import {getDefaultThreads, getThreads, Logger, Packager } from '@microlambda/core';
 import {beforeBuild, IBuildCmd, IBuildOptions, typeCheck} from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import {printReport} from './deploy';
-import {RunCommandEvent, RunCommandEventEnum, Runner} from "@centipod/core";
+import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@centipod/core";
 
 export interface IPackageCmd extends IBuildCmd {
   C: string;
@@ -14,7 +14,7 @@ export interface IPackageCmd extends IBuildCmd {
 
 interface IPackageOptions extends IBuildOptions {
   concurrency: number;
-  targets: Workspace[];
+  targets: CentipodWorkspace[];
 }
 
 export const beforePackage = async (
@@ -81,7 +81,7 @@ export const packageServices = (options: IPackageOptions): Promise<Set<RunComman
     const runner = new Runner(options.project, options.concurrency);
     runner.runCommand('package', {
       to: options.service,
-      parallel: true,
+      mode: 'parallel',
       affected: options.affected,
       force: options.force,
     }).subscribe(onNext, onError, onComplete);

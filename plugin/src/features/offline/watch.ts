@@ -9,8 +9,8 @@ export const watchFiles = (service: Workspace, logger?: ILogger): void => {
     logger?.error(`Cannot watch: service not resolved`);
     return;
   }
-  for (const dep of new Set([...service.getDependencies(), service])) {
-    const tscConfig = getTsConfig(dep.getLocation());
+  for (const dep of new Set([...service.dependencies(), service])) {
+    const tscConfig = getTsConfig(dep.root);
     files.push(...tscConfig.fileNames);
   }
   files.forEach((f) => logger?.debug(`Watching ${f}`));

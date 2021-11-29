@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { getDefaultThreads, getThreads, Logger, Node, RecompilationScheduler } from '@microlambda/core';
+import { getDefaultThreads, getThreads, Logger } from '@microlambda/core';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import { concat, merge, Observable } from 'rxjs';
 import { spawn } from 'child_process';
@@ -23,16 +23,16 @@ enum TestStatus {
   SKIPPED,
 }
 
-interface ITestEvent {
+/*interface ITestEvent {
   type: 'unit' | 'functional';
   status: TestStatus;
   node: Node;
   took?: number;
-}
+}*/
 
 // FIXME: Move to core
 // Should be part of Service class and called by RecompilationScheduler
-class TestRunner {
+/*class TestRunner {
   private readonly _services: Node[];
   private readonly _concurrency: number;
   private readonly _type: 'unit' | 'functional' | undefined;
@@ -211,3 +211,4 @@ export const runTests = async (cmd: ITestOptions, scheduler: RecompilationSchedu
     runner.runTests(cmd.stdio).subscribe(onNext, onError, onComplete);
   });
 };
+*/

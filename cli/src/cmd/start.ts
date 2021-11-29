@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { startServer, IOSocketManager } from '@microlambda/server';
+// import { startServer, IOSocketManager } from '@microlambda/server';
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
 import chalk from 'chalk';

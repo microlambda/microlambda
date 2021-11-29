@@ -3,10 +3,10 @@ import {beforePackage, IPackageCmd} from './package';
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import {prompt} from 'inquirer';
-import {ConfigReader, getAccountIAM, IConfig, Logger, Workspace} from '@microlambda/core';
+import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig, Logger} from '@microlambda/core';
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
-import {RunCommandEvent, RunCommandEventEnum, Runner} from "@centipod/core";
+import {RunCommandEvent, RunCommandEventEnum} from "@centipod/core";
 
 export interface IDeployCmd extends IPackageCmd {
   E: string;
@@ -43,14 +43,14 @@ export const handleNext = (
   verbose: boolean,
   action: 'deploy' | 'remove',
 ): void => {
-  const key = (evt: DeployEvent): string => `${evt.data?.service}|${evt.data?.region}`;
+  const key = (service: string, evt: DeployEvent): string => `${service}|${evt.data?.region}`;
   const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
   const isTty = process.stdout.isTTY;
   const capitalize = (input: string): string => input.slice(0, 1).toUpperCase() + input.slice(1);
   switch (evt.type) {
     case RunCommandEventEnum.NODE_STARTED:
       if (isTty) {
-        spinnies.add(key(evt), {
+        spinnies.add(key(evt.workspace.name, evt), {
           text: `${capitalize(actionVerbBase)}ing ${evt.workspace.name} ${chalk.magenta(`[${evt.data?.region}]`)}`,
         });
       } else {
@@ -60,7 +60,7 @@ export const handleNext = (
       break;
     case RunCommandEventEnum.NODE_PROCESSED:
       if (isTty) {
-        spinnies.succeed(key(evt), {
+        spinnies.succeed(key(evt.workspace.name, evt), {
           text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.data?.region}]`)}`,
         });
       } else {
@@ -72,7 +72,7 @@ export const handleNext = (
     case RunCommandEventEnum.NODE_ERRORED:
       failures.add(evt);
       if (isTty) {
-        spinnies.fail(key(evt), {
+        spinnies.fail(key(evt.workspace.name, evt), {
           text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.data?.region}]`)}`,
         });
       } else {
@@ -81,12 +81,14 @@ export const handleNext = (
         );
       }
   }
+  /*
+  TODO: Print logs if verbose
   const regionalDeployLogs = evt.service.logs[action][evt.region];
   if (verbose && regionalDeployLogs) {
     console.log(regionalDeployLogs.join(''));
   } else if (verbose) {
     console.warn(chalk.yellow('Cannot print deploy logs'));
-  }
+  }*/
 };
 
 export const printReport = async (
@@ -111,28 +113,30 @@ export const printReport = async (
   let i = 0;
   for (const evt of failures) {
     i++;
-    const region = evt.data?.region;
-    if (region) {
+    const region = (evt as DeployEvent).data?.region;
+    if (region && evt.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
       console.error(
-        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.data?.service} in ${region} region\n`)),
+        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name} in ${region} region\n`)),
       );
     } else {
-      console.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.data?.service}\n`)));
+      console.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name}\n`)));
     }
 
-    if (evt.error) {
+    if ((evt as any).error) {
       console.error(chalk.bold(`#${i} - Error details:`));
-      console.error(evt.error);
+      console.error((evt as any).error);
       console.log('');
     }
-    const regionalDeployLogs = evt.service.logs[action][region || 'default'];
+    /*
+    // FIXME: print logs
+    const regionalDeployLogs = (evt as any).service.logs[action][region || 'default'];
     if (regionalDeployLogs) {
       console.error(chalk.bold(`#${i} - Execution logs:`));
       console.log(regionalDeployLogs.join(''));
       console.log('');
       // wait a bit otherwise console do not have time to print message
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 300));
-    }
+    }*/
   }
   console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
   console.info(`Successfully ${actionVerbBase}ed ${total - failures.size}/${total} stacks`);
@@ -220,6 +224,22 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
     const failures: Set<DeployEvent> = new Set();
     const actions: Set<DeployEvent> = new Set();
 
-
+    const deployer = new Deployer({
+      ...options,
+      environment: cmd.E,
+    });
+    deployer.deploy().subscribe(
+      (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, 'deploy'),
+      (err) => {
+        console.error(chalk.red('Error deploying services'));
+        console.error(err);
+        process.exit(1);
+      },
+      async () => {
+        await printReport(failures, actions.size, 'remove');
+        console.info(`Successfully deploy from ${cmd.E} :rocket:`);
+        process.exit(0);
+      },
+    );
   });
 };

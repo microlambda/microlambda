@@ -82,7 +82,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
       } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
         const spinner = spinners.get(evt.workspace.name);
         if (spinner) {
-          spinner.text = `${evt.workspace.name} compiled ${chalk.gray(evt.result.overall + 'ms')}`;
+          spinner.text = `${evt.workspace.name} compiled ${chalk.gray(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.cyan(' (from cache)') : ''}`;
           spinner.succeed();
         }
       } else if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
@@ -96,7 +96,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     };
     const onError = (err: unknown): void => {
       printError(err);
-      return reject();
+      return reject(err);
     };
     const onComplete = (): void => {
       return resolve();
@@ -104,7 +104,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     const runner = new Runner(options.project);
     runner.runCommand('build', {
       to: options.service,
-      parallel: false,
+      mode: 'topological',
       affected: options.affected,
       force: options.force,
     }).subscribe(onNext, onError, onComplete);
@@ -118,6 +118,7 @@ export const build = async (cmd: IBuildCmd, logger: Logger): Promise<void> => {
     console.info('\nSuccessfully built ✨');
     process.exit(0);
   } catch (e) {
+    console.error(e);
     process.exit(1);
   }
 };

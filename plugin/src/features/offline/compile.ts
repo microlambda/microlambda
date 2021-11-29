@@ -6,7 +6,7 @@ export const transpile = async (
   logger?: ILogger
 ): Promise<void> => {
   const now = Date.now();
-  await service.transpile().toPromise();
+  await service.transpile();
   const took = Date.now() - now;
   logger?.info(`${service.name} transpiled in ${took}ms`);
 };

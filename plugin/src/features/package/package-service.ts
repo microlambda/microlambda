@@ -33,16 +33,16 @@ export const packageService = (
   const useLayer = config?.packagr?.useLayer === true;
   const useLayerChecksums = config?.packagr?.checksums;
 
-  const bundleLocation = join(service.getLocation(), ".package", "bundle.zip");
-  const layerLocation = join(service.getLocation(), ".package", "layer.zip");
+  const bundleLocation = join(service.root, ".package", "bundle.zip");
+  const layerLocation = join(service.root, ".package", "layer.zip");
 
   const bundleMetadataLocation = join(
-    service.getLocation(),
+    service.root,
     ".package",
     "bundle-metadata.json"
   );
   const isPackaging = existsSync(
-    join(service.getLocation(), ".package", "tmp")
+    join(service.root, ".package", "tmp")
   );
   const isPackaged = useLayer ? existsSync(bundleLocation) && existsSync(layerLocation) : existsSync(bundleLocation);
 
@@ -136,9 +136,9 @@ export const packageService = (
       logger?.info("[package] A packaging process is already running");
       logger?.debug(
         "[package] Watching",
-        join(service.getLocation(), ".package")
+        join(service.root, ".package")
       );
-      const watcher = watch(join(service.getLocation(), ".package"));
+      const watcher = watch(join(service.root, ".package"));
       watcher.on("add", (path) => {
         if (pathResolve(path) === pathResolve(bundleMetadataLocation)) {
           logger?.info("[package] External packaging process succeeded");
@@ -149,7 +149,7 @@ export const packageService = (
       });
     } else {
       const packager = new Packager(useLayer, shouldBuildLayer);
-      packager.bundle(service.getName(), config?.packagr?.level || DEFAULT_LEVEL).subscribe(
+      packager.bundle(service.name, config?.packagr?.level || DEFAULT_LEVEL).subscribe(
         (evt) => {
           logger?.info(`[package] ${evt.message} (took ${evt.took}ms)`);
           if (evt.megabytes?.code) {

@@ -1,18 +1,17 @@
 /* eslint-disable no-console */
 import inquirer from 'inquirer';
-import { Logger } from '@microlambda/core';
+import {Deployer, DeployEvent, Logger, Project, Workspace} from '@microlambda/core';
 import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
 
-export const remove = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
+export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
   return new Promise(async () => {
     console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
-    const { config, graph } = await init(logger, scheduler, 3000);
+    const { config, project } = await init(logger);
     checkEnv(config, cmd, 'You must provide a target stage to remove services');
-    const services = graph.getServices();
-    const service = cmd.S ? services.find((s) => s.getName() === cmd.S) : null;
+    const service = cmd.S ? project.services.get(cmd.S) : null;
     if (cmd.S && !service) {
       console.error(chalk.red('Error: unknown service', cmd.S));
       process.exit(1);
@@ -50,16 +49,17 @@ export const remove = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       spinnerColor: 'cyan',
     });
 
-    const toRemove = service ? [service] : services;
 
-    const failures: Set<IDeployEvent> = new Set();
-    const actions: Set<IDeployEvent> = new Set();
+    const failures: Set<DeployEvent> = new Set();
+    const actions: Set<DeployEvent> = new Set();
 
-    if (cmd.C) {
-      scheduler.setConcurrency(Number(cmd.C));
-    }
-
-    scheduler.remove(toRemove, String(cmd.E)).subscribe(
+    const remover = new Deployer({
+      project,
+      target: service || undefined,
+      force: true,
+      environment: cmd.E,
+    }, 'remove');
+    remover.deploy().subscribe(
       (evt) => {
         handleNext(evt, spinnies, failures, actions, cmd.verbose, 'remove');
       },
