@@ -1,8 +1,3 @@
-import { convertPath, PortablePath, ppath } from '@yarnpkg/fslib/lib/path';
-import { getPluginConfiguration, openWorkspace } from '@yarnpkg/cli';
-import { Configuration, Project, Workspace } from '@yarnpkg/core';
-import { getProjectRoot } from '../get-project-root';
-import { getName } from '../yarn/project';
 import { dirname, join, relative } from 'path';
 import { copy, copyFile, mkdirp, pathExists, readJSONSync, remove, statSync, writeJSONSync } from 'fs-extra';
 import { getTsConfig } from '../typescript';
@@ -10,9 +5,11 @@ import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
-import { Service } from '../graph';
 import { ILogger, Logger } from '../logger';
 import { command } from 'execa';
+import {resloveProjectRoot, Workspace as CentipodWorkspace} from "@centipod/core";
+import { Workspace } from '../graph/workspace';
+import { Project } from '../graph/project';
 
 export class Packager {
   private readonly _projectRoot: string;
@@ -22,13 +19,13 @@ export class Packager {
 
   constructor(private readonly _useLayers = false, private readonly _buildLayer = true) {
     this._logger = new Logger().log('packagr');
-    this._projectRoot = getProjectRoot();
+    this._projectRoot = resloveProjectRoot();
     this._logger.debug('Initialized packagr on project', this._projectRoot);
   }
 
-  static readMetadata(service: Service): { took: number; megabytes: { code: number; layer?: number } } {
+  static readMetadata(service: CentipodWorkspace): { took: number; megabytes: { code: number; layer?: number } } {
     try {
-      return readJSONSync(join(service.getLocation(), '.package', 'bundle-metadata.json'));
+      return readJSONSync(join(service.root, '.package', 'bundle-metadata.json'));
     } catch (e) {
       return { took: 0, megabytes: { code: 0 } };
     }
@@ -42,23 +39,23 @@ export class Packager {
         const shouldResolvesServiceNodeModules = !this._useLayers || this._buildLayer;
         let now = Date.now();
         this._logger.debug('Analysing yarn workspaces...');
-        const originalProject = await this._getOriginalYarnProject();
-        this._logger.debug('Found', originalProject.workspaces.length, 'workspaces');
+        const originalProject = await Project.loadProject(this._projectRoot);
+        this._logger.debug('Found', originalProject.workspaces.size, 'workspaces');
         this._logger.debug(
           'Workspaces:',
-          originalProject.workspaces.map((w) => getName(w)),
+          Array.from(originalProject.services.keys()),
         );
-        const toPackageOriginal = originalProject.workspaces.find((w) => getName(w) === service);
+        const toPackageOriginal = originalProject.services.get(service);
         if (!toPackageOriginal) {
           throw new Error(
             `Cannot package service ${service}. This service does not exist in current project. Make sure project is initialized with yarn install`,
           );
         }
-        this._packagePath = join(toPackageOriginal.cwd, '.package');
+        this._packagePath = join(toPackageOriginal.root, '.package');
         if (shouldResolvesServiceNodeModules) {
           this._logger.debug('Creating transient project...');
-          const transientProject = await this._createTransientProject(originalProject, toPackageOriginal);
-          this._logger.debug('Focusing workspace', getName(toPackageOriginal), '...');
+          const transientProject = await this._createTransientProject(originalProject);
+          this._logger.debug('Focusing workspace', toPackageOriginal.name, '...');
           const dependentWorkspaces = this._focusWorkspace(transientProject, toPackageOriginal);
           this._logger.debug('Copying compiled code of dependent workspaces');
           await this._copyCompiledFiles(originalProject, dependentWorkspaces);
@@ -85,15 +82,7 @@ export class Packager {
     });
   }
 
-  private async _getOriginalYarnProject(): Promise<Project> {
-    const rootPath = convertPath<PortablePath>(ppath, this._projectRoot);
-    const plugins = getPluginConfiguration();
-    const configuration = await Configuration.find(rootPath, plugins);
-    const mainWorkspace = await openWorkspace(configuration, rootPath);
-    return mainWorkspace.project;
-  }
-
-  private async _createTransientProject(originalProject: Project, toPackage: Workspace): Promise<Project> {
+  private async _createTransientProject(originalProject: Project): Promise<Project> {
     if (!this._packagePath) {
       throw new Error('Assertion failed: temporary path should have been resolved');
     }
@@ -106,7 +95,7 @@ export class Packager {
     }
     await mkdirp(this._tmpPath);
     this._logger.debug('Temporary directory successfully created');
-    const manifests = originalProject.workspaces.map((w) => join(w.cwd, 'package.json'));
+    const manifests = Array.from(originalProject.workspaces.values()).map((w) => join(w.root, 'package.json'));
     await Promise.all(
       manifests.map(async (path) => {
         const dest = join(String(this._tmpPath), relative(this._projectRoot, path));
@@ -129,37 +118,24 @@ export class Packager {
 
     // Get transient yarn project
     this._logger.debug('Verifying transient project...');
-    const backupDir = process.cwd();
-    process.chdir(this._tmpPath);
-    this._logger.debug('Current directory updated', process.cwd());
-    const portablePackagePath = convertPath<PortablePath>(ppath, this._tmpPath);
-    const plugins = getPluginConfiguration();
-    const transientConfiguration = await Configuration.find(portablePackagePath, plugins);
-    const transientMainWorkspace = await openWorkspace(transientConfiguration, portablePackagePath);
-    const transientProject = transientMainWorkspace.project;
-    process.chdir(backupDir);
-    this._logger.debug('Current directory restored', process.cwd());
+    const transientProject = await Project.loadProject(this._tmpPath);
     this._logger.debug(
       'Transient project workspaces',
-      transientProject.workspaces.map((w) => getName(w)),
+      transientProject.workspaces.keys(),
     );
     return transientProject;
   }
 
-  private _focusWorkspace(transientProject: Project, toFocus: Workspace): Array<Workspace> {
-    const toPackageTransient = transientProject.workspaces.find(
-      (w) => w?.manifest?.name?.identHash === toFocus?.manifest?.name?.identHash,
-    );
+  private _focusWorkspace(transientProject: Project, toFocus: Workspace): Array<CentipodWorkspace> {
+    const toPackageTransient = transientProject.workspaces.get(toFocus.name);
     if (!toPackageTransient) {
       throw new Error(`Assertion failed: Cannot package workspace ${toFocus} in transient project`);
     }
-    this._logger.debug('Find dependencies of workspace to focus', getName(toFocus));
-    const requiredWorkspaces: Set<Workspace> = new Set([toPackageTransient]);
-    const addWorkspacesDependencies = (workspace: Workspace): void => {
-      for (const dep of workspace.manifest.dependencies.values()) {
-        const internalDependency = transientProject.workspaces.find(
-          (w) => w?.manifest?.name?.identHash === dep.identHash,
-        );
+    this._logger.debug('Find dependencies of workspace to focus', toFocus.name);
+    const requiredWorkspaces: Set<CentipodWorkspace> = new Set([toPackageTransient]);
+    const addWorkspacesDependencies = (workspace: CentipodWorkspace): void => {
+      for (const dep of workspace.dependencies()) {
+        const internalDependency = transientProject.workspaces.get(dep.name);
         if (internalDependency) {
           requiredWorkspaces.add(internalDependency);
           addWorkspacesDependencies(internalDependency);
@@ -169,66 +145,62 @@ export class Packager {
     addWorkspacesDependencies(toPackageTransient);
     this._logger.debug(
       'Dependencies workspaces',
-      Array.from(requiredWorkspaces).map((w) => getName(w)),
+      Array.from(requiredWorkspaces).map((w) => w.name),
     );
-    const isRequired = (workspace: Workspace): boolean =>
-      Array.from(requiredWorkspaces).some((w) => w?.manifest?.name?.identHash === workspace?.manifest?.name?.identHash);
+    const isRequired = (workspace: CentipodWorkspace): boolean =>
+      Array.from(requiredWorkspaces).some((w) => w.name === workspace.name);
     this._logger.debug('Patching manifests');
-    for (const workspace of transientProject.workspaces) {
+    for (const workspace of transientProject.workspaces.values()) {
       if (isRequired(workspace)) {
         this._logger.debug(
-          getName(workspace),
+          workspace.name,
           'is dependency of',
-          getName(toPackageTransient),
+          toPackageTransient.name,
           'removing only devDeps',
         );
-        const manifest = readJSONSync(join(workspace.cwd, 'package.json'));
+        const manifest = readJSONSync(join(workspace.root, 'package.json'));
         delete manifest.devDependencies;
-        writeJSONSync(join(workspace.cwd, 'package.json'), manifest, { spaces: 2 });
+        writeJSONSync(join(workspace.root, 'package.json'), manifest, { spaces: 2 });
       } else {
         this._logger.debug(
-          getName(workspace),
+          workspace.name,
           'is not dependency of',
-          getName(toPackageTransient),
+          toPackageTransient.name,
           'removing all dependencies',
         );
-        const manifest = readJSONSync(join(workspace.cwd, 'package.json'));
+        const manifest = readJSONSync(join(workspace.root, 'package.json'));
         delete manifest.dependencies;
         delete manifest.devDependencies;
         delete manifest.peerDependencies;
         delete manifest.scripts;
-        writeJSONSync(join(workspace.cwd, 'package.json'), manifest, { spaces: 2 });
+        writeJSONSync(join(workspace.root, 'package.json'), manifest, { spaces: 2 });
       }
     }
     return Array.from(requiredWorkspaces);
   }
 
-  private async _copyCompiledFiles(originalProject: Project, workspaces: Workspace[]): Promise<void> {
+  private async _copyCompiledFiles(originalProject: Project, workspaces: CentipodWorkspace[]): Promise<void> {
     await Promise.all(
       workspaces.map(async (w) => {
-        this._logger.debug('Copying compiled files of', getName(w));
-        const originalWorkspace = originalProject.workspaces.find(
-          (ow) => ow?.manifest?.name?.identHash === w?.manifest?.name?.identHash,
-        );
+        this._logger.debug('Copying compiled files of', w.name);
+        const originalWorkspace = originalProject.workspaces.get(w.name);
         if (!originalWorkspace) {
           throw new Error(`Assertion failed: originalWorkspace not found`);
         }
-        const config = getTsConfig(originalWorkspace.cwd);
+        const config = getTsConfig(originalWorkspace.root);
         this._logger.debug('outDir resolved', config?.options?.outDir);
         if (!config?.options?.outDir) {
           throw new Error(
-            `Out directory could be resolve for ${getName(
-              originalWorkspace,
-            )}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
+            `Out directory could be resolve for ${originalWorkspace.name}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
           );
         }
         this._logger.debug(
           'Copying',
           config.options.outDir,
           '->',
-          join(w.cwd, relative(originalWorkspace.cwd, config.options.outDir)),
+          join(w.root, relative(originalWorkspace.root, config.options.outDir)),
         );
-        await copy(config.options.outDir, join(w.cwd, relative(originalWorkspace.cwd, config.options.outDir)));
+        await copy(config.options.outDir, join(w.root, relative(originalWorkspace.root, config.options.outDir)));
       }),
     );
   }
@@ -236,7 +208,7 @@ export class Packager {
   private async _yarnInstall(project: Project): Promise<void> {
     try {
       await command('yarn install', {
-        cwd: project.cwd,
+        cwd: project.root,
         stdio: process.env.MILA_DEBUG?.split(',').includes('packagr') ? 'inherit' : 'pipe',
       });
     } catch (e) {
@@ -281,13 +253,11 @@ export class Packager {
   }
 
   private _copyCompiledSources(toZip: Map<string, string>, toPackageOriginal: Workspace): void {
-    const tsConfig = getTsConfig(toPackageOriginal.cwd);
+    const tsConfig = getTsConfig(toPackageOriginal.root);
     const lib = tsConfig?.options?.outDir;
     if (!lib) {
       throw new Error(
-        `Out directory could be resolve for ${getName(
-          toPackageOriginal,
-        )}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
+        `Out directory could be resolve for ${toPackageOriginal.name}. Make sure a valid tsconfig.json can be found at package root with a specified outDir`,
       );
     }
     this._logger.debug('Copying service to package compiled code. outDir =', lib);

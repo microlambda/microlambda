@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import inquirer from 'inquirer';
-import { Logger, RecompilationScheduler, IDeployEvent } from '@microlambda/core';
+import { Logger } from '@microlambda/core';
 import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';

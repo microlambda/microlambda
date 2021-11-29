@@ -5,7 +5,7 @@ import fallback from './default.json';
 import { ILogger, Logger } from '../logger';
 import { sync } from 'glob';
 import { join } from 'path';
-import { DependenciesGraph, Service } from '../graph';
+import {Project} from "../graph/project";
 
 type Step = Map<Region, Set<Microservice>>;
 type Region = string;
@@ -35,7 +35,7 @@ export class ConfigReader {
     'me-south-1',
     'ap-south-1',
   ];
-  private _services: Service[] = [];
+  private _services: string[] = [];
   private _config: IConfig | undefined;
   private _schema: Joi.ObjectSchema | undefined;
   private readonly _logger: ILogger | undefined;
@@ -53,8 +53,8 @@ export class ConfigReader {
     return this._config;
   }
 
-  public validate(graph: DependenciesGraph): IConfig {
-    this._services = graph.getServices();
+  public validate(graph: Project): IConfig {
+    this._services = Array.from(graph.services.keys());
     this._schema = this._buildConfigSchema();
     if (!this._config) {
       this._config = this.readConfig();
@@ -146,9 +146,9 @@ export class ConfigReader {
     if (!steps) {
       this._logger?.debug(
         'No specific config for steps. Using default',
-        schedule(this._services.map((s) => s.getName())),
+        schedule(this._services),
       );
-      const step = schedule(this._services.map((s) => s.getName()));
+      const step = schedule(this._services);
       return [step];
     }
     const builtSteps: Step[] = [];
@@ -157,7 +157,6 @@ export class ConfigReader {
       let toSchedule: string[];
       if (step === '*') {
         toSchedule = this._services
-          .map((s) => s.getName())
           .filter((s) => !steps.filter((step) => Array.isArray(step)).some((step) => step.includes(s)));
         this._logger?.debug('Is wildcard. Resolving all other services', toSchedule);
       } else {
@@ -171,7 +170,7 @@ export class ConfigReader {
   }
 
   private _buildConfigSchema(): ObjectSchema {
-    const services = Joi.string().valid(...this._services.map((s) => s.getName()));
+    const services = Joi.string().valid(...this._services);
     const regionSchema = Joi.alternatives([
       Joi.string().valid(...ConfigReader.regions),
       Joi.array().items(Joi.string().valid(...ConfigReader.regions)),

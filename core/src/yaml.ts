@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {DEFAULT_SCHEMA, dump, load, Schema, Type } from 'js-yaml';
+import {DEFAULT_SCHEMA, dump, load, Type } from 'js-yaml';
 import { copySync, existsSync, readFileSync, removeSync, renameSync, writeFileSync } from 'fs-extra';
 import { join, dirname } from 'path';
-import { Service } from './graph';
 import { ConfigReader } from './config/read-config';
 import { compileFile } from './typescript';
 import { Logger } from './logger';
+import { Workspace } from './graph/workspace';
 
 class Mapping {
   map: any;
@@ -102,14 +102,14 @@ export const parseServerlessYaml = (path: string) => {
   });
 };
 
-const getServerlessPath = (service: Service): { src: string; dest: string } => {
-  const basePath = service.getLocation();
+const getServerlessPath = (service: Workspace): { src: string; dest: string } => {
+  const basePath = service.root;
   const src = join(basePath, 'serverless.yml');
   const dest = join(basePath, 'serverless.yml.backup');
   return { src, dest };
 };
 
-export const backupYaml = (services: Service[]): void => {
+export const backupYaml = (services: Workspace[]): void => {
   services.forEach((service) => {
     const { src, dest } = getServerlessPath(service);
     try {
@@ -122,7 +122,7 @@ export const backupYaml = (services: Service[]): void => {
   });
 };
 
-export const restoreYaml = (services: Service[]): void => {
+export const restoreYaml = (services: Workspace[]): void => {
   services.forEach((service) => {
     const { src, dest } = getServerlessPath(service);
     if (existsSync(src)) {
@@ -157,7 +157,7 @@ const optionalRegion = (doc: any, region: string): void => {
 export const reformatYaml = async (
   projectRoot: string,
   config: ConfigReader,
-  services: Service[],
+  services: Workspace[],
   region: string,
   env: string,
 ): Promise<void> => {
@@ -202,8 +202,8 @@ export const reformatYaml = async (
   }
 };
 
-export const getServiceName = (service: Service): string => {
-  const path = join(service.getLocation(), 'serverless.yml');
+export const getServiceName = (service: Workspace): string => {
+  const path = join(service.root, 'serverless.yml');
   if (!existsSync(path)) {
     throw Error('Error: serverless.yml not found @ ' + path);
   }

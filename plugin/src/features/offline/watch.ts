@@ -1,9 +1,9 @@
-import { getTsConfig, Service } from "@microlambda/core";
+import { getTsConfig, Workspace } from "@microlambda/core";
 import { watch } from "chokidar";
 import { ILogger } from "../../types";
 import { transpile } from "./compile";
 
-export const watchFiles = (service: Service, logger?: ILogger): void => {
+export const watchFiles = (service: Workspace, logger?: ILogger): void => {
   const files: string[] = [];
   if (!service) {
     logger?.error(`Cannot watch: service not resolved`);

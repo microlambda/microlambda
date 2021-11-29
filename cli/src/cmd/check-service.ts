@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
-import { Logger, RecompilationScheduler } from '@microlambda/core';
+import { Logger } from '@microlambda/core';
 import { init } from './start';
 
 export const checkService = async (cmd: string): Promise<void> => {
   const logger = new Logger();
-  const { graph } = await init(logger, new RecompilationScheduler(logger));
-  if (!graph.getServices().some((s) => s.getName() === cmd)) {
+  const { project } = await init(logger);
+  if (!project.services.has(cmd)) {
     console.info(`\n${chalk.red('✖')} Unknown service`, cmd);
     process.exit(1);
   }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer, Server } from 'http';
-import { Logger, DependenciesGraph, Service, RecompilationScheduler } from '@microlambda/core';
+import { Logger, Project } from '@microlambda/core';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
@@ -9,8 +9,7 @@ export * from './socket';
 
 export const startServer = (
   port: number,
-  graph: DependenciesGraph,
-  scheduler: RecompilationScheduler,
+  project: Project,
   logger: Logger,
 ): Promise<Server> => {
   const log = logger.log('api');

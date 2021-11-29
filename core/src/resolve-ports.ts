@@ -1,8 +1,7 @@
 import { IConfig } from './config/config';
 import { Logger } from './logger';
-import { Workspace } from '@yarnpkg/core';
-import { getName } from './yarn/project';
 import { Socket } from 'net';
+import { Workspace } from './graph/workspace';
 
 export interface IServicePortsConfig {
   lambda: number;
@@ -32,7 +31,7 @@ export const resolvePorts = (
   logger?.log('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {
-    const name = getName(service);
+    const name = service.name;
     const inConfig = config.ports[name] != null;
     let fromConfig: Partial<IServicePortsConfig> = {};
     if (inConfig) {

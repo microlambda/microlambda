@@ -24,11 +24,9 @@
     "monorepo"
   ],
   "dependencies": {
+    "@centipod/core": "^0.0.1-alpha.10",
     "@hapi/joi": "^17.1.1",
     "@microlambda/types": "workspace:*",
-    "@yarnpkg/cli": "^3.1.0",
-    "@yarnpkg/core": "^3.1.0",
-    "@yarnpkg/fslib": "^2.4.0",
     "archiver": "^5.3.0",
     "aws-sdk": "^2.1036.0",
     "chalk": "^4.1.2",

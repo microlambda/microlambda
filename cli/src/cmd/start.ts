@@ -4,16 +4,14 @@ import { showOff } from '../utils/ascii';
 import ora from 'ora';
 import chalk from 'chalk';
 import {
-  getGraphFromYarnProject,
-  getProjectRoot,
-  RecompilationScheduler,
+  Project,
   recreateLogDirectory,
   Logger,
-  IPCSocketsManager,
-  DependenciesGraph,
   ConfigReader,
   IConfig,
 } from '@microlambda/core';
+import { resloveProjectRoot } from '@centipod/core';
+import {command} from "execa";
 
 interface IStartOptions {
   interactive: boolean;
@@ -21,7 +19,7 @@ interface IStartOptions {
   port: number;
 }
 
-export const validateConfig = (config: ConfigReader, graph: DependenciesGraph): IConfig => {
+export const validateConfig = (config: ConfigReader, graph: Project): IConfig => {
   const validating = ora('Validating config 🔧').start();
   try {
     const validated = config.validate(graph);
@@ -54,37 +52,33 @@ export const readConfig = async (
   }
 };
 
-export const getDependenciesGraph = async (
-  projectRoot: string,
-  scheduler: RecompilationScheduler,
-  config: IConfig,
-  logger: Logger,
-  defaultPort?: number,
-): Promise<DependenciesGraph> => {
+export const getDependenciesGraph = async (projectRoot: string): Promise<Project> => {
   const parsingGraph = ora('Parsing dependency graph 🧶').start();
-  const graph = await getGraphFromYarnProject(projectRoot, config, scheduler, logger, defaultPort);
+  const graph = await Project.loadProject(projectRoot);
   parsingGraph.succeed();
   return graph;
 };
 
 export const init = async (
   logger: Logger,
-  scheduler: RecompilationScheduler,
-  defaultPort?: number,
-): Promise<{ projectRoot: string; config: IConfig; graph: DependenciesGraph }> => {
+): Promise<{ projectRoot: string; config: IConfig; project: Project }> => {
   const log = logger.log('start');
-  const projectRoot = getProjectRoot(logger);
+  const projectRoot = resloveProjectRoot();
   log.info('Project root resolved', projectRoot);
+  const project =  await getDependenciesGraph(projectRoot);
   const { config, reader } = await readConfig(projectRoot, logger);
-  const graph = await getDependenciesGraph(projectRoot, scheduler, config, logger, defaultPort);
-  validateConfig(reader, graph);
-  return { projectRoot, config: config, graph };
+  validateConfig(reader, project);
+  return { projectRoot, config: config, project };
 };
 
-// TODO: Install dependencies just in case
-/*export const yarnInstall = async (graph: DependenciesGraph, logger: Logger): Promise<void> => {
+export const yarnInstall = async (project: Project, logger: Logger): Promise<void> => {
   const installing = ora('Installing dependencies 📦').start();
-  await graph.bootstrap().catch((e) => {
+  try {
+    await command('yarn install', {
+      cwd: project.root,
+      stdio: process.env.MILA_DEBUG?.split(',').includes('packagr') ? 'inherit' : 'pipe',
+    });
+  } catch (e) {
     const message =
       'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.';
     logger.log('bootstrap').error(e);
@@ -92,17 +86,18 @@ export const init = async (
     // eslint-disable-next-line no-console
     console.error(message);
     process.exit(1);
-  });
+  }
   installing.text = 'Dependencies installed 📦';
   installing.succeed();
-};*/
+};
 
 export const start = async (
-  scheduler: RecompilationScheduler,
-  options: IStartOptions,
-  logger: Logger,
+  // scheduler: RecompilationScheduler,
+  // options: IStartOptions,
+  // logger: Logger,
 ): Promise<void> => {
-  console.info(showOff());
+  process.exit(1);
+  /*console.info(showOff());
 
   const { projectRoot, config, graph } = await init(logger, scheduler, 3000);
 
@@ -173,5 +168,5 @@ export const start = async (
   if (!options.interactive) {
     logger.log('start').info('Starting services');
     await scheduler.startProject(graph, options.recompile);
-  }
+  }*/
 };

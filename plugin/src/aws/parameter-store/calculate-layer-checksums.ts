@@ -1,11 +1,11 @@
 import {ILayerChecksums} from "./layer-checksums";
 import {ILogger} from "../../types";
 import { fromFile } from 'hasha';
-import {getTsConfig, Service} from "@microlambda/core";
+import {getTsConfig, Workspace} from "@microlambda/core";
 import {join, relative} from 'path';
 import {sync as glob} from "glob";
 
-export const calculateLayerChecksums = async (service: Service, logger?: ILogger): Promise<ILayerChecksums | null> => {
+export const calculateLayerChecksums = async (service: Workspace, logger?: ILogger): Promise<ILayerChecksums | null> => {
     try {
         const projectRoot = service.getGraph().getProjectRoot();
         const manifestPath = join(service.getLocation(), 'package.json');

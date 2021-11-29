@@ -1,17 +1,10 @@
 /* eslint-disable no-console */
-import {
-  RecompilationScheduler,
-  getDefaultThreads,
-  getThreads,
-  Logger,
-  DependenciesGraph,
-  Service,
-  IPackageEvent,
-} from '@microlambda/core';
-import { beforeBuild, IBuildCmd, typeCheck } from './build';
+import {getDefaultThreads, getThreads, Logger, Packager, Workspace } from '@microlambda/core';
+import {beforeBuild, IBuildCmd, IBuildOptions, typeCheck} from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
-import { printReport } from './deploy';
+import {printReport} from './deploy';
+import {RunCommandEvent, RunCommandEventEnum, Runner} from "@centipod/core";
 
 export interface IPackageCmd extends IBuildCmd {
   C: string;
@@ -19,68 +12,55 @@ export interface IPackageCmd extends IBuildCmd {
   recompile: boolean;
 }
 
+interface IPackageOptions extends IBuildOptions {
+  concurrency: number;
+  targets: Workspace[];
+}
+
 export const beforePackage = async (
   cmd: IPackageCmd,
-  scheduler: RecompilationScheduler,
   logger: Logger,
-): Promise<{ projectRoot: string; concurrency: number; services: Service[]; graph: DependenciesGraph }> => {
+): Promise<IPackageOptions> => {
   const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
-  const { projectRoot, graph } = await beforeBuild(cmd, scheduler, logger);
-  const service = cmd.S ? graph.getServices().find((s) => s.getName() === cmd.S) : undefined;
-  let services: Service[];
-  let target: Service | DependenciesGraph;
-  if (cmd.S) {
-    if (!service) {
-      console.error(chalk.red('Unknown service'), cmd.S);
-      process.exit(1);
-    }
-    services = [service];
-    target = service;
-  } else {
-    services = graph.getServices();
-    target = graph;
-  }
+  const options = await beforeBuild(cmd, logger, false);
   if (cmd.recompile) {
     try {
       console.info('\nBuilding dependency graph\n');
-      await typeCheck(scheduler, target, cmd.onlySelf, false);
+      await typeCheck(options);
     } catch (e) {
       process.exit(1);
     }
   }
-  return { projectRoot, concurrency, services, graph };
+  return { ...options, concurrency, targets: options.service ? [options.service] : Array.from(options.project.services.values()) };
 };
 
-export const packageServices = (
-  scheduler: RecompilationScheduler,
-  concurrency: number,
-  target: Array<Service>,
-): Promise<Set<IPackageEvent>> => {
-  return new Promise<Set<IPackageEvent>>((resolve, reject) => {
-    const failures: Set<IPackageEvent> = new Set();
+export const packageServices = (options: IPackageOptions): Promise<Set<RunCommandEvent>> => {
+  return new Promise<Set<RunCommandEvent>>((resolve, reject) => {
+    const failures: Set<RunCommandEvent> = new Set();
     const spinnies = new Spinnies({
       failColor: 'white',
       succeedColor: 'white',
       spinnerColor: 'cyan',
     });
-    const onNext = (evt: IPackageEvent): void => {
+    const onNext = (evt: RunCommandEvent): void => {
       switch (evt.type) {
-        case 'started': {
-          spinnies.add(evt.service.getName(), { text: `Packaging ${evt.service.getName()}` });
+        case RunCommandEventEnum.NODE_STARTED: {
+          spinnies.add(evt.workspace.name, { text: `Packaging ${evt.workspace.name}` });
           break;
         }
-        case 'succeeded': {
-          spinnies.succeed(evt.service.getName(), {
-            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes?.code + 'MB')}${
-              evt.megabytes?.layer ? chalk.cyan(` (using ${evt.megabytes?.layer + 'MB'} layer)`) : ''
-            } ${chalk.gray(evt.took + 'ms')}`,
+        case RunCommandEventEnum.NODE_PROCESSED: {
+          const metadata = Packager.readMetadata(evt.workspace);
+          spinnies.succeed(evt.workspace.name, {
+            text: `${evt.workspace.name} packaged ${chalk.cyan(metadata.megabytes?.code + 'MB')}${
+              metadata.megabytes?.layer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
+            } ${chalk.gray(metadata.took + 'ms')}`,
           });
           break;
         }
-        case 'failed': {
+        case RunCommandEventEnum.NODE_ERRORED: {
           failures.add(evt);
-          spinnies.fail(evt.service.getName(), {
-            text: `Failed to package ${evt.service.getName()}`,
+          spinnies.fail(evt.workspace.name, {
+            text: `Failed to package ${evt.workspace.name}`,
           });
           break;
         }
@@ -98,18 +78,23 @@ export const packageServices = (
       }
       return resolve(failures);
     };
-    scheduler.setConcurrency(concurrency);
-    scheduler.package(target).subscribe(onNext, onError, onComplete);
+    const runner = new Runner(options.project, options.concurrency);
+    runner.runCommand('package', {
+      to: options.service,
+      parallel: true,
+      affected: options.affected,
+      force: options.force,
+    }).subscribe(onNext, onError, onComplete);
   });
 };
 
-export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
+export const packagr = async (cmd: IPackageCmd, logger: Logger): Promise<void> => {
   try {
-    const { concurrency, services } = await beforePackage(cmd, scheduler, logger);
+    const options = await beforePackage(cmd, logger);
     console.info('\nPackaging services\n');
-    const failures = await packageServices(scheduler, concurrency, services);
+    const failures = await packageServices(options);
     if (failures.size) {
-      await printReport(failures, services.length, 'package');
+      await printReport(failures, options.service ? 1 : options.project.services.size, 'package');
       process.exit(1);
     }
     process.exit(0);

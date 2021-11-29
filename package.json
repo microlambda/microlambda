@@ -67,6 +67,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@centipod/cli": "^0.0.1-alpha.7",
     "@commitlint/cli": "^15.0.0",
     "@commitlint/config-conventional": "^15.0.0",
     "@types/jest": "^27.0.3",

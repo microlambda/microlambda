@@ -2586,6 +2586,52 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@centipod/cli@npm:^0.0.1-alpha.7":
+  version: 0.0.1-alpha.7
+  resolution: "@centipod/cli@npm:0.0.1-alpha.7"
+  dependencies:
+    "@centipod/core": 0.0.1-alpha.7
+    chalk: ^4.1.1
+    commander: ^7.2.0
+  bin:
+    centipod: dist/index.js
+    cpd: dist/index.js
+  checksum: 2b2a1486995e98971f00d7f7c25ea6e2fb25c7f1450074f6b9b72b6bc1277cc4de0eea85676689cc37598825b6c3babb2ac5ee3e7404b48db6e0fc88f27b6d66
+  languageName: node
+  linkType: hard
+
+"@centipod/core@npm:0.0.1-alpha.7":
+  version: 0.0.1-alpha.7
+  resolution: "@centipod/core@npm:0.0.1-alpha.7"
+  dependencies:
+    conventional-commits-parser: ^3.2.1
+    execa: ^5.0.0
+    fast-glob: ^3.2.5
+    hasha: 5.2.2
+    lodash.isequal: 4.5.0
+    rxjs: ^6.6.7
+    semver: ^7.3.5
+    simple-git: ^2.38.0
+  checksum: 5265c70886787deb5fc5ac2c73e4fa60e61f9da0b360ab2e28016dc13d854dea0b5b49bcda36651048e8dfe3b4f86de57c0538483611e991961c994fb488d910
+  languageName: node
+  linkType: hard
+
+"@centipod/core@npm:^0.0.1-alpha.10":
+  version: 0.0.1-alpha.10
+  resolution: "@centipod/core@npm:0.0.1-alpha.10"
+  dependencies:
+    conventional-commits-parser: ^3.2.1
+    execa: ^5.0.0
+    fast-glob: ^3.2.5
+    hasha: 5.2.2
+    lodash.isequal: 4.5.0
+    rxjs: ^6.6.7
+    semver: ^7.3.5
+    simple-git: ^2.38.0
+  checksum: b5dcbdeed535387df5c7463ed98eb3b4cb98acf20769cdb818d605cd3f3cd82cb655db1f8ac3f193278de37f35768e56603472667a955661b1a23148b170f55f
+  languageName: node
+  linkType: hard
+
 "@chevrotain/types@npm:^9.1.0":
   version: 9.1.0
   resolution: "@chevrotain/types@npm:9.1.0"
@@ -3139,10 +3185,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kwsites/file-exists@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@kwsites/file-exists@npm:1.1.1"
+  dependencies:
+    debug: ^4.1.1
+  checksum: 4ff945de7293285133aeae759caddc71e73c4a44a12fac710fdd4f574cce2671a3f89d8165fdb03d383cfc97f3f96f677d8de3c95133da3d0e12a123a23109fe
+  languageName: node
+  linkType: hard
+
+"@kwsites/promise-deferred@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@kwsites/promise-deferred@npm:1.1.1"
+  checksum: 07455477a0123d9a38afb503739eeff2c5424afa8d3dbdcc7f9502f13604488a4b1d9742fc7288832a52a6422cf1e1c0a1d51f69a39052f14d27c9a0420b6629
+  languageName: node
+  linkType: hard
+
 "@microlambda/cli@workspace:cli":
   version: 0.0.0-use.local
   resolution: "@microlambda/cli@workspace:cli"
   dependencies:
+    "@centipod/core": ^0.0.1-alpha.10
     "@microlambda/core": "workspace:*"
     "@microlambda/generators": "workspace:*"
     "@microlambda/server": "workspace:*"
@@ -3194,6 +3257,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/core@workspace:core"
   dependencies:
+    "@centipod/core": ^0.0.1-alpha.10
     "@hapi/joi": ^17.1.1
     "@microlambda/types": "workspace:*"
     "@types/archiver": ^5.1.1
@@ -3207,9 +3271,6 @@ __metadata:
     "@types/rimraf": ^3.0.2
     "@types/socket.io": ^3.0.2
     "@types/uuid": ^8.3.3
-    "@yarnpkg/cli": ^3.1.0
-    "@yarnpkg/core": ^3.1.0
-    "@yarnpkg/fslib": ^2.4.0
     archiver: ^5.3.0
     aws-sdk: ^2.1036.0
     chalk: ^4.1.2
@@ -4862,7 +4923,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@yarnpkg/fslib@npm:^2.4.0, @yarnpkg/fslib@npm:^2.5.0, @yarnpkg/fslib@npm:^2.6.0":
+"@yarnpkg/fslib@npm:^2.5.0, @yarnpkg/fslib@npm:^2.6.0":
   version: 2.6.0
   resolution: "@yarnpkg/fslib@npm:2.6.0"
   dependencies:
@@ -7322,7 +7383,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"conventional-commits-parser@npm:^3.2.2":
+"conventional-commits-parser@npm:^3.2.1, conventional-commits-parser@npm:^3.2.2":
   version: 3.2.3
   resolution: "conventional-commits-parser@npm:3.2.3"
   dependencies:
@@ -9926,7 +9987,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-glob@npm:^3.1.1, fast-glob@npm:^3.2.2":
+"fast-glob@npm:^3.1.1, fast-glob@npm:^3.2.2, fast-glob@npm:^3.2.5":
   version: 3.2.7
   resolution: "fast-glob@npm:3.2.7"
   dependencies:
@@ -11223,7 +11284,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hasha@npm:^5.2.2":
+"hasha@npm:5.2.2, hasha@npm:^5.2.2":
   version: 5.2.2
   resolution: "hasha@npm:5.2.2"
   dependencies:
@@ -13678,7 +13739,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash.isequal@npm:^4.5.0":
+"lodash.isequal@npm:4.5.0, lodash.isequal@npm:^4.5.0":
   version: 4.5.0
   resolution: "lodash.isequal@npm:4.5.0"
   checksum: da27515dc5230eb1140ba65ff8de3613649620e8656b19a6270afe4866b7bd461d9ba2ac8a48dcc57f7adac4ee80e1de9f965d89d4d81a0ad52bb3eec2609644
@@ -14204,6 +14265,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "microlambda@workspace:."
   dependencies:
+    "@centipod/cli": ^0.0.1-alpha.7
     "@commitlint/cli": ^15.0.0
     "@commitlint/config-conventional": ^15.0.0
     "@types/jest": ^27.0.3
@@ -17500,6 +17562,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rxjs@npm:^6.6.7":
+  version: 6.6.7
+  resolution: "rxjs@npm:6.6.7"
+  dependencies:
+    tslib: ^1.9.0
+  checksum: bc334edef1bb8bbf56590b0b25734ba0deaf8825b703256a93714308ea36dff8a11d25533671adf8e104e5e8f256aa6fdfe39b2e248cdbd7a5f90c260acbbd1b
+  languageName: node
+  linkType: hard
+
 "rxjs@npm:^7.2.0, rxjs@npm:^7.4.0":
   version: 7.4.0
   resolution: "rxjs@npm:7.4.0"
@@ -17841,6 +17912,17 @@ __metadata:
   version: 3.0.6
   resolution: "signal-exit@npm:3.0.6"
   checksum: b819ac81ba757af559dad0804233ae31bf6f054591cd8a671e9cbcf09f21c72ec3076fe87d1e04861f5b33b47d63f0694b568de99c99cd733ee2060515beb6d5
+  languageName: node
+  linkType: hard
+
+"simple-git@npm:^2.38.0":
+  version: 2.47.0
+  resolution: "simple-git@npm:2.47.0"
+  dependencies:
+    "@kwsites/file-exists": ^1.1.1
+    "@kwsites/promise-deferred": ^1.1.1
+    debug: ^4.3.2
+  checksum: 0fefd12a2aaec9b27bcd13e713991769cab3eb185fcf0ad3e1afff17d34c63a7dbb80c4acd3220b2d9522dd9d171f84b237e6dedb4e17545c8bb7aadf746efb9
   languageName: node
   linkType: hard
 
@@ -19415,7 +19497,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^1.11.1, tslib@npm:^1.13.0, tslib@npm:^1.8.1, tslib@npm:^1.9.3":
+"tslib@npm:^1.11.1, tslib@npm:^1.13.0, tslib@npm:^1.8.1, tslib@npm:^1.9.0, tslib@npm:^1.9.3":
   version: 1.14.1
   resolution: "tslib@npm:1.14.1"
   checksum: dbe628ef87f66691d5d2959b3e41b9ca0045c3ee3c7c7b906cc1e328b39f199bb1ad9e671c39025bd56122ac57dfbf7385a94843b1cc07c60a4db74795829acd

@@ -1,5 +1,5 @@
 import { SinonStub, stub } from 'sinon';
-import aws from 'aws-sdk';
+import * as aws from 'aws-sdk';
 import {getAccountIAM, IAmazonError} from './aws-account';
 
 describe('[method] getAccountIAM', () => {

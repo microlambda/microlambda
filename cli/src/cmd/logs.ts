@@ -1,8 +1,8 @@
-import { Logger, RecompilationScheduler } from '@microlambda/core';
+import { Logger } from '@microlambda/core';
 
 // TODO: Fix this properly
-export const logs = async (cmd: { S: string }, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
-  logger.log('log').debug({ cmd, scheduler });
+export const logs = async (cmd: { S: string }, logger: Logger): Promise<void> => {
+  logger.log('log').debug({ cmd });
   /*const { projectRoot, config } = await init(logger, scheduler);
   let services: Service[] = [];
   logger.log('logs').debug(config);

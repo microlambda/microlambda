@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { findProjectRoot, Logger } from '@microlambda/core';
+import { Logger } from '@microlambda/core';
 import { join, relative } from 'path';
 import { prompt } from 'inquirer';
 import {
@@ -12,10 +12,11 @@ import {
   resolveInputs,
 } from '@microlambda/generators';
 import chalk from 'chalk';
+import {resloveProjectRoot} from "@centipod/core";
 
 export const generate = async (blueprint: string, logger: Logger): Promise<void> => {
   console.info('🧙 Microlambda code generator');
-  const projectRoot = findProjectRoot();
+  const projectRoot = resloveProjectRoot();
   const log = logger.log('generator');
   const blueprintsPath = join(projectRoot, 'blueprints');
   log.debug(`Resolving blueprints in ${blueprintsPath}`);

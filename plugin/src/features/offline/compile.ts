@@ -1,12 +1,12 @@
-import { Service } from "@microlambda/core";
+import { Workspace } from "@microlambda/core";
 import { ILogger } from "../../types";
 
 export const transpile = async (
-  service: Service,
+  service: Workspace,
   logger?: ILogger
 ): Promise<void> => {
   const now = Date.now();
   await service.transpile().toPromise();
   const took = Date.now() - now;
-  logger?.info(`${service.getName()} transpiled in ${took}ms`);
+  logger?.info(`${service.name} transpiled in ${took}ms`);
 };

@@ -4,11 +4,9 @@ import { ILogger, ServerlessInstance } from "./types";
 import { IPluginConfig, validateConfig } from "./config";
 import {
   ConfigReader,
-  DependenciesGraph,
-  getGraphFromYarnProject,
-  getProjectRoot,
   IConfig,
-  Service,
+  Project,
+  Workspace,
 } from "@microlambda/core";
 import { createLogger } from "./utils";
 import {
@@ -23,6 +21,7 @@ import {
   replaceAuthorizer,
 } from "./features";
 import { applyConditions } from "./features/conditions/apply-conditions";
+import { resloveProjectRoot } from '@centipod/core';
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -31,9 +30,9 @@ class ServerlessMicrolambdaPlugin {
   public hooks: Record<string, unknown>;
 
   private _pluginConfig: IPluginConfig | undefined;
-  private _graph: DependenciesGraph | undefined;
+  private _graph: Project | undefined;
   private _config: IConfig | undefined;
-  private _service: Service | undefined;
+  private _service: Workspace | undefined;
   private readonly _log: ILogger;
 
   constructor(serverless: ServerlessInstance) {
@@ -197,16 +196,16 @@ class ServerlessMicrolambdaPlugin {
 
   private async _getDependenciesGraph(): Promise<void> {
     if (!this._graph) {
-      const projectRoot = getProjectRoot();
+      const projectRoot = resloveProjectRoot();
       this._log.info(`Project root resolved ${projectRoot}`);
       this._config = new ConfigReader().readConfig();
-      this._graph = await getGraphFromYarnProject(projectRoot, this._config);
+      this._graph = await Project.loadProject(projectRoot);
       this._log.info(
-        `Dependencies graph resolved: ${this._graph.getNodes().length} nodes`
+        `Dependencies graph resolved: ${this._graph.workspaces.size} nodes`
       );
       process.env.MILA_SERVICES_LENGTH = this._graph
-        .getServices()
-        .length.toString();
+        .services
+        .size.toString();
     }
   }
 
@@ -214,18 +213,20 @@ class ServerlessMicrolambdaPlugin {
     if (!this._graph) {
       await this._getDependenciesGraph();
     }
+    if (!this._graph) {
+      console.error('Assertion failed: dependencies graph is not resolved');
+      process.exit(1);
+    }
     if (!this._service) {
       this._log.debug(`cwd: ${process.cwd()}`);
-      this._service = this._graph
-        ?.getNodes()
-        .find((s) => s.getLocation() === process.cwd()) as Service;
+      this._service = Array.from(this._graph.services.values()).find((s) => s.root === process.cwd());
       if (!this._service) {
         this._log.error(`Error: cannot resolve microlambda service`);
         process.exit(1);
       }
-      this._log.info(`Microlambda service resolved ${this._service.getName()}`);
-      for (const dep of new Set(this._service.getDependencies())) {
-        this._log.info(`-- Depends on ${dep.getName()}`);
+      this._log.info(`Microlambda service resolved ${this._service.name}`);
+      for (const dep of new Set(this._service.dependencies())) {
+        this._log.info(`-- Depends on ${dep.name}`);
       }
     }
   }

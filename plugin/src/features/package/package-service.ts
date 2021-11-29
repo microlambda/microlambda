@@ -1,7 +1,7 @@
 /**
  * Package microservice (using yarn workspace focus) on memfs
  */
-import { Packager, Service} from "@microlambda/core";
+import { Packager, Workspace } from "@microlambda/core";
 import chalk from "chalk";
 import { ILogger, ServerlessInstance } from "../../types";
 import { assign } from "../../utils";
@@ -24,7 +24,7 @@ export const packageService = (
   serverless: ServerlessInstance,
   stackName: string,
   config: IPluginConfig | undefined,
-  service: Service | undefined,
+  service: Workspace | undefined,
   logger?: ILogger
 ): Promise<void> => {
   if (!service) {

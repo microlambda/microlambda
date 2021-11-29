@@ -86,7 +86,7 @@ export const compileFile = (
   });
 };
 
-export const compileFiles = async (cwd: string, logger?: Logger): Promise<void> => {
+export const transpileFiles = async (cwd: string, logger?: Logger): Promise<void> => {
   logger?.log('ts').debug('compiling files in directory', cwd);
   const config = getTsConfig(cwd);
   logger?.log('ts').debug('config read', config);

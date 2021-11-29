@@ -1,95 +1,120 @@
 /* eslint-disable no-console */
-import {
-  Logger,
-  IRecompilationError,
-  IRecompilationEvent,
-  RecompilationEventType,
-  RecompilationScheduler,
-  DependenciesGraph,
-  Node,
-  Service,
-} from '@microlambda/core';
-import { init } from './start';
+import { Logger, Project } from '@microlambda/core';
+import { init, yarnInstall } from './start';
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
+import {
+  Runner,
+  RunCommandEvent,
+  RunCommandEventEnum,
+  Workspace as CentipodWorkspace,
+  isNodeEvent, isProcessError
+} from "@centipod/core";
 
 export interface IBuildCmd {
   S?: string;
-  bootstrap: boolean;
-  onlySelf: boolean;
+  reInstall?: boolean;
+  affected?: string;
+  force?: boolean;
+}
+
+export interface IBuildOptions {
+  projectRoot: string;
+  project: Project;
+  service: CentipodWorkspace | undefined;
+  force: boolean;
+  affected: { rev1: string, rev2: string } | undefined;
 }
 
 export const beforeBuild = async (
   cmd: IBuildCmd,
-  scheduler: RecompilationScheduler,
   logger: Logger,
   acceptPackages = false,
-): Promise<{ projectRoot: string; graph: DependenciesGraph; service: Node | undefined }> => {
-  const { graph, projectRoot } = await init(logger, scheduler);
-  const nodes = acceptPackages ? graph.getNodes() : graph.getServices();
-  const service = nodes.find((s) => s.getName() === cmd.S);
-  if (cmd.S && !service) {
-    console.error(chalk.red('Unknown service', cmd.S));
-    process.exit(1);
+): Promise<IBuildOptions> => {
+  const { project, projectRoot } = await init(logger);
+  const resolveService = (): CentipodWorkspace | undefined => {
+    if (cmd.S) {
+      const nodes = acceptPackages ? project.workspaces : project.services;
+      const service = nodes.get(cmd.S);
+      if (cmd.S && !service) {
+        console.error(chalk.red(acceptPackages ? 'Unknown workspace' : 'Unknown service', cmd.S));
+        process.exit(1);
+      }
+      return service;
+    }
+    return undefined;
   }
-  // FIXME: Remove --no-bootstrap, put --re-install instead
-  /*if (cmd.bootstrap) {
-    await lernaBootstrap(graph, logger);
-  }*/
-  return { projectRoot, graph, service };
+  if (cmd.reInstall) {
+    await yarnInstall(project, logger);
+  }
+  const resolveAffected = (): { rev1: string, rev2: string } | undefined => {
+    if (cmd.affected) {
+      const revisions = cmd.affected.split('..');
+      if (revisions.length != 2) {
+        console.error(chalk.red('Argument --affected must be formatted <rev1>..<rev2>'));
+        process.exit(1);
+      }
+      return { rev1: revisions[0], rev2: revisions[1] };
+    }
+    return undefined;
+  }
+  return { projectRoot, project, service: resolveService(), force: cmd.force || false, affected: resolveAffected() };
 };
 
-export const typeCheck = async (
-  scheduler: RecompilationScheduler,
-  target: DependenciesGraph | Node,
-  onlySelf: boolean,
-  force: boolean,
-): Promise<void> => {
+export const printError = (error: unknown): void => {
+  if (isNodeEvent(error)) {
+    printError(error.error);
+  } else if (isProcessError(error)) {
+    console.log(error.all);
+  } else {
+    console.error(error);
+  }
+};
+
+export const typeCheck = async (options: IBuildOptions): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const spinners: Map<string, Ora> = new Map();
-    const onNext = (evt: IRecompilationEvent): void => {
-      if (evt.type === RecompilationEventType.TYPE_CHECK_IN_PROGRESS) {
-        const spinner = ora(`Compiling ${evt.node.getName()}`);
+    const onNext = (evt: RunCommandEvent): void => {
+      if (evt.type === RunCommandEventEnum.NODE_STARTED) {
+        const spinner = ora(`Compiling ${evt.workspace.name}`);
         spinner.start();
-        spinners.set(evt.node.getName(), spinner);
-      } else if (evt.type === RecompilationEventType.TYPE_CHECK_SUCCESS) {
-        const spinner = spinners.get(evt.node.getName());
+        spinners.set(evt.workspace.name, spinner);
+      } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+        const spinner = spinners.get(evt.workspace.name);
         if (spinner) {
-          spinner.text = `${evt.node.getName()} compiled ${chalk.gray(evt.took + 'ms')}`;
+          spinner.text = `${evt.workspace.name} compiled ${chalk.gray(evt.result.overall + 'ms')}`;
           spinner.succeed();
         }
-      } else if (evt.type === RecompilationEventType.TYPE_CHECK_FAILURE) {
-        const spinner = spinners.get(evt.node.getName());
+      } else if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
+        const spinner = spinners.get(evt.workspace.name);
         if (spinner) {
-          spinner.fail(`Error compiling ${evt.node.getName()}`);
+          spinner.fail(`Error compiling ${evt.workspace.name}`);
         }
-        (evt.node as Service).tscLogs.forEach((l) => console.error(l));
+        printError(evt.error);
         return reject();
       }
     };
-    const onError = (evt: IRecompilationError): void => {
-      const spinner = spinners.get(evt.node.getName());
-      if (spinner) {
-        spinner.fail(`Error compiling ${evt.node.getName()}`);
-      }
-      evt.logs.forEach((l) => console.error(l));
+    const onError = (err: unknown): void => {
+      printError(err);
       return reject();
     };
     const onComplete = (): void => {
       return resolve();
     };
-    if (target instanceof Node) {
-      scheduler.buildOne(target, onlySelf, force).subscribe(onNext, onError, onComplete);
-    } else {
-      scheduler.buildAll(target, onlySelf, force).subscribe(onNext, onError, onComplete);
-    }
+    const runner = new Runner(options.project);
+    runner.runCommand('build', {
+      to: options.service,
+      parallel: false,
+      affected: options.affected,
+      force: options.force,
+    }).subscribe(onNext, onError, onComplete);
   });
 };
 
-export const build = async (cmd: IBuildCmd, scheduler: RecompilationScheduler, logger: Logger): Promise<void> => {
-  const { graph, service } = await beforeBuild(cmd, scheduler, logger, true);
+export const build = async (cmd: IBuildCmd, logger: Logger): Promise<void> => {
+  const options = await beforeBuild(cmd, logger, true);
   try {
-    await typeCheck(scheduler, service ? service : graph, cmd.onlySelf, true);
+    await typeCheck(options);
     console.info('\nSuccessfully built ✨');
     process.exit(0);
   } catch (e) {

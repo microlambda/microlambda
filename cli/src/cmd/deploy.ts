@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
-import { beforePackage, IPackageCmd, packageServices } from './package';
+import {beforePackage, IPackageCmd} from './package';
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
-import { prompt } from 'inquirer';
-import { ConfigReader, RecompilationScheduler, Logger, getAccountIAM, IConfig, IPackageEvent } from '@microlambda/core';
-import { IDeployEvent } from '@microlambda/core/lib';
-import { join } from 'path';
-import { pathExists, remove } from 'fs-extra';
+import {prompt} from 'inquirer';
+import {ConfigReader, getAccountIAM, IConfig, Logger, Workspace} from '@microlambda/core';
+import {join} from 'path';
+import {pathExists, remove} from 'fs-extra';
+import {RunCommandEvent, RunCommandEventEnum, Runner} from "@centipod/core";
 
 export interface IDeployCmd extends IPackageCmd {
   E: string;
@@ -28,7 +28,7 @@ export const checkEnv = (config: IConfig, cmd: { E: string | null }, msg: string
 };
 
 export const getCurrentUserIAM = async (): Promise<string> => {
-  return getAccountIAM().catch((err) => {
+  return getAccountIAM().catch((err: unknown) => {
     console.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
     console.error(chalk.red('Original error: ' + err));
     process.exit(1);
@@ -36,48 +36,48 @@ export const getCurrentUserIAM = async (): Promise<string> => {
 };
 
 export const handleNext = (
-  evt: IDeployEvent,
+  evt: DeployEvent,
   spinnies: Spinnies,
-  failures: Set<IDeployEvent>,
-  actions: Set<IDeployEvent>,
+  failures: Set<DeployEvent>,
+  actions: Set<DeployEvent>,
   verbose: boolean,
   action: 'deploy' | 'remove',
 ): void => {
-  const key = (evt: IDeployEvent): string => `${evt.service.getName()}|${evt.region}`;
+  const key = (evt: DeployEvent): string => `${evt.data?.service}|${evt.data?.region}`;
   const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
   const isTty = process.stdout.isTTY;
   const capitalize = (input: string): string => input.slice(0, 1).toUpperCase() + input.slice(1);
   switch (evt.type) {
-    case 'started':
+    case RunCommandEventEnum.NODE_STARTED:
       if (isTty) {
         spinnies.add(key(evt), {
-          text: `${capitalize(actionVerbBase)}ing ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+          text: `${capitalize(actionVerbBase)}ing ${evt.workspace.name} ${chalk.magenta(`[${evt.data?.region}]`)}`,
         });
       } else {
-        console.info(`${chalk.bold(evt.service.getName())} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
+        console.info(`${chalk.bold(evt.workspace.name)} ${actionVerbBase}ing ${chalk.magenta(`[${evt.data?.region}]`)}`);
       }
       actions.add(evt);
       break;
-    case 'succeeded':
+    case RunCommandEventEnum.NODE_PROCESSED:
       if (isTty) {
         spinnies.succeed(key(evt), {
-          text: `${capitalize(actionVerbBase)}ed ${evt.service.getName()} ${chalk.magenta(`[${evt.region}]`)}`,
+          text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.data?.region}]`)}`,
         });
       } else {
         console.info(
-          `${chalk.bold(evt.service.getName())} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.region}]`)}`,
+          `${chalk.bold(evt.workspace.name)} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.data?.region}]`)}`,
         );
       }
       break;
-    case 'failed':
+    case RunCommandEventEnum.NODE_ERRORED:
       failures.add(evt);
       if (isTty) {
         spinnies.fail(key(evt), {
-          text: `Error ${actionVerbBase}ing ${evt.service.getName()} ! ${chalk.magenta(`[${evt.region}]`)}`,
+          text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.data?.region}]`)}`,
         });
       } else {
         console.info(
-          `${chalk.bold(evt.service.getName())} - ${capitalize(action)} failed ${chalk.magenta(`[${evt.region}]`)}`,
+          `${chalk.bold(evt.workspace.name)} - ${capitalize(action)} failed ${chalk.magenta(`[${evt.data?.region}]`)}`,
         );
       }
   }
@@ -90,7 +90,7 @@ export const handleNext = (
 };
 
 export const printReport = async (
-  failures: Set<IDeployEvent | IPackageEvent>,
+  failures: Set<DeployEvent | RunCommandEvent>,
   total: number,
   action: 'deploy' | 'remove' | 'package',
 ): Promise<void> => {
@@ -111,13 +111,13 @@ export const printReport = async (
   let i = 0;
   for (const evt of failures) {
     i++;
-    const region = (evt as IDeployEvent).region;
+    const region = evt.data?.region;
     if (region) {
       console.error(
-        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.service.getName()} in ${region} region\n`)),
+        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.data?.service} in ${region} region\n`)),
       );
     } else {
-      console.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.service.getName()}\n`)));
+      console.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${evt.data?.service}\n`)));
     }
 
     if (evt.error) {
@@ -144,7 +144,7 @@ export const printReport = async (
   console.error(chalk.green('Process exited without errors'));
 };
 
-export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
+export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
   return new Promise(async () => {
     console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
     const reader = new ConfigReader(logger);
@@ -174,12 +174,11 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
         process.exit(0);
       }
     }
-    const { graph, services } = await beforePackage(cmd, scheduler, logger);
-    reader.validate(graph);
+    const options = await beforePackage(cmd, logger);
+    reader.validate(options.project);
 
-    console.info('\n▼ Packaging services\n');
+    console.info('\n▼ Clean artifacts directories\n');
 
-    // TODO: Move this in core wih an option clean: boolean, so that package cmd can clean or not with option
     // Cleaning artifact location
     const cleaningSpinnies = new Spinnies({
       failColor: 'white',
@@ -188,18 +187,18 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     });
     let hasCleanErrored = false;
     await Promise.all(
-      services.map(async (service) => {
-        const artefactLocation = join(service.getLocation(), '.package');
+      options.targets.map(async (service) => {
+        const artefactLocation = join(service.root, '.package');
         const doesExist = await pathExists(artefactLocation);
         if (doesExist) {
-          cleaningSpinnies.add(service.getName(), {
+          cleaningSpinnies.add(service.name, {
             text: `Cleaning artifact directory ${chalk.grey(artefactLocation)}`,
           });
           try {
             await remove(artefactLocation);
-            cleaningSpinnies.succeed(service.getName());
+            cleaningSpinnies.succeed(service.name);
           } catch (e) {
-            cleaningSpinnies.fail(service.getName());
+            cleaningSpinnies.fail(service.name);
             hasCleanErrored = true;
           }
         }
@@ -207,12 +206,6 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
     );
     if (hasCleanErrored) {
       console.error(chalk.red('Error cleaning previous artifacts'));
-      process.exit(1);
-    }
-
-    const packageFailures = await packageServices(scheduler, Number(cmd.C), services);
-    if (packageFailures.size) {
-      await printReport(packageFailures, services.length, 'package');
       process.exit(1);
     }
 
@@ -224,26 +217,9 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger, scheduler: Recompi
       spinnerColor: 'cyan',
     });
 
-    if (cmd.C) {
-      scheduler.setConcurrency(Number(cmd.C));
-    }
-    const failures: Set<IDeployEvent> = new Set();
-    const actions: Set<IDeployEvent> = new Set();
+    const failures: Set<DeployEvent> = new Set();
+    const actions: Set<DeployEvent> = new Set();
 
-    scheduler.deploy(services, cmd.E).subscribe(
-      (evt) => {
-        handleNext(evt, spinnies, failures, actions, cmd.verbose, 'deploy');
-      },
-      (err) => {
-        console.error(chalk.red('Error deploying services'));
-        console.error(err);
-        process.exit(1);
-      },
-      async () => {
-        await printReport(failures, actions.size, 'deploy');
-        console.info(`Successfully deployed to ${cmd.E} :rocket:`);
-        process.exit(0);
-      },
-    );
+
   });
 };
