@@ -27,11 +27,43 @@ export interface IBuildOptions {
   affected: { rev1: string, rev2: string } | undefined;
 }
 
+const printInfos = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefined => {
+  const resolveAffected = (): { rev1: string, rev2: string } | undefined => {
+    if (cmd.affected) {
+      const revisions = cmd.affected.split('..');
+      if (revisions.length != 2) {
+        console.error(chalk.red('Argument --affected must be formatted <rev1>..<rev2>'));
+        process.exit(1);
+      }
+      return { rev1: revisions[0], rev2: revisions[1] };
+    }
+    return undefined;
+  }
+  const affected = resolveAffected();
+  console.info('');
+  if (cmd.s) {
+    if (cmd.only) {
+      console.info('🔧 Building only', cmd.s);
+    } else {
+      console.info('🔧 Building', cmd.s, 'and its dependencies');
+    }
+  } else {
+    console.info('🔧 Building all project services');
+  }
+  if (affected) {
+    console.info('');
+    console.info(chalk.magenta('Skipping target not affected affected between revisions', affected.rev1, 'and', affected.rev2));
+  }
+  console.info('');
+  return affected;
+}
+
 export const beforeBuild = async (
   cmd: IBuildCmd,
   logger: Logger,
   acceptPackages = false,
 ): Promise<IBuildOptions> => {
+  const affected = printInfos(cmd);
   const { project, projectRoot } = await init(logger);
   const resolveService = (): CentipodWorkspace | undefined => {
     if (cmd.s) {
@@ -48,22 +80,13 @@ export const beforeBuild = async (
   if (cmd.install) {
     await yarnInstall(project, logger);
   }
-  const resolveAffected = (): { rev1: string, rev2: string } | undefined => {
-    if (cmd.affected) {
-      const revisions = cmd.affected.split('..');
-      if (revisions.length != 2) {
-        console.error(chalk.red('Argument --affected must be formatted <rev1>..<rev2>'));
-        process.exit(1);
-      }
-      return { rev1: revisions[0], rev2: revisions[1] };
-    }
-    return undefined;
-  }
-  return { projectRoot, project, service: resolveService(), force: cmd.force || false, affected: resolveAffected() };
+
+  return { projectRoot, project, service: resolveService(), force: cmd.force || false, affected: affected };
 };
 
-export const printError = (error: unknown): void => {
+export const printError = (error: unknown, spinners?: Map<string, Ora>): void => {
   if (isNodeEvent(error)) {
+    spinners?.get(error.workspace.name)?.fail(`Error compiling ${error.workspace.name}`);
     printError(error.error);
   } else if (isProcessError(error)) {
     console.log(error.all);
@@ -76,15 +99,20 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const spinners: Map<string, Ora> = new Map();
     const onNext = (evt: RunCommandEvent): void => {
-
-      if (evt.type === RunCommandEventEnum.NODE_STARTED) {
+      if (evt.type === RunCommandEventEnum.TARGETS_RESOLVED) {
+        if (!evt.targets.some((target) => target.hasCommand)) {
+          console.error(chalk.red('No workspace found for target build. Please add a build script in centipod.json'));
+        }
+      } else if (evt.type === RunCommandEventEnum.NODE_SKIPPED && !evt.affected) {
+        console.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'))
+      } else if (evt.type === RunCommandEventEnum.NODE_STARTED) {
         const spinner = ora(`Compiling ${evt.workspace.name}`);
         spinner.start();
         spinners.set(evt.workspace.name, spinner);
       } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
         const spinner = spinners.get(evt.workspace.name);
         if (spinner) {
-          spinner.text = `${evt.workspace.name} compiled ${chalk.gray(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.cyan(' (from cache)') : ''}`;
+          spinner.text = `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.grey(' (from cache)') : ''}`;
           spinner.succeed();
         }
       } else if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
@@ -92,13 +120,13 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
         if (spinner) {
           spinner.fail(`Error compiling ${evt.workspace.name}`);
         }
-        printError(evt.error);
+        setTimeout(() => printError(evt.error), 100);
         return reject();
       }
     };
     const onError = (err: unknown): void => {
       printError(err);
-      return reject(err);
+      return reject();
     };
     const onComplete = (): void => {
       return resolve();
@@ -120,7 +148,6 @@ export const build = async (cmd: IBuildCmd, logger: Logger): Promise<void> => {
     console.info('\nSuccessfully built ✨');
     process.exit(0);
   } catch (e) {
-    console.error(e);
     process.exit(1);
   }
 };
