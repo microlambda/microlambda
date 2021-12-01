@@ -4,8 +4,9 @@ import { ConfigReader, Logger } from '@microlambda/core';
 
 export const checkStage = (cmd: string): void => {
   const config = new ConfigReader(new Logger()).readConfig();
-  if (!config.stages) {
+  if (!config.stages?.length) {
     console.warn(chalk.yellow('Info: Allowed stages not given in config, considering every stage valid.'));
+    process.exit(0);
   }
   if (config.stages && !config.stages.includes(cmd)) {
     console.info(`\n${chalk.red('✖')} Unknown stage`, cmd);

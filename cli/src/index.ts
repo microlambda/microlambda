@@ -11,6 +11,7 @@ import { deploy } from './cmd/deploy';
 import { getDefaultThreads, Logger } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
+import {info} from "./cmd/info";
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -45,7 +46,7 @@ program
       await commandWrapper(async () => {
         const options = {
           recompile: cmd.recompile,
-          service: cmd.S,
+          service: cmd.s,
           port: cmd.P || 4545,
           interactive: cmd.interactive,
         };
@@ -93,7 +94,7 @@ program
   .option('-s <service>, --service <service>', 'the service you want to stop', false)
   .description('stop microlambda services')
   .action(async (cmd) => {
-    await stop(scheduler, cmd.S);
+    await stop(scheduler, cmd.s);
   });
 
 program
@@ -102,16 +103,31 @@ program
   .option('-s <service>, --service <service>', 'the service you want to restart', false)
   .description('restart microlambda services')
   .action(async (cmd) => {
-    await restart(scheduler, cmd.S);
+    await restart(scheduler, cmd.s);
   });
 */
 
 program
+  .command('info')
+  .option('--graph', 'print dependencies graph', false)
+  .option('--roots', 'show project roots', false)
+  .option('--leaves', 'show project leaves', false)
+  .option('-s <service>, --service <service>', 'display information on a given workspace', false)
+  .description('print current project information')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await info(cmd, logger);
+      }),
+  );
+
+program
   .command('build')
-  // .option('-i, --interactive', 'interactively choose microservices', false)
-  .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
-  .option('--only-self', 'skip compiling service dependencies', false)
-  .option('-s <service>, --service <service>', 'the service you want to build', false)
+  .option('--install', 'skip bootstrapping dependencies', false)
+  .option('--only', 'skip compiling service dependencies', false)
+  .option('-s <service>, --service <service>', 'the service you want to build', '')
+  .option('--affected <rev1..rev2>', 'only rebuild services affected between two revisions', '')
+  .option('--force', 'skip compiling service dependencies', false)
   .description('compile packages and services')
   .action(
     async (cmd) =>

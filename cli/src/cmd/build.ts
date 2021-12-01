@@ -12,8 +12,9 @@ import {
 } from "@centipod/core";
 
 export interface IBuildCmd {
-  S?: string;
-  reInstall?: boolean;
+  s?: string;
+  install?: boolean;
+  only: boolean;
   affected?: string;
   force?: boolean;
 }
@@ -33,18 +34,18 @@ export const beforeBuild = async (
 ): Promise<IBuildOptions> => {
   const { project, projectRoot } = await init(logger);
   const resolveService = (): CentipodWorkspace | undefined => {
-    if (cmd.S) {
+    if (cmd.s) {
       const nodes = acceptPackages ? project.workspaces : project.services;
-      const service = nodes.get(cmd.S);
-      if (cmd.S && !service) {
-        console.error(chalk.red(acceptPackages ? 'Unknown workspace' : 'Unknown service', cmd.S));
+      const service = nodes.get(cmd.s);
+      if (cmd.s && !service) {
+        console.error(chalk.red(acceptPackages ? 'Unknown workspace' : 'Unknown service', cmd.s));
         process.exit(1);
       }
       return service;
     }
     return undefined;
   }
-  if (cmd.reInstall) {
+  if (cmd.install) {
     await yarnInstall(project, logger);
   }
   const resolveAffected = (): { rev1: string, rev2: string } | undefined => {
@@ -75,6 +76,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
     const spinners: Map<string, Ora> = new Map();
     const onNext = (evt: RunCommandEvent): void => {
+
       if (evt.type === RunCommandEventEnum.NODE_STARTED) {
         const spinner = ora(`Compiling ${evt.workspace.name}`);
         spinner.start();

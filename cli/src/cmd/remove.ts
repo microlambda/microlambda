@@ -11,16 +11,16 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
     console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
     const { config, project } = await init(logger);
     checkEnv(config, cmd, 'You must provide a target stage to remove services');
-    const service = cmd.S ? project.services.get(cmd.S) : null;
-    if (cmd.S && !service) {
-      console.error(chalk.red('Error: unknown service', cmd.S));
+    const service = cmd.s ? project.services.get(cmd.s) : null;
+    if (cmd.s && !service) {
+      console.error(chalk.red('Error: unknown service', cmd.s));
       process.exit(1);
     }
     const currentIAM = await getCurrentUserIAM();
     console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
     console.info(chalk.bold('Warning: the following services will be deleted'));
-    console.info('Stage:', cmd.E);
-    console.info('Services:', cmd.S != null ? cmd.S : 'all');
+    console.info('Stage:', cmd.e);
+    console.info('Services:', cmd.s != null ? cmd.s : 'all');
     console.info('As:', currentIAM);
 
     if (cmd.onlyPrompt) {
@@ -57,7 +57,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       project,
       target: service || undefined,
       force: true,
-      environment: cmd.E,
+      environment: cmd.e,
     }, 'remove');
     remover.deploy().subscribe(
       (evt) => {
@@ -70,7 +70,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       },
       async () => {
         await printReport(failures, actions.size, 'remove');
-        console.info(`Successfully removed from ${cmd.E} :boom:`);
+        console.info(`Successfully removed from ${cmd.e} :boom:`);
         process.exit(0);
       },
     );

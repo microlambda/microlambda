@@ -1,0 +1,9 @@
+[style]; Add information on force, affected, rev, target dependencies on command
+[feat] test command
+[feat] deploy command with args of region dynamically passed to centipod
+[automatic port allocation]
+start command
+build preemption
+auto-socket reconnection
+transpile
+IPC mode

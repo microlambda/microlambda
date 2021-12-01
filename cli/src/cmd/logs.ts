@@ -7,7 +7,7 @@ export const logs = async (cmd: { S: string }, logger: Logger): Promise<void> =>
   let services: Service[] = [];
   logger.log('logs').debug(config);
 
-  if (!cmd.S) {
+  if (!cmd.s) {
     const graph = await getGraphFromYarnProject(projectRoot, scheduler, config, logger, 3001);
 
     await graph.bootstrap().catch((e) => {
@@ -33,6 +33,6 @@ export const logs = async (cmd: { S: string }, logger: Logger): Promise<void> =>
 
     servicesName.forEach((name: string) => tailLogs(name, projectRoot, logger));
   } else {
-    tailLogs(cmd.S, projectRoot, logger);
+    tailLogs(cmd.s, projectRoot, logger);
   }*/
 };

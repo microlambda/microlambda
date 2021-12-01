@@ -9,18 +9,18 @@ import {pathExists, remove} from 'fs-extra';
 import {RunCommandEvent, RunCommandEventEnum} from "@centipod/core";
 
 export interface IDeployCmd extends IPackageCmd {
-  E: string;
+  e: string;
   prompt: boolean;
   verbose: boolean;
   onlyPrompt: boolean;
 }
 
-export const checkEnv = (config: IConfig, cmd: { E: string | null }, msg: string): void => {
-  if (!cmd.E) {
+export const checkEnv = (config: IConfig, cmd: { e: string | null }, msg: string): void => {
+  if (!cmd.e) {
     console.error(chalk.red(msg));
     process.exit(1);
   }
-  if (config.stages && !config.stages.includes(cmd.E)) {
+  if (config.stages && !config.stages.includes(cmd.e)) {
     console.error(chalk.red('Target stage is not part of allowed stages.'));
     console.error(chalk.red('Allowed stages are:', config.stages));
     process.exit(1);
@@ -158,8 +158,8 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
 
     console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
     console.info(chalk.bold('The following services will be deployed'));
-    console.info('Stage:', cmd.E);
-    console.info('Services:', cmd.S != null ? cmd.S : 'all');
+    console.info('Stage:', cmd.e);
+    console.info('Services:', cmd.s != null ? cmd.s : 'all');
     console.info('As:', currentIAM);
 
     if (cmd.onlyPrompt) {
@@ -226,7 +226,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
 
     const deployer = new Deployer({
       ...options,
-      environment: cmd.E,
+      environment: cmd.e,
     });
     deployer.deploy().subscribe(
       (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, 'deploy'),
@@ -237,7 +237,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       },
       async () => {
         await printReport(failures, actions.size, 'remove');
-        console.info(`Successfully deploy from ${cmd.E} :rocket:`);
+        console.info(`Successfully deploy from ${cmd.e} :rocket:`);
         process.exit(0);
       },
     );
