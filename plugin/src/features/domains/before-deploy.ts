@@ -16,7 +16,7 @@ export const beforeDeploy = async (
   serviceName: string,
   logger?: ILogger
 ): Promise<void> => {
-  if (!domain) {
+  if (!domain || domain === 'null') {
     logger?.info("No custom domain configured");
     return;
   }
