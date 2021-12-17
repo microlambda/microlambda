@@ -27,7 +27,19 @@ export interface IBuildOptions {
   affected: { rev1: string, rev2: string } | undefined;
 }
 
-const printInfos = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefined => {
+export const printCommand = (action: string, service?: string, only = true) => {
+  if (service) {
+    if (only) {
+      console.info('🔧 Building only', service);
+    } else {
+      console.info('🔧 Building', service, 'and its dependencies');
+    }
+  } else {
+    console.info('🔧 Building all project services');
+  }
+}
+
+const printAffected = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefined => {
   const resolveAffected = (): { rev1: string, rev2: string } | undefined => {
     if (cmd.affected) {
       const revisions = cmd.affected.split('..');
@@ -40,19 +52,9 @@ const printInfos = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefined 
     return undefined;
   }
   const affected = resolveAffected();
-  console.info('');
-  if (cmd.s) {
-    if (cmd.only) {
-      console.info('🔧 Building only', cmd.s);
-    } else {
-      console.info('🔧 Building', cmd.s, 'and its dependencies');
-    }
-  } else {
-    console.info('🔧 Building all project services');
-  }
   if (affected) {
     console.info('');
-    console.info(chalk.magenta('Skipping target not affected affected between revisions', affected.rev1, 'and', affected.rev2));
+    console.info(chalk.magenta('> Skipping workspaces not affected affected between revisions', affected.rev1, 'and', affected.rev2));
   }
   console.info('');
   return affected;
@@ -63,7 +65,7 @@ export const beforeBuild = async (
   logger: Logger,
   acceptPackages = false,
 ): Promise<IBuildOptions> => {
-  const affected = printInfos(cmd);
+  const affected = printAffected(cmd);
   const { project, projectRoot } = await init(logger);
   const resolveService = (): CentipodWorkspace | undefined => {
     if (cmd.s) {
@@ -142,6 +144,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
 };
 
 export const build = async (cmd: IBuildCmd, logger: Logger): Promise<void> => {
+  printCommand('🔧 Building', cmd.s, cmd.only);
   const options = await beforeBuild(cmd, logger, true);
   try {
     await typeCheck(options);

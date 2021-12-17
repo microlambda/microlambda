@@ -27,6 +27,7 @@ const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false):
       process.exit(0);
     }
   } catch (e) {
+    // TODO: Catch and print properly centipod errors
     console.error(chalk.bgRedBright('Uncaught error:'));
     console.error(e);
     process.exit(1);
@@ -138,7 +139,7 @@ program
 
 program
   .command('package')
-  // .option('-i, --interactive', 'interactively choose microservices', false)
+  .option('-v, --verbose', 'print package commands output', false)
   .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
   .option('--no-recompile', 'skip package and service recompilation', false)
   .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())

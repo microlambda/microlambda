@@ -1,18 +1,20 @@
 /* eslint-disable no-console */
 import {getDefaultThreads, getThreads, Logger, Packager } from '@microlambda/core';
-import {beforeBuild, IBuildCmd, IBuildOptions, typeCheck} from './build';
+import {beforeBuild, IBuildCmd, IBuildOptions, printCommand, typeCheck} from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import {printReport} from './deploy';
 import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@centipod/core";
 
 export interface IPackageCmd extends IBuildCmd {
-  C: string;
+  c: string;
   level: number;
   recompile: boolean;
+  v: boolean;
 }
 
 interface IPackageOptions extends IBuildOptions {
+  verbose: boolean;
   concurrency: number;
   targets: CentipodWorkspace[];
 }
@@ -21,7 +23,7 @@ export const beforePackage = async (
   cmd: IPackageCmd,
   logger: Logger,
 ): Promise<IPackageOptions> => {
-  const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
+  const concurrency = cmd.c ? getThreads(Number(cmd.c)) : getDefaultThreads();
   const options = await beforeBuild(cmd, logger, false);
   if (cmd.recompile) {
     try {
@@ -31,7 +33,7 @@ export const beforePackage = async (
       process.exit(1);
     }
   }
-  return { ...options, concurrency, targets: options.service ? [options.service] : Array.from(options.project.services.values()) };
+  return { ...options, verbose: cmd.v, concurrency, targets: options.service ? [options.service] : Array.from(options.project.services.values()) };
 };
 
 export const packageServices = (options: IPackageOptions): Promise<Set<RunCommandEvent>> => {
@@ -80,16 +82,18 @@ export const packageServices = (options: IPackageOptions): Promise<Set<RunComman
     };
     const runner = new Runner(options.project, options.concurrency);
     runner.runCommand('package', {
-      to: options.service,
+      workspaces: options.service ? [options.service] : undefined,
       mode: 'parallel',
       affected: options.affected,
       force: options.force,
+      stdio: options.verbose ? 'inherit' : 'pipe',
     }).subscribe(onNext, onError, onComplete);
   });
 };
 
 export const packagr = async (cmd: IPackageCmd, logger: Logger): Promise<void> => {
   try {
+    printCommand('📦 Packaging', cmd.s, true);
     const options = await beforePackage(cmd, logger);
     console.info('\nPackaging services\n');
     const failures = await packageServices(options);
