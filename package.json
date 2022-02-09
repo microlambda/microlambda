@@ -63,7 +63,9 @@
     "handling",
     "plugin",
     "testing",
-    "server"
+    "server",
+    "centipod/core",
+    "centipod/cli"
   ],
   "license": "MIT",
   "devDependencies": {

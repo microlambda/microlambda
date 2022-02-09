@@ -6,7 +6,7 @@ import {from, mergeAll, Observable} from "rxjs";
 import {getDefaultThreads} from "./platform";
 
 export type DeployEvent = RunCommandEvent<{ region: string }>;
-
+// test
 export interface IDeployOptions {
   project: Project;
   concurrency?: number;

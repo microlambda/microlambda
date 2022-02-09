@@ -1,0 +1,3 @@
+[submodule "centipod"]
+	path = centipod
+	url = git@github.com:MarioArnt/centipod.git

@@ -1,1 +1,0 @@
-[{"command":"../node_modules/.bin/tsc --build","escapedCommand":"\"../node_modules/.bin/tsc\" --build","exitCode":0,"stdout":"","stderr":"","all":"","failed":false,"timedOut":false,"isCanceled":false,"killed":false,"took":2511}]

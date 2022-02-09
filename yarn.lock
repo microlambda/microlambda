@@ -2586,24 +2586,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@centipod/cli@npm:^0.0.1-alpha.7":
-  version: 0.0.1-alpha.7
-  resolution: "@centipod/cli@npm:0.0.1-alpha.7"
+"@centipod/cli@^0.0.1-alpha.7, @centipod/cli@workspace:centipod/cli":
+  version: 0.0.0-use.local
+  resolution: "@centipod/cli@workspace:centipod/cli"
   dependencies:
-    "@centipod/core": 0.0.1-alpha.7
+    "@centipod/core": "workspace:*"
     chalk: ^4.1.1
     commander: ^7.2.0
+    typescript: ^4.2.4
   bin:
     centipod: dist/index.js
     cpd: dist/index.js
-  checksum: 2b2a1486995e98971f00d7f7c25ea6e2fb25c7f1450074f6b9b72b6bc1277cc4de0eea85676689cc37598825b6c3babb2ac5ee3e7404b48db6e0fc88f27b6d66
-  languageName: node
-  linkType: hard
+  languageName: unknown
+  linkType: soft
 
-"@centipod/core@npm:0.0.1-alpha.7":
-  version: 0.0.1-alpha.7
-  resolution: "@centipod/core@npm:0.0.1-alpha.7"
+"@centipod/core@workspace:*, @centipod/core@workspace:centipod/core":
+  version: 0.0.0-use.local
+  resolution: "@centipod/core@workspace:centipod/core"
   dependencies:
+    "@types/conventional-commits-parser": ^3.0.1
+    "@types/lodash": 4.14.168
+    "@types/semver": ^7.3.5
+    chokidar: ^3.5.3
     conventional-commits-parser: ^3.2.1
     execa: ^5.0.0
     fast-glob: ^3.2.5
@@ -2612,25 +2616,9 @@ __metadata:
     rxjs: ^6.6.7
     semver: ^7.3.5
     simple-git: ^2.38.0
-  checksum: 5265c70886787deb5fc5ac2c73e4fa60e61f9da0b360ab2e28016dc13d854dea0b5b49bcda36651048e8dfe3b4f86de57c0538483611e991961c994fb488d910
-  languageName: node
-  linkType: hard
-
-"@centipod/core@npm:^0.0.1-alpha.10":
-  version: 0.0.1-alpha.10
-  resolution: "@centipod/core@npm:0.0.1-alpha.10"
-  dependencies:
-    conventional-commits-parser: ^3.2.1
-    execa: ^5.0.0
-    fast-glob: ^3.2.5
-    hasha: 5.2.2
-    lodash.isequal: 4.5.0
-    rxjs: ^6.6.7
-    semver: ^7.3.5
-    simple-git: ^2.38.0
-  checksum: b5dcbdeed535387df5c7463ed98eb3b4cb98acf20769cdb818d605cd3f3cd82cb655db1f8ac3f193278de37f35768e56603472667a955661b1a23148b170f55f
-  languageName: node
-  linkType: hard
+    typescript: ^4.2.4
+  languageName: unknown
+  linkType: soft
 
 "@chevrotain/types@npm:^9.1.0":
   version: 9.1.0
@@ -3205,7 +3193,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/cli@workspace:cli"
   dependencies:
-    "@centipod/core": ^0.0.1-alpha.10
+    "@centipod/core": "workspace:*"
     "@microlambda/core": "workspace:*"
     "@microlambda/generators": "workspace:*"
     "@microlambda/server": "workspace:*"
@@ -3257,7 +3245,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/core@workspace:core"
   dependencies:
-    "@centipod/core": ^0.0.1-alpha.10
+    "@centipod/core": "workspace:*"
     "@hapi/joi": ^17.1.1
     "@microlambda/types": "workspace:*"
     "@types/archiver": ^5.1.1
@@ -3958,6 +3946,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/conventional-commits-parser@npm:^3.0.1":
+  version: 3.0.2
+  resolution: "@types/conventional-commits-parser@npm:3.0.2"
+  dependencies:
+    "@types/node": "*"
+  checksum: 886c9c35db7b1f82ff29b405e0de2f0545bc310fd543c7b770cdc02841c1952ae9501f31b6ab97b2d089f7994012ff9986055899683122b0fd6d5343ccaccc4f
+  languageName: node
+  linkType: hard
+
 "@types/cookie@npm:^0.4.1":
   version: 0.4.1
   resolution: "@types/cookie@npm:0.4.1"
@@ -4452,6 +4449,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/lodash@npm:4.14.168":
+  version: 4.14.168
+  resolution: "@types/lodash@npm:4.14.168"
+  checksum: 3326966ee089debde7a7d819e13b64991756e879945852c3357df14a7be837130f697c2cb451be9dd599eb7213fed0975bc9ca0f8f56b46fa73c46a83815b79c
+  languageName: node
+  linkType: hard
+
 "@types/lodash@npm:^4.14.175, @types/lodash@npm:^4.14.177":
   version: 4.14.177
   resolution: "@types/lodash@npm:4.14.177"
@@ -4603,7 +4607,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/semver@npm:^7.1.0":
+"@types/semver@npm:^7.1.0, @types/semver@npm:^7.3.5":
   version: 7.3.9
   resolution: "@types/semver@npm:7.3.9"
   checksum: 60bfcfdfa7f937be2c6f4b37ddb6714fb0f27b05fe4cbdfdd596a97d35ed95d13ee410efdd88e72a66449d0384220bf20055ab7d6b5df10de4990fbd20e5cbe0
@@ -6906,6 +6910,25 @@ __metadata:
     fsevents:
       optional: true
   checksum: d1fda32fcd67d9f6170a8468ad2630a3c6194949c9db3f6a91b16478c328b2800f433fb5d2592511b6cb145a47c013ea1cce60b432b1a001ae3ee978a8bffc2d
+  languageName: node
+  linkType: hard
+
+"chokidar@npm:^3.5.3":
+  version: 3.5.3
+  resolution: "chokidar@npm:3.5.3"
+  dependencies:
+    anymatch: ~3.1.2
+    braces: ~3.0.2
+    fsevents: ~2.3.2
+    glob-parent: ~5.1.2
+    is-binary-path: ~2.1.0
+    is-glob: ~4.0.1
+    normalize-path: ~3.0.0
+    readdirp: ~3.6.0
+  dependenciesMeta:
+    fsevents:
+      optional: true
+  checksum: b49fcde40176ba007ff361b198a2d35df60d9bb2a5aab228279eb810feae9294a6b4649ab15981304447afe1e6ffbf4788ad5db77235dc770ab777c6e771980c
   languageName: node
   linkType: hard
 
@@ -17794,6 +17817,7 @@ __metadata:
     "@aws-sdk/client-route-53": ^3.42.0
     "@aws-sdk/client-s3": ^3.42.0
     "@aws-sdk/client-secrets-manager": ^3.42.0
+    "@centipod/core": "workspace:*"
     "@microlambda/core": "workspace:*"
     chokidar: ^3.5.2
     hasha: ^5.2.2
@@ -19665,6 +19689,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:^4.2.4":
+  version: 4.5.5
+  resolution: "typescript@npm:4.5.5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 506f4c919dc8aeaafa92068c997f1d213b9df4d9756d0fae1a1e7ab66b585ab3498050e236113a1c9e57ee08c21ec6814ca7a7f61378c058d79af50a4b1f5a5e
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@^3.9.5#~builtin<compat/typescript>, typescript@patch:typescript@^3.9.7#~builtin<compat/typescript>":
   version: 3.9.10
   resolution: "typescript@patch:typescript@npm%3A3.9.10#~builtin<compat/typescript>::version=3.9.10&hash=ddd1e8"
@@ -19682,6 +19716,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 24a439e062a05e3285a4f0e8a40644116ecdca89f3e908bed01e5a01b9aee747e3bcf0e85fe9e017e5ebf0c0863437c39479f2616f55a244c2d82d37022cdc4f
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^4.2.4#~builtin<compat/typescript>":
+  version: 4.5.5
+  resolution: "typescript@patch:typescript@npm%3A4.5.5#~builtin<compat/typescript>::version=4.5.5&hash=ddd1e8"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 9cdde4aae20b2904431f3f2ca8acaf3b0cc52faddf68aa88b288c9d0520221817da43783a756fce7ab9360033ada0371c3ff93dfc4bdb4b13f6e9bac64e1658d
   languageName: node
   linkType: hard
 
