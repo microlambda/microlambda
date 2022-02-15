@@ -3,9 +3,10 @@ import {Project} from "./graph/project";
 import { Workspace } from "./graph/workspace";
 import {ConfigReader} from "./config/read-config";
 import {from, mergeAll, Observable} from "rxjs";
+import {map} from "rxjs/operators";
 import {getDefaultThreads} from "./platform";
 
-export type DeployEvent = RunCommandEvent<{ region: string }>;
+export type DeployEvent = RunCommandEvent & { region: string };
 // test
 export interface IDeployOptions {
   project: Project;
@@ -27,14 +28,12 @@ export class Deployer {
 
   private _run(region: string, services: Workspace[]): Observable<DeployEvent> {
     const runner = new Runner(this.options.project, this.concurrency);
-    return runner.runCommand<{ region: string }>(this.mode, {
+    return runner.runCommand(this.mode, {
       workspaces: services,
       mode: 'parallel',
       affected: this.options.affected,
       force: this.options.force,
-    }, {
-      region,
-    })
+    }).pipe(map((evt) => ({...evt, region})));
   }
 
   private _deployOne(target: Workspace): Observable<DeployEvent> {
