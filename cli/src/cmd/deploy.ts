@@ -7,6 +7,7 @@ import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig, Logger} fro
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
 import {RunCommandEvent, RunCommandEventEnum} from "@centipod/core";
+import { spinniesOptions } from "../utils/spinnies";
 
 export interface IDeployCmd extends IPackageCmd {
   e: string;
@@ -43,7 +44,7 @@ export const handleNext = (
   verbose: boolean,
   action: 'deploy' | 'remove',
 ): void => {
-  const key = (service: string, evt: DeployEvent): string => `${service}|${evt.data?.region}`;
+  const key = (service: string, evt: DeployEvent): string => `${service}|${evt.region}`;
   const actionVerbBase = action === 'deploy' ? 'deploy' : 'remov';
   const isTty = process.stdout.isTTY;
   const capitalize = (input: string): string => input.slice(0, 1).toUpperCase() + input.slice(1);
@@ -51,21 +52,21 @@ export const handleNext = (
     case RunCommandEventEnum.NODE_STARTED:
       if (isTty) {
         spinnies.add(key(evt.workspace.name, evt), {
-          text: `${capitalize(actionVerbBase)}ing ${evt.workspace.name} ${chalk.magenta(`[${evt.data?.region}]`)}`,
+          text: `${capitalize(actionVerbBase)}ing ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
-        console.info(`${chalk.bold(evt.workspace.name)} ${actionVerbBase}ing ${chalk.magenta(`[${evt.data?.region}]`)}`);
+        console.info(`${chalk.bold(evt.workspace.name)} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
       }
       actions.add(evt);
       break;
     case RunCommandEventEnum.NODE_PROCESSED:
       if (isTty) {
         spinnies.succeed(key(evt.workspace.name, evt), {
-          text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.data?.region}]`)}`,
+          text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
         console.info(
-          `${chalk.bold(evt.workspace.name)} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.data?.region}]`)}`,
+          `${chalk.bold(evt.workspace.name)} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.region}]`)}`,
         );
       }
       break;
@@ -73,11 +74,11 @@ export const handleNext = (
       failures.add(evt);
       if (isTty) {
         spinnies.fail(key(evt.workspace.name, evt), {
-          text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.data?.region}]`)}`,
+          text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
         console.info(
-          `${chalk.bold(evt.workspace.name)} - ${capitalize(action)} failed ${chalk.magenta(`[${evt.data?.region}]`)}`,
+          `${chalk.bold(evt.workspace.name)} - ${capitalize(action)} failed ${chalk.magenta(`[${evt.region}]`)}`,
         );
       }
   }
@@ -113,7 +114,7 @@ export const printReport = async (
   let i = 0;
   for (const evt of failures) {
     i++;
-    const region = (evt as DeployEvent).data?.region;
+    const region = (evt as DeployEvent).region;
     if (region && evt.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
       console.error(
         chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name} in ${region} region\n`)),
@@ -184,11 +185,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
     console.info('\n▼ Clean artifacts directories\n');
 
     // Cleaning artifact location
-    const cleaningSpinnies = new Spinnies({
-      failColor: 'white',
-      succeedColor: 'white',
-      spinnerColor: 'cyan',
-    });
+    const cleaningSpinnies = new Spinnies(spinniesOptions);
     let hasCleanErrored = false;
     await Promise.all(
       options.targets.map(async (service) => {
@@ -215,11 +212,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
 
     console.info('\n▼ Deploying services\n');
 
-    const spinnies = new Spinnies({
-      failColor: 'white',
-      succeedColor: 'white',
-      spinnerColor: 'cyan',
-    });
+    const spinnies = new Spinnies(spinniesOptions);
 
     const failures: Set<DeployEvent> = new Set();
     const actions: Set<DeployEvent> = new Set();

@@ -2,7 +2,7 @@
 import { Logger, Project } from '@microlambda/core';
 import { init, yarnInstall } from './start';
 import chalk from 'chalk';
-import ora, { Ora } from 'ora';
+import Spinnies from 'spinnies';
 import {
   Runner,
   RunCommandEvent,
@@ -10,6 +10,7 @@ import {
   Workspace as CentipodWorkspace,
   isNodeEvent, isProcessError
 } from "@centipod/core";
+import { spinniesOptions } from "../utils/spinnies";
 
 export interface IBuildCmd {
   s?: string;
@@ -86,11 +87,16 @@ export const beforeBuild = async (
   return { projectRoot, project, service: resolveService(), force: cmd.force || false, affected: affected };
 };
 
-export const printError = (error: unknown, spinners?: Map<string, Ora>): void => {
+export const printError = (error: unknown, spinners?: Spinnies, workspace?: string): void => {
   if (isNodeEvent(error)) {
-    spinners?.get(error.workspace.name)?.fail(`Error compiling ${error.workspace.name}`);
-    printError(error.error);
-  } else if (isProcessError(error)) {
+    spinners?.fail(error.workspace.name, {text: `Error compiling ${error.workspace.name}`});
+    printError(error.error, spinners, error.workspace.name);
+  } else if (isProcessError(error) && error.all) {
+    if (workspace) {
+      console.error(`${chalk.bold.red(`Command ${error.command} failed for workspace ${workspace} :`)}\n`);
+    } else {
+      console.error(`${chalk.bold.red(`Command ${error.command} failed :`)}\n`);
+    }
     console.log(error.all);
   } else {
     console.error(error);
@@ -98,8 +104,9 @@ export const printError = (error: unknown, spinners?: Map<string, Ora>): void =>
 };
 
 export const typeCheck = async (options: IBuildOptions): Promise<void> => {
+  const spinnies = new Spinnies(spinniesOptions);
+  const inProgress = new Set<string>();
   return new Promise<void>((resolve, reject) => {
-    const spinners: Map<string, Ora> = new Map();
     const onNext = (evt: RunCommandEvent): void => {
       if (evt.type === RunCommandEventEnum.TARGETS_RESOLVED) {
         if (!evt.targets.some((target) => target.hasCommand)) {
@@ -108,26 +115,30 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
       } else if (evt.type === RunCommandEventEnum.NODE_SKIPPED && !evt.affected) {
         console.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'))
       } else if (evt.type === RunCommandEventEnum.NODE_STARTED) {
-        const spinner = ora(`Compiling ${evt.workspace.name}`);
-        spinner.start();
-        spinners.set(evt.workspace.name, spinner);
+        spinnies.add(evt.workspace.name, {text: `Compiling ${evt.workspace.name}` });
+        inProgress.add(evt.workspace.name);
       } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-        const spinner = spinners.get(evt.workspace.name);
-        if (spinner) {
-          spinner.text = `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.grey(' (from cache)') : ''}`;
-          spinner.succeed();
-        }
+        inProgress.delete(evt.workspace.name);
+        spinnies.succeed(evt.workspace.name, {
+          text: `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.grey(' (from cache)') : ''}`,
+        });
       } else if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
-        const spinner = spinners.get(evt.workspace.name);
-        if (spinner) {
-          spinner.fail(`Error compiling ${evt.workspace.name}`);
-        }
-        setTimeout(() => printError(evt.error), 100);
+        inProgress.delete(evt.workspace.name);
+        spinnies.fail(evt.workspace.name, {
+          text: `Error compiling ${evt.workspace.name}`,
+        });
+        inProgress.forEach((w) => spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}`}));
+        spinnies.stopAll();
+        console.error(`\n${chalk.bold.red('> Error details:')}\n`);
+        printError(evt.error)
         return reject();
       }
     };
     const onError = (err: unknown): void => {
-      printError(err);
+      inProgress.forEach((w) => spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}`}));
+      spinnies.stopAll();
+      console.error(`\n${chalk.bold.red('> Error details:')}\n`);
+      printError(err, spinnies)
       return reject();
     };
     const onComplete = (): void => {
