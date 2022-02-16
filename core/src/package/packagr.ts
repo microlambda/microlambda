@@ -95,7 +95,9 @@ export class Packager {
     }
     await mkdirp(this._tmpPath);
     this._logger.debug('Temporary directory successfully created');
-    const manifests = Array.from(originalProject.workspaces.values()).map((w) => join(w.root, 'package.json'));
+    const manifests = Array.from(originalProject.workspaces.values())
+      .filter((w) => !w.root.includes('/tooling/'))
+      .map((w) => join(w.root, 'package.json'));
     await Promise.all(
       manifests.map(async (path) => {
         const dest = join(String(this._tmpPath), relative(this._projectRoot, path));
@@ -113,6 +115,7 @@ export class Packager {
     this._logger.debug(join(this._projectRoot, '.yarn'), '->', join(this._tmpPath, '.yarn'));
     this._logger.debug(join(this._projectRoot, 'yarn.lock'), '->', join(this._tmpPath, 'yarn.lock'));
     await copyFile(join(this._projectRoot, '.yarnrc.yml'), join(this._tmpPath, '.yarnrc.yml'));
+    await copy(join(this._projectRoot, 'package.json'), join(this._tmpPath, 'package.json'));
     await copy(join(this._projectRoot, '.yarn'), join(this._tmpPath, '.yarn'));
     await copy(join(this._projectRoot, 'yarn.lock'), join(this._tmpPath, 'yarn.lock'));
 
@@ -131,6 +134,9 @@ export class Packager {
     if (!toPackageTransient) {
       throw new Error(`Assertion failed: Cannot package workspace ${toFocus} in transient project`);
     }
+    const manifest = readJSONSync(join(transientProject.root, 'package.json'));
+    delete manifest.devDependencies;
+    writeJSONSync(join(transientProject.root, 'package.json'), manifest, { spaces: 2 });
     this._logger.debug('Find dependencies of workspace to focus', toFocus.name);
     const requiredWorkspaces: Set<CentipodWorkspace> = new Set([toPackageTransient]);
     const addWorkspacesDependencies = (workspace: CentipodWorkspace): void => {
