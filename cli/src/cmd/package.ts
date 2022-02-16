@@ -55,7 +55,7 @@ export const packageServices = (options: IPackageOptions): Promise<Set<RunComman
           spinnies.succeed(evt.workspace.name, {
             text: `${evt.workspace.name} packaged ${chalk.cyan(metadata.megabytes?.code + 'MB')}${
               metadata.megabytes?.layer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
-            } ${chalk.gray(metadata.took + 'ms')}`,
+            } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`,
           });
           break;
         }

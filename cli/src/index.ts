@@ -8,10 +8,13 @@ import { build } from './cmd/build';
 import chalk from 'chalk';
 import { packagr } from './cmd/package';
 import { deploy } from './cmd/deploy';
-import { getDefaultThreads, Logger } from '@microlambda/core';
+import { getDefaultThreads, Logger, loadEnv } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
+import { resloveProjectRoot } from "@centipod/core";
+
+// TODO: Clean commands descriptions
 
 // Logger must be a singleton
 const logger = new Logger();
@@ -22,6 +25,8 @@ program.version('0.2.3-alpha');
 
 const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false): Promise<void> => {
   try {
+    const projectRoot = resloveProjectRoot();
+    loadEnv(projectRoot);
     await fn();
     if (!keepOpen) {
       process.exit(0);
@@ -34,6 +39,7 @@ const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false):
   }
 };
 
+// FIXME
 program
   .command('start')
   .option('-i, --interactive', 'interactively choose microservices', false)
@@ -122,6 +128,7 @@ program
       }),
   );
 
+// TODO: Watch option
 program
   .command('build')
   .option('--install', 'skip bootstrapping dependencies', false)
@@ -137,6 +144,7 @@ program
       }),
   );
 
+// TODO: From cache info
 program
   .command('package')
   .option('-v, --verbose', 'print package commands output', false)
@@ -152,6 +160,7 @@ program
       }),
   );
 
+// FIXME
 program
   .command('deploy')
   // .option('-i, --interactive', 'interactively choose microservices', false)
@@ -172,6 +181,7 @@ program
       }),
   );
 
+// FIXME
 program
   .command('remove')
   .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion')
@@ -191,6 +201,7 @@ program
       }),
   );
 
+// FIXME
 program
   .command('test')
   .description('test microlambda services')

@@ -184,30 +184,33 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
 
     console.info('\n▼ Clean artifacts directories\n');
 
-    // Cleaning artifact location
-    const cleaningSpinnies = new Spinnies(spinniesOptions);
-    let hasCleanErrored = false;
-    await Promise.all(
-      options.targets.map(async (service) => {
-        const artefactLocation = join(service.root, '.package');
-        const doesExist = await pathExists(artefactLocation);
-        if (doesExist) {
-          cleaningSpinnies.add(service.name, {
-            text: `Cleaning artifact directory ${chalk.grey(artefactLocation)}`,
-          });
-          try {
-            await remove(artefactLocation);
-            cleaningSpinnies.succeed(service.name);
-          } catch (e) {
-            cleaningSpinnies.fail(service.name);
-            hasCleanErrored = true;
+    // FIXME: Add option to clean, cache MUST be invalidated as well
+    if(false) {
+      // Cleaning artifact location
+      const cleaningSpinnies = new Spinnies(spinniesOptions);
+      let hasCleanErrored = false;
+      await Promise.all(
+        options.targets.map(async (service) => {
+          const artefactLocation = join(service.root, '.package');
+          const doesExist = await pathExists(artefactLocation);
+          if (doesExist) {
+            cleaningSpinnies.add(service.name, {
+              text: `Cleaning artifact directory ${chalk.grey(artefactLocation)}`,
+            });
+            try {
+              await remove(artefactLocation);
+              cleaningSpinnies.succeed(service.name);
+            } catch (e) {
+              cleaningSpinnies.fail(service.name);
+              hasCleanErrored = true;
+            }
           }
-        }
-      }),
-    );
-    if (hasCleanErrored) {
-      console.error(chalk.red('Error cleaning previous artifacts'));
-      process.exit(1);
+        }),
+      );
+      if (hasCleanErrored) {
+        console.error(chalk.red('Error cleaning previous artifacts'));
+        process.exit(1);
+      }
     }
 
     console.info('\n▼ Deploying services\n');

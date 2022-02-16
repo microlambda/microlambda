@@ -12,3 +12,4 @@ export * from './yaml';
 export * from './graph/workspace';
 export * from './graph/project';
 export * from './deploy';
+export * from './env';
