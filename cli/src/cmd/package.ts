@@ -36,8 +36,9 @@ export const beforePackage = async (
   return { ...options, verbose: cmd.v, concurrency, targets: options.service ? [options.service] : Array.from(options.project.services.values()) };
 };
 
-export const packageServices = (options: IPackageOptions): Promise<Set<RunCommandEvent>> => {
-  return new Promise<Set<RunCommandEvent>>((resolve, reject) => {
+export const packageServices = (options: IPackageOptions): Promise<{ failures: Set<RunCommandEvent>, success: Set<RunCommandEvent> }> => {
+  return new Promise((resolve, reject) => {
+    const success: Set<RunCommandEvent> = new Set();
     const failures: Set<RunCommandEvent> = new Set();
     const spinnies = new Spinnies({
       failColor: 'white',
@@ -52,6 +53,7 @@ export const packageServices = (options: IPackageOptions): Promise<Set<RunComman
         }
         case RunCommandEventEnum.NODE_PROCESSED: {
           const metadata = Packager.readMetadata(evt.workspace);
+          success.add(evt);
           spinnies.succeed(evt.workspace.name, {
             text: `${evt.workspace.name} packaged ${chalk.cyan(metadata.megabytes?.code + 'MB')}${
               metadata.megabytes?.layer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
@@ -78,7 +80,7 @@ export const packageServices = (options: IPackageOptions): Promise<Set<RunComman
       } else {
         console.error('\nError packaging', failures.size, 'packages !');
       }
-      return resolve(failures);
+      return resolve({ failures, success });
     };
     const runner = new Runner(options.project, options.concurrency);
     runner.runCommand('package', {
@@ -96,9 +98,9 @@ export const packagr = async (cmd: IPackageCmd, logger: Logger): Promise<void> =
     printCommand('📦 Packaging', cmd.s, true);
     const options = await beforePackage(cmd, logger);
     console.info('\nPackaging services\n');
-    const failures = await packageServices(options);
+    const { failures, success } = await packageServices(options);
     if (failures.size) {
-      await printReport(failures, options.service ? 1 : options.project.services.size, 'package');
+      await printReport(success, failures, options.service ? 1 : options.project.services.size, 'package', options.verbose);
       process.exit(1);
     }
     process.exit(0);

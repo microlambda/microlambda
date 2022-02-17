@@ -5,6 +5,8 @@ import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
+import { options } from "@hapi/joi";
+import { beforePackage } from "./package";
 
 export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
   return new Promise(async () => {
@@ -16,6 +18,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       console.error(chalk.red('Error: unknown service', cmd.s));
       process.exit(1);
     }
+    const targets = service ? [service] : Array.from(project.services.values());
     const currentIAM = await getCurrentUserIAM();
     console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
     console.info(chalk.bold('Warning: the following services will be deleted'));
@@ -55,7 +58,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
 
     const remover = new Deployer({
       project,
-      target: service || undefined,
+      targets,
       force: true,
       environment: cmd.e,
     }, 'remove');
@@ -69,7 +72,7 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
         process.exit(1);
       },
       async () => {
-        await printReport(failures, actions.size, 'remove');
+        await printReport(actions, failures, actions.size, 'remove', cmd.verbose);
         console.info(`Successfully removed from ${cmd.e} :boom:`);
         process.exit(0);
       },

@@ -1,12 +1,12 @@
 /* eslint-disable no-console */
-import {beforePackage, IPackageCmd} from './package';
+import { beforePackage, IPackageCmd, packageServices } from "./package";
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import {prompt} from 'inquirer';
 import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig, Logger} from '@microlambda/core';
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
-import {RunCommandEvent, RunCommandEventEnum} from "@centipod/core";
+import { isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@centipod/core";
 import { spinniesOptions } from "../utils/spinnies";
 
 export interface IDeployCmd extends IPackageCmd {
@@ -57,7 +57,6 @@ export const handleNext = (
       } else {
         console.info(`${chalk.bold(evt.workspace.name)} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
       }
-      actions.add(evt);
       break;
     case RunCommandEventEnum.NODE_PROCESSED:
       if (isTty) {
@@ -69,6 +68,7 @@ export const handleNext = (
           `${chalk.bold(evt.workspace.name)} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.region}]`)}`,
         );
       }
+      actions.add(evt);
       break;
     case RunCommandEventEnum.NODE_ERRORED:
       failures.add(evt);
@@ -82,20 +82,14 @@ export const handleNext = (
         );
       }
   }
-  /*
-  TODO: Print logs if verbose
-  const regionalDeployLogs = evt.service.logs[action][evt.region];
-  if (verbose && regionalDeployLogs) {
-    console.log(regionalDeployLogs.join(''));
-  } else if (verbose) {
-    console.warn(chalk.yellow('Cannot print deploy logs'));
-  }*/
 };
 
 export const printReport = async (
+  actions: Set<DeployEvent | RunCommandEvent>,
   failures: Set<DeployEvent | RunCommandEvent>,
   total: number,
   action: 'deploy' | 'remove' | 'package',
+  verbose = false,
 ): Promise<void> => {
   if (failures.size) {
     console.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
@@ -128,18 +122,27 @@ export const printReport = async (
       console.error((evt as any).error);
       console.log('');
     }
-    /*
-    // FIXME: print logs
-    const regionalDeployLogs = (evt as any).service.logs[action][region || 'default'];
-    if (regionalDeployLogs) {
-      console.error(chalk.bold(`#${i} - Execution logs:`));
-      console.log(regionalDeployLogs.join(''));
-      console.log('');
-      // wait a bit otherwise console do not have time to print message
-      await new Promise<void>((resolve) => setTimeout(() => resolve(), 300));
-    }*/
   }
   console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
+  if (verbose) {
+    let i = 0;
+    i++;
+    for (const action of actions) {
+      if ((action as DeployEvent).region && action.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
+        console.info(
+          chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name} in ${(action as DeployEvent).region} region\n`),
+        );
+      } else if (action.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
+        console.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${(action).workspace.name}\n`));
+      }
+      if (isNodeSucceededEvent(action)) {
+        action.result.commands.forEach((result) => {
+          console.info(chalk.grey('> ' + result.command));
+          console.info(result.all);
+        });
+      }
+    }
+  }
   console.info(`Successfully ${actionVerbBase}ed ${total - failures.size}/${total} stacks`);
   console.info(`Error occurred when ${actionVerbBase}ing ${failures.size} stacks\n`);
   if (failures.size) {
@@ -180,12 +183,9 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       }
     }
     const options = await beforePackage(cmd, logger);
-    reader.validate(options.project);
 
-    console.info('\n▼ Clean artifacts directories\n');
-
-    // FIXME: Add option to clean, cache MUST be invalidated as well
-    if(false) {
+    if(options.force) {
+      console.info('\n▼ Clean artifacts directories\n');
       // Cleaning artifact location
       const cleaningSpinnies = new Spinnies(spinniesOptions);
       let hasCleanErrored = false;
@@ -213,6 +213,15 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       }
     }
 
+    console.info('\nPackaging services\n');
+    const packageResult = await packageServices(options);
+    if (packageResult.failures.size) {
+      await printReport(packageResult.success, packageResult.failures, options.service ? 1 : options.project.services.size, 'package', false);
+      process.exit(1);
+    }
+
+    reader.validate(options.project);
+
     console.info('\n▼ Deploying services\n');
 
     const spinnies = new Spinnies(spinniesOptions);
@@ -232,8 +241,8 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
         process.exit(1);
       },
       async () => {
-        await printReport(failures, actions.size, 'remove');
-        console.info(`Successfully deploy from ${cmd.e} :rocket:`);
+        await printReport(actions, failures, actions.size, 'deploy', cmd.verbose);
+        console.info(`Successfully deploy from ${cmd.e} 🚀`);
         process.exit(0);
       },
     );

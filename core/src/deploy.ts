@@ -1,26 +1,33 @@
-import {RunCommandEvent, Runner} from "@centipod/core";
+import {RunCommandEvent, Runner, Workspace} from "@centipod/core";
 import {Project} from "./graph/project";
-import { Workspace } from "./graph/workspace";
 import {ConfigReader} from "./config/read-config";
 import {from, mergeAll, Observable} from "rxjs";
 import {map} from "rxjs/operators";
 import {getDefaultThreads} from "./platform";
+import { Logger } from "./logger";
 
 export type DeployEvent = RunCommandEvent & { region: string };
 // test
 export interface IDeployOptions {
   project: Project;
   concurrency?: number;
-  target?: Workspace;
+  targets?: Workspace[];
   affected?: { rev1: string, rev2: string };
   force: boolean;
   environment: string;
 }
 
 export class Deployer {
-  private _reader = new ConfigReader();
+  private readonly _reader: ConfigReader;
 
-  constructor(readonly options: IDeployOptions, readonly mode: 'deploy' | 'remove' = 'deploy') {}
+  constructor(
+    readonly options: IDeployOptions,
+    readonly mode: 'deploy' | 'remove' = 'deploy',
+    readonly logger?: Logger,
+  ) {
+    this._reader = new ConfigReader(logger);
+    this._reader.validate(options.project);
+  }
 
   get concurrency(): number {
     return this.options.concurrency || getDefaultThreads();
@@ -33,6 +40,8 @@ export class Deployer {
       mode: 'parallel',
       affected: this.options.affected,
       force: this.options.force,
+    }, [], {
+      AWS_REGION: region,
     }).pipe(map((evt) => ({...evt, region})));
   }
 
@@ -57,8 +66,8 @@ export class Deployer {
   }
 
   deploy(): Observable<DeployEvent> {
-    if (this.options.target) {
-      return this._deployOne(this.options.target);
+    if (this.options.targets) {
+      return this._deployOne(this.options.targets[0]);
     } else {
       return this._deployAll()
     }

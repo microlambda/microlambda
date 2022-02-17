@@ -44,7 +44,7 @@ export const packageService = (
   const isPackaging = existsSync(
     join(service.root, ".package", "tmp")
   );
-  const isPackaged = useLayer ? existsSync(bundleLocation) && existsSync(layerLocation) : existsSync(bundleLocation);
+  const isPackaged = useLayer ? existsSync(bundleMetadataLocation) && existsSync(bundleLocation) && existsSync(layerLocation) : existsSync(bundleMetadataLocation) && existsSync(bundleLocation);
 
   const setArtifact = (): void => {
     assign(serverless, "service.package.artifact", bundleLocation);
