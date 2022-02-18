@@ -10,7 +10,7 @@ export const afterDeploy = async (
   logger?: ILogger
 ): Promise<void> => {
   // create/update base path mapping
-  if (!domain) {
+  if (!domain || domain?.domainName === 'null') {
     logger?.info("No custom domain configured");
     return;
   }

@@ -233,7 +233,7 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       ...options,
       environment: cmd.e,
     });
-    deployer.deploy().subscribe(
+    deployer.deploy(options.service).subscribe(
       (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, 'deploy'),
       (err) => {
         console.error(chalk.red('Error deploying services'));

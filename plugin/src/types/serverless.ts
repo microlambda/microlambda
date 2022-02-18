@@ -17,6 +17,7 @@ export interface ServerlessInstance {
       deploymentPrefix: string | undefined;
       architecture: 'x86_64' | 'arm64';
       runtime: LambdaRuntimes;
+      environment: { [key:string]: string};
     };
     custom: {
       [key: string]: unknown;

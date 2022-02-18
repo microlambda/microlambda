@@ -71,6 +71,9 @@ class ServerlessMicrolambdaPlugin {
           this._log
         );
         const { stackName } = this._resolveBasicInformation();
+        if (this._pluginConfig?.packagr?.useLayer) {
+          this.serverless.service.provider.environment.NODE_PATH = './:/opt/node_modules';
+        }
         await packageService(this.serverless, stackName, this._pluginConfig, this._service, this._log);
       }),
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {

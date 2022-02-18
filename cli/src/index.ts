@@ -165,6 +165,7 @@ program
   .command('deploy')
   // .option('-i, --interactive', 'interactively choose microservices', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('--force', 'ignore checksum and re-deploy', false)
   .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
   .option('--no-recompile', 'skip package and service recompilation', false)
   .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())

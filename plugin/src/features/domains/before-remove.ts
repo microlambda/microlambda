@@ -12,7 +12,7 @@ export const beforeRemove = async (
   logger?: ILogger
 ): Promise<void> => {
   // delete base path mapping if exists
-  if (!domain) {
+  if (!domain || domain.domainName === 'null') {
     logger?.info("No custom domain configured");
     return;
   }

@@ -34,7 +34,9 @@ export class Deployer {
   }
 
   private _run(region: string, services: Workspace[]): Observable<DeployEvent> {
-    const runner = new Runner(this.options.project, this.concurrency);
+    const runner = new Runner(this.options.project, this.concurrency, {
+      dir: `deploy-${region}`,
+    });
     return runner.runCommand(this.mode, {
       workspaces: services,
       mode: 'parallel',
@@ -65,9 +67,9 @@ export class Deployer {
     return from(runs).pipe(mergeAll(1));
   }
 
-  deploy(): Observable<DeployEvent> {
-    if (this.options.targets) {
-      return this._deployOne(this.options.targets[0]);
+  deploy(service?: Workspace): Observable<DeployEvent> {
+    if (service) {
+      return this._deployOne(service);
     } else {
       return this._deployAll()
     }
