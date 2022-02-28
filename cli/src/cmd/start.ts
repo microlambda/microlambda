@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-// import { startServer, IOSocketManager } from '@microlambda/server';
+//import { startServer, IOSocketManager } from '@microlambda/server';
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
 import chalk from 'chalk';
@@ -92,9 +92,9 @@ export const yarnInstall = async (project: Project, logger: Logger): Promise<voi
 };
 
 export const start = async (
-  // scheduler: RecompilationScheduler,
-  // options: IStartOptions,
-  // logger: Logger,
+  //scheduler: RecompilationScheduler,
+  //options: IStartOptions,
+  //logger: Logger,
 ): Promise<void> => {
   process.exit(1);
   /*console.info(showOff());

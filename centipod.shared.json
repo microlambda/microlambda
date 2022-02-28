@@ -1,14 +1,14 @@
 {
   "targets": {
     "lint": {
-      "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
+      "cmd": "../../../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
       "src": [
         "{src,test}/**/*.{ts,tsx,json,yml}"
       ]
     },
     "build": {
       "cmd": [
-        "../node_modules/.bin/tsc --build"
+        "../../../node_modules/.bin/tsc --build"
       ],
       "src": [
         "src/**/*.ts"

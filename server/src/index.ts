@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer, Server } from 'http';
-import { Logger, Project } from '@microlambda/core';
+import { Logger, Project, Scheduler } from '@microlambda/core';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
@@ -11,9 +11,9 @@ export const startServer = (
   port: number,
   project: Project,
   logger: Logger,
+  scheduler: Scheduler,
 ): Promise<Server> => {
   const log = logger.log('api');
-  // TODO: Arg de mila start --port
   const app = express();
 
   app.use(
@@ -28,42 +28,44 @@ export const startServer = (
 
   app.get('/api/graph', (req, res) => {
     log.debug('GET /api/graph');
-    const response: INodeSummary[] = graph.getNodes().map((n) => ({
-      name: n.getName(),
-      version: n.getVersion() || '',
-      type: n.isService() ? 'service' : 'package',
-      port: n.isService() ? graph.getPort(n.getName()).http : null,
-      enabled: n.isEnabled(),
-      transpiled: n.getTranspilingStatus(),
-      typeChecked: n.getTypeCheckStatus(),
-      status: n.isService() ? (n as Service).status : null,
-      children: n.getChildren().map((n) => n.getName()),
+    const response: INodeSummary[] = Array.from(project.packages.values()).map((n) => ({
+      name: n.name,
+      version: n.version || '',
+      type: n.isService ? 'service' : 'package',
+      port: null, //n.isService ? graph.getPort(n.getName()).http : null, // FIXME: Not our responsibility anymore
+      enabled: n.enabled,
+      transpiled: n.transpiled,
+      typeChecked: n.typechecked,
+      status: n.started,
+      children: Array.from(n.descendants.values()).map((n) => n.name),
       metrics: {
-        lastTypeCheck: n.metrics.lastTypeCheck ? n.metrics.lastTypeCheck.toISOString() : null,
-        typeCheckTook: n.metrics.typeCheckTook,
-        typeCheckFromCache: n.metrics.typeCheckFromCache,
-        lastTranspiled: n.metrics.lastTranspiled ? n.metrics.lastTranspiled.toISOString() : null,
-        transpileTook: n.metrics.transpileTook,
-        lastStarted: n.metrics.lastStarted ? n.metrics.lastStarted.toISOString() : null,
-        startedTook: n.metrics.startedTook,
+        lastTypeCheck: null, //n.metrics.lastTypeCheck ? n.metrics.lastTypeCheck.toISOString() : null,
+        typeCheckTook: 0, //n.metrics.typeCheckTook,
+        typeCheckFromCache: false, //n.metrics.typeCheckFromCache,
+        lastTranspiled: null,// n.metrics.lastTranspiled ? n.metrics.lastTranspiled.toISOString() : null,
+        transpileTook: 0, //n.metrics.transpileTook,
+        lastStarted: null, //n.metrics.lastStarted ? n.metrics.lastStarted.toISOString() : null,
+        startedTook: 0, //n.metrics.startedTook,
       },
     }));
     res.json(response);
   });
 
+  /*
+  FIXME: Events log equivalent
   app.get('/api/logs', (req, res) => {
     log.debug('GET /api/logs');
-    if (graph.logger) {
+    if (project.logger) {
       res.json(graph.logger.logs.filter((log) => ['warn', 'info', 'error'].includes(log.level)));
     } else {
       res.json([]);
     }
-  });
+  });*/
 
   app.get('/api/services/:service/logs', (req, res) => {
     const serviceName = req.params.service;
     log.debug('GET /api/services/:service/logs', serviceName);
-    const service = graph.getServices().find((s) => s.getName() === serviceName);
+    const service = project.services.get(serviceName);
     if (!service) {
       log.error('GET /api/services/:service/logs - 404: No such service');
       return res.status(404).send();
@@ -94,7 +96,7 @@ export const startServer = (
     const serviceName = req.params.service;
     log.debug('PUT /api/services/:service', serviceName);
     log.debug('Body', req.body);
-    const service = graph.getServices().find((s) => s.getName() === serviceName);
+    const service = project.services.get(serviceName);
     if (!service) {
       log.error('GET /api/services/:service/logs - 404: No such service');
       return res.status(404).send();
@@ -110,7 +112,7 @@ export const startServer = (
         scheduler.restartOne(service).subscribe();
         break;
       case 'build':
-        scheduler.recompileSafe(service, req.body?.options?.force);
+        scheduler.typecheck(service, req.body?.options?.force);
         break;
       default:
         return res.status(422).send('Invalid action');
@@ -121,23 +123,23 @@ export const startServer = (
   app.get('/api/nodes/:node/tsc/logs', (req, res) => {
     const nodeName = req.params.node;
     log.debug('GET /api/nodes/:node/tsc/logs', nodeName);
-    const node = graph.getNodes().find((s) => s.getName() === nodeName);
+    const node = project.workspaces.get(nodeName);
     if (!node) {
       log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
       return res.status(404).send();
     }
-    return res.json(node.tscLogs);
+    return res.json(node.logs('in-memory')?.get('build') || 'No logs in-memory found for target "build"');
   });
 
   app.get('/api/nodes/:node/tree', (req, res) => {
     const nodeName = req.params.node;
     log.debug('GET /api/nodes/:node/tree', nodeName);
-    const node = graph.getNodes().find((s) => s.getName() === nodeName);
+    const node = project.workspaces.get(nodeName);
     if (!node) {
       log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
       return res.status(404).send();
     }
-    return res.json(node.tscLogs);
+    return res.json(node.logs('in-memory'));
   });
   app.get('/api/scheduler/status', (req, res) => {
     return res.json({ status: scheduler.status });

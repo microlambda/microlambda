@@ -13,3 +13,4 @@ export * from './graph/workspace';
 export * from './graph/project';
 export * from './deploy';
 export * from './env';
+export * from './scheduler';

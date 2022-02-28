@@ -6,7 +6,7 @@ import {prompt} from 'inquirer';
 import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig, Logger} from '@microlambda/core';
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
-import { isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@centipod/core";
+import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@centipod/core";
 import { spinniesOptions } from "../utils/spinnies";
 
 export interface IDeployCmd extends IPackageCmd {
@@ -137,8 +137,10 @@ export const printReport = async (
       }
       if (isNodeSucceededEvent(action)) {
         action.result.commands.forEach((result) => {
-          console.info(chalk.grey('> ' + result.command));
-          console.info(result.all);
+          if (!isDaemon(result)) {
+            console.info(chalk.grey('> ' + result.command));
+            console.info(result.all);
+          }
         });
       }
     }
