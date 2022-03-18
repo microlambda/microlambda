@@ -140,11 +140,12 @@ export class Packager {
     this._logger.debug('Find dependencies of workspace to focus', toFocus.name);
     const requiredWorkspaces: Set<CentipodWorkspace> = new Set([toPackageTransient]);
     const addWorkspacesDependencies = (workspace: CentipodWorkspace): void => {
-      for (const dep of workspace.dependencies()) {
+      for (const dep of workspace.descendants.values()) {
         const internalDependency = transientProject.workspaces.get(dep.name);
         if (internalDependency) {
+          this._logger.debug('Internal dep', dep.name);
           requiredWorkspaces.add(internalDependency);
-          addWorkspacesDependencies(internalDependency);
+          // addWorkspacesDependencies(internalDependency);
         }
       }
     };

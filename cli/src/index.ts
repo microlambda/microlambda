@@ -13,6 +13,7 @@ import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
 import { resloveProjectRoot } from "@centipod/core";
+import { logs } from "./cmd/logs";
 
 // TODO: Clean commands descriptions
 
@@ -71,6 +72,13 @@ program
   .action(async (cmd) => {
     await logs(cmd, logger, scheduler);
   });*/
+
+program
+  .command('logs <service> [command]')
+  .description('print service logs')
+  .action(async (service, command) => {
+    await logs(service, command, logger);
+  });
 
 program
   .command('check-stage <stage>')
