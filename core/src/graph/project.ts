@@ -46,6 +46,10 @@ export class Project extends CentipodProject {
     return prj;
   }
 
+  getWorkspace(name: string): Workspace | null {
+    return this.project.workspaces.get(name) as Workspace;
+  }
+
   get services(): Map<string, Workspace> {
     return this._services;
   }

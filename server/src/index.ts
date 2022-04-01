@@ -34,20 +34,12 @@ export const startServer = (
       version: n.version || '',
       type: n.isService ? 'service' : 'package',
       port: n.isService ? (n.ports?.http || null) : null,
-      enabled: n.enabled,
+      enabled: n.hasCommand('start'),
       transpiled: n.transpiled,
       typeChecked: n.typechecked,
       status: n.started,
       children: Array.from(n.descendants.values()).map((n) => n.name),
-      metrics: {
-        lastTypeCheck: null, //n.metrics.lastTypeCheck ? n.metrics.lastTypeCheck.toISOString() : null,
-        typeCheckTook: 0, //n.metrics.typeCheckTook,
-        typeCheckFromCache: false, //n.metrics.typeCheckFromCache,
-        lastTranspiled: null,// n.metrics.lastTranspiled ? n.metrics.lastTranspiled.toISOString() : null,
-        transpileTook: 0, //n.metrics.transpileTook,
-        lastStarted: null, //n.metrics.lastStarted ? n.metrics.lastStarted.toISOString() : null,
-        startedTook: 0, //n.metrics.startedTook,
-      },
+      metrics: n.metrics,
     })
     const response: {
       packages: INodeSummary[],

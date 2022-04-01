@@ -2,7 +2,7 @@ import { Workspace as CentipodWorkspace } from '@centipod/core';
 import {existsSync} from "fs";
 import {join} from "path";
 import {transpileFiles} from "../typescript";
-import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
+import { ICommandMetrics, ICommandMetric, ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
 import { IServicePortsConfig } from "../resolve-ports";
 
 export class Workspace extends CentipodWorkspace {
@@ -18,12 +18,14 @@ export class Workspace extends CentipodWorkspace {
   private _transpiled = TranspilingStatus.NOT_TRANSPILED;
   private _typechecked = TypeCheckStatus.NOT_CHECKED;
   private _started: ServiceStatus | null = null;
+  private _metrics: ICommandMetrics = {};
 
   get enabled() { return this._enabled }
   get transpiled() { return this._transpiled }
   get typechecked() { return this._typechecked }
   get started() { return this._started }
   get ports() { return this._ports }
+  get metrics() { return this._metrics }
 
   assignPorts(ports: IServicePortsConfig) { this._ports = ports }
 
@@ -35,6 +37,14 @@ export class Workspace extends CentipodWorkspace {
       transpiled: (to: TranspilingStatus) => this._transpiled = to,
       typechecked: (to: TypeCheckStatus) => this._typechecked = to,
       started: (to: ServiceStatus) => this._started = this._isService ? to : null,
+    }
+  }
+
+  updateMetric() {
+    return {
+      transpile: (metric: ICommandMetric) => this._metrics.transpile = metric,
+      typecheck: (metric: ICommandMetric) => this._metrics.typecheck = metric,
+      start: (metric: ICommandMetric) => this._metrics.start = metric,
     }
   }
 

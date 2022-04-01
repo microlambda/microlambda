@@ -40,9 +40,9 @@
       margin-left: 5px;
     }
   }
-  .clickable {
+  /*.clickable {
     cursor: pointer;
-  }
+  }*/
 </style>
 
 <aside>

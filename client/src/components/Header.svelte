@@ -100,7 +100,7 @@
 
 <header>
   <h1 on:click={unselectNode}>Microλambda</h1>
-  <img on:click={toggleMenu} class="dots" src="ellipsis-v-solid.svg" height="20" width="20"/>
+  <img alt="menu" on:click={toggleMenu} class="dots" src="ellipsis-v-solid.svg" height="20" width="20"/>
 </header>
 {#if visible}
 <nav transition:slide>

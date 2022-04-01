@@ -1,5 +1,17 @@
 import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from '..';
 
+export interface ICommandMetric {
+  finishedAt: string;
+  took: number;
+  fromCache: boolean;
+}
+
+export interface ICommandMetrics {
+  transpile?: ICommandMetric;
+  typecheck?: ICommandMetric;
+  start?: ICommandMetric;
+}
+
 export interface INodeSummary {
   name: string;
   version: string;
@@ -10,13 +22,5 @@ export interface INodeSummary {
   typeChecked: TypeCheckStatus;
   status: ServiceStatus | null;
   children: string[];
-  metrics: {
-    lastTypeCheck: string | null;
-    typeCheckTook: number | null;
-    typeCheckFromCache: boolean;
-    lastTranspiled: string | null;
-    transpileTook: number | null;
-    lastStarted: string | null;
-    startedTook: number | null;
-  };
+  metrics: ICommandMetrics;
 }
