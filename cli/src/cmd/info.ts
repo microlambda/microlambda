@@ -1,8 +1,6 @@
-import {Logger, Project} from "@microlambda/core";
-import {getDependenciesGraph, init} from "./start";
-import {resloveProjectRoot, Workspace} from "@centipod/core";
+import {Project} from "@microlambda/core";
+import {resolveProjectRoot, Workspace} from "@centipod/core";
 import chalk from 'chalk';
-import {showOffTitle} from "../utils/ascii";
 
 const printTree = (wks: Workspace) => {
   const printDeps = (_wks: Workspace, depth = 0) => {
@@ -21,8 +19,8 @@ interface IInfosOptions {
   graph: boolean;
 }
 
-export const info = async (cmd: IInfosOptions, logger: Logger): Promise<void> => {
-  const projectRoot = resloveProjectRoot();
+export const info = async (cmd: IInfosOptions): Promise<void> => {
+  const projectRoot = resolveProjectRoot();
   const project =  await Project.loadProject(projectRoot);
   if (!cmd.s) {
     console.log('\n');

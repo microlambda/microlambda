@@ -1,4 +1,4 @@
-import {
+import type {
   TranspilingStatus,
   TypeCheckStatus,
   ServiceStatus,
@@ -6,13 +6,13 @@ import {
 
 export const getTranspiled = (status: TranspilingStatus): string => {
   switch (status) {
-    case TranspilingStatus.TRANSPILED:
+    case 2:
       return "Transpiled";
-    case TranspilingStatus.TRANSPILING:
+    case 1:
       return "Transpiling";
-    case TranspilingStatus.ERROR_TRANSPILING:
+    case 3:
       return "Error transpiling";
-    case TranspilingStatus.NOT_TRANSPILED:
+    case 0:
       return "Not transpiled";
     default:
       return "Unknown";
@@ -21,13 +21,13 @@ export const getTranspiled = (status: TranspilingStatus): string => {
 
 export const getTypeChecked = (status: TypeCheckStatus): string => {
   switch (status) {
-    case TypeCheckStatus.CHECKING:
+    case 1:
       return "Typechecking";
-    case TypeCheckStatus.NOT_CHECKED:
+    case 0:
       return "Not type-checked";
-    case TypeCheckStatus.ERROR:
+    case 3:
       return "Type errors";
-    case TypeCheckStatus.SUCCESS:
+    case 2:
       return "Type checked";
     default:
       return "Unknown";
@@ -36,13 +36,13 @@ export const getTypeChecked = (status: TypeCheckStatus): string => {
 
 export const getTranspiledClass = (status: TranspilingStatus): string => {
   switch (status) {
-    case TranspilingStatus.TRANSPILED:
+    case 2:
       return "green";
-    case TranspilingStatus.TRANSPILING:
+    case 1:
       return "blue";
-    case TranspilingStatus.ERROR_TRANSPILING:
+    case 3:
       return "bright-red";
-    case TranspilingStatus.NOT_TRANSPILED:
+    case 0:
       return "grey";
     default:
       return "";
@@ -51,13 +51,13 @@ export const getTranspiledClass = (status: TranspilingStatus): string => {
 
 export const getTypeCheckClass = (status: TypeCheckStatus): string => {
   switch (status) {
-    case TypeCheckStatus.CHECKING:
+    case 1:
       return "blue";
-    case TypeCheckStatus.NOT_CHECKED:
+    case 0:
       return "grey";
-    case TypeCheckStatus.ERROR:
+    case 3:
       return "bright-red";
-    case TypeCheckStatus.SUCCESS:
+    case 2:
       return "green";
     default:
       return "";
@@ -72,15 +72,15 @@ export const getServiceStatus = (
     return "Disabled";
   }
   switch (status) {
-    case ServiceStatus.CRASHED:
+    case 4:
       return "Crashed";
-    case ServiceStatus.RUNNING:
+    case 1:
       return "Running";
-    case ServiceStatus.STARTING:
+    case 0:
       return "Starting";
-    case ServiceStatus.STOPPED:
+    case 3:
       return "Stopped";
-    case ServiceStatus.STOPPING:
+    case 2:
       return "Stopping";
     default:
       return "Unknown";
@@ -95,15 +95,15 @@ export const getServiceStatusClass = (
     return "grey";
   }
   switch (status) {
-    case ServiceStatus.CRASHED:
+    case 4:
       return "bright-red";
-    case ServiceStatus.RUNNING:
+    case 1:
       return "green";
-    case ServiceStatus.STARTING:
+    case 0:
       return "blue";
-    case ServiceStatus.STOPPED:
+    case 3:
       return "red";
-    case ServiceStatus.STOPPING:
+    case 2:
       return "blue";
     default:
       return "";

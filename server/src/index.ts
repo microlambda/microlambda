@@ -8,7 +8,7 @@ import { INodeSummary } from '@microlambda/types';
 export * from './socket';
 
 export const startServer = (
-  port: number,
+  port = 4545,
   project: Project,
   logger: Logger,
   scheduler: Scheduler,
@@ -28,11 +28,11 @@ export const startServer = (
 
   app.get('/api/graph', (req, res) => {
     log.debug('GET /api/graph');
-    const response: INodeSummary[] = Array.from(project.packages.values()).map((n) => ({
+    const response: INodeSummary[] = [...project.packages.values(), ...project.services.values()].map((n) => ({
       name: n.name,
       version: n.version || '',
       type: n.isService ? 'service' : 'package',
-      port: null, //n.isService ? graph.getPort(n.getName()).http : null, // FIXME: Not our responsibility anymore
+      port: n.isService ? (n.ports?.http || null) : null,
       enabled: n.enabled,
       transpiled: n.transpiled,
       typeChecked: n.typechecked,
@@ -78,13 +78,13 @@ export const startServer = (
     log.debug('Body', req.body);
     switch (req.body?.action) {
       case 'startAll':
-        scheduler.startAll().subscribe();
+        scheduler.startAll();
         break;
       case 'stopAll':
-        scheduler.stopAll().subscribe();
+        scheduler.stopAll();
         break;
       case 'restartAll':
-        scheduler.restartAll().subscribe();
+        scheduler.restartAll();
         break;
       default:
         return res.status(422).send('Invalid action');
@@ -103,17 +103,17 @@ export const startServer = (
     }
     switch (req.body?.action) {
       case 'start':
-        scheduler.startOne(service).subscribe();
+        scheduler.startOne(service);
         break;
       case 'stop':
-        scheduler.stopOne(service).subscribe();
+        scheduler.stopOne(service);
         break;
       case 'restart':
-        scheduler.restartOne(service).subscribe();
+        scheduler.restartOne(service);
         break;
-      case 'build':
+      /*case 'build':
         scheduler.typecheck(service, req.body?.options?.force);
-        break;
+        break;*/
       default:
         return res.status(422).send('Invalid action');
     }
@@ -141,13 +141,10 @@ export const startServer = (
     }
     return res.json(node.logs('in-memory'));
   });
-  app.get('/api/scheduler/status', (req, res) => {
-    return res.json({ status: scheduler.status });
-  });
-
   const http = createServer(app);
   return new Promise<Server>((resolve) => {
     http.listen(port, () => {
+      console.debug('Listening on', port)
       resolve(http);
     });
   });

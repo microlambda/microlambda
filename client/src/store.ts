@@ -22,6 +22,7 @@ log.info("Connecting websocket on", env.apiUrl);
 const socket = io(env.apiUrl);
 
 export const connected = readable(false, (set) => {
+  console.debug('Watching connect/disconnect events', socket)
   socket.on("connect", () => {
     log.info("Websocket connected");
     set(true);
@@ -42,10 +43,7 @@ interface ICreateWritable<T, A = void> extends Writable<T> {
 function createGraph(): ICreateWritable<INodeSummary[]> {
   const { subscribe, set, update } = writable<INodeSummary[]>([], (set) => {
     const debouncer = new Debouncer(async () => set(await fetchGraph()), 200);
-    socket.on("connect", async () => {
-      log.info("Websocket connected, fetching graph");
-      set(await fetchGraph());
-    });
+    debouncer.perform();
     socket.on("graph.updated", async () => {
       debouncer.perform();
     });

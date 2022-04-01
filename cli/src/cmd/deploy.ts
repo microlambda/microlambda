@@ -128,11 +128,11 @@ export const printReport = async (
     let i = 0;
     i++;
     for (const action of actions) {
-      if ((action as DeployEvent).region && action.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
+      if ((action as DeployEvent).region && action.type !== RunCommandEventEnum.TARGETS_RESOLVED && action.type !== RunCommandEventEnum.SOURCES_CHANGED) {
         console.info(
           chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name} in ${(action as DeployEvent).region} region\n`),
         );
-      } else if (action.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
+      } else if (action.type !== RunCommandEventEnum.TARGETS_RESOLVED && action.type !== RunCommandEventEnum.SOURCES_CHANGED) {
         console.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${(action).workspace.name}\n`));
       }
       if (isNodeSucceededEvent(action)) {
@@ -235,18 +235,18 @@ export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       ...options,
       environment: cmd.e,
     });
-    deployer.deploy(options.service).subscribe(
-      (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, 'deploy'),
-      (err) => {
-        console.error(chalk.red('Error deploying services'));
+    deployer.deploy(options.service).subscribe({
+      next: (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, "deploy"),
+      error: (err) => {
+        console.error(chalk.red("Error deploying services"));
         console.error(err);
         process.exit(1);
       },
-      async () => {
-        await printReport(actions, failures, actions.size, 'deploy', cmd.verbose);
+      complete: async () => {
+        await printReport(actions, failures, actions.size, "deploy", cmd.verbose);
         console.info(`Successfully deploy from ${cmd.e} 🚀`);
         process.exit(0);
-      },
-    );
+      }
+    });
   });
 };

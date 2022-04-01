@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-//import { startServer, IOSocketManager } from '@microlambda/server';
+import { IOSocketManager, startServer } from "@microlambda/server";
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
 import chalk from 'chalk';
@@ -10,8 +10,9 @@ import {
   ConfigReader,
   IConfig,
 } from '@microlambda/core';
-import { resloveProjectRoot } from '@centipod/core';
+import { resolveProjectRoot, RunCommandEventEnum } from "@centipod/core";
 import {command} from "execa";
+import { Scheduler } from "@microlambda/core";
 
 interface IStartOptions {
   interactive: boolean;
@@ -63,7 +64,7 @@ export const init = async (
   logger: Logger,
 ): Promise<{ projectRoot: string; config: IConfig; project: Project }> => {
   const log = logger.log('start');
-  const projectRoot = resloveProjectRoot();
+  const projectRoot = resolveProjectRoot();
   log.info('Project root resolved', projectRoot);
   const project =  await getDependenciesGraph(projectRoot);
   const { config, reader } = await readConfig(projectRoot, logger);
@@ -92,29 +93,26 @@ export const yarnInstall = async (project: Project, logger: Logger): Promise<voi
 };
 
 export const start = async (
-  //scheduler: RecompilationScheduler,
-  //options: IStartOptions,
-  //logger: Logger,
+  options: IStartOptions,
+  logger: Logger,
 ): Promise<void> => {
-  process.exit(1);
-  /*console.info(showOff());
+  console.info(showOff());
 
-  const { projectRoot, config, graph } = await init(logger, scheduler, 3000);
+  const { projectRoot, config, project } = await init(logger);
 
   // await yarnInstall(graph, logger);
 
+  const scheduler = new Scheduler(project, logger);
   const startingServer = ora('Starting server').start();
-  const server = await startServer(options.port, graph, scheduler, logger);
+  const server = await startServer(options.port, project, logger, scheduler);
   startingServer.text = 'Mila server started on http://localhost:4545 ✨';
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
   starting.succeed();
 
-  scheduler.setGraph(graph);
-
-  const io = new IOSocketManager(options.port, server, scheduler, logger, graph);
-  logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
-  graph.getServices().forEach((service) => {
+  const io = new IOSocketManager(options.port, server, scheduler, logger, project);
+  // logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
+  /*project.services.forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));
     const offlineLogs$ = service.logs$.start.default;
     if (offlineLogs$) {
@@ -128,26 +126,11 @@ export const start = async (
     node.typeCheck$.subscribe((typeCheckStatus) => io.typeCheckStatusUpdated(node, typeCheckStatus));
     node.transpiled$.subscribe((transpileStatus) => io.transpilingStatusUpdated(node, transpileStatus));
   });
-  scheduler.status$.subscribe((status) => io.schedulerStatusChanged(status));
+  scheduler.status$.subscribe((status) => io.schedulerStatusChanged(status));*/
 
-  const ipc = new IPCSocketsManager(projectRoot, scheduler, logger, graph);
+  /*const ipc = new IPCSocketsManager(projectRoot, scheduler, logger, graph);
   await ipc.createServer();
-  graph.registerIPCServer(ipc);
-
-  logger.log('start').debug('Services excluded by config', config.noStart);
-  const enabledServices = graph.getServices().filter((s) => !config.noStart.includes(s.getName()));
-  logger.log('start').debug(
-    'Enabled services',
-    enabledServices.map((s) => s.getName()),
-  );
-  enabledServices.forEach((s) => s.enable());
-  logger.log('start').debug(
-    'Enabled nodes',
-    graph
-      .getNodes()
-      .filter((n) => n.isEnabled())
-      .map((n) => n.getName()),
-  );
+  graph.registerIPCServer(ipc);*/
 
   recreateLogDirectory(projectRoot, logger);
 
@@ -156,7 +139,7 @@ export const start = async (
     console.log('\n');
     const gracefulShutdown = ora('Gracefully shutting down services ☠️');
     try {
-      await scheduler.stopProject(graph);
+      await scheduler.gracefulShutdown();
     } catch (e) {
       console.error('Error stopping services. Allocated ports may still be busy !');
       process.exit(2);
@@ -167,6 +150,6 @@ export const start = async (
 
   if (!options.interactive) {
     logger.log('start').info('Starting services');
-    await scheduler.startProject(graph, options.recompile);
-  }*/
+    await scheduler.startAll();
+  }
 };

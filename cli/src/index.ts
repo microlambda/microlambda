@@ -12,7 +12,7 @@ import { getDefaultThreads, Logger, loadEnv } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
-import { resloveProjectRoot } from "@centipod/core";
+import { resolveProjectRoot } from "@centipod/core";
 import { logs } from "./cmd/logs";
 
 // TODO: Clean commands descriptions
@@ -26,7 +26,7 @@ program.version('0.2.3-alpha');
 
 const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false): Promise<void> => {
   try {
-    const projectRoot = resloveProjectRoot();
+    const projectRoot = resolveProjectRoot();
     loadEnv(projectRoot);
     await fn();
     if (!keepOpen) {
@@ -59,7 +59,7 @@ program
           interactive: cmd.interactive,
         };
         logger.log('cmd').debug(options);
-        await start();
+        await start(cmd, logger);
       }, true),
   );
 
@@ -132,7 +132,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await info(cmd, logger);
+        await info(cmd);
       }),
   );
 
@@ -223,7 +223,7 @@ program
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
   .option('-s <service>, --service <service>', 'the service for which you want to test')
   .action(
-    async (cmd) =>
+    async () =>
       await commandWrapper(async () => {
         //await runTests(cmd, scheduler, logger);
       }),

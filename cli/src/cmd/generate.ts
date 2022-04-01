@@ -12,11 +12,11 @@ import {
   resolveInputs,
 } from '@microlambda/generators';
 import chalk from 'chalk';
-import {resloveProjectRoot} from "@centipod/core";
+import {resolveProjectRoot} from "@centipod/core";
 
 export const generate = async (blueprint: string, logger: Logger): Promise<void> => {
   console.info('🧙 Microlambda code generator');
-  const projectRoot = resloveProjectRoot();
+  const projectRoot = resolveProjectRoot();
   const log = logger.log('generator');
   const blueprintsPath = join(projectRoot, 'blueprints');
   log.debug(`Resolving blueprints in ${blueprintsPath}`);

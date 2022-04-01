@@ -7,7 +7,7 @@ import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
 import { ILogger, Logger } from '../logger';
 import { command } from 'execa';
-import {resloveProjectRoot, Workspace as CentipodWorkspace} from "@centipod/core";
+import {resolveProjectRoot, Workspace as CentipodWorkspace} from "@centipod/core";
 import { Workspace } from '../graph/workspace';
 import { Project } from '../graph/project';
 
@@ -19,7 +19,7 @@ export class Packager {
 
   constructor(private readonly _useLayers = false, private readonly _buildLayer = true) {
     this._logger = new Logger().log('packagr');
-    this._projectRoot = resloveProjectRoot();
+    this._projectRoot = resolveProjectRoot();
     this._logger.debug('Initialized packagr on project', this._projectRoot);
   }
 

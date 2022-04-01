@@ -3,10 +3,11 @@ import {existsSync} from "fs";
 import {join} from "path";
 import {transpileFiles} from "../typescript";
 import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
+import { IServicePortsConfig } from "../resolve-ports";
 
 export class Workspace extends CentipodWorkspace {
 
-  constructor(wks: CentipodWorkspace) {
+  constructor(wks: CentipodWorkspace, readonly ports?: IServicePortsConfig) {
     super(wks.pkg, wks.root, wks.config, wks.project);
   }
 

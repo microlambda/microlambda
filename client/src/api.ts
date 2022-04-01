@@ -3,13 +3,7 @@
  */
 
 import { env } from "./env/dev.env";
-import type {
-  IEventLog,
-  INodeSummary,
-  ServiceLogs,
-  LogLevel,
-  SchedulerStatus,
-} from "@microlambda/types";
+import type { IEventLog, INodeSummary, LogLevel, SchedulerStatus, ServiceLogs } from "@microlambda/types";
 import { logger } from "./logger";
 
 const log = logger.scope("(api)");
@@ -73,35 +67,42 @@ export async function stopAll(): Promise<void> {
 }
 
 export async function fetchServiceLogs(service: string): Promise<ServiceLogs> {
-  const response = await fetch(
+  /*const response = await fetch(
     `${env.apiUrl}/api/services/${encodeURIComponent(service)}/logs`
   );
   const serviceLogs = await response.json();
   log.info("Service Logs updated", service, serviceLogs.length);
-  return serviceLogs;
+  return serviceLogs;*/
+  return {
+    start: {},
+    package: {},
+    deploy: {},
+    remove: {}
+  }
 }
 
 export async function fetchCompilationLogs(node: string): Promise<string[]> {
-  const response = await fetch(
+  /*const response = await fetch(
     `${env.apiUrl}/api/nodes/${encodeURIComponent(node)}/tsc/logs`
   );
   const compilationLogs = await response.json();
   log.info("Build Logs updated", node, compilationLogs.length);
-  return compilationLogs;
+  return compilationLogs;*/
+  return [];
 }
 
 export async function fetchEventLogs(
   level: LogLevel = "info"
 ): Promise<IEventLog[]> {
-  const response = await fetch(`${env.apiUrl}/api/logs?level=` + level);
+  /*const response = await fetch(`${env.apiUrl}/api/logs?level=` + level);
   const compilationLogs = await response.json();
-  log.info("Events Log updated", level, compilationLogs.length);
-  return compilationLogs;
+  log.info("Events Log updated", level, compilationLogs.length);*/
+  return [];
 }
 
 export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {
-  const response = await fetch(`${env.apiUrl}/api/scheduler/status`);
+  /*const response = await fetch(`${env.apiUrl}/api/scheduler/status`);
   const status = await response.json();
-  log.info("Scheduler status", status);
-  return status.status;
+  log.info("Scheduler status", status);*/
+  return 0;
 }

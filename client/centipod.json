@@ -3,7 +3,7 @@
   "targets": {
     "build": {
       "cmd": [
-        "../../../node_modules/.bin/snowpack build"
+        "../../../node_modules/.bin/vite build"
       ],
       "src": [
         "src/**/*.ts"

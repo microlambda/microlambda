@@ -89,7 +89,7 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
       affected: options.affected,
       force: options.force,
       stdio: options.verbose ? 'inherit' : 'pipe',
-    }).subscribe(onNext, onError, onComplete);
+    }).subscribe({ next: onNext, error: onError, complete: onComplete });
   });
 };
 

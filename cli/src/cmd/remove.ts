@@ -1,12 +1,10 @@
 /* eslint-disable no-console */
 import inquirer from 'inquirer';
-import {Deployer, DeployEvent, Logger, Project, Workspace} from '@microlambda/core';
+import {Deployer, DeployEvent, Logger} from '@microlambda/core';
 import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
-import { options } from "@hapi/joi";
-import { beforePackage } from "./package";
 
 export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
   return new Promise(async () => {
@@ -62,20 +60,20 @@ export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => 
       force: true,
       environment: cmd.e,
     }, 'remove');
-    remover.deploy().subscribe(
-      (evt) => {
+    remover.deploy().subscribe({
+      next: (evt) => {
         handleNext(evt, spinnies, failures, actions, cmd.verbose, 'remove');
       },
-      (err) => {
+      error: (err) => {
         console.error(chalk.red('Error removing services'));
         console.error(err);
         process.exit(1);
       },
-      async () => {
+      complete: async () => {
         await printReport(actions, failures, actions.size, 'remove', cmd.verbose);
         console.info(`Successfully removed from ${cmd.e} :boom:`);
         process.exit(0);
       },
-    );
+    });
   });
 };

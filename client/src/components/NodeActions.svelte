@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ServiceStatus } from '@microlambda/types';
+  import type { ServiceStatus } from '@microlambda/types';
   import { selected, schedulerStatus } from '../store';
   import { startService, stopService, restartService } from '../api';
   import Button from './Button.svelte';

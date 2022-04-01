@@ -146,11 +146,11 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     };
     const runner = new Runner(options.project);
     runner.runCommand('build', {
-      to: options.service,
+      to: options.service ? [options.service] : undefined,
       mode: 'topological',
       affected: options.affected,
       force: options.force,
-    }).subscribe(onNext, onError, onComplete);
+    }).subscribe({ next: onNext, error: onError, complete: onComplete });
   });
 };
 

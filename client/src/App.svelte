@@ -79,16 +79,12 @@
   </ul>
 </nav>-->
 <section class="main">
-	{#if $connected}
-    <Sidebar/>
-    <div class="panel">
-        {#if $selected}
-         <Node/>
-        {:else}
-        <EventLog/>
-      {/if}
-    </div>
-	{:else}
-    <Disconnected/>
-	{/if}
+  <Sidebar/>
+  <div class="panel">
+      {#if $selected}
+       <Node/>
+      {:else}
+      <EventLog/>
+    {/if}
+  </div>
 </section>

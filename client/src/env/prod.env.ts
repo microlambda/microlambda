@@ -1,3 +1,3 @@
 export const env = {
-  apiUrl: window.location.origin,
+  apiUrl: "http://localhost:4545",
 };

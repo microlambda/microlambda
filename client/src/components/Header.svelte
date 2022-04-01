@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { graph, schedulerStatus, selected } from '../store';
-  import { ServiceStatus } from '@microlambda/types';
+  import type { ServiceStatus } from '@microlambda/types';
   import { stopAll, startAll, restartAll } from '../api';
   import { logger } from '../logger';
   import { onMount } from 'svelte';

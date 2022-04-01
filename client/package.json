@@ -1,32 +1,33 @@
 {
   "name": "@microlambda/client",
   "version": "0.3.0-alpha.2",
+  "type": "module",
   "scripts": {
-    "start": "snowpack dev",
-    "build": "snowpack build",
-    "test": "echo No tests for this package",
+    "start": "../../../node_modules/.bin/vite",
+    "build": "../../../node_modules/.bin/vite build",
+    "preview": "../../../node_modules/.bin/vite preview",
+    "check": "../../../node_modules/.bin/svelte-check --tsconfig ./tsconfig.json",
     "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   },
   "dependencies": {
     "ansi-html": "^0.0.7",
     "dagre-d3": "^0.6.4",
-    "socket.io-client": "^3.1.0",
+    "socket.io-client": "^4.4.1",
     "svelte": "^3.24.0",
     "timeago.js": "^4.0.2"
   },
   "devDependencies": {
     "@microlambda/types": "workspace:*",
-    "@snowpack/plugin-dotenv": "^2.0.5",
-    "@snowpack/plugin-svelte": "^3.5.0",
-    "@snowpack/plugin-typescript": "^1.2.0",
+    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.40",
     "@testing-library/jest-dom": "^5.15.1",
     "@testing-library/svelte": "^3.0.0",
+    "@tsconfig/svelte": "^2.0.1",
     "@types/dagre-d3": "^0.6.2",
     "@types/snowpack-env": "^2.3.2",
     "sass": "^1.32.5",
-    "snowpack": "^3.0.1",
     "svelte-jester": "^2.1.5",
     "svelte-preprocess": "^4.6.3",
-    "typescript": "^4.0.0"
+    "typescript": "^4.0.0",
+    "vite": "^2.9.1"
   }
 }

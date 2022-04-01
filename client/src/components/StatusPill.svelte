@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
+  import type { ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
   import {
     getServiceStatus, getServiceStatusClass,
     getTranspiled,
