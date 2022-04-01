@@ -3,7 +3,6 @@
   import * as d3 from 'd3';
   import { onMount } from 'svelte';
   import { graph } from '../store';
-  import type { ServiceStatus, TypeCheckStatus } from '@microlambda/types';
   import { logger } from '../logger';
   import { createEventDispatcher } from 'svelte';
 
@@ -130,8 +129,8 @@
   onMount(() => {
     dispatch('mounted', container);
     graph.subscribe((_nodes) => {
-      nodes = _nodes;
-      log.debug('Nodes updated', _nodes.length);
+      nodes = [..._nodes.packages, ..._nodes.services];
+      log.debug('Nodes updated', nodes.length);
       renderGraph();
     });
   });

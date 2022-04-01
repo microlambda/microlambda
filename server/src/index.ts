@@ -1,9 +1,10 @@
 import express from 'express';
 import { createServer, Server } from 'http';
-import { Logger, Project, Scheduler } from '@microlambda/core';
+import { Project, Scheduler, Workspace } from "@microlambda/core";
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
+import { Logger } from "@microlambda/logger";
 
 export * from './socket';
 
@@ -28,7 +29,7 @@ export const startServer = (
 
   app.get('/api/graph', (req, res) => {
     log.debug('GET /api/graph');
-    const response: INodeSummary[] = [...project.packages.values(), ...project.services.values()].map((n) => ({
+    const summaryMapper = (n: Workspace): INodeSummary => ({
       name: n.name,
       version: n.version || '',
       type: n.isService ? 'service' : 'package',
@@ -47,20 +48,25 @@ export const startServer = (
         lastStarted: null, //n.metrics.lastStarted ? n.metrics.lastStarted.toISOString() : null,
         startedTook: 0, //n.metrics.startedTook,
       },
-    }));
+    })
+    const response: {
+      packages: INodeSummary[],
+      services: INodeSummary[],
+    } = {
+      packages: [...project.packages.values()].map(summaryMapper),
+      services: [...project.services.values()].map(summaryMapper),
+    };
     res.json(response);
   });
 
-  /*
-  FIXME: Events log equivalent
   app.get('/api/logs', (req, res) => {
     log.debug('GET /api/logs');
     if (project.logger) {
-      res.json(graph.logger.logs.filter((log) => ['warn', 'info', 'error'].includes(log.level)));
+      res.json(project.logger.buffer.filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level)));
     } else {
       res.json([]);
     }
-  });*/
+  });
 
   app.get('/api/services/:service/logs', (req, res) => {
     const serviceName = req.params.service;

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { graph, schedulerStatus, selected } from '../store';
-  import type { ServiceStatus } from '@microlambda/types';
   import { stopAll, startAll, restartAll } from '../api';
   import { logger } from '../logger';
   import { onMount } from 'svelte';
@@ -19,7 +18,7 @@
   });
 
   graph.subscribe((nodes) => {
-    allStarted = nodes.filter((n) => n.port && n.enabled).every((n) => n.status === ServiceStatus.STARTING || n.status === ServiceStatus.RUNNING || n.status === ServiceStatus.CRASHED);
+    allStarted = nodes.services?.every((n) => n.status === 0 || n.status === 1 || n.status === 4);
     logger.scope('<Header/>').debug('All started', allStarted);
   });
 
@@ -66,6 +65,7 @@
     border-bottom: $header_border solid $anthracite_lighter;
     h1 {
       margin: 0 20px;
+      cursor: pointer;
     }
     .dots {
       margin: 0 20px;
@@ -99,7 +99,7 @@
 </style>
 
 <header>
-  <h1>Microλambda</h1>
+  <h1 on:click={unselectNode}>Microλambda</h1>
   <img on:click={toggleMenu} class="dots" src="ellipsis-v-solid.svg" height="20" width="20"/>
 </header>
 {#if visible}

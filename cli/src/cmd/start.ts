@@ -6,13 +6,13 @@ import chalk from 'chalk';
 import {
   Project,
   recreateLogDirectory,
-  Logger,
   ConfigReader,
   IConfig,
 } from '@microlambda/core';
 import { resolveProjectRoot, RunCommandEventEnum } from "@centipod/core";
 import {command} from "execa";
 import { Scheduler } from "@microlambda/core";
+import { Logger } from "@microlambda/logger";
 
 interface IStartOptions {
   interactive: boolean;
@@ -53,9 +53,9 @@ export const readConfig = async (
   }
 };
 
-export const getDependenciesGraph = async (projectRoot: string): Promise<Project> => {
+export const getDependenciesGraph = async (projectRoot: string, logger?: Logger): Promise<Project> => {
   const parsingGraph = ora('Parsing dependency graph 🧶').start();
-  const graph = await Project.loadProject(projectRoot);
+  const graph = await Project.loadProject(projectRoot, logger);
   parsingGraph.succeed();
   return graph;
 };
@@ -66,7 +66,7 @@ export const init = async (
   const log = logger.log('start');
   const projectRoot = resolveProjectRoot();
   log.info('Project root resolved', projectRoot);
-  const project =  await getDependenciesGraph(projectRoot);
+  const project =  await getDependenciesGraph(projectRoot, logger);
   const { config, reader } = await readConfig(projectRoot, logger);
   validateConfig(reader, project);
   return { projectRoot, config: config, project };

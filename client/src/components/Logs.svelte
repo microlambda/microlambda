@@ -2,7 +2,7 @@
   import * as ansi from 'ansi-html';
   import { afterUpdate, createEventDispatcher, onMount } from 'svelte';
   export let logs: string[] = [];
-  const fromAnsi = ansi.default;
+  const fromAnsi = ansi;
   export let height = 500;
   export let width = 500;
 
@@ -21,6 +21,7 @@
 
   onMount(() => {
     autoScroll();
+    console.debug(logs);
     dispatch('mounted', container);
   });
 

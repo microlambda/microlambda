@@ -40,14 +40,22 @@ interface ICreateWritable<T, A = void> extends Writable<T> {
   fetch: (args: A) => Promise<void>;
 }
 
-function createGraph(): ICreateWritable<INodeSummary[]> {
-  const { subscribe, set, update } = writable<INodeSummary[]>([], (set) => {
+function createGraph(): ICreateWritable<{
+  packages: INodeSummary[],
+  services: INodeSummary[],
+}> {
+  const { subscribe, set, update } = writable<{
+    packages: INodeSummary[],
+    services: INodeSummary[],
+  }>({
+    services: [],
+    packages: [],
+  }, (set) => {
     const debouncer = new Debouncer(async () => set(await fetchGraph()), 200);
     debouncer.perform();
     socket.on("graph.updated", async () => {
       debouncer.perform();
     });
-    socket.on("disconnect", () => set([]));
     return (): void => {
       socket.close();
     };
@@ -143,17 +151,19 @@ export const offlineLogs = derived(logs, ($logs) => $logs.start.default);
 export const eventsLog = createEventsLog();
 export const graph = createGraph();
 export const services = derived(graph, ($graph) =>
-  $graph.filter((n) => n.port)
+  $graph.services
 );
 export const packages = derived(graph, ($graph) =>
-  $graph.filter((n) => !n.port)
+  $graph.packages
 );
 
 let nodeSelected: INodeSummary | null = null;
 graph.subscribe((nodes) => {
-  log.debug("Graph updated, refreshing selected node", nodes.length);
+  log.debug("Graph updated, refreshing selected node", nodes);
   if (nodeSelected) {
-    selected.set(nodes.find((n) => n.name === nodeSelected?.name) || null);
+    const serviceSelected = nodes.services.find((n) => n.name === nodeSelected?.name);
+    const packageSelected = nodes.packages.find((n) => n.name === nodeSelected?.name);
+    selected.set(serviceSelected || packageSelected || null);
   } else {
     log.debug("No selected node");
   }

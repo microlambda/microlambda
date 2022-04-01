@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { ServiceStatus } from '@microlambda/types';
   import { selected, schedulerStatus } from '../store';
   import { startService, stopService, restartService } from '../api';
   import Button from './Button.svelte';
@@ -28,7 +27,7 @@
 {#if $selected}
 <div class="actions" transition:fade={{duration: env.transitionDuration}}>
   {#if $selected?.type === 'service'}
-    {#if [ServiceStatus.RUNNING, ServiceStatus.STARTING].includes($selected?.status)}
+    {#if [0, 1].includes($selected?.status)}
       <Button disabled="{schedulerBusy}" on:click={stopService($selected?.name)}>Stop</Button>
       <Button disabled="{schedulerBusy}" on:click={restartService($selected?.name)}>Restart</Button>
       {:else}

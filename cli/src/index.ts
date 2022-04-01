@@ -8,12 +8,13 @@ import { build } from './cmd/build';
 import chalk from 'chalk';
 import { packagr } from './cmd/package';
 import { deploy } from './cmd/deploy';
-import { getDefaultThreads, Logger, loadEnv } from '@microlambda/core';
+import { getDefaultThreads, loadEnv } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
 import { resolveProjectRoot } from "@centipod/core";
 import { logs } from "./cmd/logs";
+import { Logger } from "@microlambda/logger";
 
 // TODO: Clean commands descriptions
 

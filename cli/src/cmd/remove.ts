@@ -1,10 +1,11 @@
 /* eslint-disable no-console */
 import inquirer from 'inquirer';
-import {Deployer, DeployEvent, Logger} from '@microlambda/core';
+import {Deployer, DeployEvent} from '@microlambda/core';
 import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
+import { Logger } from "@microlambda/logger";
 
 export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
   return new Promise(async () => {

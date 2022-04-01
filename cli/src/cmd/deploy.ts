@@ -3,11 +3,12 @@ import { beforePackage, IPackageCmd, packageServices } from "./package";
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import {prompt} from 'inquirer';
-import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig, Logger} from '@microlambda/core';
+import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig} from '@microlambda/core';
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
 import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@centipod/core";
 import { spinniesOptions } from "../utils/spinnies";
+import { Logger } from "@microlambda/logger";
 
 export interface IDeployCmd extends IPackageCmd {
   e: string;

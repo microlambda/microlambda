@@ -8,7 +8,10 @@ import { logger } from "./logger";
 
 const log = logger.scope("(api)");
 
-export async function fetchGraph(): Promise<INodeSummary[]> {
+export async function fetchGraph(): Promise<{
+  packages: INodeSummary[],
+  services: INodeSummary[],
+}> {
   const response = await fetch(`${env.apiUrl}/api/graph`);
   const updatedGraph = await response.json();
   log.info("Graph fetched", updatedGraph.length);
@@ -94,10 +97,10 @@ export async function fetchCompilationLogs(node: string): Promise<string[]> {
 export async function fetchEventLogs(
   level: LogLevel = "info"
 ): Promise<IEventLog[]> {
-  /*const response = await fetch(`${env.apiUrl}/api/logs?level=` + level);
+  const response = await fetch(`${env.apiUrl}/api/logs?level=` + level);
   const compilationLogs = await response.json();
-  log.info("Events Log updated", level, compilationLogs.length);*/
-  return [];
+  log.info("Events Log updated", level, compilationLogs.length);
+  return compilationLogs;
 }
 
 export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {

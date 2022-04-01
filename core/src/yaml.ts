@@ -5,7 +5,7 @@ import { copySync, existsSync, readFileSync, removeSync, renameSync, writeFileSy
 import { join, dirname } from 'path';
 import { ConfigReader } from './config/read-config';
 import { compileFile } from './typescript';
-import { Logger } from './logger';
+import { Logger } from '@microlambda/logger';
 import { Workspace } from './graph/workspace';
 
 class Mapping {

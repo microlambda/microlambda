@@ -7,10 +7,12 @@ import { IServicePortsConfig } from "../resolve-ports";
 
 export class Workspace extends CentipodWorkspace {
 
-  constructor(wks: CentipodWorkspace, readonly ports?: IServicePortsConfig) {
+  constructor(wks: CentipodWorkspace, ports?: IServicePortsConfig) {
     super(wks.pkg, wks.root, wks.config, wks.project);
+    this._ports = ports;
   }
 
+  private _ports: IServicePortsConfig | undefined;
   private _isService: boolean | null = null;
   private _enabled = false;
   private _transpiled = TranspilingStatus.NOT_TRANSPILED;
@@ -21,6 +23,9 @@ export class Workspace extends CentipodWorkspace {
   get transpiled() { return this._transpiled }
   get typechecked() { return this._typechecked }
   get started() { return this._started }
+  get ports() { return this._ports }
+
+  assignPorts(ports: IServicePortsConfig) { this._ports = ports }
 
   enable() { this._enabled = true; }
   disable() { this._enabled = true; }

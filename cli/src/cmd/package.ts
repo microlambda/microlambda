@@ -1,10 +1,11 @@
 /* eslint-disable no-console */
-import {getDefaultThreads, getThreads, Logger, Packager } from '@microlambda/core';
+import {getDefaultThreads, getThreads, Packager } from '@microlambda/core';
 import {beforeBuild, IBuildCmd, IBuildOptions, printCommand, typeCheck} from './build';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import {printReport} from './deploy';
 import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@centipod/core";
+import { Logger } from "@microlambda/logger";
 
 export interface IPackageCmd extends IBuildCmd {
   c: string;

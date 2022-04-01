@@ -1,0 +1,33 @@
+{
+  "name": "@microlambda/logger",
+  "version": "0.3.0-alpha.2",
+  "description": "µlambda framework logger",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/logger"
+  },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "../node_modules/.bin/jest",
+    "build": "rm -rf ./lib && ../node_modules/.bin/tsc --build",
+    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
+    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
+  },
+  "keywords": [
+    "serverless",
+    "typescript",
+    "yarn",
+    "microservices",
+    "aws",
+    "monorepo"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2"
+  },
+  "devDependencies": {
+    "jest": "^27.5.1",
+    "typescript": "^4.5.2"
+  }
+}

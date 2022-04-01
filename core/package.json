@@ -26,6 +26,7 @@
   "dependencies": {
     "@centipod/core": "workspace:*",
     "@hapi/joi": "^17.1.1",
+    "@microlambda/logger": "workspace:*",
     "@microlambda/types": "workspace:*",
     "archiver": "^5.3.0",
     "aws-sdk": "^2.1036.0",

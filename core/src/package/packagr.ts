@@ -5,7 +5,7 @@ import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
-import { ILogger, Logger } from '../logger';
+import { Logger, Loggers } from '@microlambda/logger';
 import { command } from 'execa';
 import {resolveProjectRoot, Workspace as CentipodWorkspace} from "@centipod/core";
 import { Workspace } from '../graph/workspace';
@@ -15,7 +15,7 @@ export class Packager {
   private readonly _projectRoot: string;
   private _packagePath: string | undefined;
   private _tmpPath: string | undefined;
-  private _logger: ILogger;
+  private _logger: Loggers;
 
   constructor(private readonly _useLayers = false, private readonly _buildLayer = true) {
     this._logger = new Logger().log('packagr');

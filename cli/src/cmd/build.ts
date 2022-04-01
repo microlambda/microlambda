@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Logger, Project } from '@microlambda/core';
+import { Project } from '@microlambda/core';
 import { init, yarnInstall } from './start';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
@@ -11,6 +11,7 @@ import {
   isNodeEvent, isProcessError
 } from "@centipod/core";
 import { spinniesOptions } from "../utils/spinnies";
+import { Logger } from "@microlambda/logger";
 
 export interface IBuildCmd {
   s?: string;

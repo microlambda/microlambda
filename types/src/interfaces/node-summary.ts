@@ -9,6 +9,7 @@ export interface INodeSummary {
   transpiled: TranspilingStatus;
   typeChecked: TypeCheckStatus;
   status: ServiceStatus | null;
+  children: string[];
   metrics: {
     lastTypeCheck: string | null;
     typeCheckTook: number | null;

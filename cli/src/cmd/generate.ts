@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Logger } from '@microlambda/core';
+import { Logger } from '@microlambda/logger';
 import { join, relative } from 'path';
 import { prompt } from 'inquirer';
 import {

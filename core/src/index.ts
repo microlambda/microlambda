@@ -3,7 +3,6 @@ export * from './config/config';
 export * from './package/packagr';
 export * from './aws-account';
 export * from './errors';
-export * from './logger';
 export * from './logs';
 export * from './platform';
 export * from './resolve-ports';

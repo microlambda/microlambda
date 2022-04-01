@@ -1,9 +1,7 @@
 import { Server as WebSocketServer } from "socket.io";
 import { Server } from "http";
 import {
-  ILogger,
   isStopServiceEvent,
-  Logger,
   Project,
   RunCommandSchedulerEvent,
   Scheduler,
@@ -12,6 +10,7 @@ import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheck
 import { Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import { RunCommandEvent, RunCommandEventEnum, Workspace } from "@centipod/core";
+import { Logger } from "@microlambda/logger";
 
 export class IOSocketManager {
   private _io: WebSocketServer;

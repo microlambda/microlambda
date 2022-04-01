@@ -10,7 +10,7 @@ import {
 } from 'typescript';
 import { access, constants, mkdir, readFile, writeFile } from 'fs';
 import { join, relative, dirname } from 'path';
-import { Logger } from './logger';
+import { Logger } from '@microlambda/logger';
 
 export const getTsConfig = (cwd: string): ParsedCommandLine => {
   const parseConfigHost: ParseConfigHost = {

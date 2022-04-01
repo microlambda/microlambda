@@ -4,7 +4,7 @@ import {ConfigReader} from "./config/read-config";
 import {from, mergeAll, Observable} from "rxjs";
 import {map} from "rxjs/operators";
 import {getDefaultThreads} from "./platform";
-import { Logger } from "./logger";
+import { Logger } from '@microlambda/logger';
 
 export type DeployEvent = RunCommandEvent & { region: string };
 // test

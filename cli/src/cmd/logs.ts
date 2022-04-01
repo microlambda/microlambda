@@ -1,4 +1,4 @@
-import { Logger } from '@microlambda/core';
+import { Logger } from '@microlambda/logger';
 import { init } from "./start";
 import chalk from "chalk";
 import { join } from 'path';

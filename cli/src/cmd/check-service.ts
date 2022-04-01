@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import chalk from 'chalk';
-import { Logger } from '@microlambda/core';
+import { Logger } from '@microlambda/logger';
 import { init } from './start';
 
 export const checkService = async (cmd: string): Promise<void> => {

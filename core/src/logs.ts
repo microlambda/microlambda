@@ -2,7 +2,7 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs'
 import rimraf from 'rimraf';
 import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
-import { Logger } from './logger';
+import { Logger } from '@microlambda/logger';
 import { ServerlessAction } from '@microlambda/types';
 
 // TODO: Move in $service/.microlambda/{logs,hashes,package}

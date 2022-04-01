@@ -1,5 +1,5 @@
 import { IConfig } from './config/config';
-import { Logger } from './logger';
+import { Logger } from '@microlambda/logger';
 import { Workspace } from '@centipod/core';
 
 export interface IServicePortsConfig {
