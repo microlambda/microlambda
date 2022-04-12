@@ -13,6 +13,7 @@ import { resolveProjectRoot, RunCommandEventEnum } from "@centipod/core";
 import {command} from "execa";
 import { Scheduler } from "@microlambda/core";
 import { Logger } from "@microlambda/logger";
+import { WebsocketLogsHandler } from "../log-handlers/websocket";
 
 interface IStartOptions {
   interactive: boolean;
@@ -101,16 +102,20 @@ export const start = async (
   const { projectRoot, config, project } = await init(logger);
 
   // await yarnInstall(graph, logger);
-
+  const DEFAULT_PORT = 4545;
   const scheduler = new Scheduler(project, logger);
   const startingServer = ora('Starting server').start();
-  const server = await startServer(options.port, project, logger, scheduler);
+  const server = await startServer(options.port || DEFAULT_PORT, project, logger, scheduler);
   startingServer.text = 'Mila server started on http://localhost:4545 ✨';
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
   starting.succeed();
 
-  const io = new IOSocketManager(options.port, server, scheduler, logger, project);
+  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, logger, project);
+  for (const workspace of project.workspaces.values()) {
+    const ioHandler = new WebsocketLogsHandler(workspace, io);
+    workspace.addLogsHandler(ioHandler);
+  }
   // logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   /*project.services.forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));

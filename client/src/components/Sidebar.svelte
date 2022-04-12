@@ -8,8 +8,10 @@
     graph.fetch();
   });
 
-  const selectService = (node: any) => {
-    selected.set(node);
+  const selectService = (node: any, isService: boolean) => {
+    if (node) {
+      selected.set({ ...node,  isService });
+    }
   }
 </script>
 
@@ -50,7 +52,7 @@
     {#if $services.length}<h3 class="mt0">Services</h3>
     <ul>
       {#each $services as node}
-        <li on:click={selectService(node)}>
+        <li on:click={selectService(node, true)}>
           <StatusPill transpiled="{node.transpiled}"/>
           <StatusPill typeChecked="{node.typeChecked}"/>
           <StatusPill enabled="{node.enabled}" serviceStatus="{node.status}"/>
@@ -61,7 +63,7 @@
     {#if $packages.length}<h3>Packages</h3>
     <ul>
       {#each $packages as node}
-        <li on:click={selectService(node)}>
+        <li on:click={selectService(node, false)}>
           <StatusPill transpiled="{node.transpiled}"/>
           <StatusPill typeChecked="{node.typeChecked}"/>
           <span>{node.name}</span>

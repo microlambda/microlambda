@@ -178,13 +178,15 @@ export class Scheduler {
       if (this._runners.start.has(w.name)) {
         this._events$.next({ service: w, type: 'stopping' });
         this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPING);
-        await w.kill('start');
+        console.debug('Killing', w.name);
+        await w.kill('start', [w.ports?.http, w.ports?.lambda, w.ports?.websocket].filter((p) => p != null) as number[]);
         this._logger.info('Serverless offline process killed', w.name);
         this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPED);
         this._events$.next({ service: w, type: 'stopped' });
         this._subscriptions.start.get(w.name)?.unsubscribe();
         this._runners.start.delete(w.name);
       } else {
+        console.debug('Not started', w.name);
         this._logger.warn('Service not registered as running ', w.name);
       }
     })).then(() => {
@@ -193,23 +195,32 @@ export class Scheduler {
         if (!this._runners.start.has(w.name)) {
           const runner = new Runner(this.project, this._concurrency, undefined, this._logger.logger);
           this._runners.start.set(w.name, runner);
-          const startedAt = Date.now();
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STARTING);
-          const daemon$ = runner.runCommand('start', { mode: 'parallel', workspaces: [w], force: true });
+          const daemon$ = runner.runCommand('start', { mode: 'parallel', workspaces: [w], force: true }, [
+            `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
+          ]);
           const subscription = daemon$.subscribe({
-            next: (evt) => this._events$.next({ ...evt, cmd: 'start' }),
+            next: (evt) => {
+              this._logger.debug({ evt: evt.type, workspace: w.name});
+              this._events$.next({ ...evt, cmd: "start" });
+              if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
+                this._logger.warn('Error starting', w.name);
+                this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.CRASHED);
+                this._targets.delete(w);
+              } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+                this._logger.info('Successfully started', w.name);
+                this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.RUNNING);
+                this.project.getWorkspace(w.name)?.updateMetric().start({
+                  finishedAt: new Date().toISOString(),
+                  took: evt.result.overall,
+                  fromCache: evt.result.fromCache,
+                });
+              }
+            },
             error: (error) => {
-              this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.CRASHED);
-              console.error(error);
+              this._logger.error(error);
             },
             complete: () => {
-              this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.RUNNING);
-              this.project.getWorkspace(w.name)?.updateMetric().start({
-                finishedAt: new Date().toISOString(),
-                took: Date.now() - startedAt,
-                fromCache: false,
-              });
-              this._logger.info('Successfully started', w.name);
               this._subscriptions.start.delete(w.name);
             },
           });

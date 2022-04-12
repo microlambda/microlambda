@@ -1,15 +1,17 @@
-import { Workspace as CentipodWorkspace } from '@centipod/core';
+import { InMemoryLogHandler, Workspace as CentipodWorkspace } from "@centipod/core";
 import {existsSync} from "fs";
 import {join} from "path";
 import {transpileFiles} from "../typescript";
 import { ICommandMetrics, ICommandMetric, ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
 import { IServicePortsConfig } from "../resolve-ports";
+import { LogsFileHandler } from "../log-handlers/file";
 
 export class Workspace extends CentipodWorkspace {
 
   constructor(wks: CentipodWorkspace, ports?: IServicePortsConfig) {
     super(wks.pkg, wks.root, wks.config, wks.project);
     this._ports = ports;
+    this._attachDefaultHandlers();
   }
 
   private _ports: IServicePortsConfig | undefined;
@@ -61,5 +63,13 @@ export class Workspace extends CentipodWorkspace {
 
   async transpile(): Promise<void> {
     await transpileFiles(this.root);
+  }
+
+  private _attachDefaultHandlers(): void {
+    const inMemory = new InMemoryLogHandler(this);
+    const files = new LogsFileHandler(this);
+    console.debug('Attaching logs handlers', this.name);
+    this.addLogsHandler(inMemory);
+    this.addLogsHandler(files);
   }
 }

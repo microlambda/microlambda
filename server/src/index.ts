@@ -1,10 +1,11 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { createServer, Server } from 'http';
 import { Project, Scheduler, Workspace } from "@microlambda/core";
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
 import { Logger } from "@microlambda/logger";
+import { getTrimmedSlice } from "./utils/logs";
 
 export * from './socket';
 
@@ -27,8 +28,11 @@ export const startServer = (
 
   app.use('/', express.static(__dirname + '/static'));
 
+  app.get('/api/ping', (req, res) => {
+    res.status(200).send('Pong')
+  });
+
   app.get('/api/graph', (req, res) => {
-    log.debug('GET /api/graph');
     const summaryMapper = (n: Workspace): INodeSummary => ({
       name: n.name,
       version: n.version || '',
@@ -51,24 +55,29 @@ export const startServer = (
     res.json(response);
   });
 
-  app.get('/api/logs', (req, res) => {
-    log.debug('GET /api/logs');
-    if (project.logger) {
-      res.json(project.logger.buffer.filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level)));
-    } else {
-      res.json([]);
+  const getSliceFromQuery = (req: Request): [number, number?] => {
+    if (!req.query.slice) {
+      return [0];
     }
-  });
+    const rawSlice = req.query.slice.toString().split(',');
+    if (rawSlice.length === 0 || rawSlice.length > 2 || rawSlice.some((str) => !Number.isInteger(Number(str)))) {
+      log.warn('Invalid slice', rawSlice);
+      return [0];
+    }
+    return rawSlice[1] ? [Number(rawSlice[0]), Number(rawSlice[1])] : [Number(rawSlice[0])];
+  }
 
-  app.get('/api/services/:service/logs', (req, res) => {
-    const serviceName = req.params.service;
-    log.debug('GET /api/services/:service/logs', serviceName);
-    const service = project.services.get(serviceName);
-    if (!service) {
-      log.error('GET /api/services/:service/logs - 404: No such service');
-      return res.status(404).send();
+  app.get('/api/logs', (req, res) => {
+    if (project.logger) {
+      let logs =  project.logger.buffer
+        .filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level));
+      if (req.query.scope && typeof req.query.scope === 'string') {
+        logs = logs.filter((entry) => entry.scope?.includes(req.query.scope!.toString()));
+      }
+      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
+    } else {
+      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
     }
-    return res.json(service.logs);
   });
 
   app.put('/api/graph', (req, res) => {
@@ -113,32 +122,41 @@ export const startServer = (
         scheduler.typecheck(service, req.body?.options?.force);
         break;*/
       default:
-        return res.status(422).send('Invalid action');
+        return res.status(400).send('Invalid action');
     }
     return res.status(204).send();
   });
 
   app.get('/api/nodes/:node/tsc/logs', (req, res) => {
     const nodeName = req.params.node;
-    log.debug('GET /api/nodes/:node/tsc/logs', nodeName);
     const node = project.workspaces.get(nodeName);
     if (!node) {
       log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
       return res.status(404).send();
     }
-    return res.json(node.logs('in-memory')?.get('build') || 'No logs in-memory found for target "build"');
+    const logs: string[] | undefined = node.logs('in-memory')?.get('build') as string[] | undefined;
+    if (logs) {
+      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
+    } else {
+      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+    }
   });
 
-  app.get('/api/nodes/:node/tree', (req, res) => {
-    const nodeName = req.params.node;
-    log.debug('GET /api/nodes/:node/tree', nodeName);
-    const node = project.workspaces.get(nodeName);
-    if (!node) {
-      log.error('GET /api/nodes/:node/tsc/logs - 404 : No such node', nodeName);
+  app.get('/api/services/:service/logs', (req, res) => {
+    const serviceName = req.params.service;
+    const service = project.services.get(serviceName);
+    if (!service) {
+      log.error('GET /api/services/:service/logs - 404: No such service');
       return res.status(404).send();
     }
-    return res.json(node.logs('in-memory'));
+    const logs: string[] | undefined = service.logs('in-memory')?.get('start') as string[] | undefined;
+    if (logs) {
+      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
+    } else {
+      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+    }
   });
+
   const http = createServer(app);
   return new Promise<Server>((resolve) => {
     http.listen(port, () => {

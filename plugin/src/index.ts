@@ -21,7 +21,7 @@ import {
   replaceAuthorizer,
 } from "./features";
 import { applyConditions } from "./features/conditions/apply-conditions";
-import { resloveProjectRoot } from '@centipod/core';
+import { resolveProjectRoot } from '@centipod/core';
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -199,7 +199,7 @@ class ServerlessMicrolambdaPlugin {
 
   private async _getDependenciesGraph(): Promise<void> {
     if (!this._graph) {
-      const projectRoot = resloveProjectRoot();
+      const projectRoot = resolveProjectRoot();
       this._log.info(`Project root resolved ${projectRoot}`);
       this._config = new ConfigReader().readConfig();
       this._graph = await Project.loadProject(projectRoot);

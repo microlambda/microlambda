@@ -15,11 +15,12 @@ import {info} from "./cmd/info";
 import { resolveProjectRoot } from "@centipod/core";
 import { logs } from "./cmd/logs";
 import { Logger } from "@microlambda/logger";
+import { EventLogsFileHandler } from '@microlambda/core';
 
 // TODO: Clean commands descriptions
 
 // Logger must be a singleton
-const logger = new Logger();
+const logger = new Logger(undefined, [new EventLogsFileHandler()]);
 
 const program = new Command();
 

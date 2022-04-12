@@ -70,21 +70,17 @@
 </svelte:head>
 
 <Header/>
-<!--<nav>
-  <ul>
-    <li>Start project</li>
-    <li>Stop project</li>
-    <li>Restart project</li>
-    <li>See event logs/li>
-  </ul>
-</nav>-->
 <section class="main">
-  <Sidebar/>
-  <div class="panel">
-      {#if $selected}
-       <Node/>
-      {:else}
-      <EventLog/>
-    {/if}
-  </div>
+  {#if $connected}
+    <Sidebar/>
+    <div class="panel">
+        {#if $selected}
+         <Node/>
+        {:else}
+        <EventLog/>
+      {/if}
+    </div>
+  {:else}
+    <Disconnected/>
+  {/if}
 </section>

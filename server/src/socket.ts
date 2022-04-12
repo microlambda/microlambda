@@ -9,7 +9,7 @@ import {
 import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
 import { Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { RunCommandEvent, RunCommandEventEnum, Workspace } from "@centipod/core";
+import { RunCommandEventEnum, Workspace } from "@centipod/core";
 import { Logger } from "@microlambda/logger";
 
 export class IOSocketManager {
@@ -28,8 +28,13 @@ export class IOSocketManager {
     graph: Project,
   ) {
     this._scheduler = scheduler;
-    // console = logger.log('io');
-    console.debug('Attaching Websocket');
+    const log = logger.log('@microlambda/server/io');
+    log.info('Attaching Websocket', {
+      cors: {
+        origin: ['http://localhost:4200', 'http://localhost:' + port],
+        credentials: true,
+      },
+    });
     this._io = new WebSocketServer(server, {
       cors: {
         origin: ['http://localhost:4200', 'http://localhost:' + port],
@@ -37,33 +42,33 @@ export class IOSocketManager {
       },
     });
     this._io.on("connect_error", (err) => {
-      console.log(`connect_error due to ${err.message}`);
+      log.error(`connect_error due to ${err.message}`);
     });
     this._graph = graph;
     this._io.on('connection', (socket) => {
       socket.on('service.start', (serviceName: string) => {
-        console.info('received service.start request', serviceName);
+        log.info('received service.start request', serviceName);
         const service = this._graph.services.get(serviceName);
         if (!service) {
-          console.error('unknown service', serviceName);
+          log.error('unknown service', serviceName);
         } else {
           this._scheduler.startOne(service);
         }
       });
       socket.on('service.restart', (serviceName: string) => {
-        console.info('received service.restart request', serviceName);
+        log.info('received service.restart request', serviceName);
         const service = this._graph.services.get(serviceName);
         if (!service) {
-          console.error('unknown service', serviceName);
+          log.error('unknown service', serviceName);
         } else {
           this._scheduler.restartOne(service);
         }
       });
       socket.on('service.stop', (serviceName: string) => {
-        console.info('received service.stop request', serviceName);
+        log.info('received service.stop request', serviceName);
         const service = this._graph.services.get(serviceName);
         if (!service) {
-          console.error('unknown service', serviceName);
+          log.error('unknown service', serviceName);
         } else {
           this._scheduler.stopOne(service);
         }
@@ -73,7 +78,7 @@ export class IOSocketManager {
       });
     });
     this._graphUpdated$.pipe(debounceTime(200)).subscribe(() => {
-      console.info('graph updated');
+      log.info('graph updated');
       this._io.emit('graph.updated');
     });
     this._scheduler.events$.subscribe((evt) => {
@@ -154,7 +159,6 @@ export class IOSocketManager {
   }
 
   statusUpdated(node: Workspace, status: ServiceStatus): void {
-    console.debug('status updated', node.name, status);
     this._graphUpdated();
     this._io.emit('node.status.updated', { node: node.name, status });
   }

@@ -4,11 +4,11 @@ import { fromFile } from 'hasha';
 import {getTsConfig, Workspace} from "@microlambda/core";
 import {join, relative} from 'path';
 import {sync as glob} from "glob";
-import {resloveProjectRoot} from "@centipod/core";
+import {resolveProjectRoot} from "@centipod/core";
 
 export const calculateLayerChecksums = async (service: Workspace, logger?: ILogger): Promise<ILayerChecksums | null> => {
     try {
-        const projectRoot = resloveProjectRoot();
+        const projectRoot = resolveProjectRoot();
         const manifestPath = join(service.root, 'package.json');
         const lockPath = join(projectRoot, 'yarn.lock');
         const internalDependenciesSources = Array.from(service.dependencies()).map((node) => {

@@ -1,44 +1,179 @@
 import { derived, readable, Writable, writable } from "svelte/store";
-import { env } from "./env/dev.env";
-import { io } from "socket.io-client";
 import {
   fetchCompilationLogs,
   fetchEventLogs,
   fetchGraph,
   fetchSchedulerStatus,
-  fetchServiceLogs,
+  fetchServiceLogs, healthCheck, IGraph, ILogsResponse
 } from "./api";
 import type {
   IEventLog,
   INodeSummary,
-  ServiceLogs,
   SchedulerStatus,
 } from "@microlambda/types";
-import { Debouncer } from "./utils/debouncer";
 import { logger } from "./logger";
 
+const DEFAULT_POLLING_RATE = 500;
 const log = logger.scope("(store)");
-log.info("Connecting websocket on", env.apiUrl);
-const socket = io(env.apiUrl);
 
+let isConnected = false;
 export const connected = readable(false, (set) => {
-  console.debug('Watching connect/disconnect events', socket)
-  socket.on("connect", () => {
-    log.info("Websocket connected");
-    set(true);
-  });
-  socket.on("disconnect", () => {
-    log.info("Websocket disconnected");
-    set(false);
-  });
+  setInterval(() => {
+    healthCheck().then((connected) => {
+      if (connected != isConnected) {
+        set(connected);
+      }
+    }).catch(() => set(false))
+  }, DEFAULT_POLLING_RATE);
 });
 
-export const selected = writable<INodeSummary | null>(null);
+export const selected = writable<INodeSummary & { isService: boolean } | null>(null);
 export const tabMounted = writable<boolean>(false);
 
 interface ICreateWritable<T, A = void> extends Writable<T> {
   fetch: (args: A) => Promise<void>;
 }
+
+export const serviceLogs = createServiceLogs();
+export const schedulerStatus = createSchedulerStatus();
+export const compilationLogs = createCompilationLogs();
+export const tscLogs = derived(compilationLogs, ($logs) => $logs.data.map((log, idx) => ({ id: idx, text: log})));
+export const offlineLogs = derived(serviceLogs, ($logs) => $logs.data.map((log, idx) => ({ id: idx, text: log})));
+export const eventsLog = createEventsLog();
+export const graph = createGraph();
+export const services = derived(graph, ($graph) =>
+  $graph.services
+);
+export const packages = derived(graph, ($graph) =>
+  $graph.packages
+);
+
+const areGraphEquals = (g1: IGraph, g2: IGraph) => {
+  if(g1.services.length === g2.services.length && g1.packages.length === g2.packages.length) {
+    return g1.services.every((s1) => {
+      const service = g2.services.find((s2) => s1.name === s2.name);
+      if (service) {
+        return service.status === s1.status && service.transpiled === s1.transpiled && service.typeChecked === s1.typeChecked;
+      }
+      return false;
+    }) && g1.packages.every((p1) => {
+      const pkg = g2.packages.find((p2) => p1.name === p2.name);
+      if (pkg) {
+        return pkg.transpiled === p1.transpiled && pkg.typeChecked === p1.typeChecked;
+      }
+      return false;
+    });
+  }
+  return false;
+}
+
+type Slice = [number, number?];
+
+let currentSlices: {
+  eventsLog?: Slice,
+  buildLogs?: Slice,
+  offlineLogs?: Slice,
+} = {
+  eventsLog: [0],
+  buildLogs: [0],
+  offlineLogs: [0],
+}
+
+let pollers: {
+  eventsLog?: NodeJS.Timer,
+  buildLogs?: NodeJS.Timer,
+  offlineLogs?: NodeJS.Timer,
+  graph?: NodeJS.Timer,
+} = {}
+
+const handleLogsResponse = (
+  response: ILogsResponse<string | IEventLog>,
+  type: 'eventsLog' | 'buildLogs' | 'offlineLogs',
+  writable: ICreateWritable<ILogsResponse<string | IEventLog>, string | void>,
+) => {
+  if (response.metadata.slice[1] > currentSlices[type][1]) {
+    log.info('Additional logs received', type);
+    currentSlices[type][1] = response.metadata.slice[1];
+    log.info('Slices updated', type, currentSlices[type]);
+    writable.update((current) => ({
+      data: [...current.data, ...response.data],
+      metadata: {
+        count: response.metadata.count,
+        slice: [currentSlices[type][0], response.metadata.slice[1]],
+      }
+    }));
+  }
+}
+
+let currentGraph: IGraph;
+
+connected.subscribe(async (connected) => {
+  if (!connected) {
+    log.warn('Disconnected !')
+    clearInterval(pollers.graph);
+    clearInterval(pollers.eventsLog);
+    clearInterval(pollers.offlineLogs);
+    clearInterval(pollers.buildLogs);
+  } else {
+    log.info('Connected !')
+    pollers.graph = setInterval(async () => {
+      const response = await fetchGraph();
+      if (currentGraph && !areGraphEquals(currentGraph, response)) {
+        currentGraph = response;
+        log.info('Graph updated', currentGraph);
+        graph.set(response);
+      }
+    }, DEFAULT_POLLING_RATE);
+    pollers.eventsLog = setInterval(async () => {
+      const response = await fetchEventLogs([currentSlices.eventsLog[1] || 0]);
+      handleLogsResponse(response, 'eventsLog', eventsLog);
+    }, DEFAULT_POLLING_RATE);
+  }
+});
+
+let _selected: string | null = null;
+
+graph.subscribe((graph) => {
+  if (_selected) {
+    const pkg = graph.packages.find((node) => node.name === _selected);
+    const service = graph.services.find((node) => node.name === _selected);
+    if (pkg) {
+      selected.set({...pkg, isService: false});
+    } else if (service) {
+      selected.set({...service, isService: true});
+    }
+  }
+});
+
+selected.subscribe(async (workspace) => {
+  const hasChanged = _selected !== workspace?.name;
+  if (hasChanged) {
+    serviceLogs.set({ data: [], metadata: {count: 0, slice: [0, 0]}});
+    compilationLogs.set({ data: [], metadata: {count: 0, slice: [0, 0]}});
+  }
+  _selected = workspace?.name || null;
+  clearInterval(pollers.offlineLogs);
+  clearInterval(pollers.buildLogs);
+  log.info('Workspace selected', workspace?.name, workspace?.isService);
+  if (workspace) {
+    await compilationLogs.fetch(workspace.name);
+    pollers.buildLogs = setInterval(async () => {
+      const response = await fetchCompilationLogs(workspace.name, [currentSlices.buildLogs[1] || 0]);
+      handleLogsResponse(response, 'buildLogs', compilationLogs);
+    }, DEFAULT_POLLING_RATE);
+  }
+  if (workspace && !workspace.isService) {
+    clearInterval(pollers.offlineLogs);
+    serviceLogs.set({ data: [], metadata: {count: 0, slice: [0, 0]}});
+  }
+  if (workspace && workspace.isService) {
+    await serviceLogs.fetch(workspace.name);
+    pollers.offlineLogs = setInterval(async () => {
+      const response = await fetchServiceLogs(workspace.name, [currentSlices.offlineLogs[1] || 0]);
+      handleLogsResponse(response, 'offlineLogs', serviceLogs);
+    }, DEFAULT_POLLING_RATE);
+  }
+});
 
 function createGraph(): ICreateWritable<{
   packages: INodeSummary[],
@@ -50,77 +185,57 @@ function createGraph(): ICreateWritable<{
   }>({
     services: [],
     packages: [],
-  }, (set) => {
-    const debouncer = new Debouncer(async () => set(await fetchGraph()), 200);
-    debouncer.perform();
-    socket.on("graph.updated", async () => {
-      debouncer.perform();
-    });
-    return (): void => {
-      socket.close();
-    };
   });
   return {
     subscribe,
     set,
     update,
     fetch: async (): Promise<void> => {
-      set(await fetchGraph());
+      const response = await fetchGraph();
+      currentGraph = response;
+      set(response);
     },
   };
 }
 
-function createEventsLog(): ICreateWritable<IEventLog[]> {
-  const { subscribe, update, set } = writable<IEventLog[]>([], (set) => {
-    socket.on("connect", async () => {
-      log.debug("Websocket connected, fetching event logs");
-      set(await fetchEventLogs());
-    });
-    socket.on("event.log.added", async (log: IEventLog) => {
-      if (["info", "warn", "error"].includes(log.level)) {
-        update((logs) => [...logs, log]);
-      }
-    });
-    socket.on("disconnect", () => set([]));
-    return (): void => {
-      socket.close();
-    };
-  });
+function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
+  const { subscribe, update, set } = writable<ILogsResponse<IEventLog>>({ data: [], metadata: { count: 0, slice: [0, 0] }});
   return {
     subscribe,
     set,
     update,
     fetch: async (): Promise<void> => {
-      set(await fetchEventLogs());
+      const response = await fetchEventLogs([0]);
+      currentSlices.eventsLog = response.metadata.slice;
+      set(response);
     },
   };
 }
 
-function createServiceLogs(): ICreateWritable<ServiceLogs, string> {
-  const { subscribe, set, update } = writable<ServiceLogs>({
-    start: { default: [] },
-    deploy: {},
-    remove: {},
-    package: { default: [] },
-  });
+function createServiceLogs(): ICreateWritable<ILogsResponse, string> {
+  const { subscribe, set, update } = writable<ILogsResponse>({ data: [], metadata: { count: 0, slice: [0, 0] }});
   return {
     subscribe,
     set,
     update,
     fetch: async (service: string): Promise<void> => {
-      set(await fetchServiceLogs(service));
+      const response = await fetchServiceLogs(service, [0]);
+      currentSlices.offlineLogs = response.metadata.slice;
+      set(response);
     },
   };
 }
 
-function createCompilationLogs(): ICreateWritable<string[], string> {
-  const { subscribe, set, update } = writable<string[]>([]);
+function createCompilationLogs(): ICreateWritable<ILogsResponse, string> {
+  const { subscribe, set, update } = writable<ILogsResponse>({ data: [], metadata: { count: 0, slice: [0, 0] }});
   return {
     subscribe,
     set,
     update,
     fetch: async (node: string): Promise<void> => {
-      set(await fetchCompilationLogs(node));
+      const response = await fetchCompilationLogs(node, [0]);
+      currentSlices.buildLogs = response.metadata.slice;
+      set(response);
     },
   };
 }
@@ -129,9 +244,9 @@ function createSchedulerStatus(): ICreateWritable<SchedulerStatus | null> {
   const { subscribe, set, update } = writable<SchedulerStatus | null>(
     null,
     (set) => {
-      socket.on("scheduler.status.changed", (status: SchedulerStatus) => {
+      /*socket.on("scheduler.status.changed", (status: SchedulerStatus) => {
         set(status);
-      });
+      });*/
     }
   );
   return {
@@ -144,58 +259,24 @@ function createSchedulerStatus(): ICreateWritable<SchedulerStatus | null> {
   };
 }
 
-export const logs = createServiceLogs();
-export const schedulerStatus = createSchedulerStatus();
-export const tscLogs = createCompilationLogs();
-export const offlineLogs = derived(logs, ($logs) => $logs.start.default);
-export const eventsLog = createEventsLog();
-export const graph = createGraph();
-export const services = derived(graph, ($graph) =>
-  $graph.services
-);
-export const packages = derived(graph, ($graph) =>
-  $graph.packages
-);
 
-let nodeSelected: INodeSummary | null = null;
-graph.subscribe((nodes) => {
-  log.debug("Graph updated, refreshing selected node", nodes);
-  if (nodeSelected) {
-    const serviceSelected = nodes.services.find((n) => n.name === nodeSelected?.name);
-    const packageSelected = nodes.packages.find((n) => n.name === nodeSelected?.name);
-    selected.set(serviceSelected || packageSelected || null);
-  } else {
-    log.debug("No selected node");
-  }
-});
 
+
+/*
 let previousService: string;
 selected.subscribe((node) => {
   nodeSelected = node;
   if (node && node.type === "service") {
     const service = node;
     log.info("Service selected", service);
-    socket.emit("send.service.logs", service.name);
+    //socket.emit("send.service.logs", service.name);
     logs.fetch(service.name).then(() => {
       log.info("Subscribing socket event", service.name + ".log.added");
-      socket.on(service.name + ".log.added", (data: string) => {
-        log.debug("Received log", data);
-        logs.update((current) => {
-          const currentOffline = current.start.default || [];
-          const updatedLogs: ServiceLogs = {
-            deploy: current.deploy,
-            start: { default: [...currentOffline, data] },
-            remove: current.remove,
-            package: current.package,
-          };
-          return updatedLogs;
-        });
-      });
     });
     if (previousService) {
       const socketKey = previousService + ".log.added";
       log.info("Unsubscribing socket event", socketKey);
-      socket.off(socketKey);
+      // socket.off(socketKey);
     }
     previousService = service.name;
   }
@@ -203,12 +284,6 @@ selected.subscribe((node) => {
     log.info("Node selected", node);
     tscLogs.fetch(node.name).then(() => {
       log.info("build logs fetched for", node.name);
-      socket.on("tsc.log.emitted", (data: { node: string; data: string }) => {
-        if (data.node === node.name) {
-          log.debug("Received tsc logs", data.data);
-          tscLogs.update((current) => [...current, data.data]);
-        }
-      });
     });
   }
-});
+});*/

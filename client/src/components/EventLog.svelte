@@ -6,7 +6,7 @@
   import { calculateDimensions } from '../utils/window-dimensions.utils';
   import { env } from '../env/dev.env';
 
-  let logs: string[] = [];
+  let logs: Array<{text: string, id: number}> = [];
   let height, width = 0;
   let display = false;
   let container: HTMLElement;
@@ -14,8 +14,9 @@
     // Wait for sibling DOM event to be mounted
     setTimeout(() => {
       const dimensions = calculateDimensions(container);
-      height = dimensions.height - 70;
-      width = dimensions.width - 70;
+      const controlsHeight = document.getElementById('logs--controls')?.getBoundingClientRect()?.height || 0;
+      height = dimensions.height - 70 - controlsHeight;
+      width = dimensions.width - 70 - controlsHeight;
       display = true;
     }, 1.5 * env.transitionDuration );
   }
@@ -42,10 +43,12 @@
           return colors.fuschia;
       }
     };
-    logs = rawLogs.map((log) => {
-      return `<span style="color: ${getLevelColor(log.level)};">[${log.level}]</span> <strong>(${log.scope})</strong> <span style="color: ${colors.light_grey}">${log.date}</span> - ${log.args.join(' ')}\n`;
+    logs = rawLogs.data.map((log, idx) => {
+      return {
+        id: idx,
+        text: `<span style="color: ${getLevelColor(log.level)};">[${log.level}]</span> <strong>(${log.scope})</strong> <span style="color: ${colors.light_grey}">${log.date}</span> - ${log.args.join(" ")}\n`
+      };
     });
-    console.debug(logs);
   });
 
 </script>
@@ -68,4 +71,3 @@
     <Logs logs="{logs}" height="{height}" width="{width}"/>
   </div>
 </section>
-

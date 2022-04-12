@@ -11,8 +11,9 @@
   const fitToTabContent = () => {
     const tabContent = document.getElementById('tab-content');
     log.debug('Fitting graph to tab content', tabContent);
-    height = tabContent.clientHeight - 30;
-    width = tabContent.clientWidth - 30;
+    const controlsHeight = document.getElementById('logs--controls')?.getBoundingClientRect()?.height || 0;
+    height = tabContent.clientHeight - 30 - controlsHeight;
+    width = tabContent.clientWidth - 30 - controlsHeight;
     log.debug('To content dimensions', {height});
   }
 
