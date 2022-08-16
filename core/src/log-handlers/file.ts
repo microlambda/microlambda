@@ -1,4 +1,4 @@
-import { LogFilesHandler, resolveProjectRoot, Workspace } from "@centipod/core";
+import { LogFilesHandler, resolveProjectRoot, Workspace } from "@microlambda/runner-core";
 import { join } from 'path';
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from "fs";
 import { ILogEntry, ILogHandler } from "@microlambda/logger";

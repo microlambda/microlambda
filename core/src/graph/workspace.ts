@@ -1,4 +1,4 @@
-import { InMemoryLogHandler, Workspace as CentipodWorkspace } from "@centipod/core";
+import { InMemoryLogHandler, Workspace as CentipodWorkspace } from "@microlambda/runner-core";
 import {existsSync} from "fs";
 import {join} from "path";
 import {transpileFiles} from "../typescript";

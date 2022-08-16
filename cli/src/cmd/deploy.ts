@@ -6,7 +6,7 @@ import {prompt} from 'inquirer';
 import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig} from '@microlambda/core';
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
-import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@centipod/core";
+import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
 import { Logger } from "@microlambda/logger";
 

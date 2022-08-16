@@ -1,4 +1,4 @@
-import {RunCommandEvent, Runner, Workspace} from "@centipod/core";
+import {RunCommandEvent, Runner, Workspace} from "@microlambda/runner-core";
 import {Project} from "./graph/project";
 import {ConfigReader} from "./config/read-config";
 import {from, mergeAll, Observable} from "rxjs";

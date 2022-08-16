@@ -1,4 +1,4 @@
-import { AbstractLogsHandler, Workspace } from "@centipod/core";
+import { AbstractLogsHandler, Workspace } from "@microlambda/runner-core";
 import { IOSocketManager } from "@microlambda/server";
 
 export class WebsocketLogsHandler extends AbstractLogsHandler<unknown> {

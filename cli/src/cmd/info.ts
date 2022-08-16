@@ -1,5 +1,5 @@
 import {Project} from "@microlambda/core";
-import {resolveProjectRoot, Workspace} from "@centipod/core";
+import {resolveProjectRoot, Workspace} from "@microlambda/runner-core";
 import chalk from 'chalk';
 
 const printTree = (wks: Workspace) => {

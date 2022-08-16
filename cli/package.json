@@ -26,9 +26,9 @@
     "lerna"
   ],
   "dependencies": {
-    "@centipod/core": "workspace:*",
     "@microlambda/core": "workspace:*",
     "@microlambda/generators": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
     "@microlambda/server": "workspace:*",
     "chalk": "^4.1.2",
     "commander": "^8.3.0",

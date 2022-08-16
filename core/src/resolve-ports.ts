@@ -1,6 +1,6 @@
 import { IConfig } from './config/config';
 import { Logger } from '@microlambda/logger';
-import { Workspace } from '@centipod/core';
+import { Workspace } from '@microlambda/runner-core';
 
 export interface IServicePortsConfig {
   lambda: number;

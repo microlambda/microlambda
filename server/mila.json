@@ -1,0 +1,14 @@
+{
+  "extends": "../mila.json",
+  "targets": {
+    "build": {
+      "cmd": [
+        "../node_modules/.bin/tsc --build",
+        "cp -r ../client/dist/. ./dist/static"
+      ],
+      "src": [
+        "src/**/*.ts"
+      ]
+    }
+  }
+}

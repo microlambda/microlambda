@@ -3,7 +3,7 @@ import { Logger, Loggers } from "@microlambda/logger";
 import { getDefaultThreads } from "./platform";
 import { Workspace } from "./graph/workspace";
 import { Project } from "./graph/project";
-import { RunCommandEvent, RunCommandEventEnum, Runner } from "@centipod/core";
+import { RunCommandEvent, RunCommandEventEnum, Runner } from "@microlambda/runner-core";
 import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
 
 export interface StopServiceEvent { service: Workspace, type: 'stopping' | 'stopped' }

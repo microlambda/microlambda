@@ -1,0 +1,90 @@
+{
+  "name": "microlambda",
+  "version": "0.0.1-alpha",
+  "private": true,
+  "description": "Microlambda framework monorepo main package.",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/neoxia/microlambda"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "yarn": ">= 2.0.0"
+  },
+  "bin": {
+    "mila": "cli/dist/index.js",
+    "microlambda": "cli/dist/index.js",
+    "mila-runner": "runner/cli/dist/index.js",
+    "microlambda-runner": "runner/cli/dist/index.js"
+  },
+  "scripts": {
+    "postinstall": "husky install",
+    "lint": "yarn workspaces foreach -pv run lint",
+    "first:build": "yarn workspaces foreach -pv --topological-dev run build",
+    "test": "yarn workspaces foreach -ptv run test"
+  },
+  "workspaces": [
+    "types",
+    "cli",
+    "core",
+    "client",
+    "docs/website",
+    "logger",
+    "generators",
+    "handling",
+    "plugin",
+    "testing",
+    "server",
+    "runner/core",
+    "runner/cli"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^15.0.0",
+    "@commitlint/config-conventional": "^15.0.0",
+    "@types/jest": "^27.0.3",
+    "@types/sinon": "^10.0.6",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "eslint": "^8.3.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.4",
+    "jest": "^27.3.1",
+    "lint-staged": "^12.1.2",
+    "prettier": "^2.4.1",
+    "sinon": "^12.0.1",
+    "ts-jest": "^27.0.7",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.2"
+  },
+  "lint-staged": {
+    "types/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:types --fix"
+    ],
+    "cli/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:cli --fix"
+    ],
+    "core/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:core --fix"
+    ],
+    "client/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:client --fix"
+    ],
+    "handling/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:handling --fix"
+    ],
+    "plugin/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:plugin --fix"
+    ],
+    "server/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:server --fix"
+    ],
+    "testing/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:testing --fix"
+    ],
+    "generators/**/*.{ts,tsx,json,yml}": [
+      "yarn lint:generators --fix"
+    ]
+  }
+}

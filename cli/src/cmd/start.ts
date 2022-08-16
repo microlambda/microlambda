@@ -9,7 +9,7 @@ import {
   ConfigReader,
   IConfig,
 } from '@microlambda/core';
-import { resolveProjectRoot, RunCommandEventEnum } from "@centipod/core";
+import { resolveProjectRoot, RunCommandEventEnum } from "@microlambda/runner-core";
 import {command} from "execa";
 import { Scheduler } from "@microlambda/core";
 import { Logger } from "@microlambda/logger";

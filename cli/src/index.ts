@@ -12,7 +12,7 @@ import { getDefaultThreads, loadEnv } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
-import { resolveProjectRoot } from "@centipod/core";
+import { resolveProjectRoot } from "@microlambda/runner-core";
 import { logs } from "./cmd/logs";
 import { Logger } from "@microlambda/logger";
 import { EventLogsFileHandler } from '@microlambda/core';
@@ -241,15 +241,11 @@ program
       }),
   );
 
-/*
-
-// TODO: Generator
 program
   .command('init')
   .description('initialize new project with the CLI wizard')
   .action(async () => {
     logger.log('cmd').error('Not implemented');
   });
-*/
 
 (async (): Promise<Command> => program.parseAsync(process.argv))();

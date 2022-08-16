@@ -12,7 +12,7 @@ import {
   resolveInputs,
 } from '@microlambda/generators';
 import chalk from 'chalk';
-import {resolveProjectRoot} from "@centipod/core";
+import {resolveProjectRoot} from "@microlambda/runner-core";
 
 export const generate = async (blueprint: string, logger: Logger): Promise<void> => {
   console.info('🧙 Microlambda code generator');

@@ -4,7 +4,7 @@ import {beforeBuild, IBuildCmd, IBuildOptions, printCommand, typeCheck} from './
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import {printReport} from './deploy';
-import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@centipod/core";
+import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@microlambda/runner-core";
 import { Logger } from "@microlambda/logger";
 
 export interface IPackageCmd extends IBuildCmd {

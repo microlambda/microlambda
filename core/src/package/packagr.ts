@@ -7,7 +7,7 @@ import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
 import { Logger, Loggers } from '@microlambda/logger';
 import { command } from 'execa';
-import {resolveProjectRoot, Workspace as CentipodWorkspace} from "@centipod/core";
+import {resolveProjectRoot, Workspace as CentipodWorkspace} from "@microlambda/runner-core";
 import { Workspace } from '../graph/workspace';
 import { Project } from '../graph/project';
 

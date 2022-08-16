@@ -1,4 +1,4 @@
-import { Project as CentipodProject } from '@centipod/core';
+import { Project as CentipodProject } from '@microlambda/runner-core';
 import { Workspace } from './workspace';
 import { resolvePorts } from "../resolve-ports";
 import { IConfig } from "../config/config";

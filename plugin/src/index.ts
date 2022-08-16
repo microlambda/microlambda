@@ -21,7 +21,7 @@ import {
   replaceAuthorizer,
 } from "./features";
 import { applyConditions } from "./features/conditions/apply-conditions";
-import { resolveProjectRoot } from '@centipod/core';
+import { resolveProjectRoot } from '@microlambda/runner-core';
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";

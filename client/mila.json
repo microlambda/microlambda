@@ -1,0 +1,13 @@
+{
+  "extends": "../mila.json",
+  "targets": {
+    "build": {
+      "cmd": [
+        "../node_modules/.bin/vite build"
+      ],
+      "src": [
+        "src/**/*.ts"
+      ]
+    }
+  }
+}

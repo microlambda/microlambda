@@ -9,7 +9,7 @@ import {
   RunCommandEventEnum,
   Workspace as CentipodWorkspace,
   isNodeEvent, isProcessError
-} from "@centipod/core";
+} from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
 import { Logger } from "@microlambda/logger";
 

@@ -9,7 +9,7 @@ import {
 import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
 import { Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { RunCommandEventEnum, Workspace } from "@centipod/core";
+import { RunCommandEventEnum, Workspace } from "@microlambda/runner-core";
 import { Logger } from "@microlambda/logger";
 
 export class IOSocketManager {
