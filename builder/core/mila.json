@@ -1,0 +1,12 @@
+{
+  "extends": "../mila.json",
+  "targets": {
+    "test": {
+      "cmd":"../../node_modules/.bin/jest",
+      "src": [
+        "src/**/*.ts",
+        "test/**"
+      ]
+    }
+  }
+}

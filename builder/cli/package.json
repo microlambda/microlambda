@@ -1,0 +1,24 @@
+{
+  "name": "@microlambda/builder-cli",
+  "version": "0.0.1-alpha.7",
+  "description": "Monorepo utils",
+  "author": "Mario Arnautou",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "centipod": "dist/index.js",
+    "cpd": "dist/index.js"
+  },
+  "scripts": {
+    "build": "../../node_modules/.bin/tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@microlambda/builder-core": "workspace:*",
+    "chalk": "^4.1.1",
+    "commander": "^7.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.2.4"
+  }
+}

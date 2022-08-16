@@ -1,0 +1,99 @@
+name: Push on master
+on:
+  push:
+    branches:
+      - main
+jobs:
+  TestAllProjects:
+    runs-on: ubuntu-latest
+    name: 'Test all projects'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Build core
+        run: yarn workspace @centipod/core run build
+      - name: Build CLI
+        run: yarn workspace @centipod/cli run build
+      - name: Lint codebase
+        run: yarn lint
+      - name: Build packages using himself
+        run: yarn build
+      - name: Test packages
+        run: yarn test
+      - uses: actions/upload-artifact@v2
+        name: Upload coverage reports
+        with:
+          name: lcov
+          path: '*/coverage/lcov.info'
+      - uses: actions/upload-artifact@v2
+        name: Upload compiled packages
+        with:
+          name: lib
+          path: |
+            core/lib
+            cli/dist
+  Sonarcloud:
+    name: 'SonarCloud Analysis'
+    needs: TestAllProjects
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download coverage reports
+        uses: actions/download-artifact@v2
+        with:
+          name: lcov
+      - name: Analyze workspace @centipod/core
+        uses: sonarsource/sonarcloud-github-action@master
+        with:
+          fetch-depth: 0
+          projectBaseDir: core
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Analyze workspace @centipod/cli
+        uses: sonarsource/sonarcloud-github-action@master
+        with:
+          fetch-depth: 0
+          projectBaseDir: cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#  PublishPackages:
+#    runs-on: ubuntu-latest
+#    needs: TestAllProjects
+#    name: 'Publish packages'
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - name: Use Node.js
+#        uses: actions/setup-node@v2
+#        with:
+#          node-version: '14.x'
+#      - name: Install dependencies
+#        run: yarn install --immutable
+#      - name: Download compiled code
+#        uses: actions/download-artifact@v2
+#        with:
+#          name: lib
+#      - name: Add NPM token
+#        run: 'echo "npmAuthToken: ${{ secrets.NPM_TOKEN }}" >> .yarnrc.yml'
+#      - name: Import GPG key
+#        uses: crazy-max/ghaction-import-gpg@v3
+#        with:
+#          gpg-private-key: ${{ secrets.GPG_SECRET_KEY }}
+#          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+#          git-user-signingkey: true
+#          git-commit-gpgsign: true
+#      - name: Configure git
+#        run:  |
+#          git config --global user.email "mario.arnautou@gmail.com"
+#          git config --global user.name "Mario Arnautou"
+#          git config --global commit.gpgsign true
+#      - name: Semantic relase
+#        run: yarn prerelease:alpha --yes

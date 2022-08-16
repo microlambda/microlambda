@@ -1,0 +1,5 @@
+node_modules/**
+coverage/**
+**/*.spec.ts
+core/test/
+cli/test

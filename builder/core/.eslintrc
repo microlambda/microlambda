@@ -1,0 +1,6 @@
+{
+  "extends": ["../.eslintrc"],
+  "ignorePatterns": [
+    "test/**"
+  ]
+}
