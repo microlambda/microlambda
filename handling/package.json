@@ -27,13 +27,6 @@
     "error-handling",
     "json"
   ],
-  "scripts": {
-    "build": "rm -rf dist && yarn tsc -p tsconfig.json",
-    "test": "../node_modules/.bin/jest",
-    "test:coverage": "../node_modules/.bin/jest --coverage",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
-  },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
     "deepmerge": "^4.2.2"

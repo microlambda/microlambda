@@ -7,12 +7,6 @@
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "license": "MIT",
-  "scripts": {
-    "build": "rm -rf ./dist && ../node_modules/.bin/tsc",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "test": "echo No tests for this package && exit 0"
-  },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.85",
     "aws-lambda": "^1.0.7",

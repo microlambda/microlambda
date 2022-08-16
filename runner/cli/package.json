@@ -11,7 +11,7 @@
     "microlambda-runner": "dist/index.js"
   },
   "scripts": {
-    "build": "../../node_modules/.bin/tsc -p tsconfig.json"
+    "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
     "@microlambda/runner-core": "workspace:*",

@@ -19,9 +19,10 @@
   },
   "scripts": {
     "postinstall": "husky install",
-    "lint": "yarn workspaces foreach -pv run lint",
-    "first:build": "yarn workspaces foreach -pv --topological-dev run build",
-    "test": "yarn workspaces foreach -ptv run test"
+    "lint": "node ./runner/cli/dist/index.js run lint",
+    "build:runner": "yarn workspaces foreach -pv --topological-dev run build-runner",
+    "build": "node ./runner/cli/dist/index.js run build",
+    "test": "node ./runner/cli/dist/index.js run test"
   },
   "workspaces": [
     "types",

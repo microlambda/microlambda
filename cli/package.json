@@ -13,13 +13,6 @@
     "microlambda": "dist/index.js",
     "mila": "dist/index.js"
   },
-  "scripts": {
-    "test": "../node_modules/.bin/jest",
-    "build": "../node_modules/.bin/tsc --build",
-    "start": "node lib/src/start.js start",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
-  },
   "keywords": [
     "serverless",
     "typescript",

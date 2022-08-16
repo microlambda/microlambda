@@ -9,12 +9,6 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "scripts": {
-    "test": "../node_modules/.bin/jest",
-    "build": "rm -rf ./lib && ../node_modules/.bin/tsc --build",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
-  },
   "keywords": [
     "serverless",
     "typescript",

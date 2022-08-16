@@ -30,10 +30,5 @@
   },
   "devDependencies": {
     "@types/ejs": "^3.1.0"
-  },
-  "scripts": {
-    "build": "rm -rf ./lib && ../node_modules/.bin/tsc --build",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
   }
 }

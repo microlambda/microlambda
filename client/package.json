@@ -4,10 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "../node_modules/.bin/vite",
-    "build": "../node_modules/.bin/vite build",
     "preview": "../node_modules/.bin/vite preview",
-    "check": "../node_modules/.bin/svelte-check --tsconfig ./tsconfig.json",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
+    "check": "../node_modules/.bin/svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "ansi-html": "^0.0.7",
