@@ -29,7 +29,7 @@ export const init = async () => {
   logger.lf();
   const config = readConfig();
   try {
-    const user = await aws.iam.getCurrentUser();
+    const user = await aws.iam.getCurrentUser(config.defaultRegion);
     logger.info('The remote state will be initialized in AWS account', chalk.cyan.bold(user.projectId));
     logger.info('Actions will be be performed as IAM user', chalk.cyan.bold(user.username), chalk.gray(`(${user.arn})`));
   } catch (e) {
@@ -55,10 +55,10 @@ export const init = async () => {
   let creatingChecksumsBucket = ora();
   creatingChecksumsBucket.start('Creating checksums S3 bucket');
   try {
-    if (await aws.s3.bucketExists(config.state.checksums)) {
+    if (await aws.s3.bucketExists(config.defaultRegion, config.state.checksums)) {
       creatingChecksumsBucket.succeed('Checksums S3 bucket already exists');
     } else {
-      await aws.s3.createBucket(config.state.checksums)
+      await aws.s3.createBucket(config.defaultRegion, config.state.checksums)
     }
   } catch (e) {
     creatingChecksumsBucket.fail('Error creating checksums S3 bucket');

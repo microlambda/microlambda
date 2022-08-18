@@ -1,8 +1,7 @@
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
-import { getRegion } from '../get-region';
 
-export const bucketExists = async (bucketName: string ): Promise<boolean> => {
-  const client = new S3Client({ region: getRegion() });
+export const bucketExists = async (region: string, bucketName: string ): Promise<boolean> => {
+  const client = new S3Client({ region });
   try {
     await client.send(new HeadBucketCommand({ Bucket: bucketName }));
     return true;

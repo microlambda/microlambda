@@ -1,5 +1,4 @@
 import { GetUserCommand, IAMClient } from '@aws-sdk/client-iam';
-import { getRegion } from '../get-region';
 
 export interface ICurrentUserIAM {
   arn: string;
@@ -12,9 +11,9 @@ export interface IAmazonError {
   message: string;
 }
 
-const getUserArn = async (): Promise<string | undefined> => {
+const getUserArn = async (region: string): Promise<string | undefined> => {
   try {
-    const iam = new IAMClient({ region: getRegion() });
+    const iam = new IAMClient({ region });
     const currentUser = await iam.send(new GetUserCommand({}));
     return currentUser.User?.Arn;
   } catch (e) {
@@ -30,8 +29,8 @@ const getUserArn = async (): Promise<string | undefined> => {
 /**
  * Get the information of the currently connected user.
  */
-export const getCurrentUser = async (): Promise<ICurrentUserIAM> => {
-    const arn = await getUserArn();
+export const getCurrentUser = async (region: string): Promise<ICurrentUserIAM> => {
+    const arn = await getUserArn(region);
     if (!arn) {
       throw new Error('Unable to resolve current user ARN');
     }
