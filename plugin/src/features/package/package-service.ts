@@ -3,20 +3,14 @@
  */
 import { Packager, Workspace } from "@microlambda/core";
 import chalk from "chalk";
-import { ILogger, ServerlessInstance } from "../../types";
+import { IBaseLogger, ServerlessInstance, IPluginConfig } from "@microlambda/types";
 import { assign } from "../../utils";
 import { join, resolve as pathResolve } from "path";
 import { existsSync } from "fs";
 import { watch } from "chokidar";
 import { readJSONSync } from "fs-extra";
-import {IPluginConfig} from "../../config";
-import {calculateLayerChecksums} from "../../aws/parameter-store/calculate-layer-checksums";
-import {readLayerChecksums} from "../../aws/parameter-store/read-layer-checksums";
-import {compareLayerChecksums} from "../../aws/parameter-store/compare-layer-checksums";
-import {publishLayer} from "../../aws/lambda/publish-layer";
-import {writeLayerChecksums} from "../../aws/parameter-store/write-layer-checksums";
-import {ILayerChecksums} from "../../aws/parameter-store/layer-checksums";
-import {pruneLayers} from "../../aws/lambda/prune-layers";
+import { aws } from '@microlambda/aws';
+import { ILayerChecksums } from '@microlambda/aws/lib/parameter-store/layer-checksums';
 
 const DEFAULT_LEVEL = 4;
 
@@ -25,7 +19,7 @@ export const packageService = (
   stackName: string,
   config: IPluginConfig | undefined,
   service: Workspace | undefined,
-  logger?: ILogger
+  logger?: IBaseLogger
 ): Promise<void> => {
   if (!service) {
     throw new Error("Assertion failed: service not resolved");
@@ -69,7 +63,7 @@ export const packageService = (
       if (useLayer && shouldBuildLayer) {
         let layerArn: string | undefined;
         try {
-          layerArn = await publishLayer(layerLocation, stackName, serverless, config?.packagr);
+          layerArn = await aws.lambda.publishLayer(layerLocation, stackName, serverless, config?.packagr);
         } catch (e) {
           logger?.error('Error publishing layer');
           logger?.error('Original error', e);
@@ -80,10 +74,10 @@ export const packageService = (
           setLayer(layerArn);
           if (useLayerChecksums && currentChecksums) {
             logger?.info('Writing checksums', layerArn);
-            await writeLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, currentChecksums, serverless.providers.aws.getRegion(), logger)
+            await aws.ssm.writeLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, currentChecksums, serverless.providers.aws.getRegion(), logger)
           }
           if (config?.packagr?.prune) {
-            await pruneLayers(config?.packagr?.prune, stackName, serverless.providers.aws.getRegion(), logger);
+            await aws.lambda.pruneLayers(config?.packagr?.prune, stackName, serverless.providers.aws.getRegion(), logger);
           }
         } else {
           logger?.error('Layer version ARN could not be resolved')
@@ -112,16 +106,16 @@ export const packageService = (
     let currentChecksums: ILayerChecksums | undefined | null;
     if (useLayerChecksums) {
       logger?.info('[package] Calculating checksums');
-      currentChecksums = await calculateLayerChecksums(
+      currentChecksums = await aws.ssm.calculateLayerChecksums(
           service,
           logger
       );
       logger?.info('[package] Fetching upstream checksums');
-      const readChecksums = await readLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, serverless.providers.aws.getRegion(), logger);
+      const readChecksums = await aws.ssm.readLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, serverless.providers.aws.getRegion(), logger);
 
       logger?.debug('[package] Upstream checksums', currentChecksums);
       logger?.debug('[package] Current checksums', currentChecksums);
-      shouldBuildLayer = !(await compareLayerChecksums(currentChecksums, readChecksums));
+      shouldBuildLayer = !(await aws.ssm.compareLayerChecksums(currentChecksums, readChecksums));
       logger?.info('[package] Should re-build layer', shouldBuildLayer);
     }
 

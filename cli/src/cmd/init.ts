@@ -1,15 +1,16 @@
-import { aws, ConfigReaderV2, IConfigV2 } from '@microlambda/core';
+import { aws } from '@microlambda/aws';
 import { logger } from '../utils/logger';
 import chalk from 'chalk';
 import ora from 'ora';
 import { prompt } from 'inquirer';
+import { ConfigReader, IConfig } from '@microlambda/config';
 
-const readConfig = (): IConfigV2 => {
-  let config: IConfigV2;
+const readConfig = (): IConfig => {
+  let config: IConfig;
   const readingConfig = ora();
   try {
     readingConfig.start('Loading configuration');
-    const configReader = new ConfigReaderV2();
+    const configReader = new ConfigReader();
     config = configReader.config;
     readingConfig.succeed('Configuration loaded');
     logger.lf();

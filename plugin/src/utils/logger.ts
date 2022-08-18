@@ -1,11 +1,11 @@
-import { ILogger, ServerlessInstance } from "../types";
+import { IBaseLogger, ServerlessInstance } from "@microlambda/types";
 import chalk from "chalk";
 import { stringify } from "./stringify";
 
 export const createLogger = (
   serverless: ServerlessInstance,
   pluginName: string
-): ILogger => ({
+): IBaseLogger => ({
   debug: (...args: unknown[]): void => {
     if (process.env.SLS_DEBUG) {
       serverless.cli.log(

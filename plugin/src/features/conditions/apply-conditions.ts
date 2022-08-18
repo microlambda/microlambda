@@ -1,16 +1,16 @@
-import { ILogger, ServerlessInstance } from "../../types";
 import {
   Condition,
   isKeepEqCondition,
   isKeepNeqCondition,
   isRemoveEqCondition,
   isRemoveNeqCondition,
-} from "../../config/types/conditions";
+  IBaseLogger, ServerlessInstance
+} from "@microlambda/types";
 
 export const applyConditions = (
   serverless: ServerlessInstance,
   conditions: Condition[],
-  logger: ILogger
+  logger: IBaseLogger
 ): void => {
   const applyCondition = (
     resourcePath: string,

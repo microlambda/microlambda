@@ -30,6 +30,7 @@
     ]
   },
   "dependencies": {
+    "@microlambda/aws": "workspace:*",
     "@microlambda/core": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "chokidar": "^3.5.2",

@@ -1,7 +1,7 @@
 import { describeCertificate } from "./describe-certificate";
 import { IBaseLogger } from "@microlambda/types";
 import { serviceName } from "./service-name";
-import { createActivationRecord, getHostedZone } from "../route53";
+import { route53 } from "../route53";
 import { CertificateStatus } from "@aws-sdk/client-acm";
 
 export const waitUntilCertificateIssued = async (
@@ -24,7 +24,7 @@ export const waitUntilCertificateIssued = async (
   const record = details.Certificate?.DomainValidationOptions?.find(
     (dv) => dv.ResourceRecord
   )?.ResourceRecord;
-  const hostedZone = await getHostedZone(domain, logger);
+  const hostedZone = await route53.getHostedZone(domain, logger);
   const throwError = (): void => {
     logger?.error(
       "Cannot activate certificate. Related hosted zone not found on Route53"
@@ -40,7 +40,7 @@ export const waitUntilCertificateIssued = async (
   }
   logger?.info("Found related hosted zone", hostedZone);
   try {
-    await createActivationRecord(hostedZone, record, logger);
+    await route53.createActivationRecord(hostedZone, record, logger);
     logger?.info("Create DNS record to activate certificate");
   } catch (e) {
     logger?.error(e);

@@ -3,7 +3,9 @@
     "lint": {
       "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
       "src": [
-        "{src,test}/**/*.{ts,tsx,json,yml}"
+        "{src,test}/**/*.{ts,tsx,json,yml}",
+        "eslintrc",
+        "../eslintrc"
       ]
     },
     "build": {

@@ -3519,7 +3519,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@microlambda/aws@workspace:aws":
+"@microlambda/aws@workspace:*, @microlambda/aws@workspace:aws":
   version: 0.0.0-use.local
   resolution: "@microlambda/aws@workspace:aws"
   dependencies:
@@ -3542,6 +3542,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/cli@workspace:cli"
   dependencies:
+    "@microlambda/config": "workspace:*"
     "@microlambda/core": "workspace:*"
     "@microlambda/generators": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
@@ -3587,6 +3588,18 @@ __metadata:
     timeago.js: ^4.0.2
     typescript: ^4.0.0
     vite: ^2.9.1
+  languageName: unknown
+  linkType: soft
+
+"@microlambda/config@workspace:*, @microlambda/config@workspace:config":
+  version: 0.0.0-use.local
+  resolution: "@microlambda/config@workspace:config"
+  dependencies:
+    "@microlambda/types": "workspace:*"
+    fs-extra: ^10.1.0
+    jest: ^27.5.1
+    joi: ^17.6.0
+    typescript: ^4.5.2
   languageName: unknown
   linkType: soft
 
@@ -10806,7 +10819,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^10.0.0":
+"fs-extra@npm:^10.0.0, fs-extra@npm:^10.1.0":
   version: 10.1.0
   resolution: "fs-extra@npm:10.1.0"
   dependencies:
@@ -13386,7 +13399,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"joi@npm:^17.4.2":
+"joi@npm:^17.4.2, joi@npm:^17.6.0":
   version: 17.6.0
   resolution: "joi@npm:17.6.0"
   dependencies:
@@ -17712,8 +17725,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "serverless-microlambda@workspace:plugin"
   dependencies:
+    "@microlambda/aws": "workspace:*"
     "@microlambda/core": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
+    "@microlambda/types": "workspace:*"
     chokidar: ^3.5.2
     hasha: ^5.2.2
     joi: ^17.4.2

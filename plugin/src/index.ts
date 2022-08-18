@@ -1,7 +1,7 @@
 "use strict";
 
-import { ILogger, ServerlessInstance } from "./types";
-import { IPluginConfig, validateConfig } from "./config";
+import { IBaseLogger, ServerlessInstance, IPluginConfig } from "@microlambda/types";
+import { validateConfig } from "./config";
 import {
   ConfigReader,
   IConfig,
@@ -33,7 +33,7 @@ class ServerlessMicrolambdaPlugin {
   private _graph: Project | undefined;
   private _config: IConfig | undefined;
   private _service: Workspace | undefined;
-  private readonly _log: ILogger;
+  private readonly _log: IBaseLogger;
 
   constructor(serverless: ServerlessInstance) {
     this.serverless = serverless;

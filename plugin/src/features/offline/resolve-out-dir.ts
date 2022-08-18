@@ -1,7 +1,7 @@
 import { getTsConfig, Workspace } from "@microlambda/core";
-import { ILogger } from "../../types";
+import { IBaseLogger } from "@microlambda/types";
 
-export const resolveOutDir = (service: Workspace, logger?: ILogger): string => {
+export const resolveOutDir = (service: Workspace, logger?: IBaseLogger): string => {
   let outDir: string | undefined;
   const message = `Error: cannot resolve typescript outDir`;
   try {

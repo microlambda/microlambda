@@ -1,38 +1,30 @@
-import {
-  createCertificate,
-  createCustomDomain,
-  createLatencyRecord,
-  describeCertificate,
-  getClosestCertificate,
-  getCustomDomain,
-  waitUntilCertificateIssued,
-} from "../../aws";
-import { ILogger } from "../../types";
+import { aws } from "@microlambda/aws";
+import { IBaseLogger } from "@microlambda/types";
 import { CertificateStatus } from "@aws-sdk/client-acm";
 
 export const beforeDeploy = async (
   region: string,
   domain: string | undefined,
   serviceName: string,
-  logger?: ILogger
+  logger?: IBaseLogger
 ): Promise<void> => {
   if (!domain || domain === 'null') {
     logger?.info("No custom domain configured");
     return;
   }
   // create custom domain
-  const customDomain = await getCustomDomain(region, domain, logger);
+  const customDomain = await aws.apiGateway.getCustomDomain(region, domain, logger);
   if (!customDomain) {
     // check if certificate exist for custom domain
-    let certificate = await getClosestCertificate(region, domain, logger);
+    let certificate = await aws.certificateManager.getClosestCertificate(region, domain, logger);
 
     if (!certificate) {
       logger?.info("No matching certificate found. Creating it");
-      certificate = await createCertificate(region, domain, logger);
+      certificate = await aws.certificateManager.createCertificate(region, domain, logger);
       if (!certificate.CertificateArn) {
         throw new Error("Assertion failed: cannot resolve certificate ARN");
       }
-      await waitUntilCertificateIssued(
+      await aws.certificateManager.waitUntilCertificateIssued(
         domain,
         region,
         certificate.CertificateArn,
@@ -43,7 +35,7 @@ export const beforeDeploy = async (
     if (!certificate.CertificateArn) {
       throw new Error("Assertion failed: cannot resolve certificate ARN");
     }
-    const certificateDetails = await describeCertificate(
+    const certificateDetails = await aws.certificateManager.describeCertificate(
       region,
       certificate?.CertificateArn
     );
@@ -53,7 +45,7 @@ export const beforeDeploy = async (
         break;
       case CertificateStatus.PENDING_VALIDATION:
         logger?.warn("Certificate is pending validation");
-        await waitUntilCertificateIssued(
+        await aws.certificateManager.waitUntilCertificateIssued(
           domain,
           region,
           certificate?.CertificateArn,
@@ -67,7 +59,7 @@ export const beforeDeploy = async (
         );
     }
     logger?.info("Creating custom domain with certificate", certificate);
-    await createCustomDomain(
+    await aws.apiGateway.createCustomDomain(
       region,
       domain,
       certificate.CertificateArn,
@@ -78,5 +70,5 @@ export const beforeDeploy = async (
   }
 
   // create DNS record
-  await createLatencyRecord(region, domain, `${serviceName}-${region}`, logger);
+  await aws.route53.createLatencyRecord(region, domain, `${serviceName}-${region}`, logger);
 };

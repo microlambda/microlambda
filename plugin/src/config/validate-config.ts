@@ -1,9 +1,9 @@
 import { configSchema } from "./schemas";
-import { ILogger, IPluginConfig } from "@microlambda/types";
+import { IBaseLogger, IPluginConfig } from "@microlambda/types";
 
 export const validateConfig = (
   config: unknown,
-  logger?: ILogger
+  logger?: IBaseLogger
 ): IPluginConfig => {
   const { error, value } = configSchema.validate(config);
   if (error) {

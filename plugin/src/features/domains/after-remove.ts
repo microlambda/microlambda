@@ -1,26 +1,22 @@
-import {
-  deleteCustomDomain,
-  deleteLatencyRecords,
-  getCustomDomain,
-} from "../../aws";
-import { ILogger } from "../../types";
+import { aws } from "@microlambda/aws";
+import { IBaseLogger } from "@microlambda/types";
 
 export const afterRemove = async (
   region: string,
   domain: string | undefined,
-  logger: ILogger
+  logger: IBaseLogger
 ): Promise<void> => {
   if (!domain || domain === 'null') {
     logger?.info("No custom domain configured");
     return;
   }
-  const domainExists = await getCustomDomain(region, domain, logger);
+  const domainExists = await aws.apiGateway.getCustomDomain(region, domain, logger);
   if (!domainExists) {
     logger?.info("No related domain found. Skipping...");
     return;
   }
   // delete DNS records
-  await deleteLatencyRecords(region, domain, logger);
+  await aws.route53.deleteLatencyRecords(region, domain, logger);
   // delete custom domains
-  await deleteCustomDomain(region, domain, logger);
+  await aws.apiGateway.deleteCustomDomain(region, domain, logger);
 };

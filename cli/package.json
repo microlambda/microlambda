@@ -19,6 +19,7 @@
     "lerna"
   ],
   "dependencies": {
+    "@microlambda/config": "workspace:*",
     "@microlambda/core": "workspace:*",
     "@microlambda/generators": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
