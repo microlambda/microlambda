@@ -1,6 +1,5 @@
-import { IPluginConfig } from "./types";
 import { configSchema } from "./schemas";
-import { ILogger } from "../types";
+import { ILogger, IPluginConfig } from "@microlambda/types";
 
 export const validateConfig = (
   config: unknown,

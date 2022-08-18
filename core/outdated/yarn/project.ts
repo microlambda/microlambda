@@ -1,10 +1,9 @@
 import { Project, Configuration, Workspace, Ident, Descriptor } from '@yarnpkg/core';
 import { convertPath, PortablePath, ppath } from '@yarnpkg/fslib/lib/path';
 import { getPluginConfiguration, openWorkspace } from '@yarnpkg/cli';
-import { RecompilationScheduler } from '../scheduler';
-import { IConfig } from '../config/config';
-import { Logger } from '../logger';
 import { DependenciesGraph } from '../graph';
+import { IConfig } from '@microlambda/runner-core/lib/config';
+import { Logger } from '@microlambda/logger';
 
 export const getYarnProject = async (projectRoot: string): Promise<Project> => {
   const rootPath = convertPath<PortablePath>(ppath, projectRoot);
@@ -30,12 +29,10 @@ export const getName = (entity: Workspace | Ident): string => {
 export const getGraphFromYarnProject = async (
   projectRoot: string,
   config: IConfig,
-  scheduler?: RecompilationScheduler,
   logger?: Logger,
-  defaultPort = 3001,
 ): Promise<DependenciesGraph> => {
   const project = await getYarnProject(projectRoot);
-  return new DependenciesGraph(project, config, scheduler, logger, defaultPort);
+  return new DependenciesGraph(project, config, logger);
 };
 
 /**

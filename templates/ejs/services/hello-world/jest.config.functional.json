@@ -1,0 +1,7 @@
+{
+  "displayName": {
+    "name": "Companies service - Functional tests",
+    "color": "white"
+  },
+  "preset": "../../../jest-functional-preset.json"
+}

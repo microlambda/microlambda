@@ -1,14 +1,14 @@
 {
   "name": "@microlambda/runner-cli",
-  "version": "0.1.0-alpha.0",
+  "version": "1.0.0-alpha.2",
   "description": "Microlambda low-level command line interface for running commands on targets",
   "author": "Mario Arnautou",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "mila-runner": "dist/index.js",
-    "microlambda-runner": "dist/index.js"
+    "microlambda-runner": "dist/index.js",
+    "mila-runner": "dist/index.js"
   },
   "scripts": {
     "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"

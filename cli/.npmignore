@@ -7,4 +7,10 @@ test/
 jest.config.json
 package-lock.json
 tsconfig.json
-.npmignore
+.caches
+**/*.map
+.eslintignore
+mila.json
+tsconfig.eslint.json
+.gitkeep
+README.md

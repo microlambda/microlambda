@@ -16,6 +16,7 @@ import { resolveProjectRoot } from "@microlambda/runner-core";
 import { logs } from "./cmd/logs";
 import { Logger } from "@microlambda/logger";
 import { EventLogsFileHandler } from '@microlambda/core';
+import { init } from './cmd/init';
 
 // TODO: Clean commands descriptions
 
@@ -245,7 +246,7 @@ program
   .command('init')
   .description('initialize new project with the CLI wizard')
   .action(async () => {
-    logger.log('cmd').error('Not implemented');
+    await init();
   });
 
 (async (): Promise<Command> => program.parseAsync(process.argv))();

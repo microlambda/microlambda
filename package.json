@@ -12,10 +12,10 @@
     "yarn": ">= 2.0.0"
   },
   "bin": {
-    "mila": "cli/dist/index.js",
     "microlambda": "cli/dist/index.js",
-    "mila-runner": "runner/cli/dist/index.js",
-    "microlambda-runner": "runner/cli/dist/index.js"
+    "microlambda-runner": "runner/cli/dist/index.js",
+    "mila": "cli/dist/index.js",
+    "mila-runner": "runner/cli/dist/index.js"
   },
   "scripts": {
     "postinstall": "husky install",
@@ -25,6 +25,7 @@
     "test": "node ./runner/cli/dist/index.js run test"
   },
   "workspaces": [
+    "aws",
     "types",
     "cli",
     "core",
@@ -32,6 +33,7 @@
     "docs/website",
     "logger",
     "generators",
+    "types",
     "handling",
     "plugin",
     "testing",

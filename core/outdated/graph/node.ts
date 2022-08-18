@@ -5,17 +5,15 @@ import { Package, Service } from './';
 import chalk from 'chalk';
 import { ChildProcess, spawn } from 'child_process';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { RecompilationScheduler } from '../scheduler';
 import { IPCSocketsManager } from '../ipc/socket';
 import { getBinary } from '../external-binaries';
-import { compileFiles } from '../typescript';
 import { checksums, IChecksums } from '../checksums';
 import { FSWatcher, watch } from 'chokidar';
 import { Project, Workspace } from '@yarnpkg/core';
 import { npath } from '@yarnpkg/fslib';
 import { getName } from '../yarn/project';
 import { TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
-import { ILogger } from '../logger';
+import { Loggers } from '@microlambda/logger';
 
 enum NodeStatus {
   DISABLED,
@@ -72,7 +70,6 @@ export abstract class Node {
   private nodeStatus: NodeStatus;
   protected _ipc: IPCSocketsManager | undefined;
 
-  protected _scheduler: RecompilationScheduler | undefined;
   private _watchers: FSWatcher[] = [];
 
   private _tscLogs$: BehaviorSubject<string> = new BehaviorSubject('');
@@ -82,7 +79,7 @@ export abstract class Node {
   private _transpiled$: BehaviorSubject<TranspilingStatus> = new BehaviorSubject<TranspilingStatus>(
     TranspilingStatus.NOT_TRANSPILED,
   );
-  protected _logger: ILogger | undefined;
+  protected _logger: Loggers | undefined;
 
   public typeCheck$ = this._typeCheck$.asObservable();
   public transpiled$ = this._transpiled$.asObservable();
@@ -93,7 +90,6 @@ export abstract class Node {
     node: Workspace,
     nodes: Set<Node>,
     project: Project,
-    scheduler?: RecompilationScheduler,
   ) {
     this.graph = graph;
     this.name = getName(node);
@@ -105,7 +101,6 @@ export abstract class Node {
     this.nodeStatus = NodeStatus.DISABLED;
     this.transpilingStatus = TranspilingStatus.NOT_TRANSPILED;
     this.typeCheckStatus = TypeCheckStatus.NOT_CHECKED;
-    this._scheduler = scheduler;
     const workspaces = project.workspaces;
     const dependentWorkspaces: Node[] = [];
     const dependencies = Array.from(node.manifest.dependencies.values());
@@ -127,8 +122,8 @@ export abstract class Node {
       this._logger?.debug('Is service', { name, result: isService(workspace.cwd) });
       dependentWorkspaces.push(
         isService(workspace.cwd)
-          ? new Service(graph, workspace, nodes, project, scheduler)
-          : new Package(graph, workspace, nodes, project, scheduler),
+          ? new Service(graph, workspace, nodes, project)
+          : new Package(graph, workspace, nodes, project),
       );
     }
     this.dependencies = dependentWorkspaces;
@@ -348,7 +343,6 @@ export abstract class Node {
     // Using directly typescript API
     this._logger?.info('Fast-compiling using transpile-only', this.name);
     this.watch();
-    return compileFiles(this.location, this.graph.logger);
   }
 
   private async _startTypeChecking(force = false): Promise<{ recompile: boolean; checksums: IChecksums | null }> {
@@ -446,10 +440,7 @@ export abstract class Node {
     this._logger?.info('Watching sources', `${this.location}/src/**/*.{ts,js,json}`);
     const watcher = watch(`${this.location}/src/**/*.{ts,js,json}`);
     watcher.on('change', (path) => {
-      if (this._scheduler) {
-        this._logger?.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-        this._scheduler.fileChanged(this);
-      }
+
     });
     this._watchers.push(watcher);
   }

@@ -3,14 +3,11 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { Package } from './';
 import { Service } from './';
-import { IServicePortsConfig, PortMap, resolvePorts } from '../resolve-ports';
-import { IConfig } from '../config/config';
-import { ILogger, Logger } from '../logger';
-import { IPCSocketsManager } from '../ipc/socket';
-import { RecompilationScheduler } from '../scheduler';
 import { Project } from '@yarnpkg/core';
 import { npath } from '@yarnpkg/fslib';
 import { getName } from '../yarn/project';
+import { IConfig } from '@microlambda/runner-core/lib/config';
+import { Logger, Loggers } from '@microlambda/logger';
 
 export const isService = (location: string): boolean => {
   const loc = npath.fromPortablePath(location);
@@ -20,11 +17,10 @@ export const isService = (location: string): boolean => {
 export class DependenciesGraph {
   private readonly _config: IConfig;
   private readonly projectRoot: string;
-  private readonly ports: PortMap;
   private readonly nodes: Node[];
   private readonly _logger: Logger | undefined;
-  private readonly _log: ILogger | undefined;
   private readonly _project: Project;
+  private _log: Loggers | undefined;
 
   get project(): Project {
     return this._project;
@@ -41,7 +37,6 @@ export class DependenciesGraph {
   constructor(
     project: Project,
     config: IConfig,
-    scheduler?: RecompilationScheduler,
     logger?: Logger,
     defaultPort?: number,
   ) {
@@ -52,7 +47,6 @@ export class DependenciesGraph {
     this._log?.debug('Building graph with', project);
     this.projectRoot = npath.fromPortablePath(project.cwd);
     const services = project.workspaces.filter((n) => isService(n.cwd));
-    this.ports = resolvePorts(services, config, logger);
     const builtNodes: Set<Node> = new Set<Node>();
     this._log?.debug(project.workspaces.map((w) => getName(w)));
     for (const node of project.workspaces) {
@@ -68,8 +62,8 @@ export class DependenciesGraph {
         );
         this._log?.debug('Is service', isService(node.cwd));
         isService(node.cwd)
-          ? new Service(this, node, builtNodes, project, scheduler)
-          : new Package(this, node, builtNodes, project, scheduler);
+          ? new Service(this, node, builtNodes, project)
+          : new Package(this, node, builtNodes, project);
       }
     }
     this.nodes = Array.from(builtNodes);
@@ -78,23 +72,11 @@ export class DependenciesGraph {
       this.nodes.map((n) => n.getName()),
     );
     this._log?.info(`Successfully built ${this.nodes.length} nodes`);
-    this._enableNodes();
-  }
-
-  public getPort(service: string): IServicePortsConfig {
-    return this.ports[service];
-  }
-
-  public registerIPCServer(sockets: IPCSocketsManager): void {
-    this.getNodes().forEach((n) => n.registerIPCServer(sockets));
   }
 
   /**
    * Enables every node that are not already enabled and not excluded by config
    */
-  private _enableNodes(): void {
-    this.nodes.filter((n) => !n.isEnabled() && !this._config.noStart.includes(n.getName())).forEach((n) => n.enable());
-  }
 
   public getProjectRoot(): string {
     return this.projectRoot;

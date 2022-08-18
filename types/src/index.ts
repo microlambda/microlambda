@@ -6,3 +6,4 @@ export * from './interfaces/node-summary';
 export * from './types/service-logs';
 export * from './interfaces/event-logs';
 export * from './types/serverless-action';
+export * from './plugin';

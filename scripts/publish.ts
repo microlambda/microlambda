@@ -1,7 +1,8 @@
-import { getName, getTopologicallySortedWorkspaces, getYarnProject } from '@microlambda/core';
+import { } from '@microlambda/core';
 import { commandSync } from 'execa';
 import { join } from 'path';
 import { readJSONSync } from 'fs-extra';
+import { getName, getTopologicallySortedWorkspaces, getYarnProject } from '../core/outdated/yarn/project';
 
 (async () => {
   try {
@@ -21,7 +22,7 @@ import { readJSONSync } from 'fs-extra';
       try {
         rawOutput = commandSync(`npm view ${getName(workspace)} --json`).stdout.toString();
       } catch (e: any) {
-        rawOutput = e.stdout.toString();
+        rawOutput = e.stdout.toString() || '{"error": { "code": "E404"} }';
       }
       const npmOutput = JSON.parse(rawOutput);
       const isPublished = npmOutput.error?.code !== 'E404';

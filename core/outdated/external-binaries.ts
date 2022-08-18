@@ -2,9 +2,8 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { execSync, spawn } from 'child_process';
 import { Node } from './graph';
-import { CompilationMode } from './config/config';
-import { Logger } from './logger';
-
+import { CompilationMode } from '../src';
+import { Logger } from '@microlambda/logger';
 /*
 FIXME: The idea here would be to use npm local scripts start, test, deploy instead
  */

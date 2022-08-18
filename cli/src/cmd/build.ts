@@ -111,7 +111,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     const onNext = (evt: RunCommandEvent): void => {
       if (evt.type === RunCommandEventEnum.TARGETS_RESOLVED) {
         if (!evt.targets.some((target) => target.hasCommand)) {
-          console.error(chalk.red('No workspace found for target build. Please add a build script in centipod.json'));
+          console.error(chalk.red('No workspace found for target build. Please add a build script in mila.json'));
         }
       } else if (evt.type === RunCommandEventEnum.NODE_SKIPPED && !evt.affected) {
         console.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'))

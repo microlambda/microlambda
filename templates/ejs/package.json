@@ -1,0 +1,43 @@
+{
+  "name": "$myApp",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=12.0.0",
+    "yarn": ">= 2.0.0"
+  },
+  "scripts": {
+    "build": "yarn mila build",
+    "lint": "yarn mila-runner run lint",
+    "test": "yarn mila-runner run test",
+    "deploy": "yarn mila deploy"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "../cli",
+    "../runner/*"
+  ],
+  "devDependencies": {
+    "@microlambda/cli": "workspace:*",
+    "@microlambda/runner-cli": "workspace:*",
+    "@types/jest": "^28.1.7",
+    "@types/sinon": "^10.0.13",
+    "@typescript-eslint/eslint-plugin": "^5.33.1",
+    "@typescript-eslint/parser": "^5.33.1",
+    "eslint": "^8.22.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.1",
+    "jest": "^28.1.3",
+    "prettier": "^2.7.1",
+    "serverless": "^3.22.0",
+    "serverless-microlambda": "workspace:*",
+    "serverless-offline": "^9.2.3",
+    "serverless-prune-plugin": "^2.0.1",
+    "sinon": "^14.0.0",
+    "lint-staged": "^13.0.3",
+    "ts-jest": "^28.0.8",
+    "typescript": "^4.7.4"
+  }
+}

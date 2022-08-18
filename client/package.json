@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/client",
-  "version": "0.3.0-alpha.2",
+  "version": "1.0.0-alpha.2",
   "type": "module",
   "scripts": {
     "start": "../node_modules/.bin/vite",

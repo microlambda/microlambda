@@ -1,19 +1,15 @@
 import { DependenciesGraph, Node } from './';
 import { createWriteStream, WriteStream } from 'fs';
 import { ChildProcess, spawn } from 'child_process';
-import { createLogFile, getLogsPath } from '../logs';
 import { BehaviorSubject, concat, Observable } from 'rxjs';
 import chalk from 'chalk';
 import { concatAll, concatMap, tap } from 'rxjs/operators';
 import { getBinary } from '../external-binaries';
 import { FSWatcher, watch } from 'chokidar';
-import { RecompilationScheduler } from '../scheduler';
 import { Project, Workspace } from '@yarnpkg/core';
 import { getName } from '../yarn/project';
 import { ServiceLogs, ServerlessAction, ServiceStatus, TranspilingStatus, AwsRegion } from '@microlambda/types';
-import { IServicePortsConfig, isPortAvailable } from '../resolve-ports';
 import processTree from 'ps-tree';
-import { ConfigReader, Packager } from '../';
 import { readJSONSync } from 'fs-extra';
 import { join } from 'path';
 
@@ -34,7 +30,6 @@ export interface IDeployEvent {
 
 export class Service extends Node {
   private _status: ServiceStatus;
-  private readonly _port: IServicePortsConfig;
   private _offlineProcess: ChildProcess | undefined;
   private readonly _logs: ServiceLogs;
   private readonly _logsStreams: Record<ServerlessAction, Record<AwsRegion, WriteStream | undefined>>;
@@ -52,11 +47,9 @@ export class Service extends Node {
     workspace: Workspace,
     nodes: Set<Node>,
     project: Project,
-    scheduler?: RecompilationScheduler,
   ) {
-    super(graph, workspace, nodes, project, scheduler);
+    super(graph, workspace, nodes, project);
     this._status = ServiceStatus.STOPPED;
-    this._port = graph.getPort(getName(workspace));
     this._logs = {
       start: {},
       package: {},
@@ -89,10 +82,6 @@ export class Service extends Node {
 
   get logs(): ServiceLogs {
     return this._logs;
-  }
-
-  get port(): IServicePortsConfig {
-    return this._port;
   }
 
   start(): Observable<Service> {
@@ -172,17 +161,6 @@ export class Service extends Node {
           const FIVE_SECONDS = 5 * 1000;
           setTimeout(async () => {
             this._logger?.debug('Making sure process has released ports');
-
-            const areAvailable = await Promise.all([
-              isPortAvailable(this.port.http),
-              isPortAvailable(this.port.lambda),
-              isPortAvailable(this.port.websocket),
-            ]);
-            this._logger?.debug('Is port available', areAvailable);
-            if (areAvailable.some((a) => !a) && !killed) {
-              this._logger?.warn('Process has no released port within 5000ms. Sending SIGKILL');
-              this._killProcessTree('SIGKILL');
-            }
             observer.next(this);
             return observer.complete();
           }, FIVE_SECONDS);
@@ -219,8 +197,7 @@ export class Service extends Node {
       obs.next({ type: 'started', service: this });
       this._runCommand('package')
         .then(() => {
-          const metadata = Packager.readMetadata(this);
-          obs.next({ type: 'succeeded', service: this, ...metadata });
+          obs.next({ type: 'succeeded', service: this });
           return obs.complete();
         })
         .catch((err) => {
@@ -240,12 +217,9 @@ export class Service extends Node {
 
   private _stackUpdateRemove(action: 'Deploying' | 'Removing', stage: string): Observable<IDeployEvent> {
     this._logger?.info(action, this.name);
-    const reader = new ConfigReader();
-    const regions = reader.getRegions(this.getName(), stage);
-    this._logger?.info(`${action} ${this.name} in ${regions.length} regions`, regions);
     const regionalDeployments$: Array<Observable<IDeployEvent>> = [];
     let firstService = true;
-    for (const region of regions) {
+    for (const region of []) {
       this._logger?.info(action, this.name, 'in', region);
       const regionalDeployment$ = action === 'Deploying' ? this._deploy(region, stage) : this._remove(region, stage);
       regionalDeployments$.push(regionalDeployment$);
@@ -271,10 +245,7 @@ export class Service extends Node {
   private _watchServerlessYaml(): void {
     this._slsYamlWatcher = watch(`${this.location}/serverless.{yml,yaml}`);
     this._slsYamlWatcher.on('change', (path) => {
-      if (this._scheduler) {
-        this._logger?.info(`${chalk.bold(this.name)}: ${path} changed. Recompiling`);
-        this._scheduler.restartOne(this);
-      }
+
     });
   }
 
@@ -289,20 +260,13 @@ export class Service extends Node {
     this._updateStatus(ServiceStatus.STARTING);
     this._startedBeganAt = Date.now();
     this.setTranspilingStatus(TranspilingStatus.TRANSPILING);
-    this._logger?.info(`Starting ${this.name} on localhost:${this.port}`);
     this._logger?.debug('Location:', this.location);
     this._logger?.debug('Env:', process.env.ENV);
     // TODO: specify peer dependency serverless-offline@>=6
     this._offlineProcess = spawn(
       'yarn',
       [
-        'start',
-        '--httpPort',
-        this.port.http.toString(),
-        '--lambdaPort',
-        this.port.lambda.toString(),
-        '--websocketPort',
-        this.port.websocket.toString(),
+
       ],
       {
         cwd: this.location,
@@ -331,7 +295,6 @@ export class Service extends Node {
           this._handleLogs(data, 'start');
           if (data.includes('listening on')) {
             this._logger?.info(
-              `${chalk.bold.bgGreenBright('success')}: ${this.name} listening localhost:${this.port.http}`,
             );
             this._metrics.lastStarted = new Date();
             this._metrics.startedTook = this._startedBeganAt ? Date.now() - this._startedBeganAt : null;
@@ -373,13 +336,10 @@ export class Service extends Node {
       let stream: WriteStream;
       const existingStream = this._logsStreams[action][logsRegion];
       if (!existingStream) {
-        createLogFile(this.graph.getProjectRoot(), this.name, action, region);
-        stream = createWriteStream(getLogsPath(this.graph.getProjectRoot(), this.name, action, region));
-        this._logsStreams[action][logsRegion] = stream;
+
       } else {
         stream = existingStream;
       }
-      stream.write(data);
     } catch (e) {
       this._logger?.warn('Cannot write logs file for node', this.getName());
       this._logger?.warn(e);
@@ -442,14 +402,7 @@ export class Service extends Node {
       return [action];
     }
     return [
-      'offline',
-      'start',
-      '--httpPort',
-      this.port.http.toString(),
-      '--lambdaPort',
-      this.port.lambda.toString(),
-      '--websocketPort',
-      this.port.websocket.toString(),
+
     ];
   }
 

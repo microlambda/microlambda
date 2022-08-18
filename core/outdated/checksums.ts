@@ -1,9 +1,8 @@
 import { Node } from './graph';
 import { existsSync, mkdirSync, readFile, writeFile } from 'fs';
 import { join } from 'path';
-import { getTsConfig } from './typescript';
 import { fromFile } from 'hasha';
-import { Logger } from './logger';
+import { Logger } from '@microlambda/logger';
 
 export interface IChecksums {
   [file: string]: string;
@@ -32,13 +31,7 @@ export const checksums = (
     calculate: async (): Promise<IChecksums> => {
       const hashes: IChecksums = {};
       const calculateForNode = async (n: Node): Promise<void> => {
-        const config = getTsConfig(n.getLocation());
-        const sources = config ? config.fileNames : [];
-        await Promise.all(
-          sources.map(async (src) => {
-            hashes[src] = await fromFile(src, { algorithm: 'sha256' });
-          }),
-        );
+
       };
       const dependencies = [node, ...node.getDependencies()];
       await Promise.all(dependencies.map((n) => calculateForNode(n)));
