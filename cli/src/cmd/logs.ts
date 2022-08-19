@@ -1,11 +1,11 @@
-import { Logger } from '@microlambda/logger';
+import { EventsLog } from '@microlambda/logger';
 import { init } from "./start";
 import chalk from "chalk";
 import { join } from 'path';
 import { existsSync } from "fs";
 import { readJSONSync } from "fs-extra";
 
-export const logs = async (serviceName: string, cmd: string, logger: Logger): Promise<void> => {
+export const logs = async (serviceName: string, cmd: string, logger: EventsLog): Promise<void> => {
   const { project } = await init(logger);
   const service = project.services.get(serviceName);
   if (!service) {

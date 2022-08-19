@@ -5,17 +5,18 @@ import {
   isNodeSucceededEvent,
   isTargetResolvedEvent,
   Project,
-  resolveProjectRoot,
   Workspace,
   isDaemon
 } from "@microlambda/runner-core";
+import { resolveProjectRoot } from "@microlambda/utils";
 import chalk from 'chalk';
 import { logger } from "../utils/logger";
 import { resolveWorkspace } from "../utils/validate-workspace";
+import { EventsLog } from '@microlambda/logger';
 
 export const run = async (cmd: string, options: {parallel: boolean, topological: boolean, watch?: boolean, force: boolean, to?: string, affected?: string}): Promise<void> => {
   // TODO: Validate options (conflict between parallel/topological, watch/affected)
-  const project =  await Project.loadProject(resolveProjectRoot());
+  const project =  await Project.loadProject(resolveProjectRoot(), new EventsLog());
   const to = options.to ? resolveWorkspace(project, options.to) : undefined;
   logger.lf();
   logger.info(logger.centipod, `Running command ${chalk.white.bold(cmd)}`, options.to ? `on project ${options.to}` : '');

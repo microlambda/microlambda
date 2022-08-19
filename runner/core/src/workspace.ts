@@ -6,7 +6,6 @@ import {INpmInfos, Package} from './package';
 import {git} from './git';
 import {sync as glob} from 'fast-glob';
 import { command, ExecaChildProcess, ExecaError, ExecaReturnValue } from "execa";
-import { ICommandConfig, IConfig, ILogsCondition, loadConfig } from "./config";
 import {
   CommandResult,
   ICommandResult,
@@ -17,14 +16,15 @@ import {
 import { Cache, ICacheOptions } from "./cache";
 import {Publish, PublishActions, PublishEvent} from './publish';
 import { Observable, race, throwError } from "rxjs";
-import {CentipodError, CentipodErrorCode} from './error';
+import {MilaError, MilaErrorCode} from '@microlambda/errors';
 import semver from 'semver';
 import { catchError, finalize } from "rxjs/operators";
 import Timer = NodeJS.Timer;
 import { AbstractLogsHandler, ILogsHandler } from "./logs-handler";
 import processTree from "ps-tree";
 import { isPortAvailable } from "./port-available";
-import { IAbstractLogger, IAbstractLoggerFunctions } from "./logger";
+import { EventsLog, EventsLogger } from '@microlambda/logger';
+import { ITargetsConfig, ConfigReader, ILogsCondition, ICommandConfig } from '@microlambda/config';
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -34,14 +34,14 @@ export class Workspace {
   constructor(
     readonly pkg: Package,
     readonly root: string,
-    protected readonly _config: IConfig,
+    protected readonly _config: ITargetsConfig,
     readonly project?: Project,
-    logger?: IAbstractLogger,
+    readonly eventsLog?: EventsLog,
   ) {
-    this._logger = logger?.log('@centipod/core/workspace');
+    this._logger = this.eventsLog?.scope('runner-core/workspace');
   }
 
-  private _logger: IAbstractLoggerFunctions | undefined;
+  private _logger: EventsLogger | undefined;
 
   // Statics
   static async loadPackage(root: string): Promise<Package> {
@@ -50,20 +50,20 @@ export class Workspace {
     return JSON.parse(data);
   }
 
-  static async loadWorkspace(root: string, project?: Project, logger?: IAbstractLogger): Promise<Workspace> {
-    logger?.log('@centipod/core/workspace').debug('Loading workspace', root);
-    return new Workspace(await this.loadPackage(root), root, await this.loadConfig(root), project, logger);
+  static async loadWorkspace(root: string, project?: Project, logger?: EventsLog): Promise<Workspace> {
+    const pkg = await this.loadPackage(root);
+    return new Workspace(pkg, root, await this.loadConfig(pkg.name, root), project, logger);
   }
 
-  static async loadConfig(root: string): Promise<IConfig> {
-    const file = join(root, 'mila.json');
-    return loadConfig(file);
+  static async loadConfig(name: string, root: string): Promise<ITargetsConfig> {
+    const configReader = new ConfigReader();
+    return configReader.loadPackageConfig(name, root);
   }
 
   // Methods
   *dependencies(): Generator<Workspace, void> {
     if (!this.project) {
-      throw new CentipodError(CentipodErrorCode.PROJECT_NOT_RESOLVED, `Cannot load dependencies of workspace ${this.name}: loaded outside of a project`)
+      throw new MilaError(MilaErrorCode.PROJECT_NOT_RESOLVED, `Cannot load dependencies of workspace ${this.name}: loaded outside of a project`)
     }
     // Generate dependencies
     for (const deps of [this.pkg.dependencies, this.pkg.devDependencies]) {
@@ -91,7 +91,7 @@ export class Workspace {
   get ancestors(): Map<string, Workspace> {
     const ancestors = new Map<string, Workspace>();
     if (!this.project) {
-      throw new CentipodError(CentipodErrorCode.PROJECT_NOT_RESOLVED, `Cannot load dependencies of workspace ${this.name}: loaded outside of a project`)
+      throw new MilaError(MilaErrorCode.PROJECT_NOT_RESOLVED, `Cannot load dependencies of workspace ${this.name}: loaded outside of a project`)
     }
     for (const workspace of this.project.workspaces.values()) {
       if (workspace === this) continue;
@@ -101,7 +101,7 @@ export class Workspace {
   }
 
   // Properties
-  get config(): IConfig {
+  get config(): ITargetsConfig {
     return this._config;
   }
 
@@ -159,7 +159,7 @@ export class Workspace {
   private static async _checkRevision(rev: string): Promise<void> {
     const isValid = await git.revisionExists(rev);
     if (!isValid) {
-      throw new CentipodError(CentipodErrorCode.BAD_REVISION, `Bad revision: ${rev}`);
+      throw new MilaError(MilaErrorCode.BAD_REVISION, `Bad revision: ${rev}`);
     }
   }
 
@@ -448,7 +448,7 @@ export class Workspace {
   ): Promise<IProcessResult> {
     const now = Date.now();
     this._logger?.info('Running command', { target: this.name, cmd: target, args, env });
-    const cache = new Cache(this, target, args, env, options);
+    const cache = new Cache(this, target, args, env, options, this.eventsLog);
     try {
       const cachedOutputs = await cache.read();
       this._logger?.info('Cache read', { cmd: target, target: this.name }, cachedOutputs);
@@ -511,7 +511,7 @@ export class Workspace {
 
   async bumpVersions(bump: semver.ReleaseType, identifier?: string): Promise<PublishActions> {
     if (!this.project) {
-      throw new CentipodError(CentipodErrorCode.PROJECT_NOT_RESOLVED, 'Cannot publish outside a project');
+      throw new MilaError(MilaErrorCode.PROJECT_NOT_RESOLVED, 'Cannot publish outside a project');
     }
     this._publish = new Publish(this.project);
     return this._publish.determineActions(this, bump, identifier);
@@ -519,7 +519,7 @@ export class Workspace {
 
   publish(options = { access: 'public', dry: false }): Observable<PublishEvent> {
     if (!this._publish) {
-      throw new CentipodError(CentipodErrorCode.PUBLISHED_WORKSPACE_WITHOUT_BUMP, 'You must bump versions before publishing');
+      throw new MilaError(MilaErrorCode.PUBLISHED_WORKSPACE_WITHOUT_BUMP, 'You must bump versions before publishing');
     }
     return this._publish.release(options);
   }

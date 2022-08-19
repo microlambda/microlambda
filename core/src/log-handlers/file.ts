@@ -1,7 +1,8 @@
-import { LogFilesHandler, resolveProjectRoot, Workspace } from "@microlambda/runner-core";
+import { LogFilesHandler, Workspace } from "@microlambda/runner-core";
 import { join } from 'path';
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from "fs";
-import { ILogEntry, ILogHandler } from "@microlambda/logger";
+import { IEventsLogEntry, IEventsLogHandler } from "@microlambda/logger";
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export class LogsFileHandler extends LogFilesHandler {
 
@@ -26,7 +27,7 @@ export class LogsFileHandler extends LogFilesHandler {
   }
 }
 
-export class EventLogsFileHandler implements ILogHandler {
+export class EventLogsFileHandler implements IEventsLogHandler {
   private _stream: WriteStream;
 
   constructor() {
@@ -37,7 +38,7 @@ export class EventLogsFileHandler implements ILogHandler {
     this._stream = createWriteStream(join(folder, 'events.log'));
   }
 
-  write(entry: ILogEntry): void {
+  write(entry: IEventsLogEntry): void {
     this._stream.write(`\n[${entry.level}] (${entry.date}) ${entry.args.join(' ')}`);
   };
 }

@@ -4,7 +4,7 @@ import {ConfigReader} from "./config/read-config";
 import {from, mergeAll, Observable} from "rxjs";
 import {map} from "rxjs/operators";
 import {getDefaultThreads} from "./platform";
-import { Logger } from '@microlambda/logger';
+import { EventsLog } from '@microlambda/logger';
 
 export type DeployEvent = RunCommandEvent & { region: string };
 // test
@@ -23,7 +23,7 @@ export class Deployer {
   constructor(
     readonly options: IDeployOptions,
     readonly mode: 'deploy' | 'remove' = 'deploy',
-    readonly logger?: Logger,
+    readonly logger?: EventsLog,
   ) {
     this._reader = new ConfigReader(logger);
     this._reader.validate(options.project);

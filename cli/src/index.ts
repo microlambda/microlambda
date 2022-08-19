@@ -12,16 +12,16 @@ import { getDefaultThreads, loadEnv } from '@microlambda/core';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
-import { resolveProjectRoot } from "@microlambda/runner-core";
+import { resolveProjectRoot } from "@microlambda/utils";
 import { logs } from "./cmd/logs";
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 import { EventLogsFileHandler } from '@microlambda/core';
 import { init } from './cmd/init';
 
 // TODO: Clean commands descriptions
 
 // Logger must be a singleton
-const logger = new Logger(undefined, [new EventLogsFileHandler()]);
+const logger = new EventsLog(undefined, [new EventLogsFileHandler()]);
 
 const program = new Command();
 
@@ -61,7 +61,7 @@ program
           port: cmd.P || 4545,
           interactive: cmd.interactive,
         };
-        logger.log('cmd').debug(options);
+        logger.scope('cmd').debug(options);
         await start(cmd, logger);
       }, true),
   );

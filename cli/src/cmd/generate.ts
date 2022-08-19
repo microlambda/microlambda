@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Logger } from '@microlambda/logger';
+import { EventsLog } from '@microlambda/logger';
 import { join, relative } from 'path';
 import { prompt } from 'inquirer';
 import {
@@ -12,12 +12,12 @@ import {
   resolveInputs,
 } from '@microlambda/generators';
 import chalk from 'chalk';
-import {resolveProjectRoot} from "@microlambda/runner-core";
+import {resolveProjectRoot} from "@microlambda/utils";
 
-export const generate = async (blueprint: string, logger: Logger): Promise<void> => {
+export const generate = async (blueprint: string, logger: EventsLog): Promise<void> => {
   console.info('🧙 Microlambda code generator');
   const projectRoot = resolveProjectRoot();
-  const log = logger.log('generator');
+  const log = logger.scope('generator');
   const blueprintsPath = join(projectRoot, 'blueprints');
   log.debug(`Resolving blueprints in ${blueprintsPath}`);
   const blueprints = await findBlueprints(blueprintsPath);

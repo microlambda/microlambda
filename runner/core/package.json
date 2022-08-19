@@ -10,6 +10,8 @@
     "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@microlambda/errors": "workspace:*",
+    "@microlambda/logger": "workspace:*",
     "chokidar": "^3.5.3",
     "conventional-commits-parser": "^3.2.1",
     "debug": "^4.3.3",

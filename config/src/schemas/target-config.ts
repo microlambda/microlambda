@@ -1,0 +1,25 @@
+import joi from 'joi';
+import { logConditionsSchema } from './log-conditions';
+
+const commandConfigSchema = joi.object().keys({
+  run: joi.string().required(),
+  env: joi.object().pattern(joi.string(), joi.string().required()).optional(),
+  daemon: joi.alternatives(
+    joi.boolean().valid(false).required(),
+    logConditionsSchema.required(),
+    joi.array().items(logConditionsSchema).required(),
+  ).optional(),
+});
+
+export const targetConfigSchema = joi.object().keys({
+  cmd: joi.alternatives(
+    joi.string().required(),
+    joi.array().items(joi.string().required()).required(),
+    commandConfigSchema.required(),
+    joi.array().items(commandConfigSchema.required()).required(),
+  ),
+  src: joi.array().items(joi.string().required()).optional(),
+  artifacts: joi.array().items(joi.string().required()).optional(),
+})
+
+export const targetsConfigSchema = joi.object().pattern(joi.string(), targetConfigSchema);

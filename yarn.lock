@@ -3597,6 +3597,7 @@ __metadata:
   resolution: "@microlambda/config@workspace:config"
   dependencies:
     "@microlambda/types": "workspace:*"
+    "@microlambda/utils": "workspace:*"
     fs-extra: ^10.1.0
     jest: ^27.5.1
     joi: ^17.6.0
@@ -3656,6 +3657,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@microlambda/errors@workspace:*, @microlambda/errors@workspace:errors":
+  version: 0.0.0-use.local
+  resolution: "@microlambda/errors@workspace:errors"
+  languageName: unknown
+  linkType: soft
+
 "@microlambda/generators@workspace:*, @microlambda/generators@workspace:generators":
   version: 0.0.0-use.local
   resolution: "@microlambda/generators@workspace:generators"
@@ -3698,6 +3705,7 @@ __metadata:
   resolution: "@microlambda/remote-state@workspace:state"
   dependencies:
     "@microlambda/aws": "workspace:*"
+    "@microlambda/config": "workspace:*"
     "@microlambda/logger": "workspace:*"
     dynamodels: ^1.6.2
   languageName: unknown
@@ -3721,6 +3729,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/runner-core@workspace:runner/core"
   dependencies:
+    "@microlambda/errors": "workspace:*"
+    "@microlambda/logger": "workspace:*"
     "@types/conventional-commits-parser": ^3.0.1
     "@types/debug": ^4.1.7
     "@types/lodash": 4.14.168
@@ -3766,6 +3776,12 @@ __metadata:
 "@microlambda/types@workspace:*, @microlambda/types@workspace:types":
   version: 0.0.0-use.local
   resolution: "@microlambda/types@workspace:types"
+  languageName: unknown
+  linkType: soft
+
+"@microlambda/utils@workspace:*, @microlambda/utils@workspace:utils":
+  version: 0.0.0-use.local
+  resolution: "@microlambda/utils@workspace:utils"
   languageName: unknown
   linkType: soft
 

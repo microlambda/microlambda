@@ -1,5 +1,5 @@
 import { Subject, Subscription } from "rxjs";
-import { Logger, Loggers } from "@microlambda/logger";
+import { EventsLog, EventsLogger } from "@microlambda/logger";
 import { getDefaultThreads } from "./platform";
 import { Workspace } from "./graph/workspace";
 import { Project } from "./graph/project";
@@ -15,7 +15,7 @@ export type SchedulerEvent = RunCommandSchedulerEvent | StopServiceEvent;
 export const isStopServiceEvent = (evt: SchedulerEvent): evt is StopServiceEvent => ['stopping', 'stopped'].includes(String(evt.type));
 
 export class Scheduler {
-  private readonly _logger: Loggers;
+  private readonly _logger: EventsLogger;
   private readonly _concurrency: number;
 
   private _events$ = new Subject<SchedulerEvent>();
@@ -35,8 +35,8 @@ export class Scheduler {
     start: new Map(),
   };
 
-  constructor(readonly project: Project, logger: Logger, concurrency?: number) {
-    this._logger = logger.log('@microlambda/core/scheduler');
+  constructor(readonly project: Project, logger: EventsLog, concurrency?: number) {
+    this._logger = logger.scope('core/scheduler');
     this._logger.debug('New recompilation scheduler instance');
     this._concurrency = concurrency || getDefaultThreads();
     this._runners = {

@@ -7,7 +7,7 @@ export const beforeChangeRecords = async (
   domain: string,
   logger?: IBaseLogger
 ): Promise<{ apiGatewayUrl: string; hostedZoneId: string }> => {
-  const apiGatewayUrl = await getCustomDomainUrl(region, domain, logger);
+  const apiGatewayUrl = await getCustomDomainUrl(region, domain);
   logger?.debug("API Gateway URL resolved", apiGatewayUrl);
   const hostedZone = await getHostedZone(domain, logger);
   if (!hostedZone || !hostedZone.Id) {

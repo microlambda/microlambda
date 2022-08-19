@@ -6,17 +6,18 @@ import { F_OK } from 'constants';
 import chalk from 'chalk';
 import { isEqual } from 'lodash';
 import { ICommandResult } from './process';
-import { CentipodError, CentipodErrorCode } from './error';
-import { IConfigEntry } from './config';
-import { IAbstractLoggerFunctions, logger } from "./logger";
+import { MilaError, MilaErrorCode } from "@microlambda/errors";
+import { EventsLog, EventsLogger } from '@microlambda/logger';
+import { ITargetConfig } from '@microlambda/config';
 
 export interface ICacheOptions {
   dir?: string;
 }
 
 export class Cache {
-  private _logger: IAbstractLoggerFunctions | undefined;
   private readonly _cacheFolder: string;
+  private readonly _logger: EventsLogger | undefined;
+  static readonly scope = '@microlambda/runner-core/cache';
 
   constructor (
     private readonly _workspace: Workspace,
@@ -24,8 +25,10 @@ export class Cache {
     private readonly _args: string[] | string = [],
     private readonly _env: {[key: string]: string} = {},
     private readonly _options: ICacheOptions = {},
+    private readonly _eventsLog?: EventsLog,
   ) {
     this._cacheFolder = join(this._workspace.root, '.caches', this._options.dir || this._cmd);
+    this._logger = this._eventsLog?.scope(Cache.scope);
   }
 
   get args(): string[] | string { return this._args };
@@ -39,7 +42,7 @@ export class Cache {
     return join(this.cacheFolder, 'output.json');
   }
 
-  get config(): IConfigEntry {
+  get config(): ITargetConfig {
     return this.workspace.config[this._cmd];
   }
 
@@ -66,11 +69,11 @@ export class Cache {
       const output = await fs.readFile(this.outputPath);
       return JSON.parse(output.toString());
     } catch (e) {
-      if ((e as CentipodError).code === CentipodErrorCode.NO_FILES_TO_CACHE) {
-        logger.warn(chalk.yellow(`Patterns ${this.config.src.join('|')} has no match: ignoring cache`));
+      if ((e as MilaError).code === MilaErrorCode.NO_FILES_TO_CACHE) {
+        this._logger?.warn(chalk.yellow(`Patterns ${this.config.src.join('|')} has no match: ignoring cache`, e));
         return null;
       }
-      logger.warn('Cannot read from cache', e);
+      this._logger?.warn('Cannot read from cache', e);
       return null;
     }
   }
@@ -88,7 +91,7 @@ export class Cache {
         fs.writeFile(this.outputPath, JSON.stringify(output)),
       ]);
     } catch (e) {
-      logger.warn('Error writing cache', e);
+      this._logger?.warn('Error writing cache', e);
       await this.invalidate();
     }
   }
@@ -120,7 +123,7 @@ export class Cache {
         removeIfExists(this.outputPath),
       ]);
     } catch (e) {
-      throw new CentipodError(CentipodErrorCode.INVALIDATING_CACHE_FAILED, 'Fatal: error invalidating cache. Next command runs could have unexpected result !');
+      throw new MilaError(MilaErrorCode.INVALIDATING_CACHE_FAILED, 'Fatal: error invalidating cache. Next command runs could have unexpected result !', e);
     }
   }
 

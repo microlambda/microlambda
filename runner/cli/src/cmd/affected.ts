@@ -1,5 +1,6 @@
-import { Project, resolveProjectRoot, Workspace } from "@microlambda/runner-core";
+import { Project, Workspace } from "@microlambda/runner-core";
 import { logger } from "../utils/logger";
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export const affected = async (rev1: string, rev2?: string): Promise<void> => {
   const project =  await Project.loadProject(resolveProjectRoot());

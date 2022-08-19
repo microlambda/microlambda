@@ -1,4 +1,4 @@
-import { IPackagrConfig, ServerlessInstance, LambdaRuntimes, IBaseLogger } from '@microlambda/types'
+import { IPackagrConfig, ServerlessInstance, LambdaRuntimes } from '@microlambda/types'
 
 
 export const resolveRunTime = (serverless: ServerlessInstance, config?: IPackagrConfig): LambdaRuntimes[] => {

@@ -8,7 +8,7 @@ import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
 import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 
 export interface IDeployCmd extends IPackageCmd {
   e: string;
@@ -155,7 +155,7 @@ export const printReport = async (
   console.error(chalk.green('Process exited without errors'));
 };
 
-export const deploy = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
+export const deploy = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> => {
   return new Promise(async () => {
     console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
     const reader = new ConfigReader(logger);

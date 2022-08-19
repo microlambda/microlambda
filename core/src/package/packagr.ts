@@ -5,20 +5,21 @@ import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
-import { Logger, Loggers } from '@microlambda/logger';
+import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { command } from 'execa';
-import {resolveProjectRoot, Workspace as CentipodWorkspace} from "@microlambda/runner-core";
+import { Workspace as CentipodWorkspace} from "@microlambda/runner-core";
 import { Workspace } from '../graph/workspace';
 import { Project } from '../graph/project';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export class Packager {
   private readonly _projectRoot: string;
   private _packagePath: string | undefined;
   private _tmpPath: string | undefined;
-  private _logger: Loggers;
+  private _logger: EventsLogger;
 
   constructor(private readonly _useLayers = false, private readonly _buildLayer = true) {
-    this._logger = new Logger().log('packagr');
+    this._logger = new EventsLog().scope('packagr');
     this._projectRoot = resolveProjectRoot();
     this._logger.debug('Initialized packagr on project', this._projectRoot);
   }

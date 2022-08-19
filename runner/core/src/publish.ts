@@ -4,16 +4,15 @@ import semver from 'semver';
 import { command, ExecaReturnValue } from "execa";
 import { Observable } from "rxjs";
 import { join } from 'path';
-import { CentipodError, CentipodErrorCode } from "./error";
+import { MilaError, MilaErrorCode } from "@microlambda/errors";
 import { Project } from "./project";
-import { IAbstractLoggerFunctions } from "./logger";
 
 export interface IPublishAction {
   workspace: Workspace;
   currentVersion?: string;
   targetVersion?: string;
   changed?: boolean;
-  error?: CentipodError;
+  error?: MilaError;
 }
 
 enum PublishEventType {
@@ -43,12 +42,12 @@ interface IPushedEvent {
   type: PublishEventType.PUSHED;
 }
 
-export type PublishEvent = IResolvedActionsEvent | IPublishedNodeEvent | ICommitCreatedEvent | IPushedEvent;
+export type PublishEvent = IResolvedActionsEvent | IPublishedNodeEvent | ICommitCreatedEvent | IPushedEvent;
 
 
-export const isActionsResolvedEvent = (event: PublishEvent): event is  IResolvedActionsEvent => event.type === PublishEventType.ACTIONS_RESOLVED;
+export const isActionsResolvedEvent = (event: PublishEvent): event is IResolvedActionsEvent => event.type === PublishEventType.ACTIONS_RESOLVED;
 
-export const isPublishedEvent = (event: PublishEvent): event is   IPublishedNodeEvent => event.type === PublishEventType.PUBLISHED_NODE;
+export const isPublishedEvent = (event: PublishEvent): event is IPublishedNodeEvent => event.type === PublishEventType.PUBLISHED_NODE;
 
 export const isCommittedEvent = (event: PublishEvent): event is  ICommitCreatedEvent => event.type === PublishEventType.COMMITTED;
 
@@ -71,8 +70,6 @@ export class PublishActions {
 }
 
 export class Publish {
-  private _logger: IAbstractLoggerFunctions | undefined;
-
   constructor(
     private readonly _project: Project,
   ) {}
@@ -108,7 +105,7 @@ export class Publish {
         const toCommit: string[] = [];
         for (const action of actions.actions.filter((a) => a.changed)) {
           if (!action.targetVersion) {
-            throw new CentipodError(CentipodErrorCode.CANNOT_BUMP_VERSION, 'Missing target version');
+            throw new MilaError(MilaErrorCode.CANNOT_BUMP_VERSION, 'Missing target version');
           }
           try {
             await action.workspace.setVersion(action.targetVersion);
@@ -157,14 +154,14 @@ export class Publish {
       if (!workspace.version) {
         this._actions.add({
           workspace,
-          error: new CentipodError(CentipodErrorCode.MISSING_VERSION, 'Missing version field in package.json'),
+          error: new MilaError(MilaErrorCode.MISSING_VERSION, 'Missing version field in package.json'),
         });
         continue;
       }
       if (workspace.private) {
         this._actions.add({
           workspace,
-          error: new CentipodError(CentipodErrorCode.CANNOT_PUBLISH_PRIVATE_PACKAGE, 'Workspace is private and cannot be published'),
+          error: new MilaError(MilaErrorCode.CANNOT_PUBLISH_PRIVATE_PACKAGE, 'Workspace is private and cannot be published'),
         });
         continue;
       }
@@ -174,7 +171,7 @@ export class Publish {
         this._actions.add({
           workspace,
           currentVersion,
-          error: new CentipodError(CentipodErrorCode.CANNOT_BUMP_VERSION, 'Cannot bump version with semver'),
+          error: new MilaError(MilaErrorCode.CANNOT_BUMP_VERSION, 'Cannot bump version with semver'),
         });
         continue;
       }
@@ -184,7 +181,7 @@ export class Publish {
           workspace,
           currentVersion,
           targetVersion,
-          error: new CentipodError(CentipodErrorCode.HAS_PRIVATE_DEPENDENCY, `Cannot publish package as it depends private workspaces: ${privateDependencies.map((w) => w.name).join(',')}`),
+          error: new MilaError(MilaErrorCode.HAS_PRIVATE_DEPENDENCY, `Cannot publish package as it depends private workspaces: ${privateDependencies.map((w) => w.name).join(',')}`),
         });
         continue;
       }
@@ -192,8 +189,8 @@ export class Publish {
       const greaterVersions = await workspace.listGreaterVersionsInRegistry(targetVersion);
       if (isAlreadyPublished || greaterVersions.length) {
         const error = isAlreadyPublished
-          ? new CentipodError(CentipodErrorCode.ALREADY_PUBLISHED, 'Already published in registry')
-          : new CentipodError(CentipodErrorCode.FOUND_GREATER_VERSIONS_IN_REGISTRY, `Latest version in registry if ahead current target version. Latest version in registry: ${greaterVersions.reduce((acc, val) => semver.gt(acc, val) ? acc : val , '0.0.0')}`);
+          ? new MilaError(MilaErrorCode.ALREADY_PUBLISHED, 'Already published in registry')
+          : new MilaError(MilaErrorCode.FOUND_GREATER_VERSIONS_IN_REGISTRY, `Latest version in registry if ahead current target version. Latest version in registry: ${greaterVersions.reduce((acc, val) => semver.gt(acc, val) ? acc : val , '0.0.0')}`);
         this._actions.add({
           workspace,
           currentVersion,
@@ -223,7 +220,7 @@ export class Publish {
   private async _hasChangedSinceLastRelease(workspace: Workspace): Promise<boolean> {
     const version = workspace.version;
     if (!version) {
-      throw new CentipodError(CentipodErrorCode.MISSING_VERSION, `Missing version field in ${workspace.name} package.json`);
+      throw new MilaError(MilaErrorCode.MISSING_VERSION, `Missing version field in ${workspace.name} package.json`);
     }
     const tag = Publish._getTagName(workspace, version);
     if (await this._tagExists(tag)) {

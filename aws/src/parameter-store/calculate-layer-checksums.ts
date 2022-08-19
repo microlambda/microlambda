@@ -4,7 +4,7 @@ import { fromFile } from 'hasha';
 import {getTsConfig, Workspace} from "@microlambda/core";
 import {join, relative} from 'path';
 import {sync as glob} from "glob";
-import {resolveProjectRoot} from "@microlambda/runner-core";
+import {resolveProjectRoot} from "@microlambda/utils";
 
 export const calculateLayerChecksums = async (service: Workspace, logger?: IBaseLogger): Promise<ILayerChecksums | null> => {
     try {

@@ -3,28 +3,28 @@ import { Workspace } from './workspace';
 import { resolvePorts } from "../resolve-ports";
 import { IConfig } from "../config/config";
 import { ConfigReader } from "../config/read-config";
-import { Logger, Loggers} from "@microlambda/logger";
+import { EventsLog, EventsLogger} from "@microlambda/logger";
 
 export class Project extends CentipodProject {
   private _services = new Map<string, Workspace>();
   private _packages = new Map<string, Workspace>();
 
-  constructor(prj: CentipodProject, private readonly _milaConfig: IConfig, readonly logger?: Logger) {
+  constructor(prj: CentipodProject, private readonly _milaConfig: IConfig, readonly logger?: EventsLogger) {
     super(prj.pkg, prj.root, prj.config, prj.project);
   }
 
-  static scope = '@microlambda/core/project';
+  static scope = 'core/project';
 
-  get log(): Loggers | undefined { return this.logger?.log() }
+  get log(): EventsLogger | undefined { return this.logger }
 
-  static async loadProject(root: string, logger?: Logger): Promise<Project> {
-    const log = logger?.log(this.scope);
+  static async loadProject(root: string, logger?: EventsLog): Promise<Project> {
+    const log = logger?.scope(Project.scope);
     log?.info('Loading project');
     const centipodProject = await super.loadProject(root, logger);
     log?.info('Found', centipodProject.workspaces.size, 'workspaces');
     const configReader = new ConfigReader();
     const config = configReader.readConfig();
-    const prj = new Project(centipodProject, config, logger);
+    const prj = new Project(centipodProject, config, log);
     configReader.validate(prj);
     for (const [name, workspace] of centipodProject.workspaces.entries()) {
       const milaWorkspace = new Workspace(workspace);

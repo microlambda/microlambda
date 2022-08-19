@@ -2,7 +2,7 @@ import Joi, { ObjectSchema } from '@hapi/joi';
 import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
-import { Logger, Loggers } from '@microlambda/logger';
+import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { sync } from 'glob';
 import { join } from 'path';
 import {Project} from "../graph/project";
@@ -38,10 +38,10 @@ export class ConfigReader {
   private _services: string[] = [];
   private _config: IConfig | undefined;
   private _schema: Joi.ObjectSchema | undefined;
-  private readonly _logger: Loggers | undefined;
+  private readonly _logger: EventsLogger | undefined;
 
-  constructor(logger?: Logger) {
-    this._logger = logger?.log('@microlambda/core/config');
+  constructor(logger?: EventsLog) {
+    this._logger = logger?.scope('@microlambda/core/config');
   }
 
   get config(): IConfig | undefined {

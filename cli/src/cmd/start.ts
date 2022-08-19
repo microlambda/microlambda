@@ -9,11 +9,11 @@ import {
   ConfigReader,
   IConfig,
 } from '@microlambda/core';
-import { resolveProjectRoot, RunCommandEventEnum } from "@microlambda/runner-core";
 import {command} from "execa";
 import { Scheduler } from "@microlambda/core";
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 import { WebsocketLogsHandler } from "../log-handlers/websocket";
+import { resolveProjectRoot } from '@microlambda/utils';
 
 interface IStartOptions {
   interactive: boolean;
@@ -37,14 +37,14 @@ export const validateConfig = (config: ConfigReader, graph: Project): IConfig =>
 
 export const readConfig = async (
   projectRoot: string,
-  logger: Logger,
+  logger: EventsLog,
 ): Promise<{ reader: ConfigReader; config: IConfig }> => {
   const loadingConfig = ora('Loading config ⚙️').start();
   const reader = new ConfigReader(logger);
   let config: IConfig;
   try {
     config = reader.readConfig();
-    logger.log('start').debug(config);
+    logger.scope('start').debug(config);
     loadingConfig.succeed();
     return { reader, config };
   } catch (e) {
@@ -54,7 +54,7 @@ export const readConfig = async (
   }
 };
 
-export const getDependenciesGraph = async (projectRoot: string, logger?: Logger): Promise<Project> => {
+export const getDependenciesGraph = async (projectRoot: string, logger?: EventsLog): Promise<Project> => {
   const parsingGraph = ora('Parsing dependency graph 🧶').start();
   const graph = await Project.loadProject(projectRoot, logger);
   parsingGraph.succeed();
@@ -62,9 +62,9 @@ export const getDependenciesGraph = async (projectRoot: string, logger?: Logger)
 };
 
 export const init = async (
-  logger: Logger,
+  logger: EventsLog,
 ): Promise<{ projectRoot: string; config: IConfig; project: Project }> => {
-  const log = logger.log('start');
+  const log = logger.scope('start');
   const projectRoot = resolveProjectRoot();
   log.info('Project root resolved', projectRoot);
   const project =  await getDependenciesGraph(projectRoot, logger);
@@ -73,7 +73,7 @@ export const init = async (
   return { projectRoot, config: config, project };
 };
 
-export const yarnInstall = async (project: Project, logger: Logger): Promise<void> => {
+export const yarnInstall = async (project: Project, logger: EventsLog): Promise<void> => {
   const installing = ora('Installing dependencies 📦').start();
   try {
     await command('yarn install', {
@@ -83,8 +83,8 @@ export const yarnInstall = async (project: Project, logger: Logger): Promise<voi
   } catch (e) {
     const message =
       'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.';
-    logger.log('bootstrap').error(e);
-    logger.log('bootstrap').error(message);
+    logger.scope('bootstrap').error(e);
+    logger.scope('bootstrap').error(message);
     // eslint-disable-next-line no-console
     console.error(message);
     process.exit(1);
@@ -95,7 +95,7 @@ export const yarnInstall = async (project: Project, logger: Logger): Promise<voi
 
 export const start = async (
   options: IStartOptions,
-  logger: Logger,
+  logger: EventsLog,
 ): Promise<void> => {
   console.info(showOff());
 
@@ -140,7 +140,7 @@ export const start = async (
   recreateLogDirectory(projectRoot, logger);
 
   process.on('SIGINT', async () => {
-    logger.log('start').warn('SIGINT signal received');
+    logger.scope('start').warn('SIGINT signal received');
     console.log('\n');
     const gracefulShutdown = ora('Gracefully shutting down services ☠️');
     try {
@@ -154,7 +154,7 @@ export const start = async (
   });
 
   if (!options.interactive) {
-    logger.log('start').info('Starting services');
+    logger.scope('start').info('Starting services');
     await scheduler.startAll();
   }
 };

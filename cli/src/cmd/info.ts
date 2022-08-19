@@ -1,6 +1,7 @@
 import {Project} from "@microlambda/core";
-import {resolveProjectRoot, Workspace} from "@microlambda/runner-core";
+import { Workspace} from "@microlambda/runner-core";
 import chalk from 'chalk';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 const printTree = (wks: Workspace) => {
   const printDeps = (_wks: Workspace, depth = 0) => {

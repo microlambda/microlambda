@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Project } from '@microlambda/core';
 import { init, yarnInstall } from './start';
 import chalk from 'chalk';
@@ -11,7 +10,7 @@ import {
   isNodeEvent, isProcessError
 } from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 
 export interface IBuildCmd {
   s?: string;
@@ -64,7 +63,7 @@ const printAffected = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefin
 
 export const beforeBuild = async (
   cmd: IBuildCmd,
-  logger: Logger,
+  logger: EventsLog,
   acceptPackages = false,
 ): Promise<IBuildOptions> => {
   const affected = printAffected(cmd);
@@ -155,7 +154,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
   });
 };
 
-export const build = async (cmd: IBuildCmd, logger: Logger): Promise<void> => {
+export const build = async (cmd: IBuildCmd, logger: EventsLog): Promise<void> => {
   printCommand('🔧 Building', cmd.s, cmd.only);
   const options = await beforeBuild(cmd, logger, true);
   try {

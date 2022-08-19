@@ -1,6 +1,6 @@
 import { command } from 'execa';
 import { sync, Commit } from 'conventional-commits-parser';
-import { CentipodError, CentipodErrorCode } from './error';
+import { MilaError, MilaErrorCode } from "@microlambda/errors";
 import { git } from './git';
 import { Workspace } from './workspace';
 import { Project } from './project';
@@ -34,14 +34,14 @@ export const semanticRelease  = async (project: Project, identifier?: string): P
   const workspaces = project.workspaces;
   const semanticReleaseTags = await getSemanticReleaseTags();
   if (!semanticReleaseTags.length) {
-    throw new CentipodError(CentipodErrorCode.NO_SEMANTIC_RELEASE_TAGS_FOUND, 'No semantic release tags found');
+    throw new MilaError(MilaErrorCode.NO_SEMANTIC_RELEASE_TAGS_FOUND, 'No semantic release tags found');
   }
   const latest = semanticReleaseTags.sort((t1, t2) => Number(t2.split('@')[1]) - Number(t1.split('@')[1]))[0];
   const log = await command(`git log --pretty=oneline --no-decorate ${latest}..`);
   const commits: Array<ICoventionalCommit> = [];
   const logLines = log.stdout.split('\n');
   if (logLines.length === 0 || (logLines.length === 1 && !logLines[0])) {
-    throw new CentipodError(CentipodErrorCode.NOTHING_TO_DO, 'Nothing to do');
+    throw new MilaError(MilaErrorCode.NOTHING_TO_DO, 'Nothing to do');
   }
   for (const line of logLines) {
     const hash = line.split(' ')[0];
@@ -82,7 +82,7 @@ export const semanticRelease  = async (project: Project, identifier?: string): P
     if (lastRelease !== lastReleaseTag) {
       actions.add({
         workspace,
-        error: new CentipodError(CentipodErrorCode.TAG_AND_REGISTRY_VERSIONS_MISMATCH, `The last tag version ${lastReleaseTag} and the last version published in registry do not match.`),
+        error: new MilaError(MilaErrorCode.TAG_AND_REGISTRY_VERSIONS_MISMATCH, `The last tag version ${lastReleaseTag} and the last version published in registry do not match.`),
       });
       continue;
     }
@@ -121,7 +121,7 @@ export const semanticRelease  = async (project: Project, identifier?: string): P
     if (!bump) {
       actions.add({
         workspace,
-        error: new CentipodError(CentipodErrorCode.CANNOT_DETERMINE_BUMP, 'Failed to determine version bump based on conventional commit messages'),
+        error: new MilaError(MilaErrorCode.CANNOT_DETERMINE_BUMP, 'Failed to determine version bump based on conventional commit messages'),
       });
       continue;
     }
@@ -129,7 +129,7 @@ export const semanticRelease  = async (project: Project, identifier?: string): P
     if (!targetVersion) {
       actions.add({
         workspace,
-        error: new CentipodError(CentipodErrorCode.CANNOT_BUMP_VERSION, 'Semver failed to increment version'),
+        error: new MilaError(MilaErrorCode.CANNOT_BUMP_VERSION, 'Semver failed to increment version'),
       });
       continue;
     }

@@ -1,5 +1,6 @@
 import { IAM } from 'aws-sdk';
 
+// TODO: REMOVE deprecated for @microlambda/aws aws.iam.getCurrentUser
 export interface IAmazonError {
   code: string;
   message: string;

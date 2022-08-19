@@ -5,11 +5,11 @@ import { sync as glob } from 'fast-glob';
 import { RunOptions, Runner } from './runner';
 import { Publish } from './publish';
 import { ReleaseType } from 'semver';
-import { CentipodError, CentipodErrorCode } from './error';
+import { MilaError, MilaErrorCode } from "@microlambda/errors";
 import { Observable } from 'rxjs';
 import { RunCommandEvent } from './process';
 import { AbstractLogsHandler } from "./logs-handler";
-import { IAbstractLogger } from "./logger";
+import { EventsLog } from '@microlambda/logger';
 
 export class Project extends Workspace {
   // Attributes
@@ -19,14 +19,15 @@ export class Project extends Workspace {
   get workspaces(): Map<string, Workspace> { return this._workspaces }
 
   // Statics
-  static async loadProject(root: string, logger?: IAbstractLogger): Promise<Project> {
-    const prj = new Project(await this.loadPackage(root), root, await this.loadConfig(root));
+  static async loadProject(root: string, logger?: EventsLog): Promise<Project> {
+    const pkg = await this.loadPackage(root);
+    const prj = new Project(pkg, root, await this.loadConfig(pkg.name, root));
     await prj.loadWorkspaces(logger);
     return prj;
   }
 
   // Methods
-  async loadWorkspaces(logger?: IAbstractLogger): Promise<void> {
+  async loadWorkspaces(logger?: EventsLog): Promise<void> {
     // Load workspaces
     if (this.pkg.workspaces && this.pkg.workspaces.length > 0) {
       const patterns = this.pkg.workspaces.map(wks => glob(join(this.root, wks, 'package.json'))).reduce((acc, val) => acc = acc.concat(val), []);
@@ -38,7 +39,7 @@ export class Project extends Workspace {
           this._workspaces.set(wks.name, wks);
 
         } catch (error) {
-          throw new CentipodError(CentipodErrorCode.UNABLE_TO_LOAD_WORKSPACE, `Unable to load workspace at ${root}: ${error}`);
+          throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_WORKSPACE, `Unable to load workspace at ${root}`, error);
         }
       }
     }

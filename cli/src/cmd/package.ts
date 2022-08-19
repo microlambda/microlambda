@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import {printReport} from './deploy';
 import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@microlambda/runner-core";
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 
 export interface IPackageCmd extends IBuildCmd {
   c: string;
@@ -22,7 +22,7 @@ interface IPackageOptions extends IBuildOptions {
 
 export const beforePackage = async (
   cmd: IPackageCmd,
-  logger: Logger,
+  logger: EventsLog,
 ): Promise<IPackageOptions> => {
   const concurrency = cmd.c ? getThreads(Number(cmd.c)) : getDefaultThreads();
   const options = await beforeBuild(cmd, logger, false);
@@ -94,7 +94,7 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
   });
 };
 
-export const packagr = async (cmd: IPackageCmd, logger: Logger): Promise<void> => {
+export const packagr = async (cmd: IPackageCmd, logger: EventsLog): Promise<void> => {
   try {
     printCommand('📦 Packaging', cmd.s, true);
     const options = await beforePackage(cmd, logger);

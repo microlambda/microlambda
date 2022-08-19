@@ -1,7 +1,6 @@
 export * from './package';
 export * from './workspace';
 export * from './project';
-export * from './root';
 export * from './cache';
 export * from './process';
 export * from './runner';

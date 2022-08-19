@@ -3,16 +3,16 @@ import { logger } from '../utils/logger';
 import chalk from 'chalk';
 import ora from 'ora';
 import { prompt } from 'inquirer';
-import { ConfigReader, IConfig } from '@microlambda/config';
+import { ConfigReader, IRootConfig } from '@microlambda/config';
 import { verifyStateKeysSchema, createStateTable } from '@microlambda/remote-state';
 
-const readConfig = (): IConfig => {
-  let config: IConfig;
+const readConfig = (): IRootConfig => {
+  let config: IRootConfig;
   const readingConfig = ora();
   try {
     readingConfig.start('Loading configuration');
     const configReader = new ConfigReader();
-    config = configReader.config;
+    config = configReader.rootConfig;
     readingConfig.succeed('Configuration loaded');
     logger.lf();
   } catch (e) {

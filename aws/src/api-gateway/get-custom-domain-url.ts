@@ -4,7 +4,6 @@ import { IBaseLogger } from "@microlambda/types";
 export const getCustomDomainUrl = async (
   region: string,
   domain: string,
-  logger?: IBaseLogger
 ): Promise<string> => {
   const customDomain = await getCustomDomain(region, domain);
   if (!customDomain) {

@@ -2,20 +2,22 @@ import { IResolvedTarget } from './process';
 import { Workspace } from './workspace';
 import { isTopological, ITopologicalRunOptions, RunOptions } from './runner';
 import { Project } from './project';
-import { IAbstractLogger, IAbstractLoggerFunctions } from "./logger";
+import { EventsLog, EventsLogger } from '@microlambda/logger';
 
 export type OrderedTargets = IResolvedTarget[][];
 
 export class TargetsResolver {
 
+  static readonly scope = 'runner-core/targets';
+
   constructor(
     private readonly _project: Project,
-    logger?: IAbstractLogger,
+    logger?: EventsLog,
   ) {
-    this._logger = logger?.log('@centipod/core/targets');
+    this._logger = logger?.scope(TargetsResolver.scope);
   }
 
-  private _logger: IAbstractLoggerFunctions | undefined;
+  private _logger: EventsLogger | undefined;
 
   async resolve(cmd: string, options: RunOptions): Promise<OrderedTargets> {
     if (isTopological(options)) {

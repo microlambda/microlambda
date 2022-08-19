@@ -1,18 +1,17 @@
 import {
-  CentipodErrorCode,
   Project,
-  resolveProjectRoot,
   semanticRelease as prepareRelease,
   hasSemanticReleaseTags,
   createSemanticReleaseTag,
   Publish,
-  CentipodError,
 } from '@microlambda/runner-core';
 import { logger } from '../utils/logger';
 import { printActions } from '../utils/print-actions';
 import chalk from 'chalk';
 import { createInterface } from 'readline';
 import { printEvent } from '../utils/print-publish-events';
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 // TODO: move in utils
 interface IPublishOptions {
@@ -90,12 +89,12 @@ export const semanticRelease  = async (identifier: string, options: IPublishOpti
     printSummary(publisher);
     promptPublishConfirmation(publisher, options);
   } catch (e) {
-    switch ((e as CentipodError).code) {
-      case CentipodErrorCode.NOTHING_TO_DO:
+    switch ((e as MilaError).code) {
+      case MilaErrorCode.NOTHING_TO_DO:
         logger.info('Nothing to do. Every packages are already up-to-date');
         process.exit(0);
         break
-      case CentipodErrorCode.NO_SEMANTIC_RELEASE_TAGS_FOUND:
+      case MilaErrorCode.NO_SEMANTIC_RELEASE_TAGS_FOUND:
         logger.error('Previous semantic release tag could not be found. Have you initialized semantic-release with command "centipod semantic-release init <version>"');
         break
       default:

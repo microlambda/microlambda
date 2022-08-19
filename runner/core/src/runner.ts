@@ -13,7 +13,7 @@ import { Workspace } from "./workspace";
 import { OrderedTargets, TargetsResolver } from "./targets";
 import { ICacheOptions } from "./cache";
 import { Watcher } from "./watcher";
-import { IAbstractLogger, IAbstractLoggerFunctions } from "./logger";
+import { EventsLog, EventsLogger } from '@microlambda/logger';
 
 export interface ICommonRunOptions{
   mode: 'parallel' | 'topological';
@@ -58,18 +58,16 @@ const isStepCompletedEvent = (evt: RunCommandEvent | StepCompletedEvent): evt is
 
 export class Runner {
   private _watchers = new Map<string, { watcher: Watcher, abort: Subject<void>}>();
-  private _logger: IAbstractLoggerFunctions | undefined;
+  private _logger: EventsLogger | undefined;
 
   constructor(
     private readonly _project: Project,
     private readonly _concurrency: number = 4,
     private readonly _cacheOptions: ICacheOptions = {},
-    logger?: IAbstractLogger,
+    logger?: EventsLog,
   ) {
-    this._logger = logger?.log('@centipod/core/runner');
+    this._logger = logger?.scope('runner-core/runner');
   }
-
-  /**/
 
   private _scheduleTasks(
     cmd: string,

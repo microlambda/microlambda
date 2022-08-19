@@ -1,4 +1,4 @@
-import { IPackagrConfig, ServerlessInstance, IBaseLogger } from '@microlambda/types'
+import { IPackagrConfig, ServerlessInstance } from '@microlambda/types'
 
 export const resolveArchitecture = (serverless: ServerlessInstance, config?: IPackagrConfig): 'arm64' | 'x86_64' => {
   if (config?.architecture) {

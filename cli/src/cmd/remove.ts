@@ -5,9 +5,9 @@ import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 
-export const remove = async (cmd: IDeployCmd, logger: Logger): Promise<void> => {
+export const remove = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> => {
   return new Promise(async () => {
     console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
     const { config, project } = await init(logger);

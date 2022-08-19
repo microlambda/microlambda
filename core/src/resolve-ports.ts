@@ -1,5 +1,5 @@
 import { IConfig } from './config/config';
-import { Logger } from '@microlambda/logger';
+import { EventsLog } from '@microlambda/logger';
 import { Workspace } from '@microlambda/runner-core';
 
 export interface IServicePortsConfig {
@@ -24,10 +24,10 @@ export type PortMap = {
 export const resolvePorts = (
   services: Workspace[],
   config: IConfig,
-  logger?: Logger,
+  logger?: EventsLog,
   defaultPorts = { lambda: 2001, http: 3001, websocket: 6001 },
 ): PortMap => {
-  logger?.log('port').debug('Resolving port from config', config);
+  logger?.scope('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {
     const name = service.name;
@@ -45,6 +45,6 @@ export const resolvePorts = (
     defaultPorts.lambda++;
     defaultPorts.websocket++;
   });
-  logger?.log('port').debug('Ports resolved', result);
+  logger?.scope('port').debug('Ports resolved', result);
   return result;
 };

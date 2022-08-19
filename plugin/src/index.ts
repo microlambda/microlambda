@@ -8,7 +8,7 @@ import {
   Project,
   Workspace,
 } from "@microlambda/core";
-import { createLogger } from "./utils";
+import { PluginLogger } from "@microlambda/logger";
 import {
   afterDeploy,
   afterRemove,
@@ -37,7 +37,7 @@ class ServerlessMicrolambdaPlugin {
 
   constructor(serverless: ServerlessInstance) {
     this.serverless = serverless;
-    this._log = createLogger(
+    this._log = new PluginLogger(
       this.serverless,
       ServerlessMicrolambdaPlugin._pluginName
     );

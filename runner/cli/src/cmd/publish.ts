@@ -1,4 +1,4 @@
-import { Project, resolveProjectRoot } from "@microlambda/runner-core";
+import { Project } from "@microlambda/runner-core";
 import { logger } from "../utils/logger";
 import { resolveWorkspace } from "../utils/validate-workspace";
 import chalk from 'chalk';
@@ -6,6 +6,7 @@ import { createInterface } from "readline";
 import { printActions } from "../utils/print-actions";
 import { printEvent } from "../utils/print-publish-events";
 import semver from 'semver';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export const publish = async (workspaceName: string, bump: semver.ReleaseType, identifier: string | undefined, options: { yes: boolean, access: string, dry: boolean }): Promise<void> => {
   const project =  await Project.loadProject(resolveProjectRoot());
