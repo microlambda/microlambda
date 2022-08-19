@@ -26,6 +26,9 @@ export const logger = {
   info: (...args: unknown[]): void => {
     console.log(args.map(a => printArg(a)).join(' '));
   },
+  success: (...args: unknown[]): void => {
+    console.error(args.map(a => chalk.green.bold(printArg(a))).join(' '));
+  },
   warn: (...args: unknown[]): void => {
     console.error(args.map(a => chalk.yellow.bold(printArg(a))).join(' '));
   },

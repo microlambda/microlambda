@@ -11,7 +11,20 @@ If you are not logged, it is possible to proceed anyway, but some feature as Mic
 To scaffold a new project, the IAM user you are 
 
 ```json
-  
+  {
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CreateChecksumsBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::my-app-mila-checksums"
+    }
+  ]
+}
 ```
 
 ## Create a new project

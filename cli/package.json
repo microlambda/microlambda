@@ -22,6 +22,7 @@
     "@microlambda/config": "workspace:*",
     "@microlambda/core": "workspace:*",
     "@microlambda/generators": "workspace:*",
+    "@microlambda/remote-state": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "@microlambda/server": "workspace:*",
     "chalk": "^4.1.2",

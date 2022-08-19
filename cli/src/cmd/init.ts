@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { prompt } from 'inquirer';
 import { ConfigReader, IConfig } from '@microlambda/config';
+import { verifyStateKeysSchema, createStateTable } from '@microlambda/remote-state';
 
 const readConfig = (): IConfig => {
   let config: IConfig;
@@ -58,7 +59,8 @@ export const init = async () => {
     if (await aws.s3.bucketExists(config.defaultRegion, config.state.checksums)) {
       creatingChecksumsBucket.succeed('Checksums S3 bucket already exists');
     } else {
-      await aws.s3.createBucket(config.defaultRegion, config.state.checksums)
+      await aws.s3.createBucket(config.defaultRegion, config.state.checksums);
+      creatingChecksumsBucket.succeed('Checksums S3 bucket created !');
     }
   } catch (e) {
     creatingChecksumsBucket.fail('Error creating checksums S3 bucket');
@@ -66,11 +68,37 @@ export const init = async () => {
     logger.error(e);
     process.exit(1);
   }
+
+  let creatingStateTable = ora();
+  creatingStateTable.start('Creating remote state table');
+  const onError = (e: unknown) => {
+    creatingStateTable.fail('Error creating remote state');
+    logger.lf();
+    logger.error(e);
+    process.exit(1);
+  }
+  const onSuccess = () => {
+    logger.lf();
+    logger.success('Remote state successfully initialized !')
+    process.exit(0);
+  };
+  try {
+    if (await verifyStateKeysSchema(config)) {
+      creatingStateTable.succeed('Remote state already exists');
+      onSuccess();
+    } else {
+      onError(`A table named ${config.state.table} already exists. Please choose another name in mila.json or remove the existing table.`)
+    }
+  } catch (e) {
+    if ((e as Error).message?.toLowerCase().includes('not found')) {
+      try {
+        await createStateTable(config);
+        creatingStateTable.succeed('Remote state created !');
+        onSuccess();
+      } catch (err) {
+        onError(err);
+      }
+    }
+    onError(e);
+  }
 };
-
-
-/*
-env=dev
-last_deployment=sha1|not_deployed (datetime)
-locked: true | false
- */

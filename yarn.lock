@@ -3545,6 +3545,7 @@ __metadata:
     "@microlambda/config": "workspace:*"
     "@microlambda/core": "workspace:*"
     "@microlambda/generators": "workspace:*"
+    "@microlambda/remote-state": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
     "@microlambda/server": "workspace:*"
     "@types/figlet": ^1.5.4
@@ -3689,6 +3690,16 @@ __metadata:
     chalk: ^4.1.2
     jest: ^27.5.1
     typescript: ^4.5.2
+  languageName: unknown
+  linkType: soft
+
+"@microlambda/remote-state@workspace:*, @microlambda/remote-state@workspace:state":
+  version: 0.0.0-use.local
+  resolution: "@microlambda/remote-state@workspace:state"
+  dependencies:
+    "@microlambda/aws": "workspace:*"
+    "@microlambda/logger": "workspace:*"
+    dynamodels: ^1.6.2
   languageName: unknown
   linkType: soft
 
@@ -6262,6 +6273,24 @@ __metadata:
     uuid: 8.0.0
     xml2js: 0.4.19
   checksum: 110b89c4781ad5b1f1e5c4edd05cfc11e00db37f34d982fbc52609481547e115008cd471141c2538ca53692545c25e0015cd279f5b443c8453e4b15fd260db48
+  languageName: node
+  linkType: hard
+
+"aws-sdk@npm:^2.888.0":
+  version: 2.1198.0
+  resolution: "aws-sdk@npm:2.1198.0"
+  dependencies:
+    buffer: 4.9.2
+    events: 1.1.1
+    ieee754: 1.1.13
+    jmespath: 0.16.0
+    querystring: 0.2.0
+    sax: 1.2.1
+    url: 0.10.3
+    util: ^0.12.4
+    uuid: 8.0.0
+    xml2js: 0.4.19
+  checksum: d461fef39b3d3686686fc10026d6442e52bca7966613bc220131eeb3e5e3353a959ccfe52ffa31b8813e6c17f930599964873648f5eb45e7be6ef8ddb9be9d5f
   languageName: node
   linkType: hard
 
@@ -9190,6 +9219,17 @@ __metadata:
   version: 0.1.2
   resolution: "duplexer@npm:0.1.2"
   checksum: 62ba61a830c56801db28ff6305c7d289b6dc9f859054e8c982abd8ee0b0a14d2e9a8e7d086ffee12e868d43e2bbe8a964be55ddbd8c8957714c87373c7a4f9b0
+  languageName: node
+  linkType: hard
+
+"dynamodels@npm:^1.6.2":
+  version: 1.6.2
+  resolution: "dynamodels@npm:1.6.2"
+  dependencies:
+    "@hapi/joi": ^17.1.1
+    aws-sdk: ^2.888.0
+    uuid: ^3.4.0
+  checksum: b20b789756ebdf94f8b711ead9ba34d76012c30c379ccc866e167cdf19fe514d841c9bfc68ff77b6e4bf3bc1db5dad8cd8761b6fe316ecab4630a2da869098c7
   languageName: node
   linkType: hard
 
@@ -19829,7 +19869,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:^3.0.1, uuid@npm:^3.3.2":
+"uuid@npm:^3.0.1, uuid@npm:^3.3.2, uuid@npm:^3.4.0":
   version: 3.4.0
   resolution: "uuid@npm:3.4.0"
   bin:
