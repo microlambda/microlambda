@@ -1,7 +1,7 @@
 import { aws } from '@microlambda/aws';
-import { IConfig } from '@microlambda/config';
+import { IRootConfig } from '@microlambda/config';
 
-export const createStateTable = async (config: IConfig): Promise<void> => {
+export const createStateTable = async (config: IRootConfig): Promise<void> => {
   await aws.dynamodb.createTable(config.defaultRegion, {
     TableName: config.state.table,
     BillingMode: 'PAY_PER_REQUEST',

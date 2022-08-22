@@ -10,6 +10,7 @@ import { Observable } from 'rxjs';
 import { RunCommandEvent } from './process';
 import { AbstractLogsHandler } from "./logs-handler";
 import { EventsLog } from '@microlambda/logger';
+import { getDefaultThreads } from '@microlambda/utils';
 
 export class Project extends Workspace {
   // Attributes
@@ -93,8 +94,8 @@ export class Project extends Workspace {
     }
   }
 
-  runCommand(cmd: string, options: RunOptions): Observable<RunCommandEvent> {
-    const runner = new Runner(this);
+  runCommand(cmd: string, options: RunOptions, eventsLog?: EventsLog): Observable<RunCommandEvent> {
+    const runner = new Runner(this, getDefaultThreads(), eventsLog);
     return runner.runCommand(cmd, options);
   }
 

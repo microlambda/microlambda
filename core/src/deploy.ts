@@ -3,7 +3,7 @@ import {Project} from "./graph/project";
 import {ConfigReader} from "./config/read-config";
 import {from, mergeAll, Observable} from "rxjs";
 import {map} from "rxjs/operators";
-import {getDefaultThreads} from "./platform";
+import {getDefaultThreads} from "@microlambda/utils";
 import { EventsLog } from '@microlambda/logger';
 
 export type DeployEvent = RunCommandEvent & { region: string };

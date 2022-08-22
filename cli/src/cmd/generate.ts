@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { EventsLog } from '@microlambda/logger';
 import { join, relative } from 'path';
 import { prompt } from 'inquirer';

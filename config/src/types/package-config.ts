@@ -14,7 +14,11 @@ export interface ICommandConfig {
 
 export interface ITargetConfig {
   cmd: string | string[] | ICommandConfig | Array<ICommandConfig>;
-  src?: string[];
+  src?: {
+    internals?: string[];
+    deps?: string[];
+    root?: string[];
+  }
   artifacts?: string[];
 }
 

@@ -3544,10 +3544,13 @@ __metadata:
   dependencies:
     "@microlambda/config": "workspace:*"
     "@microlambda/core": "workspace:*"
+    "@microlambda/errors": "workspace:*"
     "@microlambda/generators": "workspace:*"
+    "@microlambda/logger": "workspace:*"
     "@microlambda/remote-state": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
     "@microlambda/server": "workspace:*"
+    "@microlambda/utils": "workspace:*"
     "@types/figlet": ^1.5.4
     "@types/inquirer": ^8.1.3
     "@types/node": ^16.11.10
@@ -3613,6 +3616,7 @@ __metadata:
     "@microlambda/logger": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
     "@microlambda/types": "workspace:*"
+    "@microlambda/utils": "workspace:*"
     "@types/archiver": ^5.1.1
     "@types/fs-extra": ^9.0.13
     "@types/hapi__joi": ^17.1.7
@@ -3782,6 +3786,8 @@ __metadata:
 "@microlambda/utils@workspace:*, @microlambda/utils@workspace:utils":
   version: 0.0.0-use.local
   resolution: "@microlambda/utils@workspace:utils"
+  dependencies:
+    "@microlambda/errors": "workspace:*"
   languageName: unknown
   linkType: soft
 

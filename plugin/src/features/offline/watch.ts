@@ -1,7 +1,8 @@
-import { getTsConfig, Workspace } from "@microlambda/core";
+import { Workspace } from "@microlambda/core";
 import { watch } from "chokidar";
 import { transpile } from "./compile";
 import { IBaseLogger } from '@microlambda/types';
+import { getTsConfig } from '@microlambda/utils';
 
 export const watchFiles = (service: Workspace, logger?: IBaseLogger): void => {
   const files: string[] = [];

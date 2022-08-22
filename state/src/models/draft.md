@@ -4,10 +4,25 @@ k1: dev
 k2: env
 current: $sha1
 last_deployed: datetime
+services: number;
 status: 'success' | 'failure'
 default_regions: [eu-west-1, ap-southeast-2]
 
 Service
+
+k1: @my-app/service
+k2: services|$env
+k3: services
+env: dev
+current: $sha1
+current_checksums: s3://
+last_deployment: pk
+last_deployed: datetime
+status: 'success' | 'failure'
+regions: [eu-west-1, ap-southeast-2]
+precedence: 0
+
+Service instance
 
 k1: @my-app/service
 k2: services|$env

@@ -82,7 +82,7 @@ export class ConfigReader {
     const { error, value } = ConfigReader.schemas.package.validate(raw);
     if (error) {
       this._logger?.error('Invalid config file', path,  error);
-      throw new MilaError(MilaErrorCode.INVALID_PACKAGE_CONFIG, `Invalid root configuration ${path}`, error);
+      throw new MilaError(MilaErrorCode.INVALID_PACKAGE_CONFIG, `Invalid package configuration ${path}`, error);
     }
     const config = value;
     const targets = config.targets || {};

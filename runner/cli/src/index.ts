@@ -6,26 +6,13 @@ import { affected } from './cmd/affected';
 import { isAffected } from './cmd/is-affected';
 import { publish } from './cmd/publish';
 import { run } from './cmd/run';
-import { logger } from './utils/logger';
+import { commandWrapper } from './utils/command-wapper';
 
 // TODO: Validate command input
 
 const program = new Command();
 
 program.version('0.0.1-alpha');
-
-const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false): Promise<void> => {
-  try {
-    await fn();
-    if (!keepOpen) {
-      process.exit(0);
-    }
-  } catch (e) {
-    logger.error(chalk.bgRedBright('Uncaught error:'));
-    logger.error(e);
-    process.exit(1);
-  }
-};
 
 program
   .command('list [workspace]')

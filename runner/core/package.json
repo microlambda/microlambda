@@ -12,6 +12,7 @@
   "dependencies": {
     "@microlambda/errors": "workspace:*",
     "@microlambda/logger": "workspace:*",
+    "@microlambda/utils": "workspace:*",
     "chokidar": "^3.5.3",
     "conventional-commits-parser": "^3.2.1",
     "debug": "^4.3.3",

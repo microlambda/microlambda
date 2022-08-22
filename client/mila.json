@@ -5,9 +5,15 @@
       "cmd": [
         "../node_modules/.bin/vite build"
       ],
-      "src": [
-        "src/**/*.ts"
-      ]
+      "src": {
+        "internals": [
+          "src/**/*.ts",
+          "tsconfig.json"
+        ],
+        "root": [
+          "tsconfig.json"
+        ]
+      }
     }
   }
 }

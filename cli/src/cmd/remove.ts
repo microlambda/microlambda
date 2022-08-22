@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import inquirer from 'inquirer';
 import {Deployer, DeployEvent} from '@microlambda/core';
 import chalk from 'chalk';

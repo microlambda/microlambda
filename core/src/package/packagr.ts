@@ -1,6 +1,5 @@
 import { dirname, join, relative } from 'path';
 import { copy, copyFile, mkdirp, pathExists, readJSONSync, remove, statSync, writeJSONSync } from 'fs-extra';
-import { getTsConfig } from '../typescript';
 import { createWriteStream } from 'fs';
 import archiver from 'archiver';
 import { sync as glob } from 'glob';
@@ -10,7 +9,7 @@ import { command } from 'execa';
 import { Workspace as CentipodWorkspace} from "@microlambda/runner-core";
 import { Workspace } from '../graph/workspace';
 import { Project } from '../graph/project';
-import { resolveProjectRoot } from '@microlambda/utils';
+import { resolveProjectRoot, getTsConfig } from '@microlambda/utils';
 
 export class Packager {
   private readonly _projectRoot: string;

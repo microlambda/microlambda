@@ -33,7 +33,7 @@ export class TargetsResolver {
       const hasCommand = workspace.hasCommand(cmd);
       if (hasCommand && options.affected?.rev1) {
         const patterns = workspace.config[cmd].src;
-        const isAffected = await workspace.isAffected(options.affected.rev1, options.affected.rev2, patterns, options.mode === 'topological');
+        const isAffected = await workspace.isAffected(options.affected.rev1, options.affected.rev2, patterns?.internals, options.mode === 'topological');
         targets.push({ workspace, affected: isAffected, hasCommand})
       } else {
         targets.push({ workspace, affected: true, hasCommand})

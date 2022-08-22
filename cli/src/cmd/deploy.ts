@@ -1,14 +1,14 @@
-/* eslint-disable no-console */
 import { beforePackage, IPackageCmd, packageServices } from "./package";
 import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import {prompt} from 'inquirer';
-import {ConfigReader, Deployer, DeployEvent, getAccountIAM, IConfig} from '@microlambda/core';
+import {ConfigReader, Deployer, DeployEvent, IConfig} from '@microlambda/core';
 import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
 import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
 import { EventsLog } from "@microlambda/logger";
+import { aws } from "@microlambda/aws";
 
 export interface IDeployCmd extends IPackageCmd {
   e: string;
@@ -30,11 +30,12 @@ export const checkEnv = (config: IConfig, cmd: { e: string | null }, msg: string
 };
 
 export const getCurrentUserIAM = async (): Promise<string> => {
-  return getAccountIAM().catch((err: unknown) => {
+  const user = await aws.iam.getCurrentUser(process.env.AWS_REGION || 'eu-west-1').catch((err: unknown) => {
     console.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
     console.error(chalk.red('Original error: ' + err));
     process.exit(1);
   });
+  return user.arn;
 };
 
 export const handleNext = (

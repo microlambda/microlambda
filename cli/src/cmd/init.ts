@@ -3,28 +3,10 @@ import { logger } from '../utils/logger';
 import chalk from 'chalk';
 import ora from 'ora';
 import { prompt } from 'inquirer';
-import { ConfigReader, IRootConfig } from '@microlambda/config';
 import { verifyStateKeysSchema, createStateTable } from '@microlambda/remote-state';
+import { readConfig } from '../utils/read-config';
 
-const readConfig = (): IRootConfig => {
-  let config: IRootConfig;
-  const readingConfig = ora();
-  try {
-    readingConfig.start('Loading configuration');
-    const configReader = new ConfigReader();
-    config = configReader.rootConfig;
-    readingConfig.succeed('Configuration loaded');
-    logger.lf();
-  } catch (e) {
-    readingConfig.fail((e as Error).message || 'Error reading config file');
-    logger.lf();
-    logger.error(e);
-    process.exit(1);
-  }
-  return config;
-}
-
-export const init = async () => {
+export const init = async (cmd: { prompt: boolean }) => {
   logger.lf();
   logger.info('✨ Initializing remote state');
   logger.lf();
@@ -39,17 +21,19 @@ export const init = async () => {
     process.exit(1);
   }
 
-  const confirm = await prompt([{
-    type: 'confirm',
-    name: 'proceed',
-    message: 'Do you want to proceed',
-    default: false,
-  }]);
+  if (cmd.prompt) {
+    const confirm = await prompt([{
+      type: 'confirm',
+      name: 'proceed',
+      message: 'Do you want to proceed',
+      default: false,
+    }]);
 
-  if (!confirm.proceed) {
-    logger.lf();
-    logger.hint('Aborted by user');
-    process.exit(0);
+    if (!confirm.proceed) {
+      logger.lf();
+      logger.hint('Aborted by user');
+      process.exit(0);
+    }
   }
 
   logger.lf();

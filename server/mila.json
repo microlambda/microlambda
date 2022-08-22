@@ -6,9 +6,15 @@
         "../node_modules/.bin/tsc --build",
         "cp -r ../client/dist/. ./dist/static"
       ],
-      "src": [
-        "src/**/*.ts"
-      ]
+      "src": {
+        "internals": [
+          "src/**/*.ts",
+          "tsconfig.json"
+        ],
+        "root": [
+          "tsconfig.json"
+        ]
+      }
     }
   }
 }

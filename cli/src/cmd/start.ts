@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { IOSocketManager, startServer } from "@microlambda/server";
 import { showOff } from '../utils/ascii';
 import ora from 'ora';

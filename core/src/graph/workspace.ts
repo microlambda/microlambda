@@ -1,7 +1,7 @@
 import { InMemoryLogHandler, Workspace as CentipodWorkspace } from "@microlambda/runner-core";
 import {existsSync} from "fs";
 import {join} from "path";
-import {transpileFiles} from "../typescript";
+import {transpileFiles} from "@microlambda/utils";
 import { ICommandMetrics, ICommandMetric, ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
 import { IServicePortsConfig } from "../resolve-ports";
 import { LogsFileHandler } from "../log-handlers/file";

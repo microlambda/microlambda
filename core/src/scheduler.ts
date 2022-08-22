@@ -1,6 +1,6 @@
 import { Subject, Subscription } from "rxjs";
 import { EventsLog, EventsLogger } from "@microlambda/logger";
-import { getDefaultThreads } from "./platform";
+import { getDefaultThreads } from "@microlambda/utils";
 import { Workspace } from "./graph/workspace";
 import { Project } from "./graph/project";
 import { RunCommandEvent, RunCommandEventEnum, Runner } from "@microlambda/runner-core";

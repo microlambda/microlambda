@@ -1,10 +1,10 @@
-import { LogFilesHandler, Workspace } from "@microlambda/runner-core";
 import { join } from 'path';
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from "fs";
-import { IEventsLogEntry, IEventsLogHandler } from "@microlambda/logger";
+import { IEventsLogEntry } from '../events-log-entry';
+import { IEventsLogHandler } from './events-log-handler';
 import { resolveProjectRoot } from '@microlambda/utils';
 
-export class LogsFileHandler extends LogFilesHandler {
+/*export class LogsFileHandler extends LogFilesHandler {
 
   readonly projectRoot: string;
   readonly logsRoot: string;
@@ -25,20 +25,20 @@ export class LogsFileHandler extends LogFilesHandler {
   path(target: string): string {
     return join(this.logsRoot, `${this.workspace.name.replace('/', '-')}.${target}.logs`);
   }
-}
+}*/
 
 export class EventLogsFileHandler implements IEventsLogHandler {
   private _stream: WriteStream;
 
-  constructor() {
-    const folder = join(resolveProjectRoot(), '.mila');
+  constructor(logFile: string) {
+    const folder = join(resolveProjectRoot(), '.mila', 'events-logs');
     if (!existsSync(folder)) {
       mkdirSync(folder, { recursive: true });
     }
-    this._stream = createWriteStream(join(folder, 'events.log'));
+    this._stream = createWriteStream(join(folder, logFile));
   }
 
   write(entry: IEventsLogEntry): void {
-    this._stream.write(`\n[${entry.level}] (${entry.date}) ${entry.args.join(' ')}`);
+    this._stream.write(`\n[${entry.level}] (${entry.scope || 'unscoped'}) (${entry.date}) ${entry.args.join(' ')}`);
   };
 }

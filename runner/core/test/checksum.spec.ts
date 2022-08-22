@@ -2,7 +2,7 @@ import { stub } from "sinon";
 import { promises as fs } from "fs";
 // @ts-ignore
 import {Cache} from "../src/cache";
-import {Checksum} from "../src/checksum";
+import {Checksums} from "../src/checksum";
 // @ts-ignore
 import {CentipodError, CentipodErrorCode, Workspace} from "../src";
 import fastGlob from 'fast-glob';
@@ -18,7 +18,7 @@ describe('[class] Checksum manager', () => {
       readFile.rejects();
       readFile.withArgs('/tmp/fake/location/.caches/baz/checksums.json').resolves(Buffer.from(JSON.stringify({ file1: 'a676fd3' })));
       const cache = new Cache(workspace as Workspace, 'baz');
-      const checksum = new Checksum(cache);
+      const checksum = new Checksums(cache);
       const res = await checksum.read();
       readFile.restore();
       expect(res).toEqual({ file1: 'a676fd3' });
@@ -30,7 +30,7 @@ describe('[class] Checksum manager', () => {
       const readFile = stub(fs, 'readFile');
       readFile.rejects();
       const cache = new Cache(workspace as Workspace, 'baz');
-      const checksum = new Checksum(cache);
+      const checksum = new Checksums(cache);
       const res = await checksum.read();
       readFile.restore();
       expect(res).toEqual({});
@@ -43,7 +43,7 @@ describe('[class] Checksum manager', () => {
       readFile.rejects();
       readFile.withArgs('/tmp/fake/location/.caches/baz/checksums.json').resolves(Buffer.from('Invalid checksums'));
       const cache = new Cache(workspace as Workspace, 'baz');
-      const checksum = new Checksum(cache);
+      const checksum = new Checksums(cache);
       const res = await checksum.read();
       readFile.restore();
       expect(res).toEqual({});
@@ -84,7 +84,7 @@ describe('[class] Checksum manager', () => {
       fromFile.withArgs('/tmp/fake/location/test/index.spec.ts', { algorithm: 'sha256' }).resolves(Buffer.from('7890'));
       fromFile.withArgs('/tmp/fake/location/test/foo.spec.ts', { algorithm: 'sha256' }).resolves(Buffer.from('1234'));
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
-      const checksum = new Checksum(cache);
+      const checksum = new Checksums(cache);
       const calculated = await checksum.calculate();
       glob.restore();
       fromFile.restore();
@@ -120,7 +120,7 @@ describe('[class] Checksum manager', () => {
       fromFile.rejects();
       fromFile.withArgs('/tmp/fake/location/src/index.ts', { algorithm: 'sha256' }).resolves(Buffer.from('1234'));
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
-      const checksum = new Checksum(cache);
+      const checksum = new Checksums(cache);
       const calculated = await checksum.calculate();
       glob.restore();
       fromFile.restore();
@@ -150,7 +150,7 @@ describe('[class] Checksum manager', () => {
       glob.withArgs('/tmp/fake/location/test/**/*.ts').returns([]);
       try {
         const cache = new Cache(workspace as unknown as Workspace, 'foo');
-        const checksum = new Checksum(cache);
+        const checksum = new Checksums(cache);
         await checksum.calculate();
         glob.restore();
         fail('should throw');

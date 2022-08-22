@@ -13,7 +13,7 @@ import {
   IProcessResult,
   isDaemon,
 } from "./process";
-import { Cache, ICacheOptions } from "./cache";
+import { Cache } from "./cache";
 import {Publish, PublishActions, PublishEvent} from './publish';
 import { Observable, race, throwError } from "rxjs";
 import {MilaError, MilaErrorCode} from '@microlambda/errors';
@@ -25,6 +25,7 @@ import processTree from "ps-tree";
 import { isPortAvailable } from "./port-available";
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { ITargetsConfig, ConfigReader, ILogsCondition, ICommandConfig } from '@microlambda/config';
+import { Artifacts } from './artifacts';
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -406,6 +407,7 @@ export class Workspace {
 
   private async _runCommandsAndCache(
     cache: Cache,
+    artifacts: Artifacts,
     target: string,
     args: string[] | string = [],
     env: {[key: string]: string} = {},
@@ -418,6 +420,7 @@ export class Workspace {
         this._logger?.info('All success, caching result', { cmd: target, target: this.name });
         const toCache: Array<ICommandResult> = results.filter((r) => !isDaemon(r)) as Array<ICommandResult>;
         await cache.write(toCache);
+        await artifacts.write();
         this._logger?.info('Successfully cached', { cmd: target, target: this.name });
         this._logger?.debug('Emitting', { cmd: target, target: this.name });
         return { commands: results, fromCache: false, overall: results.reduce((acc, val) => acc + val.took, 0) };
@@ -443,16 +446,20 @@ export class Workspace {
     force = false,
     args: string[] | string = [],
     env: {[key: string]: string} = {},
-    options: ICacheOptions = {},
     stdio: 'pipe' | 'inherit' = 'pipe',
   ): Promise<IProcessResult> {
     const now = Date.now();
     this._logger?.info('Running command', { target: this.name, cmd: target, args, env });
-    const cache = new Cache(this, target, args, env, options, this.eventsLog);
+    const cache = new Cache(this, target, args, env, this.eventsLog);
+    const artifacts = new Artifacts(this, target, args, env, this.eventsLog);
     try {
       const cachedOutputs = await cache.read();
+      const areArtifactsValid = await artifacts.checkArtifacts();
       this._logger?.info('Cache read', { cmd: target, target: this.name }, cachedOutputs);
-      if (!force && cachedOutputs) {
+      if (force) {
+        await artifacts.removeArtifacts();
+      }
+      if (!force && cachedOutputs && areArtifactsValid) {
         this._logger?.info('From cache', { cmd: target, target: this.name });
         this._handleLogs('open', target);
         cachedOutputs.forEach((output) => {
@@ -464,11 +471,11 @@ export class Workspace {
         return { commands: cachedOutputs, overall: Date.now() - now, fromCache: true };
       }
       this._logger?.info('Cache outdated', { cmd: target, target: this.name });
-      return this._runCommandsAndCache(cache, target, args, env, stdio);
+      return this._runCommandsAndCache(cache, artifacts, target, args, env, stdio);
     } catch (e) {
       this._logger?.warn('Error reading cache', { cmd: target, target: this.name });
       // Error reading from cache
-      return this._runCommandsAndCache(cache, target, args, env, stdio);
+      return this._runCommandsAndCache(cache, artifacts, target, args, env, stdio);
     }
   }
 
@@ -478,13 +485,12 @@ export class Workspace {
     args: string[] | string = [],
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
-    options: ICacheOptions = {},
   ): Observable<IProcessResult> {
     this._logger?.info('Preparing command', { cmd: target, workspace: this.name });
     return new Observable<IProcessResult>((obs) => {
       this._logger?.info('Running cmd', { cmd: target, target: this.name });
       this._logger?.debug('Running cmd', target)
-      this._run(target, force, args, env, options, stdio)
+      this._run(target, force, args, env, stdio)
         .then((result) => {
           this._logger?.info('Success', { cmd: target, target: this.name }, result);
           obs.next(result)

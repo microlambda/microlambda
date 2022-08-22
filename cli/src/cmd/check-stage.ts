@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import chalk from 'chalk';
 import { ConfigReader } from '@microlambda/core';
 import { EventsLog } from "@microlambda/logger";

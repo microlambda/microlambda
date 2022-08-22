@@ -11,7 +11,6 @@ import {
 import { Project } from "./project";
 import { Workspace } from "./workspace";
 import { OrderedTargets, TargetsResolver } from "./targets";
-import { ICacheOptions } from "./cache";
 import { Watcher } from "./watcher";
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 
@@ -63,8 +62,7 @@ export class Runner {
   constructor(
     private readonly _project: Project,
     private readonly _concurrency: number = 4,
-    private readonly _cacheOptions: ICacheOptions = {},
-    logger?: EventsLog,
+    readonly logger?: EventsLog,
   ) {
     this._logger = logger?.scope('runner-core/runner');
   }
@@ -118,7 +116,6 @@ export class Runner {
       this._logger?.info('Resolving for command', cmd);
       const targets = new TargetsResolver(this._project, this._logger?.logger);
       targets.resolve(cmd, options).then((targets) => {
-        // TODO: Validate configurations for each targets
         this._logger?.info('Targets resolved for command', cmd, targets.map(s => s.map(t => t.workspace.name)));
         obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: targets.flat() });
         if (!targets.length) {
@@ -295,7 +292,7 @@ export class Runner {
     this._logger?.info('Preparing step', targets.indexOf(step), { cmd });
     const tasks$ = step
       .filter((w) => !only || only.has(w.workspace))
-      .map((w) => this._runForWorkspace(executions, w, cmd, force, watch, mode, args, stdio, env, this._cacheOptions));
+      .map((w) => this._runForWorkspace(executions, w, cmd, force, watch, mode, args, stdio, env));
     const step$ = from(tasks$).pipe(
       mergeAll(this._concurrency),
     );
@@ -381,11 +378,10 @@ export class Runner {
     args: string[] | string = [],
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
-    cacheOptions: ICacheOptions = {},
   ): Observable<RunCommandEvent> {
     if (target.affected && target.hasCommand) {
       const started$: Observable<RunCommandEvent>  = of({ type: RunCommandEventEnum.NODE_STARTED, workspace: target.workspace });
-      const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(target, cmd, force, args, stdio, env, cacheOptions).pipe(
+      const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(target, cmd, force, args, stdio, env).pipe(
         concatMap((result) => this._mapToRunCommandEvents(cmd, executions, result, target, mode, watch)),
       );
       return concat(
@@ -403,10 +399,9 @@ export class Runner {
     args: string[] | string = [],
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
-    cacheOptions: ICacheOptions = {},
   ) : Observable<CaughtProcessExecution>{
     this._logger?.info('Preparing command', {cmd, workspace: target.workspace.name});
-    const command$ = target.workspace.run(cmd, force, args, stdio, env, cacheOptions);
+    const command$ = target.workspace.run(cmd, force, args, stdio, env);
     return command$.pipe(
       map((result) => ({ status: 'ok' as const, result, target })),
       catchError((error) => of({ status: 'ko' as const, error, target })),

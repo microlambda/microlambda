@@ -3,7 +3,7 @@ import {Cache} from "../src/cache";
 // @ts-ignore
 import {CentipodErrorCode, CentipodError, Workspace} from "../src";
 import {spy, stub } from "sinon";
-import {Checksum} from "../src/checksum";
+import {Checksums} from "../src/checksum";
 import { promises as nodeFs } from 'fs';
 import { logger } from '../src/logger';
 import { F_OK } from 'constants';
@@ -22,8 +22,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
@@ -62,8 +62,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
@@ -98,8 +98,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       checksums.calculate.resolves({
         cmd: 'foo',
@@ -125,8 +125,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       checksums.calculate.rejects('Error happened calculating checksums')
       checksums.read.resolves({
@@ -152,8 +152,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
@@ -187,8 +187,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
@@ -223,8 +223,8 @@ describe('[class] Cache manager', () => {
       }
       const cache = new Cache(workspace as unknown as Workspace, 'foo');
       const checksums = {
-        calculate: stub(Checksum.prototype, 'calculate'),
-        read: stub(Checksum.prototype, 'read'),
+        calculate: stub(Checksums.prototype, 'calculate'),
+        read: stub(Checksums.prototype, 'read'),
       };
       const log = spy(logger, 'warn');
       checksums.calculate.rejects(new CentipodError(CentipodErrorCode.NO_FILES_TO_CACHE, 'No path to cache'));
@@ -247,7 +247,7 @@ describe('[class] Cache manager', () => {
       const access = stub(nodeFs, 'access');
       const mkdir = stub(nodeFs, 'mkdir');
       const writeFile = stub(nodeFs, 'writeFile');
-      const calculate = stub(Checksum.prototype, 'calculate');
+      const calculate = stub(Checksums.prototype, 'calculate');
       calculate.resolves({ foo: 'bar' });
       access.rejects();
       writeFile.resolves();
@@ -274,7 +274,7 @@ describe('[class] Cache manager', () => {
       const access = stub(nodeFs, 'access');
       const mkdir = stub(nodeFs, 'mkdir');
       const writeFile = stub(nodeFs, 'writeFile');
-      const calculate = stub(Checksum.prototype, 'calculate');
+      const calculate = stub(Checksums.prototype, 'calculate');
       calculate.resolves({ foo: 'bar' });
       access.rejects();
       access.withArgs('/tmp/fake/location/.caches/foo', F_OK).resolves();
@@ -300,7 +300,7 @@ describe('[class] Cache manager', () => {
     it('should use cached checksums if available', async () => {
       const access = stub(nodeFs, 'access');
       const writeFile = stub(nodeFs, 'writeFile');
-      const calculate = stub(Checksum.prototype, 'calculate');
+      const calculate = stub(Checksums.prototype, 'calculate');
       calculate.rejects();
       access.resolves();
       writeFile.resolves();
@@ -326,7 +326,7 @@ describe('[class] Cache manager', () => {
     it('should recalculate checksums if not cached in class memory', async () => {
       const access = stub(nodeFs, 'access');
       const writeFile = stub(nodeFs, 'writeFile');
-      const calculate = stub(Checksum.prototype, 'calculate');
+      const calculate = stub(Checksums.prototype, 'calculate');
       calculate.resolves({ foo: 'bar' });
       access.rejects();
       writeFile.resolves();
@@ -350,7 +350,7 @@ describe('[class] Cache manager', () => {
       const access = stub(nodeFs, 'access');
       const mkdir = stub(nodeFs, 'mkdir');
       const writeFile = stub(nodeFs, 'writeFile');
-      const calculate = stub(Checksum.prototype, 'calculate');
+      const calculate = stub(Checksums.prototype, 'calculate');
       const invalidate = stub(Cache.prototype, 'invalidate');
       const log = stub(logger, 'warn');
       const workspace = {

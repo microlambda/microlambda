@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-import { getDefaultThreads, getThreads } from '@microlambda/core';
+import { getDefaultThreads, getThreads } from '@microlambda/utils';
 import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import { concat, merge, Observable } from 'rxjs';
 import { spawn } from 'child_process';

@@ -38,7 +38,7 @@ export class Watcher {
     this.unwatch();
     const filesChanges = new Map<IResolvedTarget, Array<IChangeEvent>>();
     this.targets.forEach((target) => {
-      const patterns = target.workspace.config[this.cmd]?.src;
+      const patterns = target.workspace.config[this.cmd]?.src?.internals;
       patterns?.forEach((glob) => {
         this._logger?.info('Watching', join(target.workspace.root, glob));
         this._watcher = watch(join(target.workspace.root, glob)).on('all', (event, path) => {

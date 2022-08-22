@@ -18,7 +18,11 @@ export const targetConfigSchema = joi.object().keys({
     commandConfigSchema.required(),
     joi.array().items(commandConfigSchema.required()).required(),
   ),
-  src: joi.array().items(joi.string().required()).optional(),
+  src: joi.object().keys({
+    internals: joi.array().items(joi.string().required()).optional(),
+    deps: joi.array().items(joi.string().required()).optional(),
+    root: joi.array().items(joi.string().required()).optional(),
+  }).optional(),
   artifacts: joi.array().items(joi.string().required()).optional(),
 })
 

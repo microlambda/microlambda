@@ -1,5 +1,6 @@
-import { getTsConfig, Workspace } from "@microlambda/core";
+import { Workspace } from "@microlambda/core";
 import { IBaseLogger } from "@microlambda/types";
+import { getTsConfig } from '@microlambda/utils';
 
 export const resolveOutDir = (service: Workspace, logger?: IBaseLogger): string => {
   let outDir: string | undefined;

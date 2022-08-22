@@ -21,6 +21,7 @@
   "dependencies": {
     "@microlambda/config": "workspace:*",
     "@microlambda/core": "workspace:*",
+    "@microlambda/errors": "workspace:*",
     "@microlambda/generators": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/remote-state": "workspace:*",

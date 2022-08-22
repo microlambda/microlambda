@@ -3,10 +3,12 @@
   "targets": {
     "test": {
       "cmd":"../../node_modules/.bin/jest",
-      "src": [
-        "src/**/*.ts",
-        "test/**"
-      ]
+      "src": {
+        "internals": [
+          "src/**/*.ts",
+          "test/**"
+        ]
+      }
     }
   }
 }

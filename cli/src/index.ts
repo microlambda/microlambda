@@ -1,47 +1,69 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 import { Command } from 'commander';
 import { start } from './cmd';
 import { checkStage } from './cmd/check-stage';
 import { checkService } from './cmd/check-service';
 import { build } from './cmd/build';
-import chalk from 'chalk';
 import { packagr } from './cmd/package';
 import { deploy } from './cmd/deploy';
-import { getDefaultThreads, loadEnv } from '@microlambda/core';
+import { getDefaultThreads } from '@microlambda/utils';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
-import { resolveProjectRoot } from "@microlambda/utils";
 import { logs } from "./cmd/logs";
 import { EventsLog } from "@microlambda/logger";
 import { EventLogsFileHandler } from '@microlambda/core';
 import { init } from './cmd/init';
+import { commandWrapper } from './utils/command-wapper';
 
-// TODO: Clean commands descriptions
-
-// Logger must be a singleton
-const logger = new EventsLog(undefined, [new EventLogsFileHandler()]);
+const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler()]);
 
 const program = new Command();
 
-program.version('0.2.3-alpha');
+program.version('1.0.0-alpha.2');
 
-const commandWrapper = async (fn: () => Promise<void> | void, keepOpen = false): Promise<void> => {
-  try {
-    const projectRoot = resolveProjectRoot();
-    loadEnv(projectRoot);
-    await fn();
-    if (!keepOpen) {
-      process.exit(0);
-    }
-  } catch (e) {
-    // TODO: Catch and print properly centipod errors
-    console.error(chalk.bgRedBright('Uncaught error:'));
-    console.error(e);
-    process.exit(1);
-  }
-};
+program
+  .command('init')
+  .option('--no-prompt', 'skip asking user confirmation before initializing', false)
+  .description('Initialize remote state for current project.')
+  .action(async (cmd) => {
+    await commandWrapper(async () => {
+      await init(cmd);
+    })
+  });
+
+const envs = program
+  .command('envs')
+  .description('Manage deployed environments.');
+
+envs
+  .command('list')
+  .description('List environments deployed in current AWS subscription.')
+  .action(() => {
+    console.debug('Kikoo');
+  });
+
+envs
+  .command('new <name>')
+  .description('Create a new environment un current AWS subscription.')
+  .action(() => {
+    console.debug('Kikoo');
+  });
+
+envs
+  .command('describe <name>')
+  .description('Print details of an exiting environments.')
+  .action(() => {
+    console.debug('Kikoo');
+  });
+
+envs
+  .command('destroy <name>')
+  .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
+  .action(() => {
+    console.debug('Kikoo');
+  });
+
 
 // FIXME
 program
@@ -61,8 +83,8 @@ program
           port: cmd.P || 4545,
           interactive: cmd.interactive,
         };
-        logger.scope('cmd').debug(options);
-        await start(cmd, logger);
+        eventsLog.scope('cmd').debug(options);
+        await start(cmd, eventsLog);
       }, true),
   );
 
@@ -73,25 +95,15 @@ program
   .requiredOption('-s <service>, --service <service>', 'the service for which you want to see logs', false)
   .description('print service logs')
   .action(async (cmd) => {
-    await logs(cmd, logger, scheduler);
+    await logs(cmd, eventsLog, scheduler);
   });*/
 
 program
   .command('logs <service> [command]')
   .description('print service logs')
   .action(async (service, command) => {
-    await logs(service, command, logger);
+    await logs(service, command, eventsLog);
   });
-
-program
-  .command('check-stage <stage>')
-  .description('check if stage is allowed')
-  .action(
-    async (cmd) =>
-      await commandWrapper(async () => {
-        await checkStage(cmd);
-      }),
-  );
 
 program
   .command('check-service <service>')
@@ -151,7 +163,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await build(cmd, logger);
+        await build(cmd, eventsLog);
       }),
   );
 
@@ -167,7 +179,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await packagr(cmd, logger);
+        await packagr(cmd, eventsLog);
       }),
   );
 
@@ -189,7 +201,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await deploy(cmd, logger);
+        await deploy(cmd, eventsLog);
       }),
   );
 
@@ -209,7 +221,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await remove(cmd, logger);
+        await remove(cmd, eventsLog);
       }),
   );
 
@@ -228,7 +240,7 @@ program
   .action(
     async () =>
       await commandWrapper(async () => {
-        //await runTests(cmd, scheduler, logger);
+        //await runTests(cmd, scheduler, eventsLog);
       }),
   );
 
@@ -238,15 +250,8 @@ program
   .action(
     async (blueprint: string) =>
       await commandWrapper(async () => {
-        await generate(blueprint, logger);
+        await generate(blueprint, eventsLog);
       }),
   );
-
-program
-  .command('init')
-  .description('initialize new project with the CLI wizard')
-  .action(async () => {
-    await init();
-  });
 
 (async (): Promise<Command> => program.parseAsync(process.argv))();

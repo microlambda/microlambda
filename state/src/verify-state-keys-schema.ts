@@ -1,5 +1,5 @@
 import { aws } from '@microlambda/aws';
-import { IConfig } from '@microlambda/config';
+import { IRootConfig } from '@microlambda/config';
 
 const keySchemaEquals = (actual?: Array<{ KeyType: 'HASH' | 'RANGE' | string | undefined; AttributeName: string | undefined; }>, expected = ''): boolean => {
   const [expectedHash, expectedRange] = expected.split(',');
@@ -8,7 +8,7 @@ const keySchemaEquals = (actual?: Array<{ KeyType: 'HASH' | 'RANGE' | string | u
   return expectedHash === actualHash && expectedRange === actualRange;
 }
 
-export const verifyStateKeysSchema = async (config: IConfig): Promise<boolean> => {
+export const verifyStateKeysSchema = async (config: IRootConfig): Promise<boolean> => {
   const metadata = await aws.dynamodb.describeTable(config.defaultRegion, config.state.table);
   const checkKeys = metadata?.Table?.KeySchema?.length === 2 && keySchemaEquals(metadata?.Table?.KeySchema, 'k1,k2');
   const checkGSIs =
