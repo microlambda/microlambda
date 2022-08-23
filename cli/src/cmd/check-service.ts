@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { EventsLog } from '@microlambda/logger';
-import { init } from './start';
 import { resolveProjectRoot } from '@microlambda/utils';
+import { init } from '../utils/init';
 
 export const checkService = async (cmd: string): Promise<void> => {
   const logger = new EventsLog();

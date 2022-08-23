@@ -1,6 +1,6 @@
 import joi from 'joi';
 import { regions } from '../regions';
-import { targetConfigSchema, targetsConfigSchema } from './target-config';
+import { targetsConfigSchema } from './target-config';
 
 export const rootConfigSchema = joi.object().keys({
   defaultRegion: joi.string().valid(...regions).required(),

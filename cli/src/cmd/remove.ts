@@ -2,11 +2,11 @@ import inquirer from 'inquirer';
 import {Deployer, DeployEvent} from '@microlambda/core';
 import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
-import { init } from './start';
 import Spinnies from 'spinnies';
 import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
+import { init } from '../utils/init';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
   return new Promise(async () => {
@@ -14,7 +14,7 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
     const projectRoot = resolveProjectRoot();
     const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-remove-${Date.now()}`)]);
     const { config, project } = await init(projectRoot, eventsLog);
-    checkEnv(config, cmd, 'You must provide a target stage to remove services');
+    //checkEnv(config, cmd, 'You must provide a target stage to remove services');
     const service = cmd.s ? project.services.get(cmd.s) : null;
     if (cmd.s && !service) {
       logger.error(chalk.red('Error: unknown service', cmd.s));

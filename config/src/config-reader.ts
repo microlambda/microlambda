@@ -1,4 +1,3 @@
-import { resolveProjectRoot } from '@microlambda/utils';
 import { dirname, join } from 'path';
 import { existsSync, readJSONSync } from 'fs-extra';
 import { regions } from './regions';
@@ -20,7 +19,7 @@ export class ConfigReader {
   private readonly _logger;
   static readonly scope = 'config/reader';
 
-  constructor(readonly eventsLog?: EventsLog) {
+  constructor(readonly projectRoot: string, readonly eventsLog?: EventsLog) {
     this._logger = eventsLog?.scope(ConfigReader.scope);
   }
 
@@ -35,12 +34,11 @@ export class ConfigReader {
     if (this._configs.root) {
       return this._configs.root;
     }
-    const projectRoot = resolveProjectRoot();
-    this._logger?.debug('Project root resolved', projectRoot);
-    const configPath = join(projectRoot, 'mila.json');
-    this._logger?.debug('Reading config at', projectRoot);
+    this._logger?.debug('Project root resolved', this.projectRoot);
+    const configPath = join(this.projectRoot, 'mila.json');
+    this._logger?.debug('Reading config at', this.projectRoot);
     if (!existsSync(configPath)) {
-      this._logger?.error('Root configuration file not found', projectRoot);
+      this._logger?.error('Root configuration file not found', this.projectRoot);
       throw new MilaError(MilaErrorCode.ROOT_CONFIG_NOT_FOUND, `Root configuration file not found at ${configPath}`);
     }
     let raw: unknown;

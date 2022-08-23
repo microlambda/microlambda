@@ -1,5 +1,4 @@
 import { EventsLog } from '@microlambda/logger';
-import { init } from "./start";
 import chalk from "chalk";
 import { join } from 'path';
 import { existsSync } from "fs";
@@ -7,6 +6,7 @@ import { readJSONSync } from "fs-extra";
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler } from '@microlambda/logger';
+import { init } from '../utils/init';
 
 export const logs = async (serviceName: string, cmd: string): Promise<void> => {
   const projectRoot = resolveProjectRoot();

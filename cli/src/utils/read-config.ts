@@ -1,16 +1,15 @@
 import { ConfigReader, IRootConfig } from '@microlambda/config';
 import ora from 'ora';
-import { logger } from './logger';
+import { EventsLog } from '@microlambda/logger';
 
-export const readConfig = (): IRootConfig => {
+export const readConfig = (projectRoot: string, eventsLog?: EventsLog): IRootConfig => {
   let config: IRootConfig;
-  const readingConfig = ora();
+  const readingConfig = ora('Loading configuration ⚙️');
   try {
-    readingConfig.start('Loading configuration');
-    const configReader = new ConfigReader();
+    readingConfig.start();
+    const configReader = new ConfigReader(projectRoot, eventsLog);
     config = configReader.rootConfig;
-    readingConfig.succeed('Configuration loaded');
-    logger.lf();
+    readingConfig.succeed('Configuration loaded ⚙️');
   } catch (e) {
     readingConfig.fail((e as Error).message || 'Error reading config file');
     throw e;

@@ -53,11 +53,15 @@ export class Workspace {
 
   static async loadWorkspace(root: string, project?: Project, logger?: EventsLog): Promise<Workspace> {
     const pkg = await this.loadPackage(root);
-    return new Workspace(pkg, root, await this.loadConfig(pkg.name, root), project, logger);
+    return new Workspace(pkg, root, await this.loadConfig(pkg.name, root, project), project, logger);
   }
 
-  static async loadConfig(name: string, root: string): Promise<ITargetsConfig> {
-    const configReader = new ConfigReader();
+  static async loadConfig(name: string, root: string, project?: Project): Promise<ITargetsConfig> {
+    const configReader = new ConfigReader(project?.root || root);
+    if (!project) {
+      // Not loading target for root package
+      return {};
+    }
     return configReader.loadPackageConfig(name, root);
   }
 

@@ -68,7 +68,6 @@ export class Workspace extends CentipodWorkspace {
   private _attachDefaultHandlers(): void {
     const inMemory = new InMemoryLogHandler(this);
     const files = new LogsFileHandler(this);
-    console.debug('Attaching logs handlers', this.name);
     this.addLogsHandler(inMemory);
     this.addLogsHandler(files);
   }

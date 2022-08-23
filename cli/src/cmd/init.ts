@@ -5,12 +5,13 @@ import ora from 'ora';
 import { prompt } from 'inquirer';
 import { verifyStateKeysSchema, createStateTable } from '@microlambda/remote-state';
 import { readConfig } from '../utils/read-config';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export const init = async (cmd: { prompt: boolean }) => {
   logger.lf();
   logger.info('✨ Initializing remote state');
   logger.lf();
-  const config = readConfig();
+  const config = readConfig(resolveProjectRoot());
   try {
     const user = await aws.iam.getCurrentUser(config.defaultRegion);
     logger.info('The remote state will be initialized in AWS account', chalk.cyan.bold(user.projectId));

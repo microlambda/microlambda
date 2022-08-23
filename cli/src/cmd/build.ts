@@ -1,5 +1,4 @@
 import { Project } from '@microlambda/core';
-import { init, yarnInstall } from './start';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import {
@@ -13,6 +12,7 @@ import { spinniesOptions } from "../utils/spinnies";
 import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { resolveProjectRoot } from '@microlambda/utils';
 import { logger } from '../utils/logger';
+import { init } from '../utils/init';
 
 export interface IBuildCmd {
   s?: string;
@@ -82,10 +82,6 @@ export const beforeBuild = async (
     }
     return undefined;
   }
-  if (cmd.install) {
-    await yarnInstall(project, eventsLog);
-  }
-
   return { project, service: resolveService(), force: cmd.force || false, affected: affected };
 };
 
