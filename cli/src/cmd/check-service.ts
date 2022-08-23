@@ -1,10 +1,11 @@
 import chalk from 'chalk';
 import { EventsLog } from '@microlambda/logger';
 import { init } from './start';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export const checkService = async (cmd: string): Promise<void> => {
   const logger = new EventsLog();
-  const { project } = await init(logger);
+  const { project } = await init(resolveProjectRoot(), logger);
   if (!project.services.has(cmd)) {
     console.info(`\n${chalk.red('✖')} Unknown service`, cmd);
     process.exit(1);

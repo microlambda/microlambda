@@ -21,13 +21,19 @@
           "src/**/*.ts",
           "tsconfig.json"
         ],
+        "deps": [
+          "src/**/*.ts",
+          "tsconfig.json"
+        ],
         "root": [
           "tsconfig.json"
         ]
       },
       "artifacts": [
         "lib/**/*.js",
-        "lib/**/*.d.ts"
+        "lib/**/*.d.ts",
+        "dist/**/*.js",
+        "dist/**/*.d.ts"
       ]
     }
   }

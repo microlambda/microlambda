@@ -3694,10 +3694,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@microlambda/layers@workspace:*, @microlambda/layers@workspace:layers":
+  version: 0.0.0-use.local
+  resolution: "@microlambda/layers@workspace:layers"
+  dependencies:
+    "@aws-sdk/client-acm": ^3.150.0
+    "@microlambda/aws": "workspace:*"
+    "@microlambda/runner-core": "workspace:*"
+    "@microlambda/types": "workspace:*"
+    "@microlambda/utils": "workspace:*"
+    jest: ^27.5.1
+    typescript: ^4.5.2
+  languageName: unknown
+  linkType: soft
+
 "@microlambda/logger@workspace:*, @microlambda/logger@workspace:logger":
   version: 0.0.0-use.local
   resolution: "@microlambda/logger@workspace:logger"
   dependencies:
+    "@microlambda/types": "workspace:*"
     chalk: ^4.1.2
     jest: ^27.5.1
     typescript: ^4.5.2
@@ -3733,8 +3748,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/runner-core@workspace:runner/core"
   dependencies:
+    "@microlambda/config": "workspace:*"
     "@microlambda/errors": "workspace:*"
     "@microlambda/logger": "workspace:*"
+    "@microlambda/utils": "workspace:*"
     "@types/conventional-commits-parser": ^3.0.1
     "@types/debug": ^4.1.7
     "@types/lodash": 4.14.168
@@ -3787,7 +3804,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/utils@workspace:utils"
   dependencies:
-    "@microlambda/errors": "workspace:*"
+    "@microlambda/logger": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -17789,6 +17806,7 @@ __metadata:
   dependencies:
     "@microlambda/aws": "workspace:*"
     "@microlambda/core": "workspace:*"
+    "@microlambda/layers": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
     "@microlambda/types": "workspace:*"
     chokidar: ^3.5.2

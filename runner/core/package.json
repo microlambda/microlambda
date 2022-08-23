@@ -10,6 +10,7 @@
     "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@microlambda/config": "workspace:*",
     "@microlambda/errors": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/utils": "workspace:*",

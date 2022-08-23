@@ -16,16 +16,17 @@ import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 
 export const run = async (cmd: string, options: {parallel: boolean, topological: boolean, watch?: boolean, force: boolean, to?: string, affected?: string}): Promise<void> => {
   // TODO: Validate options (conflict between parallel/topological, watch/affected)
-  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler('mila-runner-run-' + Date.now())]);
+  const projectRoot = resolveProjectRoot();
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, 'mila-runner-run-' + Date.now())]);
   const eventsLogger = eventsLog.scope('runner-cli/run');
   eventsLogger.info('Running command', cmd, options);
-  const project =  await Project.loadProject(resolveProjectRoot(), eventsLog);
+  const project =  await Project.loadProject(projectRoot, eventsLog);
   const to = options.to ? resolveWorkspace(project, options.to) : undefined;
   logger.lf();
   logger.info(logger.centipod, `Running command ${chalk.white.bold(cmd)}`, options.to ? `on project ${options.to}` : '');
   logger.seperator();
-  logger.info('Topological:', chalk.white(!options.parallel));
-  logger.info('Parallel:', chalk.white(options.parallel));
+  const mode = options.parallel ? 'parallel' : 'topological';
+  logger.info('Mode:', chalk.white.bold(mode));
   logger.info('Use caches:', chalk.white(!options.force));
   const affected = options.affected?.split('..');
   let revisions: { rev1: string, rev2: string } | undefined;

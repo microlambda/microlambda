@@ -7,8 +7,10 @@ import {join} from 'path';
 import {pathExists, remove} from 'fs-extra';
 import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
-import { EventsLog } from "@microlambda/logger";
+import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { aws } from "@microlambda/aws";
+import { logger } from '../utils/logger';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export interface IDeployCmd extends IPackageCmd {
   e: string;
@@ -19,20 +21,20 @@ export interface IDeployCmd extends IPackageCmd {
 
 export const checkEnv = (config: IConfig, cmd: { e: string | null }, msg: string): void => {
   if (!cmd.e) {
-    console.error(chalk.red(msg));
+    logger.error(chalk.red(msg));
     process.exit(1);
   }
   if (config.stages && !config.stages.includes(cmd.e)) {
-    console.error(chalk.red('Target stage is not part of allowed stages.'));
-    console.error(chalk.red('Allowed stages are:', config.stages));
+    logger.error(chalk.red('Target stage is not part of allowed stages.'));
+    logger.error(chalk.red('Allowed stages are:', config.stages));
     process.exit(1);
   }
 };
 
 export const getCurrentUserIAM = async (): Promise<string> => {
   const user = await aws.iam.getCurrentUser(process.env.AWS_REGION || 'eu-west-1').catch((err: unknown) => {
-    console.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
-    console.error(chalk.red('Original error: ' + err));
+    logger.error(chalk.red('You are not authenticated to AWS. Please check your keypair or AWS profile.'));
+    logger.error(chalk.red('Original error: ' + err));
     process.exit(1);
   });
   return user.arn;
@@ -57,7 +59,7 @@ export const handleNext = (
           text: `${capitalize(actionVerbBase)}ing ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
-        console.info(`${chalk.bold(evt.workspace.name)} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
+        logger.info(`${chalk.bold(evt.workspace.name)} ${actionVerbBase}ing ${chalk.magenta(`[${evt.region}]`)}`);
       }
       break;
     case RunCommandEventEnum.NODE_PROCESSED:
@@ -66,7 +68,7 @@ export const handleNext = (
           text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
-        console.info(
+        logger.info(
           `${chalk.bold(evt.workspace.name)} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.region}]`)}`,
         );
       }
@@ -79,7 +81,7 @@ export const handleNext = (
           text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.region}]`)}`,
         });
       } else {
-        console.info(
+        logger.info(
           `${chalk.bold(evt.workspace.name)} - ${capitalize(action)} failed ${chalk.magenta(`[${evt.region}]`)}`,
         );
       }
@@ -94,7 +96,7 @@ export const printReport = async (
   verbose = false,
 ): Promise<void> => {
   if (failures.size) {
-    console.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
+    logger.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
   }
   const getActionVerbBase = (action: 'deploy' | 'remove' | 'package'): string => {
     switch (action) {
@@ -112,63 +114,65 @@ export const printReport = async (
     i++;
     const region = (evt as DeployEvent).region;
     if (region && evt.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
-      console.error(
+      logger.error(
         chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name} in ${region} region\n`)),
       );
     } else {
-      console.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name}\n`)));
+      logger.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name}\n`)));
     }
 
     if ((evt as any).error) {
-      console.error(chalk.bold(`#${i} - Error details:`));
-      console.error((evt as any).error);
-      console.log('');
+      logger.error(chalk.bold(`#${i} - Error details:`));
+      logger.error((evt as any).error);
+      logger.lf();
     }
   }
-  console.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
+  logger.info(chalk.underline(chalk.bold('▼ Execution summary\n')));
   if (verbose) {
     let i = 0;
     i++;
     for (const action of actions) {
       if ((action as DeployEvent).region && action.type !== RunCommandEventEnum.TARGETS_RESOLVED && action.type !== RunCommandEventEnum.SOURCES_CHANGED) {
-        console.info(
+        logger.info(
           chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name} in ${(action as DeployEvent).region} region\n`),
         );
       } else if (action.type !== RunCommandEventEnum.TARGETS_RESOLVED && action.type !== RunCommandEventEnum.SOURCES_CHANGED) {
-        console.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${(action).workspace.name}\n`));
+        logger.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${(action).workspace.name}\n`));
       }
       if (isNodeSucceededEvent(action)) {
         action.result.commands.forEach((result) => {
           if (!isDaemon(result)) {
-            console.info(chalk.grey('> ' + result.command));
-            console.info(result.all);
+            logger.info(chalk.grey('> ' + result.command));
+            logger.info(result.all);
           }
         });
       }
     }
   }
-  console.info(`Successfully ${actionVerbBase}ed ${total - failures.size}/${total} stacks`);
-  console.info(`Error occurred when ${actionVerbBase}ing ${failures.size} stacks\n`);
+  logger.info(`Successfully ${actionVerbBase}ed ${total - failures.size}/${total} stacks`);
+  logger.info(`Error occurred when ${actionVerbBase}ing ${failures.size} stacks\n`);
   if (failures.size) {
-    console.error(chalk.red('Process exited with errors'));
+    logger.error(chalk.red('Process exited with errors'));
     process.exit(1);
   }
-  console.error(chalk.green('Process exited without errors'));
+  logger.error(chalk.green('Process exited without errors'));
 };
 
-export const deploy = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> => {
+export const deploy = async (cmd: IDeployCmd): Promise<void> => {
+  const projectRoot = resolveProjectRoot();
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
   return new Promise(async () => {
-    console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
-    const reader = new ConfigReader(logger);
+    logger.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
+    const reader = new ConfigReader(eventsLog);
     const config = reader.readConfig();
     checkEnv(config, cmd, 'You must provide a target stage to deploy services');
     const currentIAM = await getCurrentUserIAM();
 
-    console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
-    console.info(chalk.bold('The following services will be deployed'));
-    console.info('Stage:', cmd.e);
-    console.info('Services:', cmd.s != null ? cmd.s : 'all');
-    console.info('As:', currentIAM);
+    logger.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
+    logger.info(chalk.bold('The following services will be deployed'));
+    logger.info('Stage:', cmd.e);
+    logger.info('Services:', cmd.s != null ? cmd.s : 'all');
+    logger.info('As:', currentIAM);
 
     if (cmd.onlyPrompt) {
       process.exit(0);
@@ -186,10 +190,10 @@ export const deploy = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> 
         process.exit(0);
       }
     }
-    const options = await beforePackage(cmd, logger);
+    const options = await beforePackage(projectRoot, cmd, eventsLog);
 
     if(options.force) {
-      console.info('\n▼ Clean artifacts directories\n');
+      logger.info('\n▼ Clean artifacts directories\n');
       // Cleaning artifact location
       const cleaningSpinnies = new Spinnies(spinniesOptions);
       let hasCleanErrored = false;
@@ -212,12 +216,12 @@ export const deploy = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> 
         }),
       );
       if (hasCleanErrored) {
-        console.error(chalk.red('Error cleaning previous artifacts'));
+        logger.error(chalk.red('Error cleaning previous artifacts'));
         process.exit(1);
       }
     }
 
-    console.info('\nPackaging services\n');
+    logger.info('\nPackaging services\n');
     const packageResult = await packageServices(options);
     if (packageResult.failures.size) {
       await printReport(packageResult.success, packageResult.failures, options.service ? 1 : options.project.services.size, 'package', false);
@@ -226,7 +230,7 @@ export const deploy = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> 
 
     reader.validate(options.project);
 
-    console.info('\n▼ Deploying services\n');
+    logger.info('\n▼ Deploying services\n');
 
     const spinnies = new Spinnies(spinniesOptions);
 
@@ -240,13 +244,13 @@ export const deploy = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> 
     deployer.deploy(options.service).subscribe({
       next: (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, "deploy"),
       error: (err) => {
-        console.error(chalk.red("Error deploying services"));
-        console.error(err);
+        logger.error(chalk.red("Error deploying services"));
+        logger.error(err);
         process.exit(1);
       },
       complete: async () => {
         await printReport(actions, failures, actions.size, "deploy", cmd.verbose);
-        console.info(`Successfully deploy from ${cmd.e} 🚀`);
+        logger.info(`Successfully deploy from ${cmd.e} 🚀`);
         process.exit(0);
       }
     });

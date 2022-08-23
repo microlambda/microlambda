@@ -13,7 +13,11 @@
         "root": [
           "tsconfig.json"
         ]
-      }
+      },
+      "artifacts": [
+        "build/**/*",
+        "dist/**/*"
+      ]
     }
   }
 }

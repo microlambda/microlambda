@@ -10,9 +10,10 @@ import {
 } from '@microlambda/core';
 import {command} from "execa";
 import { Scheduler } from "@microlambda/core";
-import { EventsLog } from "@microlambda/logger";
+import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { WebsocketLogsHandler } from "../log-handlers/websocket";
 import { resolveProjectRoot } from '@microlambda/utils';
+import { logger } from '../utils/logger';
 
 interface IStartOptions {
   interactive: boolean;
@@ -28,27 +29,27 @@ export const validateConfig = (config: ConfigReader, graph: Project): IConfig =>
     return validated;
   } catch (e) {
     validating.fail('Invalid microlambda config file');
-    console.error(chalk.red('Please check the docs and provide a valid configuration.'));
-    console.error(chalk.red(e));
+    logger.error(chalk.red('Please check the docs and provide a valid configuration.'));
+    logger.error(chalk.red(e));
     process.exit(1);
   }
 };
 
 export const readConfig = async (
   projectRoot: string,
-  logger: EventsLog,
+  eventsLog: EventsLog,
 ): Promise<{ reader: ConfigReader; config: IConfig }> => {
   const loadingConfig = ora('Loading config ⚙️').start();
-  const reader = new ConfigReader(logger);
+  const reader = new ConfigReader(eventsLog);
   let config: IConfig;
   try {
     config = reader.readConfig();
-    logger.scope('start').debug(config);
+    eventsLog.scope('start').debug(config);
     loadingConfig.succeed();
     return { reader, config };
   } catch (e) {
     loadingConfig.fail('Cannot read microlambda config file');
-    console.error(chalk.red(e));
+    logger.error(chalk.red(e));
     process.exit(1);
   }
 };
@@ -61,18 +62,18 @@ export const getDependenciesGraph = async (projectRoot: string, logger?: EventsL
 };
 
 export const init = async (
-  logger: EventsLog,
-): Promise<{ projectRoot: string; config: IConfig; project: Project }> => {
-  const log = logger.scope('start');
-  const projectRoot = resolveProjectRoot();
+  projectRoot: string,
+  eventsLog: EventsLog,
+): Promise<{ config: IConfig; project: Project }> => {
+  const log = eventsLog.scope('init');
   log.info('Project root resolved', projectRoot);
-  const project =  await getDependenciesGraph(projectRoot, logger);
-  const { config, reader } = await readConfig(projectRoot, logger);
+  const project =  await getDependenciesGraph(projectRoot, eventsLog);
+  const { config, reader } = await readConfig(projectRoot, eventsLog);
   validateConfig(reader, project);
-  return { projectRoot, config: config, project };
+  return { config: config, project };
 };
 
-export const yarnInstall = async (project: Project, logger: EventsLog): Promise<void> => {
+export const yarnInstall = async (project: Project, eventsLog: EventsLog): Promise<void> => {
   const installing = ora('Installing dependencies 📦').start();
   try {
     await command('yarn install', {
@@ -82,10 +83,9 @@ export const yarnInstall = async (project: Project, logger: EventsLog): Promise<
   } catch (e) {
     const message =
       'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=*) for more infos.';
-    logger.scope('bootstrap').error(e);
-    logger.scope('bootstrap').error(message);
-    // eslint-disable-next-line no-console
-    console.error(message);
+    eventsLog.scope('bootstrap').error(e);
+    eventsLog.scope('bootstrap').error(message);
+    logger.error(message);
     process.exit(1);
   }
   installing.text = 'Dependencies installed 📦';
@@ -94,23 +94,23 @@ export const yarnInstall = async (project: Project, logger: EventsLog): Promise<
 
 export const start = async (
   options: IStartOptions,
-  logger: EventsLog,
 ): Promise<void> => {
-  console.info(showOff());
-
-  const { projectRoot, config, project } = await init(logger);
+  logger.info(showOff());
+  const projectRoot = resolveProjectRoot();
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-start-${Date.now()}`)]);
+  const { project } = await init(projectRoot, eventsLog);
 
   // await yarnInstall(graph, logger);
   const DEFAULT_PORT = 4545;
-  const scheduler = new Scheduler(project, logger);
+  const scheduler = new Scheduler(project, eventsLog);
   const startingServer = ora('Starting server').start();
-  const server = await startServer(options.port || DEFAULT_PORT, project, logger, scheduler);
+  const server = await startServer(options.port || DEFAULT_PORT, project, eventsLog, scheduler);
   startingServer.text = 'Mila server started on http://localhost:4545 ✨';
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
   starting.succeed();
 
-  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, logger, project);
+  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project);
   for (const workspace of project.workspaces.values()) {
     const ioHandler = new WebsocketLogsHandler(workspace, io);
     workspace.addLogsHandler(ioHandler);
@@ -136,16 +136,16 @@ export const start = async (
   await ipc.createServer();
   graph.registerIPCServer(ipc);*/
 
-  recreateLogDirectory(projectRoot, logger);
+  recreateLogDirectory(projectRoot, eventsLog);
 
   process.on('SIGINT', async () => {
-    logger.scope('start').warn('SIGINT signal received');
-    console.log('\n');
+    eventsLog.scope('start').warn('SIGINT signal received');
+    logger.lf();
     const gracefulShutdown = ora('Gracefully shutting down services ☠️');
     try {
       await scheduler.gracefulShutdown();
     } catch (e) {
-      console.error('Error stopping services. Allocated ports may still be busy !');
+      logger.error('Error stopping services. Allocated ports may still be busy !');
       process.exit(2);
     }
     gracefulShutdown.succeed();
@@ -153,7 +153,7 @@ export const start = async (
   });
 
   if (!options.interactive) {
-    logger.scope('start').info('Starting services');
+    eventsLog.scope('start').info('Starting services');
     await scheduler.startAll();
   }
 };

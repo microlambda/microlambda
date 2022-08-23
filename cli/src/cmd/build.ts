@@ -10,7 +10,9 @@ import {
   isNodeEvent, isProcessError
 } from "@microlambda/runner-core";
 import { spinniesOptions } from "../utils/spinnies";
-import { EventsLog } from "@microlambda/logger";
+import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
+import { resolveProjectRoot } from '@microlambda/utils';
+import { logger } from '../utils/logger';
 
 export interface IBuildCmd {
   s?: string;
@@ -21,7 +23,6 @@ export interface IBuildCmd {
 }
 
 export interface IBuildOptions {
-  projectRoot: string;
   project: Project;
   service: CentipodWorkspace | undefined;
   force: boolean;
@@ -31,12 +32,12 @@ export interface IBuildOptions {
 export const printCommand = (action: string, service?: string, only = true) => {
   if (service) {
     if (only) {
-      console.info('🔧 Building only', service);
+      logger.info('🔧 Building only', service);
     } else {
-      console.info('🔧 Building', service, 'and its dependencies');
+      logger.info('🔧 Building', service, 'and its dependencies');
     }
   } else {
-    console.info('🔧 Building all project services');
+    logger.info('🔧 Building all project services');
   }
 }
 
@@ -45,7 +46,7 @@ const printAffected = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefin
     if (cmd.affected) {
       const revisions = cmd.affected.split('..');
       if (revisions.length != 2) {
-        console.error(chalk.red('Argument --affected must be formatted <rev1>..<rev2>'));
+        logger.error(chalk.red('Argument --affected must be formatted <rev1>..<rev2>'));
         process.exit(1);
       }
       return { rev1: revisions[0], rev2: revisions[1] };
@@ -54,26 +55,27 @@ const printAffected = (cmd: IBuildCmd): { rev1: string, rev2: string } | undefin
   }
   const affected = resolveAffected();
   if (affected) {
-    console.info('');
-    console.info(chalk.magenta('> Skipping workspaces not affected affected between revisions', affected.rev1, 'and', affected.rev2));
+    logger.info('');
+    logger.info(chalk.magenta('> Skipping workspaces not affected affected between revisions', affected.rev1, 'and', affected.rev2));
   }
-  console.info('');
+  logger.info('');
   return affected;
 }
 
 export const beforeBuild = async (
+  projectRoot: string,
   cmd: IBuildCmd,
-  logger: EventsLog,
+  eventsLog: EventsLog,
   acceptPackages = false,
 ): Promise<IBuildOptions> => {
   const affected = printAffected(cmd);
-  const { project, projectRoot } = await init(logger);
+  const { project } = await init(projectRoot, eventsLog);
   const resolveService = (): CentipodWorkspace | undefined => {
     if (cmd.s) {
       const nodes = acceptPackages ? project.workspaces : project.services;
       const service = nodes.get(cmd.s);
       if (cmd.s && !service) {
-        console.error(chalk.red(acceptPackages ? 'Unknown workspace' : 'Unknown service', cmd.s));
+        logger.error(chalk.red(acceptPackages ? 'Unknown workspace' : 'Unknown service', cmd.s));
         process.exit(1);
       }
       return service;
@@ -81,10 +83,10 @@ export const beforeBuild = async (
     return undefined;
   }
   if (cmd.install) {
-    await yarnInstall(project, logger);
+    await yarnInstall(project, eventsLog);
   }
 
-  return { projectRoot, project, service: resolveService(), force: cmd.force || false, affected: affected };
+  return { project, service: resolveService(), force: cmd.force || false, affected: affected };
 };
 
 export const printError = (error: unknown, spinners?: Spinnies, workspace?: string): void => {
@@ -93,13 +95,13 @@ export const printError = (error: unknown, spinners?: Spinnies, workspace?: stri
     printError(error.error, spinners, error.workspace.name);
   } else if (isProcessError(error) && error.all) {
     if (workspace) {
-      console.error(`${chalk.bold.red(`Command ${error.command} failed for workspace ${workspace} :`)}\n`);
+      logger.error(`${chalk.bold.red(`Command ${error.command} failed for workspace ${workspace} :`)}\n`);
     } else {
-      console.error(`${chalk.bold.red(`Command ${error.command} failed :`)}\n`);
+      logger.error(`${chalk.bold.red(`Command ${error.command} failed :`)}\n`);
     }
-    console.log(error.all);
+    logger.error(error.all);
   } else {
-    console.error(error);
+    logger.error(error);
   }
 };
 
@@ -110,10 +112,10 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     const onNext = (evt: RunCommandEvent): void => {
       if (evt.type === RunCommandEventEnum.TARGETS_RESOLVED) {
         if (!evt.targets.some((target) => target.hasCommand)) {
-          console.error(chalk.red('No workspace found for target build. Please add a build script in mila.json'));
+          logger.error(chalk.red('No workspace found for target build. Please add a build script in mila.json'));
         }
       } else if (evt.type === RunCommandEventEnum.NODE_SKIPPED && !evt.affected) {
-        console.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'))
+        logger.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'))
       } else if (evt.type === RunCommandEventEnum.NODE_STARTED) {
         spinnies.add(evt.workspace.name, {text: `Compiling ${evt.workspace.name}` });
         inProgress.add(evt.workspace.name);
@@ -129,7 +131,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
         });
         inProgress.forEach((w) => spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}`}));
         spinnies.stopAll();
-        console.error(`\n${chalk.bold.red('> Error details:')}\n`);
+        logger.error(`\n${chalk.bold.red('> Error details:')}\n`);
         printError(evt.error)
         return reject();
       }
@@ -137,7 +139,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     const onError = (err: unknown): void => {
       inProgress.forEach((w) => spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}`}));
       spinnies.stopAll();
-      console.error(`\n${chalk.bold.red('> Error details:')}\n`);
+      logger.error(`\n${chalk.bold.red('> Error details:')}\n`);
       printError(err, spinnies)
       return reject();
     };
@@ -154,12 +156,14 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
   });
 };
 
-export const build = async (cmd: IBuildCmd, logger: EventsLog): Promise<void> => {
+export const build = async (cmd: IBuildCmd): Promise<void> => {
   printCommand('🔧 Building', cmd.s, cmd.only);
-  const options = await beforeBuild(cmd, logger, true);
+  const projectRoot = resolveProjectRoot();
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-build-${Date.now()}`)]);
+  const options = await beforeBuild(projectRoot, cmd, eventsLog, true);
   try {
     await typeCheck(options);
-    console.info('\nSuccessfully built ✨');
+    logger.info('\nSuccessfully built ✨');
     process.exit(0);
   } catch (e) {
     process.exit(1);

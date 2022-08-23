@@ -1,4 +1,4 @@
-import { EventsLog } from '@microlambda/logger';
+import { EventsLog, EventLogsFileHandler } from '@microlambda/logger';
 import { join, relative } from 'path';
 import { prompt } from 'inquirer';
 import {
@@ -12,20 +12,23 @@ import {
 } from '@microlambda/generators';
 import chalk from 'chalk';
 import {resolveProjectRoot} from "@microlambda/utils";
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
+import { logger } from '../utils/logger';
 
-export const generate = async (blueprint: string, logger: EventsLog): Promise<void> => {
-  console.info('🧙 Microlambda code generator');
+export const generate = async (blueprint: string): Promise<void> => {
+  logger.info('🧙 Microlambda code generator');
   const projectRoot = resolveProjectRoot();
-  const log = logger.scope('generator');
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-generate-${Date.now()}`)]);
+  const eventsLogger = eventsLog.scope('generator');
   const blueprintsPath = join(projectRoot, 'blueprints');
-  log.debug(`Resolving blueprints in ${blueprintsPath}`);
+  eventsLogger.debug(`Resolving blueprints in ${blueprintsPath}`);
   const blueprints = await findBlueprints(blueprintsPath);
-  log.debug(blueprints);
+  eventsLogger.debug(blueprints);
   let blueprintPath: string;
   if (blueprint) {
     const selected = Array.from(blueprints.keys()).find((path) => blueprints.get(path)?.name === blueprint);
     if (!selected) {
-      throw new Error(`ENOTFOUND: Blueprint with name ${blueprint} not found`);
+      throw new MilaError(MilaErrorCode.BLUEPRINT_NOT_FOUND, `Blueprint with name ${blueprint} not found`);
     }
     blueprintPath = selected as string;
   } else {
@@ -37,17 +40,17 @@ export const generate = async (blueprint: string, logger: EventsLog): Promise<vo
         choices: Array.from(blueprints.entries()).map(([path, yaml]) => ({ name: yaml.name, value: path })),
       },
     ]);
-    log.debug(answers);
+    eventsLogger.debug(answers);
     blueprintPath = answers.blueprint;
   }
   const inputs = await resolveInputs(blueprintPath);
-  log.debug(inputs);
+  eventsLogger.debug(inputs);
 
   const interpolated = interpolateYaml(blueprints.get(blueprintPath), inputs);
-  log.debug(interpolated);
+  eventsLogger.debug(interpolated);
 
   const templates = await findTemplates(join(blueprintPath, 'templates'));
-  log.debug(templates.keys());
+  eventsLogger.debug(templates.keys());
 
   const destinations = await resolveDestinations({
     blueprintPath,
@@ -56,10 +59,10 @@ export const generate = async (blueprint: string, logger: EventsLog): Promise<vo
     templates,
     projectRoot,
   });
-  log.debug(destinations);
+  eventsLogger.debug(destinations);
   await renderTemplates(templates, destinations, inputs);
   destinations.forEach((created) => {
-    console.info(chalk.green('[CREATED]'), relative(projectRoot, created));
+    logger.info(chalk.green('[CREATED]'), relative(projectRoot, created));
   });
   await postProcessing(blueprintPath, inputs);
 };

@@ -16,5 +16,8 @@
     "microservices",
     "aws",
     "monorepo"
-  ]
+  ],
+  "dependencies": {
+    "@microlambda/logger": "workspace:*"
+  }
 }

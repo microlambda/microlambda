@@ -4,7 +4,7 @@ import { Project, Scheduler, Workspace } from "@microlambda/core";
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 import { getTrimmedSlice } from "./utils/logs";
 
 export * from './socket';
@@ -12,10 +12,10 @@ export * from './socket';
 export const startServer = (
   port = 4545,
   project: Project,
-  logger: Logger,
+  logger: EventsLog,
   scheduler: Scheduler,
 ): Promise<Server> => {
-  const log = logger.log('api');
+  const log = logger.scope('api');
   const app = express();
 
   app.use(

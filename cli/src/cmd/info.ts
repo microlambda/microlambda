@@ -2,11 +2,12 @@ import {Project} from "@microlambda/core";
 import { Workspace} from "@microlambda/runner-core";
 import chalk from 'chalk';
 import { resolveProjectRoot } from '@microlambda/utils';
+import { logger } from '../utils/logger';
 
 const printTree = (wks: Workspace) => {
   const printDeps = (_wks: Workspace, depth = 0) => {
     for (const dep of _wks.dependencies()) {
-      console.info('   '.repeat(depth), chalk.grey(depth ? '|__' : ''), dep.name);
+      logger.info('   '.repeat(depth), chalk.grey(depth ? '|__' : ''), dep.name);
       printDeps(dep, depth + 1);
     }
   }
@@ -24,9 +25,9 @@ export const info = async (cmd: IInfosOptions): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const project =  await Project.loadProject(projectRoot);
   if (!cmd.s) {
-    console.log('\n');
-    console.log(chalk.magenta.bold(project.name));
-    console.log(chalk.grey('Project root: ' + projectRoot));
+    logger.info('\n');
+    logger.info(chalk.magenta.bold(project.name));
+    logger.info(chalk.grey('Project root: ' + projectRoot));
     if (cmd.graph) {
       for (const root of project.roots.values()) {
         printTree(root);
@@ -34,39 +35,39 @@ export const info = async (cmd: IInfosOptions): Promise<void> => {
     } else if (cmd.roots) {
       const roots: Workspace[] = []
       for (const root of project.roots.values()) roots.push(root)
-      console.log(chalk.cyan(`\nRoots (${roots.length})\n`));
-      console.log(roots.map((s) => `- ${s.name}`).join('\n'));
+      logger.info(chalk.cyan(`\nRoots (${roots.length})\n`));
+      logger.info(roots.map((s) => `- ${s.name}`).join('\n'));
     } else if (cmd.leaves) {
       const leaves: Workspace[] = []
       for (const root of project.leaves.values()) leaves.push(root)
-      console.log(chalk.cyan(`\nLeaves (${leaves.length})\n`));
-      console.log(leaves.map((s) => `- ${s.name}`).join('\n'));
+      logger.info(chalk.cyan(`\nLeaves (${leaves.length})\n`));
+      logger.info(leaves.map((s) => `- ${s.name}`).join('\n'));
     } else {
-      console.log(chalk.cyan(`\nPackages (${project.packages.size})\n`));
-      console.log(Array.from(project.packages.values()).map((pkg) => `- ${pkg.name}`).join('\n'));
-      console.log(chalk.cyan(`\nServices (${project.services.size})\n`));
-      console.log(Array.from(project.services.values()).map((s) => `- ${s.name}`).join('\n'));
+      logger.info(chalk.cyan(`\nPackages (${project.packages.size})\n`));
+      logger.info(Array.from(project.packages.values()).map((pkg) => `- ${pkg.name}`).join('\n'));
+      logger.info(chalk.cyan(`\nServices (${project.services.size})\n`));
+      logger.info(Array.from(project.services.values()).map((s) => `- ${s.name}`).join('\n'));
     }
   } else {
     const wks = project.workspaces.get(cmd.s);
     if (wks) {
-      console.log('\n');
-      console.log(chalk.magenta.bold(wks.name));
-      console.log(chalk.cyan('Dependencies\n'));
+      logger.info('\n');
+      logger.info(chalk.magenta.bold(wks.name));
+      logger.info(chalk.cyan('Dependencies\n'));
       if (cmd.graph) {
         printTree(wks);
       } else {
-        console.log(Array.from(wks.descendants.values()).map((s) => `- ${s.name}`).join('\n'));
+        logger.info(Array.from(wks.descendants.values()).map((s) => `- ${s.name}`).join('\n'));
       }
-      console.log(chalk.cyan('\nWorkspaces depending on\n'));
+      logger.info(chalk.cyan('\nWorkspaces depending on\n'));
       if (!wks.ancestors.size) {
-        console.info('No workspace depending on', wks.name);
+        logger.info('No workspace depending on', wks.name);
       }
       for (const dep of wks.ancestors.values()) {
-        console.log(`- ${dep.name}`);
+        logger.info(`- ${dep.name}`);
       }
     } else {
-      console.error(chalk.red('Unknown workspace ' + cmd.s));
+      logger.error(chalk.red('Unknown workspace ' + cmd.s));
       process.exit(1);
     }
   }

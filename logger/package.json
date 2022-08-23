@@ -18,6 +18,7 @@
     "monorepo"
   ],
   "dependencies": {
+    "@microlambda/types": "workspace:*",
     "chalk": "^4.1.2"
   },
   "devDependencies": {

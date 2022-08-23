@@ -5,7 +5,9 @@ import Spinnies from 'spinnies';
 import {printReport} from './deploy';
 import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from "@microlambda/runner-core";
 import { EventsLog } from "@microlambda/logger";
-import { getDefaultThreads, getThreads } from '@microlambda/utils';
+import { getDefaultThreads, getThreads, resolveProjectRoot } from '@microlambda/utils';
+import { EventLogsFileHandler } from '@microlambda/logger/lib';
+import { logger } from '../utils/logger';
 
 export interface IPackageCmd extends IBuildCmd {
   c: string;
@@ -21,14 +23,15 @@ interface IPackageOptions extends IBuildOptions {
 }
 
 export const beforePackage = async (
+  projectRoot: string,
   cmd: IPackageCmd,
-  logger: EventsLog,
+  eventsLog: EventsLog,
 ): Promise<IPackageOptions> => {
   const concurrency = cmd.c ? getThreads(Number(cmd.c)) : getDefaultThreads();
-  const options = await beforeBuild(cmd, logger, false);
+  const options = await beforeBuild(projectRoot, cmd, eventsLog, false);
   if (cmd.recompile) {
     try {
-      console.info('\nBuilding dependency graph\n');
+      logger.info('\nBuilding dependency graph\n');
       await typeCheck(options);
     } catch (e) {
       process.exit(1);
@@ -77,9 +80,9 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
     };
     const onComplete = (): void => {
       if (!failures.size) {
-        console.info('\nSuccessfully packaged 📦');
+        logger.info('\nSuccessfully packaged 📦');
       } else {
-        console.error('\nError packaging', failures.size, 'packages !');
+        logger.error('\nError packaging', failures.size, 'packages !');
       }
       return resolve({ failures, success });
     };
@@ -94,11 +97,13 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
   });
 };
 
-export const packagr = async (cmd: IPackageCmd, logger: EventsLog): Promise<void> => {
+export const packagr = async (cmd: IPackageCmd): Promise<void> => {
   try {
     printCommand('📦 Packaging', cmd.s, true);
-    const options = await beforePackage(cmd, logger);
-    console.info('\nPackaging services\n');
+    const projectRoot = resolveProjectRoot();
+    const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-package-${Date.now()}`)]);
+    const options = await beforePackage(projectRoot, cmd, eventsLog);
+    logger.info('\nPackaging services\n');
     const { failures, success } = await packageServices(options);
     if (failures.size) {
       await printReport(success, failures, options.service ? 1 : options.project.services.size, 'package', options.verbose);
@@ -106,7 +111,7 @@ export const packagr = async (cmd: IPackageCmd, logger: EventsLog): Promise<void
     }
     process.exit(0);
   } catch (e) {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
   }
 };

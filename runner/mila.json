@@ -24,7 +24,13 @@
         "root": [
           "tsconfig.json"
         ]
-      }
+      },
+      "artifacts": [
+        "lib/**/*.js",
+        "lib/**/*.d.ts",
+        "dist/**/*.js",
+        "dist/**/*.d.ts"
+      ]
     }
   }
 }

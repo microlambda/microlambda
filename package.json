@@ -36,6 +36,7 @@
     "generators",
     "errors",
     "utils",
+    "layers",
     "handling",
     "plugin",
     "testing",

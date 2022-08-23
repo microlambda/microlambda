@@ -42,12 +42,16 @@ export class GlobsHelpers {
     const resolveGlobs = (globs: string[], relativeTo: string) => {
       const paths = this._resolveGlobs(globs, relativeTo);
       paths.forEach((p) => files.add(p));
+      return paths;
     }
 
     resolveGlobs(this.globs.sources.internals, this.workspace.root);
     resolveGlobs(this.globs.sources.root, projectRoot);
-    for (const dep of this.workspace.ancestors.values()) {
-      resolveGlobs(this.globs.sources.deps, dep.root);
+    this.logger?.debug('Resolving sources for dependencies of', this.workspace.name);
+    for (const dep of this.workspace.descendants.values()) {
+      this.logger?.debug('Analyzing dependency', dep.name ,'of', this.workspace.name);
+      const paths = resolveGlobs(this.globs.sources.deps, dep.root);
+      this.logger?.debug(this.globs.sources.deps, paths);
     }
 
     return Array.from(files);

@@ -10,7 +10,7 @@ import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheck
 import { Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import { RunCommandEventEnum, Workspace } from "@microlambda/runner-core";
-import { Logger } from "@microlambda/logger";
+import { EventsLog } from "@microlambda/logger";
 
 export class IOSocketManager {
   private _io: WebSocketServer;
@@ -24,11 +24,11 @@ export class IOSocketManager {
     port: number,
     server: Server,
     scheduler: Scheduler,
-    logger: Logger,
+    logger: EventsLog,
     graph: Project,
   ) {
     this._scheduler = scheduler;
-    const log = logger.log('@microlambda/server/io');
+    const log = logger.scope('@microlambda/server/io');
     log.info('Attaching Websocket', {
       cors: {
         origin: ['http://localhost:4200', 'http://localhost:' + port],

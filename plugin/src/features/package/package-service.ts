@@ -10,7 +10,7 @@ import { existsSync } from "fs";
 import { watch } from "chokidar";
 import { readJSONSync } from "fs-extra";
 import { aws } from '@microlambda/aws';
-import { ILayerChecksums } from '@microlambda/aws/lib/parameter-store/layer-checksums';
+import { ILayerChecksums, compareLayerChecksums, readLayerChecksums, calculateLayerChecksums, writeLayerChecksums } from '@microlambda/layers';
 
 const DEFAULT_LEVEL = 4;
 
@@ -74,7 +74,7 @@ export const packageService = (
           setLayer(layerArn);
           if (useLayerChecksums && currentChecksums) {
             logger?.info('Writing checksums', layerArn);
-            await aws.ssm.writeLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, currentChecksums, serverless.providers.aws.getRegion(), logger)
+            await writeLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, currentChecksums, serverless.providers.aws.getRegion(), logger)
           }
           if (config?.packagr?.prune) {
             await aws.lambda.pruneLayers(config?.packagr?.prune, stackName, serverless.providers.aws.getRegion(), logger);
@@ -106,16 +106,16 @@ export const packageService = (
     let currentChecksums: ILayerChecksums | undefined | null;
     if (useLayerChecksums) {
       logger?.info('[package] Calculating checksums');
-      currentChecksums = await aws.ssm.calculateLayerChecksums(
+      currentChecksums = await calculateLayerChecksums(
           service,
           logger
       );
       logger?.info('[package] Fetching upstream checksums');
-      const readChecksums = await aws.ssm.readLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, serverless.providers.aws.getRegion(), logger);
+      const readChecksums = await readLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, serverless.providers.aws.getRegion(), logger);
 
       logger?.debug('[package] Upstream checksums', currentChecksums);
       logger?.debug('[package] Current checksums', currentChecksums);
-      shouldBuildLayer = !(await aws.ssm.compareLayerChecksums(currentChecksums, readChecksums));
+      shouldBuildLayer = !(await compareLayerChecksums(currentChecksums, readChecksums));
       logger?.info('[package] Should re-build layer', shouldBuildLayer);
     }
 

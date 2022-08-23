@@ -2,36 +2,12 @@ import { join } from 'path';
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from "fs";
 import { IEventsLogEntry } from '../events-log-entry';
 import { IEventsLogHandler } from './events-log-handler';
-import { resolveProjectRoot } from '@microlambda/utils';
-
-/*export class LogsFileHandler extends LogFilesHandler {
-
-  readonly projectRoot: string;
-  readonly logsRoot: string;
-
-  constructor(readonly workspace: Workspace) {
-    super(workspace);
-    this.projectRoot = resolveProjectRoot();
-    this.logsRoot = join(this.projectRoot, '.mila', 'logs');
-    this._createLogsDirectory();
-  }
-
-  private _createLogsDirectory() {
-    if (!existsSync(this.logsRoot)) {
-      mkdirSync(this.logsRoot, { recursive: true });
-    }
-  }
-
-  path(target: string): string {
-    return join(this.logsRoot, `${this.workspace.name.replace('/', '-')}.${target}.logs`);
-  }
-}*/
 
 export class EventLogsFileHandler implements IEventsLogHandler {
   private _stream: WriteStream;
 
-  constructor(logFile: string) {
-    const folder = join(resolveProjectRoot(), '.mila', 'events-logs');
+  constructor(projectRoot: string, logFile: string) {
+    const folder = join(projectRoot, '.mila', 'events-logs');
     if (!existsSync(folder)) {
       mkdirSync(folder, { recursive: true });
     }

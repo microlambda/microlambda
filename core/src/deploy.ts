@@ -34,9 +34,7 @@ export class Deployer {
   }
 
   private _run(region: string, services: Workspace[]): Observable<DeployEvent> {
-    const runner = new Runner(this.options.project, this.concurrency, {
-      dir: `deploy-${region}`,
-    });
+    const runner = new Runner(this.options.project, this.concurrency);
     return runner.runCommand(this.mode, {
       workspaces: services,
       mode: 'parallel',

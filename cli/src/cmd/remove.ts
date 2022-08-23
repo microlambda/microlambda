@@ -4,25 +4,29 @@ import chalk from 'chalk';
 import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import { init } from './start';
 import Spinnies from 'spinnies';
-import { EventsLog } from "@microlambda/logger";
+import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
+import { logger } from '../utils/logger';
+import { resolveProjectRoot } from '@microlambda/utils';
 
-export const remove = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> => {
+export const remove = async (cmd: IDeployCmd): Promise<void> => {
   return new Promise(async () => {
-    console.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
-    const { config, project } = await init(logger);
+    logger.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
+    const projectRoot = resolveProjectRoot();
+    const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-remove-${Date.now()}`)]);
+    const { config, project } = await init(projectRoot, eventsLog);
     checkEnv(config, cmd, 'You must provide a target stage to remove services');
     const service = cmd.s ? project.services.get(cmd.s) : null;
     if (cmd.s && !service) {
-      console.error(chalk.red('Error: unknown service', cmd.s));
+      logger.error(chalk.red('Error: unknown service', cmd.s));
       process.exit(1);
     }
     const targets = service ? [service] : Array.from(project.services.values());
     const currentIAM = await getCurrentUserIAM();
-    console.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
-    console.info(chalk.bold('Warning: the following services will be deleted'));
-    console.info('Stage:', cmd.e);
-    console.info('Services:', cmd.s != null ? cmd.s : 'all');
-    console.info('As:', currentIAM);
+    logger.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
+    logger.info(chalk.bold('Warning: the following services will be deleted'));
+    logger.info('Stage:', cmd.e);
+    logger.info('Services:', cmd.s != null ? cmd.s : 'all');
+    logger.info('As:', currentIAM);
 
     if (cmd.onlyPrompt) {
       process.exit(0);
@@ -37,9 +41,9 @@ export const remove = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> 
           default: true,
         },
       ]);
-      console.info('');
+      logger.info('');
       if (!confirm.ok) {
-        console.info('Aborted by user');
+        logger.info('Aborted by user');
         process.exit(0);
       }
     }
@@ -65,13 +69,13 @@ export const remove = async (cmd: IDeployCmd, logger: EventsLog): Promise<void> 
         handleNext(evt, spinnies, failures, actions, cmd.verbose, 'remove');
       },
       error: (err) => {
-        console.error(chalk.red('Error removing services'));
-        console.error(err);
+        logger.error(chalk.red('Error removing services'));
+        logger.error(err);
         process.exit(1);
       },
       complete: async () => {
         await printReport(actions, failures, actions.size, 'remove', cmd.verbose);
-        console.info(`Successfully removed from ${cmd.e} :boom:`);
+        logger.info(`Successfully removed from ${cmd.e} :boom:`);
         process.exit(0);
       },
     });

@@ -40,8 +40,8 @@ export class Scheduler {
     this._logger.debug('New recompilation scheduler instance');
     this._concurrency = concurrency || getDefaultThreads();
     this._runners = {
-      transpile: new Runner(this.project, this._concurrency, undefined, logger),
-      build: new Runner(this.project, this._concurrency, undefined, logger),
+      transpile: new Runner(this.project, this._concurrency, logger),
+      build: new Runner(this.project, this._concurrency, logger),
       start: new Map(),
     }
   }
@@ -96,8 +96,8 @@ export class Scheduler {
     this._runners.build.unwatch('build');
     this._subscriptions.transpile?.unsubscribe();
     this._subscriptions.build?.unsubscribe();
-    this._runners.transpile = new Runner(this.project, this._concurrency, undefined, this._logger?.logger);
-    this._runners.build = new Runner(this.project, this._concurrency, undefined, this._logger?.logger);
+    this._runners.transpile = new Runner(this.project, this._concurrency, this._logger?.logger);
+    this._runners.build = new Runner(this.project, this._concurrency, this._logger?.logger);
     this._logger.info('Building targets and their dependencies', [...this._targets].map((t) => t.name));
     const transpile$ = this._runners.transpile.runCommand('transpile', {
       mode: 'topological',
@@ -193,7 +193,7 @@ export class Scheduler {
       jobs.toStart.forEach((w) => {
         this._logger.info('Starting', w.name);
         if (!this._runners.start.has(w.name)) {
-          const runner = new Runner(this.project, this._concurrency, undefined, this._logger.logger);
+          const runner = new Runner(this.project, this._concurrency, this._logger.logger);
           this._runners.start.set(w.name, runner);
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STARTING);
           const daemon$ = runner.runCommand('start', { mode: 'parallel', workspaces: [w], force: true }, [

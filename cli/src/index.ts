@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { start } from './cmd';
-import { checkStage } from './cmd/check-stage';
 import { checkService } from './cmd/check-service';
 import { build } from './cmd/build';
 import { packagr } from './cmd/package';
@@ -11,12 +10,8 @@ import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import {info} from "./cmd/info";
 import { logs } from "./cmd/logs";
-import { EventsLog } from "@microlambda/logger";
-import { EventLogsFileHandler } from '@microlambda/core';
 import { init } from './cmd/init';
 import { commandWrapper } from './utils/command-wapper';
-
-const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler()]);
 
 const program = new Command();
 
@@ -83,8 +78,7 @@ program
           port: cmd.P || 4545,
           interactive: cmd.interactive,
         };
-        eventsLog.scope('cmd').debug(options);
-        await start(cmd, eventsLog);
+        await start(cmd);
       }, true),
   );
 
@@ -102,7 +96,7 @@ program
   .command('logs <service> [command]')
   .description('print service logs')
   .action(async (service, command) => {
-    await logs(service, command, eventsLog);
+    await logs(service, command);
   });
 
 program
@@ -163,7 +157,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await build(cmd, eventsLog);
+        await build(cmd);
       }),
   );
 
@@ -179,7 +173,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await packagr(cmd, eventsLog);
+        await packagr(cmd);
       }),
   );
 
@@ -201,7 +195,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await deploy(cmd, eventsLog);
+        await deploy(cmd);
       }),
   );
 
@@ -221,7 +215,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await remove(cmd, eventsLog);
+        await remove(cmd);
       }),
   );
 
@@ -250,7 +244,7 @@ program
   .action(
     async (blueprint: string) =>
       await commandWrapper(async () => {
-        await generate(blueprint, eventsLog);
+        await generate(blueprint);
       }),
   );
 

@@ -1,0 +1,31 @@
+{
+  "name": "@microlambda/layers",
+  "version": "1.0.0-alpha.2",
+  "description": "Manage project lambda layers. Check if a republish is necessary and performs it if required",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/aws"
+  },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "keywords": [
+    "serverless",
+    "typescript",
+    "yarn",
+    "microservices",
+    "aws",
+    "monorepo"
+  ],
+  "dependencies": {
+    "@aws-sdk/client-acm": "^3.150.0",
+    "@microlambda/aws": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
+    "@microlambda/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@microlambda/types": "workspace:*",
+    "jest": "^27.5.1",
+    "typescript": "^4.5.2"
+  }
+}
