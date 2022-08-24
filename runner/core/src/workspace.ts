@@ -531,6 +531,9 @@ export class Workspace {
   }
 
   async invalidate(cmd: string): Promise<void> {
+    if (cache instanceof LocalCache) {
+
+    }
     const cache = new Cache(this, cmd);
     await cache.invalidate();
   }
