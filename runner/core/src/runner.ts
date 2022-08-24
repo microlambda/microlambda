@@ -72,14 +72,32 @@ export class Runner {
     targets: OrderedTargets,
     options: RunOptions,
     args: string[] | string = [],
-    env: {[key: string]: string} = {}
+    env: {[key: string]: string} = {},
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
   ): Observable<RunCommandEvent | StepCompletedEvent> {
     this._logger?.debug('Schedule tasks', { cmd });
-    const steps$ = targets.map((step) => this._runStep(step, targets, cmd, options.force, options.watch || false, options.mode, args, options.stdio, env));
+    const steps$ = targets.map((step) => this._runStep(step, targets, cmd, options.force, options.watch || false, options.mode, args, options.stdio, env, undefined, remoteCache));
     return from(steps$).pipe(concatAll());
   }
 
-  private _rescheduleTasks(cmd: string, currentStep: IResolvedTarget[], impactedTargets: Set<Workspace>, targets: OrderedTargets, options: RunOptions, args: string[] | string, env: { [p: string]: string }): Observable<RunCommandEvent | StepCompletedEvent> {
+  private _rescheduleTasks(
+    cmd: string,
+    currentStep: IResolvedTarget[],
+    impactedTargets: Set<Workspace>,
+    targets: OrderedTargets,
+    options: RunOptions,
+    args: string[] | string,
+    env: { [p: string]: string },
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
+  ): Observable<RunCommandEvent | StepCompletedEvent> {
     this._logger?.debug('Rescheduling from step', targets.indexOf(currentStep));
     this._logger?.debug('Rescheduling', cmd, targets
       .filter((step) => {
@@ -98,9 +116,9 @@ export class Runner {
         this._logger?.debug('Scheduling step', targets.indexOf(step));
         if (targets.indexOf(step) === targets.indexOf(currentStep)) {
           this._logger?.debug('Ignoring non-impacted targets, impacted targets are', Array.from(impactedTargets).map(w => w.name));
-          return this._runStep(step, targets, cmd, options.force, options.watch || false, options.mode, args, options.stdio, env, impactedTargets);
+          return this._runStep(step, targets, cmd, options.force, options.watch || false, options.mode, args, options.stdio, env, impactedTargets, remoteCache);
         }
-        return this._runStep(step, targets, cmd, options.force, options.watch || false, options.mode, args, options.stdio, env);
+        return this._runStep(step, targets, cmd, options.force, options.watch || false, options.mode, args, options.stdio, env, undefined, remoteCache);
       });
     return from(subsequentSteps$).pipe(concatAll());
   }
@@ -111,7 +129,18 @@ export class Runner {
     this._watchers.get(cmd)?.abort.next();
   }
 
-  runCommand(cmd: string, options: RunOptions, args: string[] | string = [], env: {[key: string]: string} = {}, debounce = 1000): Observable<RunCommandEvent> {
+  runCommand(
+    cmd: string,
+    options: RunOptions,
+    args: string[] | string = [],
+    env: {[key: string]: string} = {},
+    debounce = 1000,
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
+  ): Observable<RunCommandEvent> {
     return new Observable((obs) => {
       this._logger?.info('Resolving for command', cmd);
       const targets = new TargetsResolver(this._project, this._logger?.logger);
@@ -123,7 +152,7 @@ export class Runner {
           return obs.complete();
         }
         if (!options.watch) {
-          const tasks$ = this._scheduleTasks(cmd, targets, options, args, env);
+          const tasks$ = this._scheduleTasks(cmd, targets, options, args, env, remoteCache);
           this._logger?.info('Tasks scheduled for command', cmd)
           tasks$.subscribe({
             next: (evt) => {
@@ -136,7 +165,7 @@ export class Runner {
           })
         } else {
           this._logger?.info('Running target', cmd, 'in watch mode');
-          let currentTasks$ = this._scheduleTasks(cmd, targets, options, args, env);
+          let currentTasks$ = this._scheduleTasks(cmd, targets, options, args, env, remoteCache);
           const watcher = new Watcher(targets, cmd, debounce, this._logger?.logger);
           const shouldAbort$ = new Subject<void>();
           const shouldReschedule$ = new Subject<Step>();
@@ -221,7 +250,7 @@ export class Runner {
               throw Error('Assertion failed: current step not resolved in interruption !')
             }
             this._logger?.debug('Interruption has been received in previous step, re-scheduling');
-            currentTasks$ = this._rescheduleTasks(cmd, fromStep, impactedTargets, targets, options, args, env);
+            currentTasks$ = this._rescheduleTasks(cmd, fromStep, impactedTargets, targets, options, args, env, remoteCache);
             this._logger?.debug('Current tasks updated');
             executeCurrentTasks();
           })
@@ -287,12 +316,17 @@ export class Runner {
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
     only?: Set<Workspace>,
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
   ): Observable<RunCommandEvent | StepCompletedEvent> {
     const executions = new Set<CaughtProcessExecution>();
     this._logger?.info('Preparing step', targets.indexOf(step), { cmd });
     const tasks$ = step
       .filter((w) => !only || only.has(w.workspace))
-      .map((w) => this._runForWorkspace(executions, w, cmd, force, watch, mode, args, stdio, env));
+      .map((w) => this._runForWorkspace(executions, w, cmd, force, watch, mode, args, stdio, env, remoteCache));
     const step$ = from(tasks$).pipe(
       mergeAll(this._concurrency),
     );
@@ -378,10 +412,15 @@ export class Runner {
     args: string[] | string = [],
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
   ): Observable<RunCommandEvent> {
     if (target.affected && target.hasCommand) {
       const started$: Observable<RunCommandEvent>  = of({ type: RunCommandEventEnum.NODE_STARTED, workspace: target.workspace });
-      const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(target, cmd, force, args, stdio, env).pipe(
+      const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(target, cmd, force, args, stdio, env, remoteCache).pipe(
         concatMap((result) => this._mapToRunCommandEvents(cmd, executions, result, target, mode, watch)),
       );
       return concat(
@@ -399,9 +438,14 @@ export class Runner {
     args: string[] | string = [],
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
   ) : Observable<CaughtProcessExecution>{
     this._logger?.info('Preparing command', {cmd, workspace: target.workspace.name});
-    const command$ = target.workspace.run(cmd, force, args, stdio, env);
+    const command$ = target.workspace.run(cmd, force, args, stdio, env, remoteCache);
     return command$.pipe(
       map((result) => ({ status: 'ok' as const, result, target })),
       catchError((error) => of({ status: 'ko' as const, error, target })),

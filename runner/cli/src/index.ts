@@ -49,13 +49,16 @@ program
   .option('-p, --parallel', 'run command in parallel in all workspaces')
   .option('-t, --topological', 'run command in dependency before')
   .option('--force', 'ignore cached outputs and checksums')
+  .option('--remote-cache <sha1>', 'use a remote cache instead local cache. A relative commit reference must be passed')
   .option('--watch', 'watch sources and run the command again on changes')
   .option('--to <workspace>', 'run the command only to a given workspace and its dependencies')
   .option('--affected <rev1>..[rev2]', 'only run command on workspaces affected between two revisions')
-  .description('run a centipod target through the dependencies graph')
+  .description('run a target through the dependencies graph')
   .action(
     async (cmd, options) =>
       await commandWrapper(async () => {
+        console.debug(cmd);
+        process.exit(1);
         await run(cmd, options);
       }, true),
   );

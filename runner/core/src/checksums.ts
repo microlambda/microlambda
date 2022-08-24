@@ -1,5 +1,3 @@
-import { promises as fs } from 'fs';
-import { join } from 'path';
 import { fromFile } from 'hasha';
 import { MilaError, MilaErrorCode } from "@microlambda/errors";
 import { fs as fsUtils } from '@microlambda/utils';
@@ -7,7 +5,6 @@ import { GlobsHelpers } from './globs';
 import { EventsLog } from '@microlambda/logger';
 import { Workspace } from './workspace';
 import { ICommandConfig, ITargetConfig } from '@microlambda/config';
-import { Cache } from './cache';
 import { isEqual } from 'lodash';
 
 interface ICommonChecksums {
@@ -40,25 +37,8 @@ export class Checksums {
     readonly eventsLog?: EventsLog,
   ) {}
 
-  get cacheFolder() {
-    return Cache.cacheFolder(this.workspace, this.cmd);
-  }
-
-  get checksumPath(): string {
-    return join(this.cacheFolder, 'checksums.json');
-  }
-
   get config(): ITargetConfig | undefined {
     return this.workspace.config[this.cmd];
-  }
-
-  async read(): Promise<ISourcesChecksums> {
-    try {
-      const checksums = await fs.readFile(this.checksumPath);
-      return JSON.parse(checksums.toString());
-    } catch (e) {
-      return {} as ISourcesChecksums;
-    }
   }
 
   static compare(current: IChecksums, stored: IChecksums): boolean {

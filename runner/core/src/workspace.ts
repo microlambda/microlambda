@@ -13,7 +13,6 @@ import {
   IProcessResult,
   isDaemon,
 } from "./process";
-import { Cache } from "./cache";
 import {Publish, PublishActions, PublishEvent} from './publish';
 import { Observable, race, throwError } from "rxjs";
 import {MilaError, MilaErrorCode} from '@microlambda/errors';
@@ -25,7 +24,12 @@ import processTree from "ps-tree";
 import { isPortAvailable } from "./port-available";
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { ITargetsConfig, ConfigReader, ILogsCondition, ICommandConfig } from '@microlambda/config';
-import { Artifacts } from './artifacts';
+import { LocalCache } from "./cache/local-cache";
+import { LocalArtifacts } from './artifacts/local-artifacts';
+import { Cache } from './cache/cache';
+import { Artifacts } from './artifacts/artifacts';
+import { RemoteCache } from './cache/remote-cache';
+import { RemoteArtifacts } from './artifacts/remote-artifacts';
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -451,11 +455,23 @@ export class Workspace {
     args: string[] | string = [],
     env: {[key: string]: string} = {},
     stdio: 'pipe' | 'inherit' = 'pipe',
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
   ): Promise<IProcessResult> {
     const now = Date.now();
     this._logger?.info('Running command', { target: this.name, cmd: target, args, env });
-    const cache = new Cache(this, target, args, env, this.eventsLog);
-    const artifacts = new Artifacts(this, target, args, env, this.eventsLog);
+    let cache: Cache;
+    let artifacts: Artifacts;
+    if (remoteCache) {
+      cache = new RemoteCache(remoteCache.region, remoteCache.bucket, this, target, remoteCache.sha1, args, env, this.eventsLog);
+      artifacts = new RemoteArtifacts(remoteCache.region, remoteCache.bucket, this, target, remoteCache.sha1, args, env, this.eventsLog);
+    } else {
+      cache = new LocalCache(this, target, args, env, this.eventsLog);
+      artifacts = new LocalArtifacts(this, target, args, env, this.eventsLog);
+    }
     try {
       const cachedOutputs = await cache.read();
       const areArtifactsValid = await artifacts.checkArtifacts();
@@ -489,12 +505,17 @@ export class Workspace {
     args: string[] | string = [],
     stdio: 'pipe' | 'inherit' = 'pipe',
     env: {[key: string]: string} = {},
+    remoteCache?: {
+      bucket: string,
+      region: string,
+      sha1: string,
+    },
   ): Observable<IProcessResult> {
     this._logger?.info('Preparing command', { cmd: target, workspace: this.name });
     return new Observable<IProcessResult>((obs) => {
       this._logger?.info('Running cmd', { cmd: target, target: this.name });
       this._logger?.debug('Running cmd', target)
-      this._run(target, force, args, env, stdio)
+      this._run(target, force, args, env, stdio, remoteCache)
         .then((result) => {
           this._logger?.info('Success', { cmd: target, target: this.name }, result);
           obs.next(result)
@@ -507,11 +528,6 @@ export class Workspace {
           obs.complete();
       });
     });
-  }
-
-  async getResult(cmd: string): Promise<Array<ICommandResult> | null> {
-    const cache = new Cache(this, cmd);
-    return cache.read();
   }
 
   async invalidate(cmd: string): Promise<void> {
