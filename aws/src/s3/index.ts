@@ -1,13 +1,16 @@
 import { bucketExists } from './bucket-exists';
 import { createBucket } from './create-bucket';
-import { downloadStream } from './download-stream';
+import { downloadBuffer, downloadStream } from './download-stream';
 import { putObject } from './put-object';
 import { deleteObject } from './delete-object';
+import { uploadStream } from './upload-stream';
 
 export const s3 = {
   bucketExists,
   createBucket,
   downloadStream,
+  downloadBuffer,
+  uploadStream,
   putObject,
   deleteObject,
 };

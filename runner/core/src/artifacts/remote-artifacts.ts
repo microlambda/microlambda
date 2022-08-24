@@ -7,10 +7,10 @@ import { Artifacts } from './artifacts';
 import { aws } from '@microlambda/aws';
 import { currentSha1 } from '../remote-cache-utils';
 import { PassThrough } from 'stream';
-import archiver from 'archiver';
 import { createReadStream } from 'fs';
 import { relative } from 'path';
 import { MilaError } from '@microlambda/errors';
+import { compress, extract } from '../archive';
 
 export class RemoteArtifacts extends Artifacts {
 
@@ -50,31 +50,26 @@ export class RemoteArtifacts extends Artifacts {
   }
 
   async downloadArtifacts(): Promise<void> {
-
+    try {
+      const downloadStream = await aws.s3.downloadStream(this.bucket, this.storedArtifactsChecksumsKey, this.awsRegion);
+      await extract(downloadStream, this.workspace.root);
+    } catch (e) {
+      this.logger?.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
+      this.logger?.error(e);
+    }
   }
 
   async uploadArtifacts(): Promise<void> {
     const artifacts = await this._resolveArtifactsPaths();
-    const uploadStream = new PassThrough();
-    const archive = archiver("zip", {
-      zlib: { level: 4 },
-    });
-    artifacts.map((absolutePath) => {
-      archive.append(createReadStream(absolutePath), { name: relative(this.workspace.root, absolutePath) });
-    });
-    archive.on("warning", (err) => {
-      throw new MilaError(MilaError.ERROR_ZIPPING_ARTIFACTS, 'Cannot create zip file for artifacts', err);
-    });
-    archive.on("error", (err) => {
-      throw new MilaError(MilaError.ERROR_ZIPPING_ARTIFACTS, 'Cannot create zip file for artifacts', err);
-    });
-    archive.on("end", function () {
-      console.log("archive end")
-    });
+    const archiveStream = await compress(artifacts, this.workspace.root);
     try {
-      await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, uploadStream, this.awsRegion);
+      const passThroughStream = new PassThrough();
+      archiveStream.on('end', () => passThroughStream.end());
+      archiveStream.pipe(passThroughStream);
+      await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, passThroughStream, this.awsRegion);
     } catch (e) {
       this.logger?.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
+      this.logger?.error(e);
     }
   }
 
@@ -84,7 +79,7 @@ export class RemoteArtifacts extends Artifacts {
 
   protected async _read(): Promise<IArtifactsChecksums> {
     try {
-      const checksums = await aws.s3.downloadStream(this.bucket, this.storedArtifactsChecksumsKey, this.awsRegion);
+      const checksums = await aws.s3.downloadBuffer(this.bucket, this.storedArtifactsChecksumsKey, this.awsRegion);
       return checksums ? JSON.parse(checksums.toString('utf-8')) : {};
     } catch (e) {
       return {} as IArtifactsChecksums;

@@ -899,6 +899,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/lib-storage@npm:^3.154.0":
+  version: 3.154.0
+  resolution: "@aws-sdk/lib-storage@npm:3.154.0"
+  dependencies:
+    "@aws-sdk/smithy-client": 3.142.0
+    buffer: 5.6.0
+    events: 3.3.0
+    stream-browserify: 3.0.0
+    tslib: ^2.3.1
+  peerDependencies:
+    "@aws-sdk/abort-controller": ^3.0.0
+    "@aws-sdk/client-s3": ^3.0.0
+  checksum: b04d8dbfef2e580800e87f67f19629c27af0585bf3c59f71b0864af31bbea4e322462efaeafbcdfe23d7ee379e4f5cb6a058e307a34ec6abdb539f3059c00a4b
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/md5-js@npm:3.127.0":
   version: 3.127.0
   resolution: "@aws-sdk/md5-js@npm:3.127.0"
@@ -3532,6 +3548,7 @@ __metadata:
     "@aws-sdk/client-route-53": ^3.150.0
     "@aws-sdk/client-s3": ^3.150.0
     "@aws-sdk/client-secrets-manager": ^3.42.0
+    "@aws-sdk/lib-storage": ^3.154.0
     "@microlambda/types": "workspace:*"
     jest: ^27.5.1
     typescript: ^4.5.2
@@ -3599,8 +3616,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/config@workspace:config"
   dependencies:
+    "@microlambda/errors": "workspace:*"
     "@microlambda/types": "workspace:*"
-    "@microlambda/utils": "workspace:*"
     fs-extra: ^10.1.0
     jest: ^27.5.1
     joi: ^17.6.0
@@ -3756,6 +3773,7 @@ __metadata:
     "@types/debug": ^4.1.7
     "@types/lodash": 4.14.168
     "@types/semver": ^7.3.5
+    "@types/tar-stream": ^2.2.2
     chokidar: ^3.5.3
     conventional-commits-parser: ^3.2.1
     debug: ^4.3.3
@@ -3767,6 +3785,7 @@ __metadata:
     rxjs: ^7.4.0
     semver: ^7.3.5
     simple-git: ^2.38.0
+    tar-stream: ^2.2.0
     typescript: ^4.2.4
   languageName: unknown
   linkType: soft
@@ -4951,6 +4970,15 @@ __metadata:
   version: 2.0.1
   resolution: "@types/stack-utils@npm:2.0.1"
   checksum: 205fdbe3326b7046d7eaf5e494d8084f2659086a266f3f9cf00bccc549c8e36e407f88168ad4383c8b07099957ad669f75f2532ed4bc70be2b037330f7bae019
+  languageName: node
+  linkType: hard
+
+"@types/tar-stream@npm:^2.2.2":
+  version: 2.2.2
+  resolution: "@types/tar-stream@npm:2.2.2"
+  dependencies:
+    "@types/node": "*"
+  checksum: 4b33bc0d53770e952d6e2e8acb8889190510326a3e255d0c6edd94136d6027ecae939a7b49188d1d02d774328d9a3742ff633d505709d1a1200b3413c88d793d
   languageName: node
   linkType: hard
 
@@ -6838,6 +6866,16 @@ __metadata:
     ieee754: ^1.1.4
     isarray: ^1.0.0
   checksum: 8801bc1ba08539f3be70eee307a8b9db3d40f6afbfd3cf623ab7ef41dffff1d0a31de0addbe1e66e0ca5f7193eeb667bfb1ecad3647f8f1b0750de07c13295c3
+  languageName: node
+  linkType: hard
+
+"buffer@npm:5.6.0":
+  version: 5.6.0
+  resolution: "buffer@npm:5.6.0"
+  dependencies:
+    base64-js: ^1.0.2
+    ieee754: ^1.1.4
+  checksum: d659494c5032dd39d03d2912e64179cc44c6340e7e9d1f68d3840e7ab4559989fbce92b4950174593c38d05268224235ba404f0878775cab2a616b6dcad9c23e
   languageName: node
   linkType: hard
 
@@ -10130,6 +10168,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"events@npm:3.3.0":
+  version: 3.3.0
+  resolution: "events@npm:3.3.0"
+  checksum: f6f487ad2198aa41d878fa31452f1a3c00958f46e9019286ff4787c84aac329332ab45c9cdc8c445928fc6d7ded294b9e005a7fce9426488518017831b272780
+  languageName: node
+  linkType: hard
+
 "exec-buffer@npm:^3.0.0":
   version: 3.2.0
   resolution: "exec-buffer@npm:3.2.0"
@@ -12110,7 +12155,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.0, inherits@npm:~2.0.1, inherits@npm:~2.0.3":
+"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.0, inherits@npm:~2.0.1, inherits@npm:~2.0.3, inherits@npm:~2.0.4":
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 4a48a733847879d6cf6691860a6b1e3f0f4754176e4d71494c41f3475553768b10f84b5ce1d40fbd0e34e6bfbb864ee35858ad4dd2cf31e02fc4a154b724d7f1
@@ -17034,7 +17079,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readable-stream@npm:3, readable-stream@npm:^3.0.0, readable-stream@npm:^3.1.1, readable-stream@npm:^3.4.0, readable-stream@npm:^3.6.0":
+"readable-stream@npm:3, readable-stream@npm:^3.0.0, readable-stream@npm:^3.1.1, readable-stream@npm:^3.4.0, readable-stream@npm:^3.5.0, readable-stream@npm:^3.6.0":
   version: 3.6.0
   resolution: "readable-stream@npm:3.6.0"
   dependencies:
@@ -18425,6 +18470,16 @@ __metadata:
   version: 2.0.1
   resolution: "statuses@npm:2.0.1"
   checksum: 18c7623fdb8f646fb213ca4051be4df7efb3484d4ab662937ca6fbef7ced9b9e12842709872eb3020cc3504b93bde88935c9f6417489627a7786f24f8031cbcb
+  languageName: node
+  linkType: hard
+
+"stream-browserify@npm:3.0.0":
+  version: 3.0.0
+  resolution: "stream-browserify@npm:3.0.0"
+  dependencies:
+    inherits: ~2.0.4
+    readable-stream: ^3.5.0
+  checksum: 4c47ef64d6f03815a9ca3874e2319805e8e8a85f3550776c47ce523b6f4c6cd57f40e46ec6a9ab8ad260fde61863c2718f250d3bedb3fe9052444eb9abfd9921
   languageName: node
   linkType: hard
 

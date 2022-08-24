@@ -45,7 +45,7 @@ export class RemoteCache extends Cache {
 
   protected async _readChecksums(): Promise<ISourcesChecksums> {
     try {
-      const raw = await aws.s3.downloadStream(this.bucket, this.currentChecksumsKey, this.awsRegion);
+      const raw = await aws.s3.downloadBuffer(this.bucket, this.currentChecksumsKey, this.awsRegion);
       if (!raw) {
         return {} as ISourcesChecksums;
       }
@@ -58,7 +58,7 @@ export class RemoteCache extends Cache {
   protected async _readOutput(): Promise<ICommandResult[]> {
     let raw: string | undefined;
     try {
-      const buffer = await aws.s3.downloadStream(this.bucket, this.storedOutputKey, this.awsRegion);
+      const buffer = await aws.s3.downloadBuffer(this.bucket, this.storedOutputKey, this.awsRegion);
       raw = buffer?.toString('utf-8');
     } catch (e) {
       this._logger?.warn('Error reading output from AWS', e);

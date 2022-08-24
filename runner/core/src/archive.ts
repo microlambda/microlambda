@@ -38,7 +38,7 @@ export const compress = async (paths: string[], relativeTo?: string): Promise<Re
   return archive;
 }
 
-export const extract = async (archivePath: string, relativeTo?: string): Promise<void> => {
+export const extract = async (archiveStream: Readable, relativeTo?: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const tar = deflate();
     tar.on('entry', (header, stream, next) => {
@@ -52,11 +52,12 @@ export const extract = async (archivePath: string, relativeTo?: string): Promise
       });
       stream.on('end', () => {
         console.debug('Processing next entry');
+        writeStream.end();
         next();
       })
       stream.resume() // just auto drain the stream
     });
-    createReadStream(archivePath).pipe(tar);
+    archiveStream.pipe(tar);
     tar.on('finish', () => {
       console.debug('Extracted');
       return resolve();
