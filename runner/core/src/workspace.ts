@@ -490,25 +490,32 @@ export class Workspace {
       artifacts = new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog);
     }
     try {
-      const cachedOutputs = await cache?.read();
-      const areArtifactsValid = (await artifacts?.checkArtifacts()) || false;
-      this._logger?.info('Cache read', { cmd: options.cmd, target: this.name }, cachedOutputs);
       if (options.force) {
         this._logger?.info('Option --force used, removing artifacts to run command on a clean state');
         await new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog).removeArtifacts();
+      } else {
+        const cachedOutputs = await cache?.read();
+        if (artifacts instanceof RemoteArtifacts) {
+          await artifacts.downloadArtifacts();
+        }
+        const areArtifactsValid = (await artifacts?.checkArtifacts()) || false;
+        console.debug('ARTIFACTS VALID ?', areArtifactsValid);
+        this._logger?.info('Cache read', { cmd: options.cmd, target: this.name }, cachedOutputs);
+        if (!options.force && cachedOutputs && areArtifactsValid) {
+          this._logger?.info('From cache', { cmd: options.cmd, target: this.name });
+          this._handleLogs('open', options.cmd);
+          cachedOutputs.forEach((output) => {
+            this._handleLogs('append', options.cmd, output.command);
+            this._handleLogs('append', options.cmd, output.all);
+            this._handleLogs('append', options.cmd, `Process exited with status ${output.exitCode} (${output.took}ms)`);
+          });
+          this._handleLogs('close', options.cmd);
+          return { commands: cachedOutputs, overall: Date.now() - now, fromCache: true };
+        } else {
+          this._logger?.info('Cache outdated', { cmd: options.cmd, target: this.name });
+        }
       }
-      if (!options.force && cachedOutputs && areArtifactsValid) {
-        this._logger?.info('From cache', { cmd: options.cmd, target: this.name });
-        this._handleLogs('open', options.cmd);
-        cachedOutputs.forEach((output) => {
-          this._handleLogs('append', options.cmd, output.command);
-          this._handleLogs('append', options.cmd, output.all);
-          this._handleLogs('append', options.cmd, `Process exited with status ${output.exitCode} (${output.took}ms)`);
-        });
-        this._handleLogs('close', options.cmd);
-        return { commands: cachedOutputs, overall: Date.now() - now, fromCache: true };
-      }
-      this._logger?.info('Cache outdated', { cmd: options.cmd, target: this.name });
+      this._logger?.info('Running command');
       return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
     } catch (e) {
       this._logger?.warn('Error reading cache', { cmd: options.cmd, target: this.name });

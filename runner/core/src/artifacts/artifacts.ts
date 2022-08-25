@@ -75,10 +75,12 @@ export abstract class Artifacts {
       throw new MilaError(MilaErrorCode.NO_CONFIG_FOR_TARGET, `No config found for target ${this.cmd}`)
     }
     if (!this.config?.artifacts) {
+      console.info('No artifact to upload');
       return;
     }
     try {
       const toWrite = this._currentChecksums ?? await this._calculateArtifactsChecksums(this.config);
+      console.debug('Writing artifact checksums');
       await this._write(toWrite);
     } catch (e) {
       this.logger?.warn('Error writing artifacts checksums', e);

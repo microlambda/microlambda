@@ -4,6 +4,7 @@ import { downloadBuffer, downloadStream } from './download-stream';
 import { putObject } from './put-object';
 import { deleteObject } from './delete-object';
 import { uploadStream } from './upload-stream';
+import { objectExists } from './key-exists';
 
 export const s3 = {
   bucketExists,
@@ -11,6 +12,7 @@ export const s3 = {
   downloadStream,
   downloadBuffer,
   uploadStream,
+  objectExists,
   putObject,
   deleteObject,
 };

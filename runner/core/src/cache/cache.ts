@@ -32,11 +32,11 @@ export abstract class Cache {
 
   async read(): Promise<Array<ICommandResult> | null> {
     if (!this.config.src) {
-      this._logger?.warn('No sources declared in config, skipping cache');
+      console.warn('No sources declared in config, skipping cache');
       return null;
     }
     try {
-      this._logger?.debug('Calculating checksums');
+      console.debug('Calculating checksums');
       const checksums = new Checksums(this.workspace, this.cmd, this.args, this.env, this.logger?.logger);
       const [currentChecksums, storedChecksum] = await Promise.all([
         checksums.calculate(),
@@ -44,15 +44,17 @@ export abstract class Cache {
       ]);
       this._checksums = currentChecksums;
       if (!Checksums.compare(currentChecksums, storedChecksum)) {
+        console.debug('IS NOT SAME');
         return null;
       }
+      console.debug('IS SAME');
       return this._readOutput();
     } catch (e) {
       if ((e as MilaError).code === MilaErrorCode.NO_FILES_TO_CACHE) {
-        this._logger?.warn(chalk.yellow(`Patterns ${JSON.stringify(this.config.src)} has no match: ignoring cache`, e));
+        console.warn(chalk.yellow(`Patterns ${JSON.stringify(this.config.src)} has no match: ignoring cache`, e));
         return null;
       }
-      this._logger?.warn('Cannot read from cache', e);
+      console.warn('Cannot read from cache', e);
       return null;
     }
   }
@@ -64,12 +66,14 @@ export abstract class Cache {
     try {
       const checksums = new Checksums(this.workspace, this.cmd, this.args, this.env, this.logger?.logger);
       const toWrite = this._checksums ?? await checksums.calculate();
+      console.debug('Writing checksums');
       await Promise.all([
         this._writeChecksums(toWrite),
         this._writeOutput(output),
       ]);
+      console.info('Checksums written !');
     } catch (e) {
-      this._logger?.warn('Error writing cache', e);
+      console.warn('Error writing cache', e);
       await this.invalidate();
     }
   }

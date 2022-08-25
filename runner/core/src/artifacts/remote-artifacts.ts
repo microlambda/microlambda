@@ -55,31 +55,48 @@ export class RemoteArtifacts extends Artifacts {
 
   async downloadArtifacts(): Promise<void> {
     try {
-      const downloadStream = await aws.s3.downloadStream(this.bucket, this.storedArtifactsChecksumsKey, this.awsRegion);
-      await extract(downloadStream, this.workspace.root);
+      console.debug('Fetching artifact at', `s3://${this.bucket}/${this.storedArtifactsZipKey}`);
+      const exists = await aws.s3.objectExists(this.awsRegion, this.bucket, this.storedArtifactsZipKey);
+      console.info('Artifacts.zip exists on S3', exists);
+      if (exists) {
+        const downloadStream = await aws.s3.downloadStream(this.bucket, this.storedArtifactsZipKey, this.awsRegion);
+        await extract(downloadStream, this.workspace.root);
+        console.debug('Artifacts unzipped');
+      }
     } catch (e) {
-      this.logger?.error('Error downloading artifacts', this.bucket, this.currentArtifactsZipKey);
+      console.error('Error downloading/unzipping artifacts');
+      this.logger?.error('Error downloading artifacts', this.bucket, this.storedArtifactsZipKey);
       this.logger?.error(e);
-      throw new MilaError(MilaErrorCode.ERROR_DOWNLOADING_ARTIFACTS, 'Cannot retrieve artifacts from previous execution. Error downloading from S3', e);
     }
   }
 
   async uploadArtifacts(): Promise<void> {
-    const artifacts = await this._resolveArtifactsPaths();
-    const archiveStream = await compress(artifacts, this.workspace.root);
     try {
+      console.debug('Uploading artifact at', `s3://${this.bucket}/${this.currentArtifactsZipKey}`);
+      const artifacts = await this._resolveArtifactsPaths();
+      const archiveStream = await compress(artifacts, this.workspace.root);
       const passThroughStream = new PassThrough();
-      archiveStream.on('end', () => passThroughStream.end());
+      //archiveStream.on('end', () => passThroughStream.end());
       archiveStream.pipe(passThroughStream);
-      await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, passThroughStream, this.awsRegion);
+      try {
+        await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, passThroughStream, this.awsRegion);
+
+      } catch (e) {
+        console.debug('errs3', e)
+      }
+      console.debug('Artifact uploaded');
     } catch (e) {
-      this.logger?.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
+      console.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
+      console.error(e);
       this.logger?.error(e);
     }
   }
 
   protected async _write(data: IArtifactsChecksums): Promise<void> {
     await aws.s3.putObject(this.bucket, this.currentArtifactsChecksumsKey, this._serialize(data), this.awsRegion);
+    console.debug('Checksums written, uploading artifacts');
+    await this.uploadArtifacts();
+    console.debug('Artifacts and checksums uploaded');
   }
 
   protected async _read(): Promise<IArtifactsChecksums> {
