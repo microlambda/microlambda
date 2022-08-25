@@ -7,10 +7,8 @@ import { Artifacts } from './artifacts';
 import { aws } from '@microlambda/aws';
 import { currentSha1 } from '../remote-cache-utils';
 import { PassThrough } from 'stream';
-import { createReadStream } from 'fs';
-import { relative } from 'path';
-import { MilaError } from '@microlambda/errors';
 import { compress, extract } from '../archive';
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
 
 export class RemoteArtifacts extends Artifacts {
 
@@ -21,7 +19,7 @@ export class RemoteArtifacts extends Artifacts {
     readonly bucket: string,
     readonly workspace: Workspace,
     readonly cmd: string,
-    readonly sha1: string,
+    readonly sha1?: string,
     readonly args: string[] | string = [],
     readonly env: {[key: string]: string} = {},
     readonly eventsLog?: EventsLog,
@@ -38,6 +36,9 @@ export class RemoteArtifacts extends Artifacts {
   }
 
   get storedArtifactsChecksumsKey(): string {
+    if (!this.sha1) {
+      throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot retrieve artifacts checksums from previous execution, no relative sha1 were given');
+    }
     return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/artifacts.json`;
   }
 
@@ -46,6 +47,9 @@ export class RemoteArtifacts extends Artifacts {
   }
 
   get storedArtifactsZipKey(): string {
+    if (!this.sha1) {
+      throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot retrieve artifacts from previous execution, no relative sha1 were given');
+    }
     return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/artifacts.zip`;
   }
 
@@ -54,8 +58,9 @@ export class RemoteArtifacts extends Artifacts {
       const downloadStream = await aws.s3.downloadStream(this.bucket, this.storedArtifactsChecksumsKey, this.awsRegion);
       await extract(downloadStream, this.workspace.root);
     } catch (e) {
-      this.logger?.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
+      this.logger?.error('Error downloading artifacts', this.bucket, this.currentArtifactsZipKey);
       this.logger?.error(e);
+      throw new MilaError(MilaErrorCode.ERROR_DOWNLOADING_ARTIFACTS, 'Cannot retrieve artifacts from previous execution. Error downloading from S3', e);
     }
   }
 

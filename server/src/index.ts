@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request } from 'express';
 import { createServer, Server } from 'http';
 import { Project, Scheduler, Workspace } from "@microlambda/core";
 import cors from 'cors';

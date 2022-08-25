@@ -143,10 +143,10 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
       return resolve();
     };
     const runner = new Runner(options.project);
-    runner.runCommand('build', {
+    runner.runCommand({
+      cmd: 'build',
       to: options.service ? [options.service] : undefined,
       mode: 'topological',
-      affected: options.affected,
       force: options.force,
     }).subscribe({ next: onNext, error: onError, complete: onComplete });
   });

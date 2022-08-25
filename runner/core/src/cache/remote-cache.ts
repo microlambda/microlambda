@@ -5,6 +5,7 @@ import { EventsLog } from '@microlambda/logger';
 import { aws } from '@microlambda/aws';
 import { Cache } from './cache';
 import { currentSha1 } from '../remote-cache-utils';
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
 
 export class RemoteCache extends Cache {
   static readonly scope = '@microlambda/runner-core/remote-cache';
@@ -14,7 +15,7 @@ export class RemoteCache extends Cache {
     readonly bucket: string,
     readonly workspace: Workspace,
     readonly cmd: string,
-    readonly sha1: string,
+    readonly sha1?: string,
     readonly args: string[] | string = [],
     readonly env: {[key: string]: string} = {},
     readonly eventsLog?: EventsLog,
@@ -31,10 +32,16 @@ export class RemoteCache extends Cache {
   }
 
   get storedChecksumsKey(): string {
+    if (!this.sha1) {
+      throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot compare checksums to previous execution, no relative sha1 were given');
+    }
     return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/artifacts.json`;
   }
 
   get storedOutputKey(): string {
+    if (!this.sha1) {
+      throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot compare checksums to previous execution, no relative sha1 were given');
+    }
     return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/outputs.json`;
   }
 
@@ -42,10 +49,11 @@ export class RemoteCache extends Cache {
     return `${RemoteCache.cacheKey(this.workspace, this.cmd, currentSha1())}/outputs.json`;
   }
 
-
   protected async _readChecksums(): Promise<ISourcesChecksums> {
     try {
-      const raw = await aws.s3.downloadBuffer(this.bucket, this.currentChecksumsKey, this.awsRegion);
+      this._logger?.debug('Reading checksums from S3', this.bucket, this.storedChecksumsKey, this.awsRegion);
+      const raw = await aws.s3.downloadBuffer(this.bucket, this.storedChecksumsKey, this.awsRegion);
+      this._logger?.debug('S3 raw response', raw);
       if (!raw) {
         return {} as ISourcesChecksums;
       }

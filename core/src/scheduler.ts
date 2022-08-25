@@ -99,13 +99,15 @@ export class Scheduler {
     this._runners.transpile = new Runner(this.project, this._concurrency, this._logger?.logger);
     this._runners.build = new Runner(this.project, this._concurrency, this._logger?.logger);
     this._logger.info('Building targets and their dependencies', [...this._targets].map((t) => t.name));
-    const transpile$ = this._runners.transpile.runCommand('transpile', {
+    const transpile$ = this._runners.transpile.runCommand({
+      cmd: 'transpile',
       mode: 'topological',
       force: false,
       to: [...this._targets],
       watch: true,
     });
-    const build$ = this._runners.transpile.runCommand('build', {
+    const build$ = this._runners.transpile.runCommand({
+      cmd: 'build',
       mode: 'topological',
       force: false,
       to: [...this._targets],
@@ -196,9 +198,15 @@ export class Scheduler {
           const runner = new Runner(this.project, this._concurrency, this._logger.logger);
           this._runners.start.set(w.name, runner);
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STARTING);
-          const daemon$ = runner.runCommand('start', { mode: 'parallel', workspaces: [w], force: true }, [
-            `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
-          ]);
+          const daemon$ = runner.runCommand({
+            cmd: 'start',
+            mode: 'parallel',
+            workspaces: [w],
+            force: true,
+            args: [
+              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
+            ]
+          });
           const subscription = daemon$.subscribe({
             next: (evt) => {
               this._logger.debug({ evt: evt.type, workspace: w.name});

@@ -6,35 +6,129 @@ import {
   isTargetResolvedEvent,
   Project,
   Workspace,
-  isDaemon
-} from "@microlambda/runner-core";
+  isDaemon, RunOptions,
+} from '@microlambda/runner-core';
 import { resolveProjectRoot } from "@microlambda/utils";
 import chalk from 'chalk';
 import { logger } from "../utils/logger";
 import { resolveWorkspace } from "../utils/validate-workspace";
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
+import { ConfigReader } from '@microlambda/config';
+import { aws } from '@microlambda/aws/lib';
 
-export const run = async (cmd: string, options: {parallel: boolean, topological: boolean, watch?: boolean, force: boolean, to?: string, affected?: string}): Promise<void> => {
-  // TODO: Validate options (conflict between parallel/topological, watch/affected)
+interface IRunCommandOptions {
+  parallel: boolean;
+  topological: boolean;
+  watch?: boolean;
+  force?: boolean;
+  to?: string;
+  workspaces?: string;
+  remoteCache?: boolean;
+  affected?: string;
+  debounce?: number;
+}
+
+const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Project): RunOptions => {
+  if (options.parallel && options.topological) {
+    logger.error('Conflict: incompatible options --parallel (-p) and --topological (-t)');
+    process.exit(1);
+  }
+  if (options.parallel && options.to) {
+    logger.error('Conflict: incompatible options --parallel (-p) and --to');
+    process.exit(1);
+  }
+  if (!options.watch && options.debounce) {
+    logger.info('Ignoring --debounce option as --watch mode is disabled.');
+  }
+  if (options.topological && options.workspaces) {
+    logger.error('Conflict: incompatible options --topological (-t) and --workspaces (-w)');
+    process.exit(1);
+  }
+  if (options.affected && !options.remoteCache) {
+    logger.error('You must use remote cache to only run command on affected target since revision', options.affected);
+    process.exit(1);
+  }
+  if (options.remoteCache && options.watch) {
+    logger.error('Cannot using watch mode and remote caching simultaneously');
+    process.exit(1);
+  }
+  const resolveCache = () => {
+    const config = (new ConfigReader(project.root)).rootConfig;
+    const bucket = config.state.checksums;
+    const region = config.defaultRegion;
+    return { bucket, region };
+  }
+
+  const resolveWorkspaces = (names: string | undefined): Workspace[] | undefined => {
+    if (!names) return undefined;
+    const workspacesNames = names?.split(',') || [];
+    return workspacesNames.map((name) => resolveWorkspace(project, name));
+  }
+
+  if (options.parallel) {
+    if (options.watch) {
+      return {
+        cmd,
+        mode: 'parallel',
+        workspaces: resolveWorkspaces(options.workspaces),
+        force: options.force || false,
+        watch: options.watch,
+        debounce: options.debounce,
+      }
+    }
+    return {
+      cmd,
+      mode: 'parallel',
+      workspaces: resolveWorkspaces(options.workspaces),
+      force: options.force || false,
+      watch: false,
+      remoteCache: options.remoteCache ? resolveCache() : undefined,
+      affected: options.affected,
+    }
+  } else {
+    if (options.watch) {
+      return {
+        cmd,
+        mode: 'topological',
+        to: resolveWorkspaces(options.to),
+        watch: options.watch,
+        force: options.force || false,
+        debounce: options.debounce,
+      }
+    }
+    return {
+      cmd,
+      mode: 'topological',
+      to: resolveWorkspaces(options.to),
+      force: options.force || false,
+      watch: false,
+      remoteCache: options.remoteCache ? resolveCache() : undefined,
+      affected: options.affected,
+    };
+  }
+}
+
+export const run = async (cmd: string, options: IRunCommandOptions): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, 'mila-runner-run-' + Date.now())]);
   const eventsLogger = eventsLog.scope('runner-cli/run');
   eventsLogger.info('Running command', cmd, options);
   const project =  await Project.loadProject(projectRoot, eventsLog);
-  const to = options.to ? resolveWorkspace(project, options.to) : undefined;
   logger.lf();
   logger.info(logger.centipod, `Running command ${chalk.white.bold(cmd)}`, options.to ? `on project ${options.to}` : '');
   logger.seperator();
   const mode = options.parallel ? 'parallel' : 'topological';
   logger.info('Mode:', chalk.white.bold(mode));
   logger.info('Use caches:', chalk.white(!options.force));
-  const affected = options.affected?.split('..');
-  let revisions: { rev1: string, rev2: string } | undefined;
-  if (affected?.length) {
-    const rev1 = affected?.length === 2 ? affected[0] : 'HEAD';
-    const rev2 = affected?.length === 2 ? affected[1] : affected[0];
-    logger.info('Only affected packages between', chalk.white.bold(rev1, '->', rev2));
-    revisions = { rev1, rev2 };
+  if (!options.force && options.remoteCache) {
+    const config = (new ConfigReader(project.root)).rootConfig;
+    const region = config.defaultRegion;
+    const currentUser = await aws.iam.getCurrentUser(region);
+    logger.seperator();
+    logger.info('Using remote cache :');
+    logger.info('AWS Account', chalk.white.bold(currentUser.projectId));
+    logger.info('Cache location', chalk.white.bold(`s3://${config.state.checksums}`));
+    logger.info('IAM user', chalk.white.bold(currentUser.arn));
   }
   logger.seperator();
 
@@ -56,13 +150,7 @@ export const run = async (cmd: string, options: {parallel: boolean, topological:
   const now = Date.now();
   let nbTargets = 0;
 
-  const runOptions =  options.parallel ? {
-    mode: 'parallel' as const, force: options.force, affected: revisions, workspaces: to ? [to] : undefined,
-  } : {
-    mode: 'topological' as const, force: options.force, affected: revisions, to: to ? [to] : undefined,
-  };
-
-  project.runCommand(cmd, runOptions).subscribe({
+  project.runCommand(mapToRunOptions(cmd, options,  project)).subscribe({
       next: (event) => {
         if (isTargetResolvedEvent(event)) {
           if (!event.targets.some((target) => target.hasCommand)) {

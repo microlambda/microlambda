@@ -81,7 +81,7 @@ export class EventsLogger implements IBaseLogger {
       level,
       date: new Date().toISOString(),
       scope: this.scope,
-      args: args.map(this._toString.bind(this)),
+      args: args,
     }
   }
 

@@ -35,13 +35,13 @@ export class Deployer {
 
   private _run(region: string, services: Workspace[]): Observable<DeployEvent> {
     const runner = new Runner(this.options.project, this.concurrency);
-    return runner.runCommand(this.mode, {
+    return runner.runCommand({
+      cmd: this.mode,
       workspaces: services,
       mode: 'parallel',
-      affected: this.options.affected,
       force: this.options.force,
-    }, [], {
-      AWS_REGION: region,
+      args: [],
+      env: { AWS_REGION: region }
     }).pipe(map((evt) => ({...evt, region})));
   }
 

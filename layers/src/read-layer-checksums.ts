@@ -4,7 +4,7 @@ import { IBaseLogger } from '@microlambda/types';
 
 export const readLayerChecksums = async (bucket: string, key: string, region: string, logger?: IBaseLogger): Promise<ILayerChecksums | null> => {
     try {
-        const raw = await aws.s3.downloadStream(bucket, key, region);
+        const raw = await aws.s3.downloadBuffer(bucket, key, region);
         if (raw) {
             return JSON.parse(raw.toString('utf-8')) as ILayerChecksums;
         }

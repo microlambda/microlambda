@@ -87,10 +87,10 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
       return resolve({ failures, success });
     };
     const runner = new Runner(options.project, options.concurrency);
-    runner.runCommand('package', {
+    runner.runCommand({
+      cmd: 'package',
       workspaces: options.service ? [options.service] : undefined,
       mode: 'parallel',
-      affected: options.affected,
       force: options.force,
       stdio: options.verbose ? 'inherit' : 'pipe',
     }).subscribe({ next: onNext, error: onError, complete: onComplete });

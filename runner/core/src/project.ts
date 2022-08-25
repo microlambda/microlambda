@@ -94,9 +94,9 @@ export class Project extends Workspace {
     }
   }
 
-  runCommand(cmd: string, options: RunOptions, eventsLog?: EventsLog): Observable<RunCommandEvent> {
+  runCommand(options: RunOptions, eventsLog?: EventsLog): Observable<RunCommandEvent> {
     const runner = new Runner(this, getDefaultThreads(), eventsLog);
-    return runner.runCommand(cmd, options);
+    return runner.runCommand(options);
   }
 
   async publishAll(bump?: ReleaseType, identifier?: string): Promise<Publish> {

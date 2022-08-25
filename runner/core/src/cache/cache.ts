@@ -32,9 +32,11 @@ export abstract class Cache {
 
   async read(): Promise<Array<ICommandResult> | null> {
     if (!this.config.src) {
+      this._logger?.warn('No sources declared in config, skipping cache');
       return null;
     }
     try {
+      this._logger?.debug('Calculating checksums');
       const checksums = new Checksums(this.workspace, this.cmd, this.args, this.env, this.logger?.logger);
       const [currentChecksums, storedChecksum] = await Promise.all([
         checksums.calculate(),

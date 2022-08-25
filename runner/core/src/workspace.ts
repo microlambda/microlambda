@@ -30,6 +30,8 @@ import { Cache } from './cache/cache';
 import { Artifacts } from './artifacts/artifacts';
 import { RemoteCache } from './cache/remote-cache';
 import { RemoteArtifacts } from './artifacts/remote-artifacts';
+import { isUsingRemoteCache, RunOptions } from './runner';
+import { checkWorkingDirectoryClean } from './remote-cache-utils';
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -414,8 +416,8 @@ export class Workspace {
   }
 
   private async _runCommandsAndCache(
-    cache: Cache,
-    artifacts: Artifacts,
+    cache: Cache | undefined,
+    artifacts: Artifacts | undefined,
     target: string,
     args: string[] | string = [],
     env: {[key: string]: string} = {},
@@ -426,9 +428,11 @@ export class Workspace {
       const results = await this._runCommands(target, args, env, stdio);
       try {
         this._logger?.info('All success, caching result', { cmd: target, target: this.name });
-        const toCache: Array<ICommandResult> = results.filter((r) => !isDaemon(r)) as Array<ICommandResult>;
-        await cache.write(toCache);
-        await artifacts.write();
+        if (cache && artifacts) {
+          const toCache: Array<ICommandResult> = results.filter((r) => !isDaemon(r)) as Array<ICommandResult>;
+          await cache.write(toCache);
+          await artifacts.write();
+        }
         this._logger?.info('Successfully cached', { cmd: target, target: this.name });
         this._logger?.debug('Emitting', { cmd: target, target: this.name });
         return { commands: results, fromCache: false, overall: results.reduce((acc, val) => acc + val.took, 0) };
@@ -438,100 +442,108 @@ export class Workspace {
         return { commands: results, fromCache: false, overall: results.reduce((acc, val) => acc + val.took, 0) };
       }
     } catch (e) {
-      this._logger?.info('Command failed, invalidating cache', { cmd: target, target: this.name });
-      try {
-        await cache.invalidate();
-      } catch (err) {
-        this._logger?.error('Error invalidating cache', { cmd: target, target: this.name }, err);
+      if (cache) {
+        this._logger?.info('Command failed, invalidating cache', { cmd: target, target: this.name });
+        try {
+          await cache.invalidate();
+        } catch (err) {
+          this._logger?.error('Error invalidating cache', { cmd: target, target: this.name }, err);
+        }
       }
       this._logger?.debug('Rethrowing', { cmd: target, target: this.name });
       throw e;
     }
   }
 
-  private async _run(
-    target: string,
-    force = false,
-    args: string[] | string = [],
-    env: {[key: string]: string} = {},
-    stdio: 'pipe' | 'inherit' = 'pipe',
-    remoteCache?: {
-      bucket: string,
-      region: string,
-      sha1: string,
-    },
-  ): Promise<IProcessResult> {
+  private async _run(options: RunOptions): Promise<IProcessResult> {
     const now = Date.now();
-    this._logger?.info('Running command', { target: this.name, cmd: target, args, env });
-    let cache: Cache;
-    let artifacts: Artifacts;
-    if (remoteCache) {
-      cache = new RemoteCache(remoteCache.region, remoteCache.bucket, this, target, remoteCache.sha1, args, env, this.eventsLog);
-      artifacts = new RemoteArtifacts(remoteCache.region, remoteCache.bucket, this, target, remoteCache.sha1, args, env, this.eventsLog);
+    this._logger?.info('Running command', { cmd: options.cmd, workspace: this.name });
+    let cache: Cache | undefined;
+    let artifacts: Artifacts | undefined;
+    if (options.force) {
+      this._logger?.info('Using --force option, cache are disabled');
+    } else if (isUsingRemoteCache(options) && options.remoteCache) {
+      this._logger?.info('Using remote cache', { region: options.remoteCache.region, bucket: options.remoteCache.bucket });
+      cache = new RemoteCache(
+        options.remoteCache.region,
+        options.remoteCache.bucket,
+        this,
+        options.cmd,
+        options.affected,
+        options.args,
+        options.env,
+        this.eventsLog,
+      );
+      artifacts = new RemoteArtifacts(
+        options.remoteCache.region,
+        options.remoteCache.bucket,
+        this,
+        options.cmd,
+        options.affected,
+        options.args,
+        options.env,
+        this.eventsLog,
+      );
     } else {
-      cache = new LocalCache(this, target, args, env, this.eventsLog);
-      artifacts = new LocalArtifacts(this, target, args, env, this.eventsLog);
+      this._logger?.info('Using local cache');
+      cache = new LocalCache(this, options.cmd, options.args, options.env, this.eventsLog);
+      artifacts = new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog);
     }
     try {
-      const cachedOutputs = await cache.read();
-      const areArtifactsValid = await artifacts.checkArtifacts();
-      this._logger?.info('Cache read', { cmd: target, target: this.name }, cachedOutputs);
-      if (force) {
-        await artifacts.removeArtifacts();
+      const cachedOutputs = await cache?.read();
+      const areArtifactsValid = (await artifacts?.checkArtifacts()) || false;
+      this._logger?.info('Cache read', { cmd: options.cmd, target: this.name }, cachedOutputs);
+      if (options.force) {
+        this._logger?.info('Option --force used, removing artifacts to run command on a clean state');
+        await new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog).removeArtifacts();
       }
-      if (!force && cachedOutputs && areArtifactsValid) {
-        this._logger?.info('From cache', { cmd: target, target: this.name });
-        this._handleLogs('open', target);
+      if (!options.force && cachedOutputs && areArtifactsValid) {
+        this._logger?.info('From cache', { cmd: options.cmd, target: this.name });
+        this._handleLogs('open', options.cmd);
         cachedOutputs.forEach((output) => {
-          this._handleLogs('append', target, output.command);
-          this._handleLogs('append', target, output.all);
-          this._handleLogs('append', target, `Process exited with status ${output.exitCode} (${output.took}ms)`);
+          this._handleLogs('append', options.cmd, output.command);
+          this._handleLogs('append', options.cmd, output.all);
+          this._handleLogs('append', options.cmd, `Process exited with status ${output.exitCode} (${output.took}ms)`);
         });
-        this._handleLogs('close', target);
+        this._handleLogs('close', options.cmd);
         return { commands: cachedOutputs, overall: Date.now() - now, fromCache: true };
       }
-      this._logger?.info('Cache outdated', { cmd: target, target: this.name });
-      return this._runCommandsAndCache(cache, artifacts, target, args, env, stdio);
+      this._logger?.info('Cache outdated', { cmd: options.cmd, target: this.name });
+      return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
     } catch (e) {
-      this._logger?.warn('Error reading cache', { cmd: target, target: this.name });
+      this._logger?.warn('Error reading cache', { cmd: options.cmd, target: this.name });
       // Error reading from cache
-      return this._runCommandsAndCache(cache, artifacts, target, args, env, stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
     }
   }
 
-  run(
-    target: string,
-    force = false,
-    args: string[] | string = [],
-    stdio: 'pipe' | 'inherit' = 'pipe',
-    env: {[key: string]: string} = {},
-    remoteCache?: {
-      bucket: string,
-      region: string,
-      sha1: string,
-    },
-  ): Observable<IProcessResult> {
-    this._logger?.info('Preparing command', { cmd: target, workspace: this.name });
+  run(options: RunOptions): Observable<IProcessResult> {
+    this._logger?.info('Preparing command', { cmd: options.cmd, workspace: this.name });
     return new Observable<IProcessResult>((obs) => {
-      this._logger?.info('Running cmd', { cmd: target, target: this.name });
-      this._logger?.debug('Running cmd', target)
-      this._run(target, force, args, env, stdio, remoteCache)
+      if (isUsingRemoteCache(options) && options.remoteCache) {
+        checkWorkingDirectoryClean();
+      }
+      this._logger?.info('Running cmd', { cmd: options.cmd, target: this.name });
+      this._logger?.debug('Running cmd', options.cmd)
+      this._run(options)
         .then((result) => {
-          this._logger?.info('Success', { cmd: target, target: this.name }, result);
+          this._logger?.info('Success', { cmd: options.cmd, target: this.name }, result);
           obs.next(result)
         })
         .catch((error) => {
-          this._logger?.warn('Errored', { cmd: target, target: this.name }, error);
+          this._logger?.warn('Errored', { cmd: options.cmd, target: this.name }, error);
           obs.error(error);
         }).finally(() => {
-          this._logger?.debug('Completed', { cmd: target, target: this.name });
+          this._logger?.debug('Completed', { cmd: options.cmd, target: this.name });
           obs.complete();
       });
     });
   }
 
-  async invalidate(cmd: string): Promise<void> {
-    const cache = new Cache(this, cmd);
+  async invalidateLocalCache(
+    cmd: string,
+  ): Promise<void> {
+    let cache = new LocalCache(this, cmd);
     await cache.invalidate();
   }
 

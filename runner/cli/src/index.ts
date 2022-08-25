@@ -47,18 +47,19 @@ program
   program
   .command('run <cmd>')
   .option('-p, --parallel', 'run command in parallel in all workspaces')
+  .option('-w --workspaces <workspaces>', 'run a parallel command to only given workspaces (coma-seperated workspaces names)')
   .option('-t, --topological', 'run command in dependency before')
-  .option('--force', 'ignore cached outputs and checksums')
-  .option('--remote-cache <sha1>', 'use a remote cache instead local cache. A relative commit reference must be passed')
-  .option('--watch', 'watch sources and run the command again on changes')
   .option('--to <workspace>', 'run the command only to a given workspace and its dependencies')
-  .option('--affected <rev1>..[rev2]', 'only run command on workspaces affected between two revisions')
-  .description('run a target through the dependencies graph')
+  .option('-c, --concurrency', 'maximum threads used to run command on target. Defaults to cu‡rrent machine half of CPUs.')
+  .option('--force', 'ignore cached outputs and checksums')
+  .option('--remote-cache', 'use a remote cache instead local cache.')
+  .option('--affected <rev1> <rev2>', 'only run command on workspaces affected between two revisions. Unless remote cache this is based on git diff and it will not verify command artifact')
+  .option('--watch', 'watch sources and run the command again on changes')
+
+    .description('run a target through the dependencies graph')
   .action(
     async (cmd, options) =>
       await commandWrapper(async () => {
-        console.debug(cmd);
-        process.exit(1);
         await run(cmd, options);
       }, true),
   );

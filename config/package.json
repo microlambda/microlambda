@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@microlambda/errors": "workspace:*",
+    "@microlambda/logger": "workspace:*",
     "@microlambda/types": "workspace:*",
     "jest": "^27.5.1",
     "typescript": "^4.5.2"

@@ -4,7 +4,7 @@ export interface IEventsLogEntry {
   level: LogLevel;
   date: string;
   scope?: string;
-  args: string[];
+  args: unknown[];
 }
 
 export type EventsLogBuffer = Array<IEventsLogEntry>;

@@ -1,6 +1,6 @@
 import { IResolvedTarget } from './process';
 import { Workspace } from './workspace';
-import { isTopological, ITopologicalRunOptions, RunOptions } from './runner';
+import { isTopological, ITopologicalRemoteCacheRunOptions, ITopologicalRunOptions, RunOptions } from './runner';
 import { Project } from './project';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 
@@ -31,18 +31,12 @@ export class TargetsResolver {
     const targets: Array<IResolvedTarget> = [];
     await Promise.all(Array.from(eligible).map(async (workspace) => {
       const hasCommand = workspace.hasCommand(cmd);
-      if (hasCommand && options.affected?.rev1) {
-        const patterns = workspace.config[cmd].src;
-        const isAffected = await workspace.isAffected(options.affected.rev1, options.affected.rev2, patterns?.internals, options.mode === 'topological');
-        targets.push({ workspace, affected: isAffected, hasCommand})
-      } else {
-        targets.push({ workspace, affected: true, hasCommand})
-      }
+      targets.push({ workspace, affected: true, hasCommand});
     }));
     return targets;
   }
 
-  private async _recursivelyResolveTargets(cmd: string, options: ITopologicalRunOptions): Promise<OrderedTargets> {
+  private async _recursivelyResolveTargets(cmd: string, options: ITopologicalRunOptions | ITopologicalRemoteCacheRunOptions): Promise<OrderedTargets> {
     this._logger?.silly('Recursively resolving targets');
     const targets = await this._findTargets(Array.from(this._project.getTopologicallySortedWorkspaces(options.to)), cmd, options);
     // Find targets we will not run command on as it is either unaffected or it has not the command
