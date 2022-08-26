@@ -51,15 +51,15 @@ export class RemoteCache extends Cache {
 
   protected async _readChecksums(): Promise<ISourcesChecksums> {
     try {
-      console.debug('Reading checksums from S3', this.bucket, this.storedChecksumsKey, this.awsRegion);
+      this.logger?.debug('Reading checksums from S3', this.bucket, this.storedChecksumsKey, this.awsRegion);
       const raw = await aws.s3.downloadBuffer(this.bucket, this.storedChecksumsKey, this.awsRegion);
-      console.debug('S3 raw response', raw);
+      this.logger?.debug('S3 raw response', raw);
       if (!raw) {
         return {} as ISourcesChecksums;
       }
       return JSON.parse(raw.toString('utf-8'));
     } catch (e) {
-      console.warn('Error reading checksums from AWS', e);
+      this.logger?.warn('Error reading checksums from AWS', e);
       return {} as ISourcesChecksums;
     }
   }
@@ -69,7 +69,7 @@ export class RemoteCache extends Cache {
       const buffer = await aws.s3.downloadBuffer(this.bucket, this.storedOutputKey, this.awsRegion);
       raw = buffer?.toString('utf-8');
     } catch (e) {
-      console.warn('Error reading output from AWS', e);
+      this.logger?.warn('Error reading output from AWS', e);
       throw e;
     }
     if (!raw) {
@@ -78,7 +78,7 @@ export class RemoteCache extends Cache {
     try {
       return JSON.parse(raw);
     } catch(e) {
-      console.warn('Error parsing output from AWS', e);
+      this.logger?.warn('Error parsing output from AWS', e);
       throw e;
     }
   }

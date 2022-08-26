@@ -165,7 +165,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
           nbTargets = event.targets.length;
         } else if (isNodeSucceededEvent(event)) {
           logger.lf();
-          logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.workspace.name)} ${logger.took(event.result.overall )} ${event.result.fromCache ? logger.fromCache : ''}`);
+          logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.workspace.name)} ${logger.took(event.result.overall )} ${event.result.fromCache ? ( event.result.remoteCache ? logger.fromRemoteCache : logger.fromCache) : ''}`);
           for (const command of event.result.commands) {
             if (!isDaemon(command)) {
               logger.lf();

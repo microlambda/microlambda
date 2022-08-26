@@ -35,11 +35,11 @@ export abstract class Artifacts {
       return true;
     }
     this._currentChecksums = await this._calculateArtifactsChecksums(this.config);
-    console.debug('current');
-    console.debug(this._currentChecksums);
+    this.logger?.debug('current');
+    this.logger?.debug(this._currentChecksums);
     const stored = await this._read();
-    console.debug('stored');
-    console.debug(stored);
+    this.logger?.debug('stored');
+    this.logger?.debug(stored);
     return Checksums.compare(this._currentChecksums, stored);
   }
 
@@ -79,12 +79,12 @@ export abstract class Artifacts {
       throw new MilaError(MilaErrorCode.NO_CONFIG_FOR_TARGET, `No config found for target ${this.cmd}`)
     }
     if (!this.config?.artifacts) {
-      console.info('No artifact to upload');
+      this.logger?.info('No artifact to upload');
       return;
     }
     try {
       const toWrite = this._currentChecksums ?? await this._calculateArtifactsChecksums(this.config);
-      console.debug('Writing artifact checksums');
+      this.logger?.debug('Writing artifact checksums');
       await this._write(toWrite);
     } catch (e) {
       this.logger?.warn('Error writing artifacts checksums', e);

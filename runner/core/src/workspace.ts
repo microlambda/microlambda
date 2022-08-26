@@ -499,7 +499,7 @@ export class Workspace {
           await artifacts.downloadArtifacts();
         }
         const areArtifactsValid = (await artifacts?.checkArtifacts()) || false;
-        console.debug('ARTIFACTS VALID ?', areArtifactsValid);
+        this._logger?.debug('Artifacts valid ?', areArtifactsValid);
         this._logger?.info('Cache read', { cmd: options.cmd, target: this.name }, cachedOutputs);
         if (!options.force && cachedOutputs && areArtifactsValid) {
           this._logger?.info('From cache', { cmd: options.cmd, target: this.name });
@@ -510,7 +510,7 @@ export class Workspace {
             this._handleLogs('append', options.cmd, `Process exited with status ${output.exitCode} (${output.took}ms)`);
           });
           this._handleLogs('close', options.cmd);
-          return { commands: cachedOutputs, overall: Date.now() - now, fromCache: true };
+          return { commands: cachedOutputs, overall: Date.now() - now, fromCache: true, remoteCache: cache instanceof RemoteCache };
         } else {
           this._logger?.info('Cache outdated', { cmd: options.cmd, target: this.name });
         }

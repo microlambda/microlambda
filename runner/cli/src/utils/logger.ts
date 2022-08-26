@@ -6,6 +6,7 @@ export const logger = {
   failed: chalk.bgRedBright.black.bold(' FAILED '),
   success: chalk.bgGreen.black.bold(' SUCCESS '),
   fromCache: chalk.bgCyanBright.bold.black(' FROM CACHE '),
+  fromRemoteCache: chalk.bgCyanBright.bold.black(' FROM REMOTE CACHE '),
   took: (ms: number): string => chalk.magenta(`Took ${ms}ms`),
   info: (...args: unknown[]): void => {
     console.info(args.map(a => chalk.grey(a)).join(' '));

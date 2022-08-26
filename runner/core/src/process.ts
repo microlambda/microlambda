@@ -6,6 +6,7 @@ export interface IProcessResult {
   commands: Array<CommandResult>;
   overall: number;
   fromCache: boolean;
+  remoteCache?: boolean;
 }
 
 export const isDaemon = (processResult: CommandResult): processResult is IDaemonCommandResult => {
@@ -40,6 +41,8 @@ export enum RunCommandEventEnum {
   ERROR_INVALIDATING_CACHE,
   SOURCES_CHANGED,
   NODE_INTERRUPTED,
+  ARTIFACTS_DOWNLOADED,
+  ARTIFACTS_UPLOADED,
 }
 
 export interface IResolvedTarget {

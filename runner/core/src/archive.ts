@@ -60,7 +60,6 @@ export class TarArchive {
 
 
 export const compress = async (paths: string[], relativeTo?: string): Promise<TarArchive> => {
-  console.debug('Compressing', paths);
   const tar = new TarArchive();
   for (const file of paths) {
     const meta = await fs.lstat(file);
@@ -73,7 +72,6 @@ export const extract = async (archiveStream: Readable, relativeTo?: string): Pro
   return new Promise((resolve, reject) => {
     const tar = deflate();
     tar.on('entry', (header, stream, next) => {
-      console.debug('Processing entry', header.name);
       const dest = pathResolve(relativeTo || process.cwd(),  header.name);
       if (!existsSync(dirname(dest))) {
         mkdirSync(dirname(dest), { recursive: true });
@@ -86,7 +84,6 @@ export const extract = async (archiveStream: Readable, relativeTo?: string): Pro
         return reject(err);
       });
       stream.on('end', () => {
-        console.debug('Processing next entry');
         writeStream.end();
         next();
       })
@@ -94,7 +91,6 @@ export const extract = async (archiveStream: Readable, relativeTo?: string): Pro
     });
     archiveStream.pipe(tar);
     tar.on('finish', () => {
-      console.debug('Extracted');
       return resolve();
     });
   });

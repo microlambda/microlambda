@@ -12,6 +12,8 @@ import {info} from "./cmd/info";
 import { logs } from "./cmd/logs";
 import { init } from './cmd/init';
 import { commandWrapper } from './utils/command-wapper';
+import { listEnvs } from './cmd/envs/list';
+import { createEnv } from './cmd/envs/create';
 
 const program = new Command();
 
@@ -34,15 +36,19 @@ const envs = program
 envs
   .command('list')
   .description('List environments deployed in current AWS subscription.')
-  .action(() => {
-    console.debug('Kikoo');
+  .action(async () => {
+    await commandWrapper(async () => {
+      await listEnvs();
+    })
   });
 
 envs
   .command('new <name>')
   .description('Create a new environment un current AWS subscription.')
-  .action(() => {
-    console.debug('Kikoo');
+  .action(async (cmd) => {
+    await commandWrapper(async () => {
+      await createEnv(cmd);
+    })
   });
 
 envs

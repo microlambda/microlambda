@@ -11,6 +11,10 @@ import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { aws } from "@microlambda/aws";
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
+import { printAccountInfos } from './envs/list';
+import { Environments } from '@microlambda/remote-state';
+import { init } from '../utils/init';
+import { config } from '@microlambda/handling';
 
 export interface IDeployCmd extends IPackageCmd {
   e: string;
@@ -159,8 +163,60 @@ export const printReport = async (
 };
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
+  if (!cmd.e) {
+    logger.error(chalk.red('You must specify a target environment using the -e option'));
+    process.exit(1);
+  }
+  // Check working dir clean
+  // TODO
+
+  // Check branch mapping
+  // if not good branch and not --skip-branch-check throw
+
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
+
+  // Validate env
+  const { config, project } = await init(projectRoot, eventsLog);
+  const state = new State(config);
+  const env = state.findEnv(cmd.e);
+  if (!env) {
+    logger.error(chalk.red('Target environment not found in remote state. You must initialize environments using yarn mila env create <name>'));
+    process.exit(1);
+  }
+
+  // Parse services
+  for (const service of project.services.values()) {
+    for (const region of env.regions) {
+      const deployedService = state.findServiceInstance(env.name, service.name, region);
+      if (deployedService) {
+        const storedChecksums = ;
+        const currentChecksums =;
+        if (service) {
+
+        }
+      }
+    }
+  }
+
+  // For each service in graph
+    // For each region
+      // If !deployed
+        // (first deploy)
+      // Else
+        // get current sha1
+        // get checksums
+          // if =
+            // (no changes since last deploy (sha1)
+          // else
+            // will be deployed
+
+  // for each service in BD as not in graph
+    // will be destroyed
+  // Confirm
+  // run
+
+
   return new Promise(async () => {
     logger.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
     const reader = new ConfigReader(eventsLog);

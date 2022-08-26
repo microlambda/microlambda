@@ -6,7 +6,6 @@ import { RemoteCache } from '../cache/remote-cache';
 import { Artifacts } from './artifacts';
 import { aws } from '@microlambda/aws';
 import { currentSha1 } from '../remote-cache-utils';
-import { PassThrough } from 'stream';
 import { compress, extract } from '../archive';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 
@@ -55,16 +54,16 @@ export class RemoteArtifacts extends Artifacts {
 
   async downloadArtifacts(): Promise<void> {
     try {
-      console.debug('Fetching artifact at', `s3://${this.bucket}/${this.storedArtifactsZipKey}`);
+      this.logger?.debug('Fetching artifact at', `s3://${this.bucket}/${this.storedArtifactsZipKey}`);
       const exists = await aws.s3.objectExists(this.awsRegion, this.bucket, this.storedArtifactsZipKey);
-      console.info('Artifacts.zip exists on S3', exists);
+      this.logger?.info('Artifacts.zip exists on S3', exists);
       if (exists) {
         const downloadStream = await aws.s3.downloadStream(this.bucket, this.storedArtifactsZipKey, this.awsRegion);
         await extract(downloadStream, this.workspace.root);
-        console.debug('Artifacts unzipped');
+        this.logger?.debug('Artifacts unzipped');
       }
     } catch (e) {
-      console.error('Error downloading/unzipping artifacts');
+      this.logger?.error('Error downloading/unzipping artifacts');
       this.logger?.error('Error downloading artifacts', this.bucket, this.storedArtifactsZipKey);
       this.logger?.error(e);
     }
@@ -72,32 +71,32 @@ export class RemoteArtifacts extends Artifacts {
 
   async uploadArtifacts(): Promise<void> {
     try {
-      console.debug('Uploading artifact at', `s3://${this.bucket}/${this.currentArtifactsZipKey}`);
+      this.logger?.debug('Uploading artifact at', `s3://${this.bucket}/${this.currentArtifactsZipKey}`);
       const artifacts = await this._resolveArtifactsPaths();
       const tar = await compress(artifacts, this.workspace.root);
-      const { writeStream, done } = await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, this.awsRegion, console);
+      const { writeStream, done } = await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, this.awsRegion, this.logger);
       await tar.write((stream) => {
         return stream.pipe(writeStream)
       });
       try {
         await done;
-        console.debug('done s3');
+        this.logger?.debug('done s3');
       } catch (e) {
-        console.debug('errs3', e)
+        this.logger?.debug('errs3', e)
       }
-      console.debug('Artifact uploaded');
+      this.logger?.debug('Artifact uploaded');
     } catch (e) {
-      console.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
-      console.error(e);
+      this.logger?.error('Error uploading artifacts', this.bucket, this.currentArtifactsZipKey);
+      this.logger?.error(e);
       this.logger?.error(e);
     }
   }
 
   protected async _write(data: IArtifactsChecksums): Promise<void> {
     await aws.s3.putObject(this.bucket, this.currentArtifactsChecksumsKey, this._serialize(data), this.awsRegion);
-    console.debug('Checksums written, uploading artifacts');
+    this.logger?.debug('Checksums written, uploading artifacts');
     await this.uploadArtifacts();
-    console.debug('Artifacts and checksums uploaded');
+    this.logger?.debug('Artifacts and checksums uploaded');
   }
 
   protected async _read(): Promise<IArtifactsChecksums> {
