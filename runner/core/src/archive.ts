@@ -1,65 +1,72 @@
-import { pack, extract as deflate } from 'tar-stream';
-import { relative, resolve as pathResolve } from 'path';
-import { createReadStream, createWriteStream, promises as fs } from 'fs';
-import { Readable } from 'stream';
+import { extract as deflate, Pack, pack } from 'tar-stream';
+import { relative, resolve as pathResolve, dirname } from 'path';
+import { createReadStream, createWriteStream, promises as fs, existsSync, mkdirSync } from 'fs';
+import { Readable, Writable} from "stream";
 
-export const compress = async (paths: string[], relativeTo?: string): Promise<Readable> => {
-  console.debug('Compressing', paths);
-  const archive = pack();
-  let processed = 0;
-  const compressEntry = (path: string) => new Promise<void>((resolve, reject) => {
-    console.debug('Resolving size');
-    fs.stat(path).then((stats) => {
-      console.debug('Size', stats.size);
-      const readFile = createReadStream(path);
-      console.debug('i');
-      const entry = archive.entry({ name: relative(relativeTo || process.cwd(), path), size: stats.size }, (err) => {
+type FileInfo = {name: string, size: number, stream: Readable};
+
+export class TarArchive {
+
+  private pack = pack();
+  private streamQueue: FileInfo[] = [];
+  private size = 0;
+
+  addStream(name: string, size: number, stream: Readable): TarArchive {
+    this.streamQueue.push({
+      name, size, stream
+    });
+    return this;
+  }
+
+  async write(streamCallback: (pack: Pack) => Writable): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.nextEntry((err) => {
         if (err) {
-          console.error('Error', err);
-          return reject(err);
+          reject(err)
+        } else {
+          resolve();
+        }
+      }, this.streamQueue.length);
+      streamCallback(this.pack)
+        .on('error', (err) => {
+          this.pack.destroy(err);
+          reject(err);
+        })
+    });
+  }
+
+  private nextEntry(callback: (err?: unknown) => void, total: number): void {
+    const file = this.streamQueue.shift();
+    if (file) {
+      const writeEntryStream = this.pack.entry({
+        name: file.name,
+        size: file.size
+      }, (err: unknown) => {
+        if (err) {
+          callback(err);
+        } else {
+          this.size += file.size;
+          console.log(`Added ${file.name}`, file.size, this.size, `${total - this.streamQueue.length}/${total}`);
+          this.nextEntry(callback, total);
         }
       });
-      console.debug('ii');
-      readFile.on('error', (err) => {
-        console.error('iv')
-        console.error(err);
-        reject(err);
-      });
-      entry.on('error', (err) => {
-        console.error('v')
-        console.error(err);
-        reject(err);
-      });
-      entry.on('finish', () => {
-        console.debug('iii');
-        resolve();
-      });
-      readFile.pipe(entry);
-    }).catch((err) => {
-      console.error('vi')
-      console.error(err);
-      return reject(err);
-    })
-  });
-  for (const path of paths) {
-    console.debug('Compressing', path);
-    try {
-      await compressEntry(path);
-    } catch (e) {
-      console.debug('err', e);
-      throw e;
-    }
-    console.debug('Compressed', path);
-    processed++;
-    console.debug('Processed', processed, '/', paths.length);
-    if (processed === paths.length) {
-      console.debug('Archive finalized')
-      archive.finalize();
+      file.stream.pipe(writeEntryStream);
     } else {
-      console.debug('Processing next entry');
+      this.pack.finalize();
+      callback();
     }
   }
-  return archive;
+}
+
+
+export const compress = async (paths: string[], relativeTo?: string): Promise<TarArchive> => {
+  console.debug('Compressing', paths);
+  const tar = new TarArchive();
+  for (const file of paths) {
+    const meta = await fs.lstat(file);
+    tar.addStream(relative(relativeTo || process.cwd(), file), meta.size, createReadStream(file));
+  }
+  return tar;
 }
 
 export const extract = async (archiveStream: Readable, relativeTo?: string): Promise<void> => {
@@ -67,7 +74,11 @@ export const extract = async (archiveStream: Readable, relativeTo?: string): Pro
     const tar = deflate();
     tar.on('entry', (header, stream, next) => {
       console.debug('Processing entry', header.name);
-      const writeStream = createWriteStream(pathResolve(relativeTo || process.cwd(), header.name));
+      const dest = pathResolve(relativeTo || process.cwd(),  header.name);
+      if (!existsSync(dirname(dest))) {
+        mkdirSync(dirname(dest), { recursive: true });
+      }
+      const writeStream = createWriteStream(dest);
       stream.on('data', (chunk) => {
         writeStream.write(chunk);
       });

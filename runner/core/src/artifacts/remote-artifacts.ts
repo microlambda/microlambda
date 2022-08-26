@@ -74,13 +74,14 @@ export class RemoteArtifacts extends Artifacts {
     try {
       console.debug('Uploading artifact at', `s3://${this.bucket}/${this.currentArtifactsZipKey}`);
       const artifacts = await this._resolveArtifactsPaths();
-      const archiveStream = await compress(artifacts, this.workspace.root);
-      const passThroughStream = new PassThrough();
-      //archiveStream.on('end', () => passThroughStream.end());
-      archiveStream.pipe(passThroughStream);
+      const tar = await compress(artifacts, this.workspace.root);
+      const { writeStream, done } = await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, this.awsRegion, console);
+      await tar.write((stream) => {
+        return stream.pipe(writeStream)
+      });
       try {
-        await aws.s3.uploadStream(this.bucket, this.currentArtifactsZipKey, passThroughStream, this.awsRegion);
-
+        await done;
+        console.debug('done s3');
       } catch (e) {
         console.debug('errs3', e)
       }

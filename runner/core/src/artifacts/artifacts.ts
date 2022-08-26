@@ -35,7 +35,11 @@ export abstract class Artifacts {
       return true;
     }
     this._currentChecksums = await this._calculateArtifactsChecksums(this.config);
+    console.debug('current');
+    console.debug(this._currentChecksums);
     const stored = await this._read();
+    console.debug('stored');
+    console.debug(stored);
     return Checksums.compare(this._currentChecksums, stored);
   }
 
