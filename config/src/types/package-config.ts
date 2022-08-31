@@ -27,6 +27,7 @@ export interface ITargetsConfig {
 }
 
 export interface IPackageConfig {
+  regions?: string[];
   targets?: {
     [cmd: string]: ITargetConfig;
   }

@@ -21,7 +21,7 @@ export const getThreads = (target: number): number => {
   if (target <= 0 || !Number.isInteger(target)) {
     throw Error('Number of threads must be a strictly positive integer');
   }
-  if (target === 0 && target > cpuCount) {
+  if (target === 0 || target > cpuCount) {
     return cpuCount;
   }
   return target;

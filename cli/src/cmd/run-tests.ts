@@ -1,11 +1,11 @@
 import { getDefaultThreads, getThreads } from '@microlambda/utils';
-import { beforeBuild, IBuildCmd, typeCheck } from './build';
 import { concat, merge, Observable } from 'rxjs';
 import { spawn } from 'child_process';
 import chalk from 'chalk';
 import Spinnies from 'spinnies';
 import { readJSONSync } from 'fs-extra';
 import { join } from 'path';
+import { IBuildCmd } from '../utils/build/cmd-options';
 
 interface ITestOptions extends IBuildCmd {
   recompile: boolean;

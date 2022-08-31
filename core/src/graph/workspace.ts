@@ -9,7 +9,7 @@ import { LogsFileHandler } from "../log-handlers/file";
 export class Workspace extends CentipodWorkspace {
 
   constructor(wks: CentipodWorkspace, ports?: IServicePortsConfig) {
-    super(wks.pkg, wks.root, wks.config, wks.project);
+    super(wks.pkg, wks.root, wks._config, wks.project);
     this._ports = ports;
     this._attachDefaultHandlers();
   }

@@ -14,6 +14,10 @@ import { init } from './cmd/init';
 import { commandWrapper } from './utils/command-wapper';
 import { listEnvs } from './cmd/envs/list';
 import { createEnv } from './cmd/envs/create';
+import { describeEnv } from './cmd/envs/describe';
+import { destroyEnv } from './cmd/envs/destroy';
+import { createReplicate } from './cmd/envs/create-replicate';
+import { destroyReplicate } from './cmd/envs/destroy-replicate';
 
 const program = new Command();
 
@@ -43,7 +47,7 @@ envs
   });
 
 envs
-  .command('new <name>')
+  .command('create <name>')
   .description('Create a new environment un current AWS subscription.')
   .action(async (cmd) => {
     await commandWrapper(async () => {
@@ -54,17 +58,38 @@ envs
 envs
   .command('describe <name>')
   .description('Print details of an exiting environments.')
-  .action(() => {
-    console.debug('Kikoo');
+  .action(async (cmd) => {
+    await commandWrapper(async () => {
+      await describeEnv(cmd);
+    })
   });
 
 envs
   .command('destroy <name>')
   .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
-  .action(() => {
-    console.debug('Kikoo');
+  .action(async (cmd) => {
+    await commandWrapper(async () => {
+      await destroyEnv(cmd);
+    })
   });
 
+envs
+  .command('create-replicate <name> <region>')
+  .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
+  .action(async (name, region) => {
+    await commandWrapper(async () => {
+     await createReplicate(name, region);
+    })
+  });
+
+envs
+  .command('destroy-replicate <name> <region>')
+  .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
+  .action(async (name, region) => {
+    await commandWrapper(async () => {
+      await destroyReplicate(name, region);
+    })
+  });
 
 // FIXME
 program
@@ -106,11 +131,12 @@ program
   });
 
 program
-  .command('check-service <service>')
+  .command('service <service> describe')
   .description('check if service is valid')
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
+        // TODO
         await checkService(cmd);
       }),
   );

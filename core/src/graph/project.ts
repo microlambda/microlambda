@@ -10,7 +10,7 @@ export class Project extends CentipodProject {
   private _packages = new Map<string, Workspace>();
 
   constructor(prj: CentipodProject, private readonly _milaConfig: IConfig, readonly logger?: EventsLogger) {
-    super(prj.pkg, prj.root, prj.config, prj.project);
+    super(prj.pkg, prj.root, prj._config, prj.project);
   }
 
   static scope = 'core/project';

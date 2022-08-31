@@ -41,7 +41,7 @@ export class Workspace {
   constructor(
     readonly pkg: Package,
     readonly root: string,
-    protected readonly _config: ITargetsConfig,
+    readonly _config: { regions?: string[], targets: ITargetsConfig },
     readonly project?: Project,
     readonly eventsLog?: EventsLog,
   ) {
@@ -62,11 +62,11 @@ export class Workspace {
     return new Workspace(pkg, root, await this.loadConfig(pkg.name, root, project), project, logger);
   }
 
-  static async loadConfig(name: string, root: string, project?: Project): Promise<ITargetsConfig> {
+  static async loadConfig(name: string, root: string, project?: Project): Promise<{ regions?: string[], targets: ITargetsConfig }> {
     const configReader = new ConfigReader(project?.root || root);
     if (!project) {
       // Not loading target for root package
-      return {};
+      return { targets: {} };
     }
     return configReader.loadPackageConfig(name, root);
   }
@@ -113,7 +113,11 @@ export class Workspace {
 
   // Properties
   get config(): ITargetsConfig {
-    return this._config;
+    return this._config.targets;
+  }
+
+  get regions(): string[] | undefined {
+    return this._config.regions;
   }
 
   get name(): string {

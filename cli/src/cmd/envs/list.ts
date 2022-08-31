@@ -1,9 +1,10 @@
 import { logger } from '../../utils/logger';
 import chalk from 'chalk';
-import { Environments } from '@microlambda/remote-state';
+import { State } from '@microlambda/remote-state';
 import { aws } from '@microlambda/aws';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { ConfigReader } from '@microlambda/config';
+import { verifyState } from '../../utils/verify-state';
 
 export const printAccountInfos = async () => {
   const projectRoot = resolveProjectRoot();
@@ -21,11 +22,14 @@ export const listEnvs = async () => {
   logger.info('Listing deployed environments');
   logger.lf();
   const config = await printAccountInfos();
-  const envsModel = new Environments(config);
-  const envs = await envsModel.list();
+  await verifyState(config);
+  const state = new State(config);
+  const envs = await state.listEnvironments();
   if (!envs.length) {
     logger.info('No deployed environments found. Run yarn mila envs create <name> to initialize a new environment');
   } else {
-    envs.map((e) => `${chalk.white.bold(e.name)} (${chalk.grey(e.regions.join(', '))})`).forEach(logger.info);
+    for (const e of envs) {
+      logger.info(`${chalk.white.bold(e.name)} (${chalk.grey(e.regions.join(', '))})`);
+    }
   }
 }

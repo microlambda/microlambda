@@ -1,12 +1,14 @@
 import inquirer from 'inquirer';
 import {Deployer, DeployEvent} from '@microlambda/core';
 import chalk from 'chalk';
-import { checkEnv, getCurrentUserIAM, handleNext, IDeployCmd, printReport } from './deploy';
 import Spinnies from 'spinnies';
 import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { init } from '../utils/init';
+import { printReport } from '../utils/deploy/print-report';
+import { handleNext } from '../utils/deploy/handle-next';
+import { IDeployCmd } from '../utils/deploy/cmd-options';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
   return new Promise(async () => {
@@ -21,12 +23,12 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
       process.exit(1);
     }
     const targets = service ? [service] : Array.from(project.services.values());
-    const currentIAM = await getCurrentUserIAM();
+    //const currentIAM = await getCurrentUserIAM();
     logger.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
     logger.info(chalk.bold('Warning: the following services will be deleted'));
     logger.info('Stage:', cmd.e);
     logger.info('Services:', cmd.s != null ? cmd.s : 'all');
-    logger.info('As:', currentIAM);
+    //logger.info('As:', currentIAM);
 
     if (cmd.onlyPrompt) {
       process.exit(0);
