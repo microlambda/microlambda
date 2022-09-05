@@ -8,7 +8,7 @@ import { Writable } from 'stream';
 export const uploadStream = async (Bucket: string, Key: string, region: string, logger?: IBaseLogger): Promise<{ writeStream: Writable, done: Promise<AbortMultipartUploadCommandOutput | CompleteMultipartUploadCommandOutput>}> => {
   const pass = new PassThrough();
   const upload = new Upload({
-    client: new S3Client({ region: 'eu-west-1', maxAttempts: maxAttempts() }),
+    client: new S3Client({ region, maxAttempts: maxAttempts() }),
     params: { Bucket , Key, Body: pass }
   })
   upload.on('httpUploadProgress', (data) => logger?.debug(data));

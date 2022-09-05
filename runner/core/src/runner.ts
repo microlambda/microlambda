@@ -22,6 +22,7 @@ export interface ICommonRunOptions {
   env?: {[key: string]: string};
   force?: boolean;
   stdio?: 'pipe' | 'inherit';
+  cachePrefix?: string;
 }
 
 export interface IRemoteCacheRunOptions {

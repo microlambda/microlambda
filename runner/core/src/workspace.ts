@@ -477,6 +477,7 @@ export class Workspace {
         options.args,
         options.env,
         this.eventsLog,
+        options.cachePrefix,
       );
       artifacts = new RemoteArtifacts(
         options.remoteCache.region,
@@ -487,6 +488,7 @@ export class Workspace {
         options.args,
         options.env,
         this.eventsLog,
+        options.cachePrefix,
       );
     } else {
       this._logger?.info('Using local cache');

@@ -9,15 +9,19 @@ export interface IEnvironment {
   regions: string[];
 }
 
-export interface IServiceInstance {
-  k1: string; // $name
-  k2: string; // service|$env|$region
-  k3: string; // service|$env
+export interface IServiceInstanceRequest {
   name: string;
   region: string;
+  env: string;
   sha1: string;
   checksums_buckets: string;
   checksums_key: string;
+}
+
+export interface IServiceInstance extends IServiceInstanceRequest {
+  k1: string; // $name
+  k2: string; // service|$env|$region
+  k3: string; // service|$env
 }
 
 export class State extends Model<unknown> {
@@ -79,5 +83,14 @@ export class State extends Model<unknown> {
       k2: beginsWith( `service|${env}`),
     }).execAll();
     return services as IServiceInstance[];
+  }
+
+  async createServiceInstance(req: IServiceInstanceRequest): Promise<void> {
+    await this.save({
+      k1: req.name,
+      k2: `service|${req.env}|${req.region}`,
+      k3: `service|${req.env}`,
+      ...req,
+    })
   }
 }

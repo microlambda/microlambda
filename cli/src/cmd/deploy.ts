@@ -1,8 +1,6 @@
-import Spinnies from 'spinnies';
 import chalk from 'chalk';
 import {prompt} from 'inquirer';
-import { ConfigReader, Deployer, DeployEvent, Project, Workspace } from '@microlambda/core';
-import { spinniesOptions } from "../utils/spinnies";
+import { tap, catchError, mergeAll, map } from 'rxjs/operators';
 import { logger } from '../utils/logger';
 import { LockManager } from '@microlambda/remote-state';
 import { resolveDeltas } from '../utils/deploy/resolve-deltas';
@@ -10,11 +8,22 @@ import { beforeDeploy } from '../utils/deploy/pre-requisites';
 import { IDeployCmd } from '../utils/deploy/cmd-options';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
-import { handleNext } from '../utils/deploy/handle-next';
-import { printReport } from '../utils/deploy/print-report';
 import { packageServices } from '../utils/package/do-package';
-import { Workspace as CentipodWorkspace } from '@microlambda/runner-core';
-import { getConcurrency } from '../utils/get-concurrency';
+import {
+  currentSha1,
+  RunCommandEventEnum,
+  Runner,
+  Workspace,
+} from '@microlambda/runner-core';
+import { printAccountInfos } from './envs/list';
+import ora from 'ora';
+import { beforePackage } from '../utils/package/before-package';
+import { from, Observable, of } from 'rxjs';
+import { DeployEvent, printReport } from '../utils/deploy/print-report';
+import { handleNext } from '../utils/deploy/handle-next';
+import Spinnies from 'spinnies';
+
+
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -22,9 +31,14 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
 
   const projectRoot = resolveProjectRoot();
-  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-build-${Date.now()}`)]);
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
 
   const { env, project, state, config } = await beforeDeploy(cmd);
+  logger.lf();
+  logger.info(chalk.underline(chalk.bold('▼ Account informations')));
+  logger.lf();
+  await printAccountInfos();
+  const currentRevision = currentSha1();
   const lock = new LockManager(config);
   if (await lock.isLocked(env.name)) {
     logger.lf();
@@ -32,10 +46,30 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
     await lock.waitLockToBeReleased(env.name);
   }
   await lock.lock(env.name);
+  const releaseLock = async (): Promise<void> => {
+    logger.lf();
+    const lockRelease = ora('🔒 Releasing lock...');
+    await lock.releaseLock(env.name);
+    lockRelease.succeed('🔒 Lock released !');
+  }
+  process.on('SIGINT', async () => {
+    eventsLog.scope('process').warn('SIGINT signal received');
+    logger.lf();
+    const lockRelease = ora('🔒 SIGINT received, releasing lock...');
+    try {
+      await lock.releaseLock(env.name);
+
+    } catch (e) {
+      logger.error('Error releasing lock, you probably would have to do it yourself !');
+      process.exit(2);
+    }
+    lockRelease.succeed('🔒 Lock released !');
+    process.exit(0);
+  });
   try {
     const operations = await resolveDeltas(env, project, cmd, state, config);
     if (cmd.onlyPrompt) {
-      await lock.releaseLock(env.name);
+      await releaseLock();
       process.exit(0);
     }
     if (cmd.prompt) {
@@ -47,75 +81,141 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         },
       ]);
       if (!answers.ok) {
-        await lock.releaseLock(env.name);
+        await releaseLock();
         process.exit(2);
       }
     }
-    const toPackage = new Set<Workspace>();
+
+    const toDeploy = new Set<Workspace>();
     for (const [serviceName, serviceOps] of operations.entries()) {
       const service = project.services.get(serviceName);
-      const isDeployedInAtLeastOneRegion = [...serviceOps.values()].some((action) => ['redeploy', 'first-deploy'].includes(action));
+      const isDeployedInAtLeastOneRegion = [...serviceOps.values()].some((action) => ['redeploy', 'first_deploy'].includes(action));
       if (service && isDeployedInAtLeastOneRegion) {
-        toPackage.add(service)
+        toDeploy.add(service)
       }
     }
 
-    await packageServices({
-      project,
-      service: undefined,
-      affected: undefined,
-      force: cmd.force || false,
-      verbose: cmd.verbose || false,
-      concurrency: getConcurrency(cmd.c),
-      targets: [...toPackage],
-    })
-    await lock.releaseLock(env.name);
-    process.exit(1);
-  } catch (e) {
-    logger.error('Deployment failed, releasing lock...');
-    await lock.releaseLock(env.name);
-    process.exit(1);
-  }
-
-
-  /*return new Promise(async () => {
-
-    const options = await beforePackage(projectRoot, cmd, eventsLog);
-
-
-
-    logger.info('\nPackaging services\n');
-    const packageResult = await packageServices(options);
-    if (packageResult.failures.size) {
-      await printReport(packageResult.success, packageResult.failures, options.service ? 1 : options.project.services.size, 'package', false);
-      process.exit(1);
+    const toDestroy = new Set<Workspace>();
+    for (const [serviceName, serviceOps] of operations.entries()) {
+      const service = project.services.get(serviceName);
+      const shouldBeDestroyedFromAtLeastOneRegion = [...serviceOps.values()].some((action) => ['destroy'].includes(action));
+      if (service && shouldBeDestroyedFromAtLeastOneRegion) {
+        toDestroy.add(service)
+      }
     }
 
-    reader.validate(options.project);
+    if (!toDeploy.size && !toDestroy.size) {
+      logger.lf();
+      logger.success('Nothing to do 👌');
+      await releaseLock();
+      process.exit(0);
+    }
 
-    logger.info('\n▼ Deploying services\n');
+    const options = await beforePackage(project, {
+      ...cmd,
+      s: [...toDeploy].map((s) => s.name).join(','),
+    }, eventsLog);
+    await packageServices(options)
 
-    const spinnies = new Spinnies(spinniesOptions);
+    logger.lf();
+    logger.info('▼ Deploying services');
+    logger.lf();
 
+    const runner = new Runner(project, options.concurrency);
     const failures: Set<DeployEvent> = new Set();
     const actions: Set<DeployEvent> = new Set();
-
-    const deployer = new Deployer({
-      ...options,
-      environment: cmd.e,
+    const deployCommands$: Array<Observable<DeployEvent>> = [];
+    for (const [serviceName, serviceOperations] of operations.entries()) {
+      const service = project.services.get(serviceName);
+      if (!service) {
+        logger.error('Unexpected error:', serviceName, 'cannot be resolved as a service locally');
+        await releaseLock();
+        process.exit(1);
+      }
+      for (const [region, type] of serviceOperations.entries()) {
+        if (['first_deploy', 'redeploy'].includes(type)) {
+          const cachePrefix = `caches/${service.name}/deploy/${region}`;
+          const deploy$ = runner.runCommand({
+            mode: 'parallel',
+            workspaces: [service],
+            cmd: 'deploy',
+            env: {
+              AWS_REGION: region,
+            },
+            remoteCache: {
+              region: config.defaultRegion,
+              bucket: config.state.checksums,
+            },
+            cachePrefix,
+          }).pipe(
+            map((evt) => ({
+              ...evt,
+              region,
+            })),
+            tap(async (evt) => {
+              if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+                try {
+                  await state.createServiceInstance({
+                    name: service.name,
+                    region,
+                    env: env.name,
+                    sha1: currentRevision,
+                    checksums_buckets: config.state.checksums,
+                    checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
+                  });
+                } catch (err) {
+                  logger.warn('Error updating state for service', service.name);
+                  eventsLog.scope('deploy').error('Error updating state for service', service.name, err);
+                }
+              }
+            }),
+            catchError((err) => {
+              const evt = {
+                type: RunCommandEventEnum.NODE_ERRORED,
+                error: err,
+                workspace: service,
+                region,
+              } as DeployEvent
+              failures.add(evt)
+              return of(evt);
+            }),
+          );
+          deployCommands$.push(deploy$);
+        }
+      }
+    }
+    const spinnies = new Spinnies({
+      failColor: 'white',
+      succeedColor: 'white',
+      spinnerColor: 'cyan',
     });
-    deployer.deploy(options.service).subscribe({
-      next: (evt) => handleNext(evt, spinnies, failures, actions, cmd.verbose, "deploy"),
-      error: (err) => {
-        logger.error(chalk.red("Error deploying services"));
-        logger.error(err);
+    const deployProcess$ = from(deployCommands$).pipe(
+      mergeAll(options.concurrency),
+    );
+    deployProcess$.subscribe({
+      next: (evt) => {
+        handleNext(evt, spinnies, failures, actions, options.verbose, 'deploy');
+      },
+      error: async (err) => {
+        logger.error('Unexpected error happened during deploy process', err);
+        await releaseLock();
         process.exit(1);
       },
       complete: async () => {
-        await printReport(actions, failures, actions.size, "deploy", cmd.verbose);
-        logger.info(`Successfully deploy from ${cmd.e} 🚀`);
+        if (failures.size) {
+          await printReport(actions, failures, deployCommands$.length, 'deploy', options.verbose);
+          await releaseLock();
+          process.exit(1);
+        }
+        await releaseLock();
+        logger.success(`Successfully deploy ${cmd.e} 🚀`);
         process.exit(0);
-      }
-    });
-  });*/
+      },
+    })
+
+  } catch (e) {
+    logger.error('Deployment failed', e);
+    await releaseLock();
+    process.exit(1);
+  }
 };

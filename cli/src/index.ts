@@ -228,7 +228,7 @@ program
     async (cmd) =>
       await commandWrapper(async () => {
         await deploy(cmd);
-      }),
+      }, true),
   );
 
 // FIXME
@@ -257,6 +257,9 @@ program
   .description('test microlambda services')
   .option('--no-bootstrap', 'skip reinstalling dependencies before starting microservices', false)
   .option('--no-recompile', 'skip recompiling dependency graph before starting microservices', false)
+  .option('--remote-cache', 'skip recompiling dependency graph before starting microservices', false)
+  .option('--branch', 'skip recompiling dependency graph before starting microservices', false)
+  .option('--affected-since', 'skip recompiling dependency graph before starting microservices', false)
   .option('--only-self', 'only recompile target services', false)
   .option('--unit', 'only run unit tests', false)
   .option('--functional', 'only run functional tests', false)

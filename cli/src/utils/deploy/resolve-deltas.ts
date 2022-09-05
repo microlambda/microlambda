@@ -8,7 +8,7 @@ import { Project, Workspace } from '@microlambda/core';
 import { IDeployCmd } from './cmd-options';
 import { IRootConfig } from '@microlambda/config';
 
-type ActionType = 'first_deploy' | 'redeploy' | 'skip' | 'destroy';
+type ActionType = 'first_deploy' | 'redeploy' | 'no_changes' | 'destroy' | 'not_deployed';
 
 export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: IDeployCmd, state: State, config: IRootConfig) => {
 
@@ -29,6 +29,10 @@ export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: ID
     const deployedServices = await state.listServiceInstances(env.name, localService.name);
     const targetRegions: string[] = localService.regions || defaultRegions;
     for (const targetRegion of targetRegions) {
+      if (!localService.hasCommand('deploy')) {
+        serviceOperations.set(targetRegion, 'not_deployed');
+        continue;
+      }
       const deployedRegionalServiceInstance = deployedServices.find((s) => s.region === targetRegion);
       if (!deployedRegionalServiceInstance) {
         serviceOperations.set(targetRegion, 'first_deploy');
@@ -41,13 +45,13 @@ export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: ID
           const storedChecksums = rawStoredChecksums ? JSON.parse(rawStoredChecksums?.toString('utf-8')) : {};
           const currentChecksums = await new Checksums(localService, 'deploy', [], { AWS_REGION: targetRegion }).calculate();
           if (Checksums.compare(currentChecksums, storedChecksums)) {
-            serviceOperations.set(targetRegion, 'skip');
+            serviceOperations.set(targetRegion, 'no_changes');
           } else {
             serviceOperations.set(targetRegion, 'redeploy');
           }
         } catch (e) {
           logger.warn('Error reading currently deployed checksums for service', localService.name, 'in region', targetRegion);
-          logger.warn('This service will be thus redeployed even if it is sources could have not been changed.')
+          logger.warn('This service will be thus redeployed even if it is sources could have not been changed.');
           serviceOperations.set(targetRegion, 'redeploy');
         }
       }
@@ -80,7 +84,9 @@ export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: ID
       case 'redeploy':
       case 'first_deploy':
         return chalk.green(type);
-      case 'skip':
+      case 'no_changes':
+        return chalk.cyan(type);
+      case 'not_deployed':
         return chalk.grey(type);
       case 'destroy':
         return chalk.red(type);
@@ -102,7 +108,7 @@ export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: ID
     const row = [chalk.bold(serviceName)];
     for (const region of env.regions) {
       const type = serviceOperations.get(region);
-      row.push(type ? printType(type) : chalk.grey('skip'));
+      row.push(type ? printType(type) : printType('not_deployed'));
     }
     table.push(row);
   }

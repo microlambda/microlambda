@@ -5,14 +5,15 @@ import { logger } from '../logger';
 import { typeCheck } from '../build/type-check';
 import { IPackageOptions } from './options';
 import { IPackageCmd } from './cmd-options';
+import { Project } from '@microlambda/core';
 
 export const beforePackage = async (
-  projectRoot: string,
+  project: string | Project,
   cmd: IPackageCmd,
   eventsLog: EventsLog,
 ): Promise<IPackageOptions> => {
   const concurrency = cmd.c ? getThreads(Number(cmd.c)) : getDefaultThreads();
-  const options = await beforeBuild(projectRoot, cmd, eventsLog, false);
+  const options = await beforeBuild(project, cmd, eventsLog, false);
   if (cmd.recompile) {
     try {
       logger.info('\nBuilding dependency graph\n');
@@ -21,5 +22,5 @@ export const beforePackage = async (
       process.exit(1);
     }
   }
-  return { ...options, verbose: cmd.v, concurrency, targets: options.service ? [options.service] : Array.from(options.project.services.values()) };
+  return { ...options, verbose: cmd.v, concurrency };
 };

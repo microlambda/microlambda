@@ -19,34 +19,39 @@ export class RemoteCache extends Cache {
     readonly args: string[] | string = [],
     readonly env: {[key: string]: string} = {},
     readonly eventsLog?: EventsLog,
+    private readonly _cachePrefix?: string,
   ) {
     super(workspace, cmd, args, env, eventsLog?.scope(RemoteCache.scope));
   }
 
-  static cacheKey(workspace: Workspace, cmd: string, sha1: string): string {
-    return `caches/${workspace.name}/${cmd}/${sha1}`;
+  static cachePrefix(workspace: Workspace, cmd: string): string {
+    return `caches/${workspace.name}/${cmd}`;
+  }
+
+  get cachePrefix(): string {
+    return this._cachePrefix || RemoteCache.cachePrefix(this.workspace, this.cmd);
   }
 
   get currentChecksumsKey(): string {
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, currentSha1())}/checksums.json`;
+    return `${this.cachePrefix}/${currentSha1()}/checksums.json`;
   }
 
   get storedChecksumsKey(): string {
     if (!this.sha1) {
       throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot compare checksums to previous execution, no relative sha1 were given');
     }
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/checksums.json`;
+    return `${this.cachePrefix}/${this.sha1}/checksums.json`;
   }
 
   get storedOutputKey(): string {
     if (!this.sha1) {
       throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot compare checksums to previous execution, no relative sha1 were given');
     }
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/outputs.json`;
+    return `${this.cachePrefix}/${this.sha1}/outputs.json`;
   }
 
   get currentOutputKey(): string {
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, currentSha1())}/outputs.json`;
+    return `${this.cachePrefix}/${currentSha1()}/outputs.json`;
   }
 
   protected async _readChecksums(): Promise<ISourcesChecksums> {

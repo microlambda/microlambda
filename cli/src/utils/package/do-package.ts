@@ -1,9 +1,10 @@
-import { RunCommandEvent, RunCommandEventEnum, Runner } from '@microlambda/runner-core';
+import { IRunCommandErrorEvent, RunCommandEvent, RunCommandEventEnum, Runner } from '@microlambda/runner-core';
 import Spinnies from 'spinnies';
 import { Packager } from '@microlambda/core';
 import chalk from 'chalk';
 import { logger } from '../logger';
 import { IPackageOptions } from './options';
+import { printError } from '../print-process-error';
 
 export const packageServices = (options: IPackageOptions): Promise<{ failures: Set<RunCommandEvent>, success: Set<RunCommandEvent> }> => {
   return new Promise((resolve, reject) => {
@@ -11,7 +12,7 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
     logger.info('▼ Packaging services');
     logger.lf();
     const success: Set<RunCommandEvent> = new Set();
-    const failures: Set<RunCommandEvent> = new Set();
+    const failures: Set<IRunCommandErrorEvent> = new Set();
     const spinnies = new Spinnies({
       failColor: 'white',
       succeedColor: 'white',
@@ -26,9 +27,11 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
         case RunCommandEventEnum.NODE_PROCESSED: {
           const metadata = Packager.readMetadata(evt.workspace);
           success.add(evt);
+          const usesLayer = metadata.megabytes?.layer;
+          const codeSize = metadata.megabytes?.code || metadata.megabytes;
           spinnies.succeed(evt.workspace.name, {
-            text: `${evt.workspace.name} packaged ${chalk.cyan(metadata.megabytes?.code + 'MB')}${
-              metadata.megabytes?.layer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
+            text: `${evt.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
+              usesLayer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
             } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`,
           });
           break;
@@ -51,13 +54,17 @@ export const packageServices = (options: IPackageOptions): Promise<{ failures: S
         logger.info('\nSuccessfully packaged 📦');
       } else {
         logger.error('\nError packaging', failures.size, 'packages !');
+        for (const fail of failures) {
+          logger.error(`Failed to package`, fail.workspace.name);
+          printError(fail.error);
+        }
       }
       return resolve({ failures, success });
     };
     const runner = new Runner(options.project, options.concurrency);
     runner.runCommand({
       cmd: 'package',
-      workspaces: options.service ? [options.service] : undefined,
+      workspaces: options.workspaces,
       mode: 'parallel',
       force: options.force,
       stdio: options.verbose ? 'inherit' : 'pipe',

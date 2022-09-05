@@ -3,7 +3,7 @@ import { Workspace as CentipodWorkspace } from '@microlambda/runner-core';
 
 export interface IBuildOptions {
   project: Project;
-  service: CentipodWorkspace | undefined;
+  workspaces: CentipodWorkspace[];
   force: boolean;
   affected: { rev1: string, rev2: string } | undefined;
 }

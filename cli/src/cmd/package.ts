@@ -16,7 +16,7 @@ export const packagr = async (cmd: IPackageCmd): Promise<void> => {
     const options = await beforePackage(projectRoot, cmd, eventsLog);
     const { failures, success } = await packageServices(options);
     if (failures.size) {
-      await printReport(success, failures, options.service ? 1 : options.project.services.size, 'package', options.verbose);
+      await printReport(success, failures, options.workspaces.length, 'package', options.verbose);
       process.exit(1);
     }
     process.exit(0);

@@ -22,6 +22,7 @@ export class RemoteArtifacts extends Artifacts {
     readonly args: string[] | string = [],
     readonly env: {[key: string]: string} = {},
     readonly eventsLog?: EventsLog,
+    private readonly _cachePrefix?: string,
   ) {
     super(workspace, cmd, args, env, eventsLog?.scope(RemoteArtifacts.scope));
   }
@@ -30,26 +31,30 @@ export class RemoteArtifacts extends Artifacts {
     return this.workspace.config[this.cmd];
   }
 
+  get cachePrefix(): string {
+    return this._cachePrefix || RemoteCache.cachePrefix(this.workspace, this.cmd);
+  }
+
   get currentArtifactsChecksumsKey(): string {
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, currentSha1())}/artifacts.json`;
+    return `${this.cachePrefix}/${currentSha1()}/artifacts.json`;
   }
 
   get storedArtifactsChecksumsKey(): string {
     if (!this.sha1) {
       throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot retrieve artifacts checksums from previous execution, no relative sha1 were given');
     }
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/artifacts.json`;
+    return `${this.cachePrefix}/${this.sha1}/artifacts.json`;
   }
 
   get currentArtifactsZipKey(): string {
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, currentSha1())}/artifacts.zip`;
+    return `${this.cachePrefix}/${currentSha1()}/artifacts.zip`;
   }
 
   get storedArtifactsZipKey(): string {
     if (!this.sha1) {
       throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot retrieve artifacts from previous execution, no relative sha1 were given');
     }
-    return `${RemoteCache.cacheKey(this.workspace, this.cmd, this.sha1)}/artifacts.zip`;
+    return `${this.cachePrefix}/${this.sha1}/artifacts.zip`;
   }
 
   async downloadArtifacts(): Promise<void> {

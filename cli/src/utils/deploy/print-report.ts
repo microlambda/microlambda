@@ -1,7 +1,9 @@
-import { DeployEvent } from '@microlambda/core';
 import { isDaemon, isNodeSucceededEvent, RunCommandEvent, RunCommandEventEnum } from '@microlambda/runner-core';
 import { logger } from '../logger';
 import chalk from 'chalk';
+import { printError } from '../print-process-error';
+
+export type DeployEvent = RunCommandEvent & { region: string };
 
 export const printReport = async (
   actions: Set<DeployEvent | RunCommandEvent>,
@@ -33,12 +35,12 @@ export const printReport = async (
         chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name} in ${region} region\n`)),
       );
     } else {
-      logger.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name}\n`)));
+      logger.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace?.name}\n`)));
     }
 
     if ((evt as any).error) {
       logger.error(chalk.bold(`#${i} - Error details:`));
-      logger.error((evt as any).error);
+      printError((evt as any).error);
       logger.lf();
     }
   }
@@ -68,7 +70,7 @@ export const printReport = async (
   logger.info(`Error occurred when ${actionVerbBase}ing ${failures.size} stacks\n`);
   if (failures.size) {
     logger.error(chalk.red('Process exited with errors'));
-    process.exit(1);
+  } else {
+    logger.error(chalk.green('Process exited without errors'));
   }
-  logger.error(chalk.green('Process exited without errors'));
 };
