@@ -5,16 +5,16 @@ import { Packager, Workspace } from "@microlambda/core";
 import chalk from "chalk";
 import { IBaseLogger, ServerlessInstance, IPluginConfig } from "@microlambda/types";
 import { assign } from "../../utils";
-import { join, resolve as pathResolve } from "path";
-import { existsSync } from "fs";
-import { watch } from "chokidar";
+import { join } from "path";
+import { existsSync, rmdirSync } from 'fs';
 import { readJSONSync } from "fs-extra";
 import { aws } from '@microlambda/aws';
 import { ILayerChecksums, compareLayerChecksums, readLayerChecksums, calculateLayerChecksums, writeLayerChecksums } from '@microlambda/layers';
+import { checkPackageIntegrity } from './check-package-integrity';
 
 const DEFAULT_LEVEL = 4;
 
-export const packageService = (
+export const packageService = async (
   serverless: ServerlessInstance,
   stackName: string,
   config: IPluginConfig | undefined,
@@ -30,15 +30,13 @@ export const packageService = (
   const bundleLocation = join(service.root, ".package", "bundle.zip");
   const layerLocation = join(service.root, ".package", "layer.zip");
 
+  const shouldRepackage = await checkPackageIntegrity(service);
+
   const bundleMetadataLocation = join(
     service.root,
     ".package",
     "bundle-metadata.json"
   );
-  const isPackaging = existsSync(
-    join(service.root, ".package", "tmp")
-  );
-  const isPackaged = useLayer ? existsSync(bundleMetadataLocation) && existsSync(bundleLocation) && existsSync(layerLocation) : existsSync(bundleMetadataLocation) && existsSync(bundleLocation);
 
   const setArtifact = (): void => {
     assign(serverless, "service.package.artifact", bundleLocation);
@@ -49,17 +47,8 @@ export const packageService = (
   };
 
   return new Promise(async (resolve, reject) => {
-    // In multi-region deployment scenario, region are deployed concurrently
-    // If a deployment for a region already launched a packaging process, we wait for it to finish and resolve
-    const FIVE_MINUTES = 5 * 60 * 1000;
-    const timeoutCatcher = setTimeout(() => {
-      logger?.error("[package] Packaging timed out");
-      return reject();
-    }, FIVE_MINUTES);
-
     const afterPackaged = async (shouldBuildLayer: boolean, currentChecksums?: ILayerChecksums | null): Promise<void> => {
       setArtifact();
-      clearTimeout(timeoutCatcher);
       if (useLayer && shouldBuildLayer) {
         let layerArn: string | undefined;
         try {
@@ -119,29 +108,17 @@ export const packageService = (
       logger?.info('[package] Should re-build layer', shouldBuildLayer);
     }
 
-    if (isPackaged) {
+    if (shouldRepackage) {
       logger?.info("[package] Already packaged. Using existing bundle.zip");
       if (useLayer) {
         logger?.info("[package] Layer already create. Using existing layer.zip");
       }
       printMetadata();
       afterPackaged(shouldBuildLayer, currentChecksums).then(resolve).catch(reject);
-    } else if (isPackaging) {
-      logger?.info("[package] A packaging process is already running");
-      logger?.debug(
-        "[package] Watching",
-        join(service.root, ".package")
-      );
-      const watcher = watch(join(service.root, ".package"));
-      watcher.on("add", (path) => {
-        if (pathResolve(path) === pathResolve(bundleMetadataLocation)) {
-          logger?.info("[package] External packaging process succeeded");
-          logger?.info("[package] Bundle has been created by other process");
-          printMetadata();
-          afterPackaged(shouldBuildLayer, currentChecksums).then(resolve).catch(reject);
-        }
-      });
     } else {
+      if (existsSync(join(service.root, '.package'))) {
+        rmdirSync(join(service.root, '.package'), { recursive: true });
+      }
       const packager = new Packager(useLayer, shouldBuildLayer);
       packager.bundle(service.name, config?.packagr?.level || DEFAULT_LEVEL).subscribe(
         (evt) => {
@@ -162,7 +139,6 @@ export const packageService = (
         (err) => {
           logger?.error("Error happen during packaging process");
           logger?.error(err);
-          clearTimeout(timeoutCatcher);
           return reject(err);
         },
         () => {

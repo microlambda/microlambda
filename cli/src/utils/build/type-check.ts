@@ -22,14 +22,18 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
         inProgress.add(evt.workspace.name);
       } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
         inProgress.delete(evt.workspace.name);
-        spinnies.succeed(evt.workspace.name, {
-          text: `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.grey(' (from cache)') : ''}`,
-        });
+        if (spinnies.pick(evt.workspace.name)) {
+          spinnies.succeed(evt.workspace.name, {
+            text: `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.grey(' (from cache)') : ''}`,
+          });
+        }
       } else if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
         inProgress.delete(evt.workspace.name);
-        spinnies.fail(evt.workspace.name, {
-          text: `Error compiling ${evt.workspace.name}`,
-        });
+        if (spinnies.pick(evt.workspace.name)) {
+          spinnies.fail(evt.workspace.name, {
+            text: `Error compiling ${evt.workspace.name}`,
+          });
+        }
         inProgress.forEach((w) => spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}`}));
         spinnies.stopAll();
         logger.error(`\n${chalk.bold.red('> Error details:')}\n`);
@@ -38,7 +42,11 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
       }
     };
     const onError = (err: unknown): void => {
-      inProgress.forEach((w) => spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}`}));
+      inProgress.forEach((w) => {
+        if (spinnies.pick(w)) {
+          spinnies.update(w, { text: `${chalk.bold.yellow('-')} Compilation aborted ${w}` });
+        }
+      });
       spinnies.stopAll();
       logger.error(`\n${chalk.bold.red('> Error details:')}\n`);
       printError(err, spinnies)

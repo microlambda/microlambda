@@ -28,9 +28,11 @@ export const handleNext = (
       break;
     case RunCommandEventEnum.NODE_PROCESSED:
       if (isTty) {
-        spinnies.succeed(key(evt.workspace.name, evt), {
-          text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
-        });
+        if (spinnies.pick(key(evt.workspace.name, evt))) {
+          spinnies.succeed(key(evt.workspace.name, evt), {
+            text: `${capitalize(actionVerbBase)}ed ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
+          });
+        }
       } else {
         logger.info(
           `${chalk.bold(evt.workspace.name)} - Successfully ${actionVerbBase}ed ${chalk.magenta(`[${evt.region}]`)}`,
@@ -41,9 +43,11 @@ export const handleNext = (
     case RunCommandEventEnum.NODE_ERRORED:
       failures.add(evt);
       if (isTty) {
-        spinnies.fail(key(evt.workspace.name, evt), {
-          text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.region}]`)}`,
-        });
+        if (spinnies.pick(key(evt.workspace.name, evt))) {
+          spinnies.fail(key(evt.workspace.name, evt), {
+            text: `Error ${actionVerbBase}ing ${evt.workspace.name} ! ${chalk.magenta(`[${evt.region}]`)}`,
+          });
+        }
       } else {
         logger.info(
           `${chalk.bold(evt.workspace.name)} - ${capitalize(action)} failed ${chalk.magenta(`[${evt.region}]`)}`,

@@ -7,11 +7,20 @@ import Table from 'cli-table3';
 import { Project, Workspace } from '@microlambda/core';
 import { IDeployCmd } from './cmd-options';
 import { IRootConfig } from '@microlambda/config';
+import { EventsLog } from '@microlambda/logger';
 
 type ActionType = 'first_deploy' | 'redeploy' | 'no_changes' | 'destroy' | 'not_deployed';
 
-export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: IDeployCmd, state: State, config: IRootConfig) => {
+export const resolveDeltas = async (
+  env: IEnvironment,
+  project: Project,
+  cmd: IDeployCmd,
+  state: State,
+  config: IRootConfig,
+  eventsLog: EventsLog,
+) => {
 
+  const log = eventsLog.scope('resolve-deltas');
   logger.lf();
   logger.info(chalk.underline(chalk.bold('▼ Resolving deltas')));
   logger.lf();
@@ -23,6 +32,7 @@ export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: ID
     : graphServices;
   const operations = new Map<string, Map<string, ActionType>>();
   const defaultRegions = env.regions;
+  log.debug('Resolving deltas');
 
   for (const localService of targets) {
     const serviceOperations = new Map<string, ActionType>();
@@ -38,6 +48,10 @@ export const resolveDeltas = async (env: IEnvironment, project: Project, cmd: ID
         serviceOperations.set(targetRegion, 'first_deploy');
       } else {
         try {
+          if (cmd.force) {
+            serviceOperations.set(targetRegion, 'redeploy');
+            continue;
+          }
           const rawStoredChecksums = await aws.s3.downloadBuffer(
             deployedRegionalServiceInstance.checksums_buckets,
             deployedRegionalServiceInstance.checksums_key,

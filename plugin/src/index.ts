@@ -22,6 +22,7 @@ import {
 } from "./features";
 import { applyConditions } from "./features/conditions/apply-conditions";
 import { resolveProjectRoot } from '@microlambda/utils';
+import { removeDotServerless } from './features/package/remove-dot-serverless';
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -74,6 +75,7 @@ class ServerlessMicrolambdaPlugin {
         if (this._pluginConfig?.packagr?.useLayer) {
           this.serverless.service.provider.environment.NODE_PATH = './:/opt/node_modules';
         }
+        await removeDotServerless(this._service);
         await packageService(this.serverless, stackName, this._pluginConfig, this._service, this._log);
       }),
       "after:package:createDeploymentArtifacts": async (): Promise<void> => {
@@ -95,6 +97,7 @@ class ServerlessMicrolambdaPlugin {
           this._log
         );
         const { stackName } = this._resolveBasicInformation();
+        await removeDotServerless(this._service);
         await packageService(this.serverless, stackName, this._pluginConfig, this._service, this._log);
       }),
       "before:deploy:deploy": this._plugHook(

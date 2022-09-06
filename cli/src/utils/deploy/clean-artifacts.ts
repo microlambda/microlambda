@@ -25,9 +25,13 @@ export const cleanArtifacts = async (options: IDeployOptions) => {
           });
           try {
             await remove(artefactLocation);
-            cleaningSpinnies.succeed(service.name);
+            if (cleaningSpinnies.pick(service.name)) {
+              cleaningSpinnies.succeed(service.name);
+            }
           } catch (e) {
-            cleaningSpinnies.fail(service.name);
+            if (cleaningSpinnies.pick(service.name)) {
+              cleaningSpinnies.fail(service.name);
+            }
             hasCleanErrored = true;
           }
         }

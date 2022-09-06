@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import {prompt} from 'inquirer';
-import { tap, catchError, mergeAll, map } from 'rxjs/operators';
+import { tap, catchError, mergeAll, map, concatAll } from 'rxjs/operators';
 import { logger } from '../utils/logger';
 import { LockManager } from '@microlambda/remote-state';
 import { resolveDeltas } from '../utils/deploy/resolve-deltas';
@@ -33,7 +33,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
 
-  const { env, project, state, config } = await beforeDeploy(cmd);
+  const { env, project, state, config } = await beforeDeploy(cmd, eventsLog);
   logger.lf();
   logger.info(chalk.underline(chalk.bold('▼ Account informations')));
   logger.lf();
@@ -67,7 +67,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
     process.exit(0);
   });
   try {
-    const operations = await resolveDeltas(env, project, cmd, state, config);
+    const operations = await resolveDeltas(env, project, cmd, state, config, eventsLog);
     if (cmd.onlyPrompt) {
       await releaseLock();
       process.exit(0);
@@ -115,7 +115,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       ...cmd,
       s: [...toDeploy].map((s) => s.name).join(','),
     }, eventsLog);
-    await packageServices(options)
+    await packageServices(options, eventsLog)
 
     logger.lf();
     logger.info('▼ Deploying services');
@@ -132,6 +132,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         await releaseLock();
         process.exit(1);
       }
+      const deployServiceInAllRegions$: Array<Observable<DeployEvent>> = [];
       for (const [region, type] of serviceOperations.entries()) {
         if (['first_deploy', 'redeploy'].includes(type)) {
           const cachePrefix = `caches/${service.name}/deploy/${region}`;
@@ -180,8 +181,9 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
               return of(evt);
             }),
           );
-          deployCommands$.push(deploy$);
+          deployServiceInAllRegions$.push(deploy$);
         }
+        deployCommands$.push(from(deployServiceInAllRegions$).pipe(concatAll()))
       }
     }
     const spinnies = new Spinnies({
