@@ -14,17 +14,26 @@ export const getBasePathMapping = async (
   basePath = "",
   logger?: IBaseLogger
 ): Promise<ApiMapping | undefined> => {
-  const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
-  const params: GetApiMappingsRequest = {
-    DomainName: domainName,
-  };
-  try {
-    logger?.debug(serviceName, "GetBasePathMappingCommand", params);
-    const mappings = await client.send(new GetApiMappingsCommand(params));
-    return mappings?.Items?.find((m) => m.ApiMappingKey === basePath);
-  } catch (e) {
-    logger?.error(serviceName, "GetBasePathMappingCommand failed");
-    logger?.error(e);
-    throw e;
-  }
+  let nextToken: string | undefined = undefined;
+  do {
+    const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
+    const params: GetApiMappingsRequest = {
+      DomainName: domainName,
+      NextToken: nextToken,
+    };
+    try {
+      logger?.debug(serviceName, "GetBasePathMappingCommand", params);
+      const mappings = await client.send(new GetApiMappingsCommand(params));
+      nextToken = mappings.NextToken;
+      const mapping = mappings?.Items?.find((m) => m.ApiMappingKey === basePath);
+      if (mapping) {
+        return mapping;
+      }
+    } catch (e) {
+      logger?.error(serviceName, "GetBasePathMappingCommand failed");
+      logger?.error(e);
+      throw e;
+    }
+  } while (nextToken)
+  return undefined;
 };
