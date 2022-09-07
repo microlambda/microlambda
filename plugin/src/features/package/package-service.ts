@@ -30,6 +30,7 @@ export const packageService = async (
   const bundleLocation = join(service.root, ".package", "bundle.zip");
   const layerLocation = join(service.root, ".package", "layer.zip");
 
+  logger?.info('[package] Checking previous bundle.zip integrity')
   const shouldRepackage = await checkPackageIntegrity(service);
 
   const bundleMetadataLocation = join(
@@ -82,7 +83,7 @@ export const packageService = async (
       logger?.info(
           `[package] Zip file generated in ${(0.5 * metadata.took).toFixed(
               2
-          )}s - ${chalk.magenta(metadata.megabytes.code + "MB")}`
+          )}s - ${chalk.magenta(metadata.megabytes.code || metadata.megabytes + "MB")}`
       );
       if (metadata.megabytes.layer) {
         logger?.info(
@@ -107,7 +108,6 @@ export const packageService = async (
       shouldBuildLayer = !(await compareLayerChecksums(currentChecksums, readChecksums));
       logger?.info('[package] Should re-build layer', shouldBuildLayer);
     }
-
     if (shouldRepackage) {
       logger?.info("[package] Already packaged. Using existing bundle.zip");
       if (useLayer) {
