@@ -41,4 +41,9 @@ export const logger = {
   lf: (): void => {
     process.stderr.write('\n');
   },
+  debug(...args: unknown[]): void {
+    if (process.env.MILA_DEBUG) {
+      console.debug(chalk.bold.cyan('debug'), args.map(a => printArg(a)).join(' '));
+    }
+  },
 }

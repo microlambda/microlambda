@@ -1,37 +1,30 @@
 import { logger } from '../logger';
-import Spinnies from 'spinnies';
-import { spinniesOptions } from '../spinnies';
+import { MilaSpinnies } from '../spinnies';
 import { join } from 'path';
 import { pathExists, remove } from 'fs-extra';
 import chalk from 'chalk';
-import { IDeployOptions } from '@microlambda/core';
+import { IDeployOptions } from './options';
 
 export const cleanArtifacts = async (options: IDeployOptions) => {
   if(options.force) {
     logger.info('\n▼ Clean artifacts directories\n');
     // Cleaning artifact location
-    const cleaningSpinnies = new Spinnies(spinniesOptions);
+    const cleaningSpinnies = new MilaSpinnies(options.verbose);
     let hasCleanErrored = false;
-    if (!options.targets?.length) {
+    if (!options.workspaces?.length) {
       return;
     }
     await Promise.all(
-      options.targets.map(async (service) => {
+      options.workspaces.map(async (service) => {
         const artefactLocation = join(service.root, '.package');
         const doesExist = await pathExists(artefactLocation);
         if (doesExist) {
-          cleaningSpinnies.add(service.name, {
-            text: `Cleaning artifact directory ${chalk.grey(artefactLocation)}`,
-          });
+          cleaningSpinnies.add(service.name, `Cleaning artifact directory ${chalk.grey(artefactLocation)}`);
           try {
             await remove(artefactLocation);
-            if (cleaningSpinnies.pick(service.name)) {
-              cleaningSpinnies.succeed(service.name);
-            }
+            cleaningSpinnies.succeed(service.name, 'Artifacts removed');
           } catch (e) {
-            if (cleaningSpinnies.pick(service.name)) {
-              cleaningSpinnies.fail(service.name);
-            }
+            cleaningSpinnies.fail(service.name, 'Failed to remove artifacts');
             hasCleanErrored = true;
           }
         }

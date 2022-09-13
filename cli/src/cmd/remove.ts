@@ -1,7 +1,6 @@
 import inquirer from 'inquirer';
 import {Deployer, DeployEvent} from '@microlambda/core';
 import chalk from 'chalk';
-import Spinnies from 'spinnies';
 import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
@@ -9,6 +8,7 @@ import { init } from '../utils/init';
 import { printReport } from '../utils/deploy/print-report';
 import { handleNext } from '../utils/deploy/handle-next';
 import { IDeployCmd } from '../utils/deploy/cmd-options';
+import { MilaSpinnies } from '../utils/spinnies';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
   return new Promise(async () => {
@@ -50,11 +50,7 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
       }
     }
 
-    const spinnies = new Spinnies({
-      failColor: 'white',
-      succeedColor: 'white',
-      spinnerColor: 'cyan',
-    });
+    const spinnies = new MilaSpinnies(cmd.verbose);
 
 
     const failures: Set<DeployEvent> = new Set();
@@ -64,6 +60,7 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
       project,
       targets,
       force: true,
+      verbose: cmd.verbose || false,
       environment: cmd.e,
     }, 'remove');
     remover.deploy().subscribe({

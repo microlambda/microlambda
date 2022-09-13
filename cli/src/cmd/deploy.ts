@@ -10,7 +10,7 @@ import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { packageServices } from '../utils/package/do-package';
 import {
-  currentSha1,
+  currentSha1, ICommandResult,
   RunCommandEventEnum,
   Runner,
   Workspace,
@@ -21,9 +21,7 @@ import { beforePackage } from '../utils/package/before-package';
 import { from, Observable, of } from 'rxjs';
 import { DeployEvent, printReport } from '../utils/deploy/print-report';
 import { handleNext } from '../utils/deploy/handle-next';
-import Spinnies from 'spinnies';
-
-
+import { MilaSpinnies } from '../utils/spinnies';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -125,7 +123,9 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
     const failures: Set<DeployEvent> = new Set();
     const actions: Set<DeployEvent> = new Set();
     const deployCommands$: Array<Observable<DeployEvent>> = [];
+    logger.debug('Preparing deploy commands');
     for (const [serviceName, serviceOperations] of operations.entries()) {
+      logger.debug('Processing', serviceName);
       const service = project.services.get(serviceName);
       if (!service) {
         logger.error('Unexpected error:', serviceName, 'cannot be resolved as a service locally');
@@ -134,8 +134,23 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       }
       const deployServiceInAllRegions$: Array<Observable<DeployEvent>> = [];
       for (const [region, type] of serviceOperations.entries()) {
+        logger.debug('Processing', serviceName, 'in region', region, type);
         if (['first_deploy', 'redeploy'].includes(type)) {
           const cachePrefix = `caches/${service.name}/deploy/${region}`;
+          logger.debug('Executing mila-runner command', {
+            mode: 'parallel',
+            workspaces: [service.name],
+            cmd: 'deploy',
+            env: {
+              AWS_REGION: region,
+            },
+            stdio: options.verbose ? 'inherit' : 'pipe',
+            remoteCache: {
+              region: config.defaultRegion,
+              bucket: config.state.checksums,
+            },
+            cachePrefix,
+          });
           const deploy$ = runner.runCommand({
             mode: 'parallel',
             workspaces: [service],
@@ -143,6 +158,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
             env: {
               AWS_REGION: region,
             },
+            stdio: options.verbose ? 'inherit' : 'pipe',
             remoteCache: {
               region: config.defaultRegion,
               bucket: config.state.checksums,
@@ -155,18 +171,20 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
             })),
             tap(async (evt) => {
               if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-                try {
-                  await state.createServiceInstance({
-                    name: service.name,
-                    region,
-                    env: env.name,
-                    sha1: currentRevision,
-                    checksums_buckets: config.state.checksums,
-                    checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
-                  });
-                } catch (err) {
-                  logger.warn('Error updating state for service', service.name);
-                  eventsLog.scope('deploy').error('Error updating state for service', service.name, err);
+                if (evt.result.commands.every((cmd) => (cmd as ICommandResult).exitCode === 0)) {
+                  try {
+                    await state.createServiceInstance({
+                      name: service.name,
+                      region,
+                      env: env.name,
+                      sha1: currentRevision,
+                      checksums_buckets: config.state.checksums,
+                      checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
+                    });
+                  } catch (err) {
+                    logger.warn('Error updating state for service', service.name);
+                    eventsLog.scope('deploy').error('Error updating state for service', service.name, err);
+                  }
                 }
               }
             }),
@@ -177,20 +195,15 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
                 workspace: service,
                 region,
               } as DeployEvent
-              failures.add(evt)
               return of(evt);
             }),
           );
           deployServiceInAllRegions$.push(deploy$);
         }
-        deployCommands$.push(from(deployServiceInAllRegions$).pipe(concatAll()))
       }
+      deployCommands$.push(from(deployServiceInAllRegions$).pipe(concatAll()))
     }
-    const spinnies = new Spinnies({
-      failColor: 'white',
-      succeedColor: 'white',
-      spinnerColor: 'cyan',
-    });
+    const spinnies = new MilaSpinnies(options.verbose);
     const deployProcess$ = from(deployCommands$).pipe(
       mergeAll(options.concurrency),
     );
@@ -214,7 +227,6 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         process.exit(0);
       },
     })
-
   } catch (e) {
     logger.error('Deployment failed', e);
     await releaseLock();

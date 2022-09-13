@@ -1,6 +1,6 @@
 import { logger } from '../logger';
 
-export const printCommand = (action: string, service?: string, only = true) => {
+export const printCommand = (action: string, service?: string, only = false) => {
   if (service) {
     if (only) {
       logger.info('🔧 Building only', service);

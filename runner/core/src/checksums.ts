@@ -31,14 +31,14 @@ type IChecksums = ISourcesChecksums | IArtifactsChecksums;
 export class Checksums {
   constructor (
     readonly workspace: Workspace,
-    readonly cmd: string,
+    readonly cmd: string | ITargetConfig,
     readonly args: string[] | string = [],
     readonly env: {[key: string]: string} = {},
     readonly eventsLog?: EventsLog,
   ) {}
 
   get config(): ITargetConfig | undefined {
-    return this.workspace.config[this.cmd];
+    return typeof this.cmd === 'string' ? this.workspace.config[this.cmd] : this.cmd;
   }
 
   static compare(current: IChecksums, stored: IChecksums): boolean {

@@ -9,12 +9,16 @@ export class GlobsHelpers {
   private readonly logger: EventsLogger | undefined;
   static readonly scope = 'runner-core/globs';
 
-  constructor(readonly workspace: Workspace, readonly cmd: string, eventsLog?: EventsLog) {
+  constructor(
+    readonly workspace: Workspace,
+    readonly cmd: string | ITargetConfig,
+    eventsLog?: EventsLog,
+  ) {
     this.logger = eventsLog?.scope(GlobsHelpers.scope);
   }
 
   get config(): ITargetConfig | undefined {
-    return this.workspace.config[this.cmd];
+    return typeof this.cmd === 'string' ? this.workspace.config[this.cmd] : this.cmd;
   }
 
   get globs() {

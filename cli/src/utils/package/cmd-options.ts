@@ -4,5 +4,5 @@ export interface IPackageCmd extends IBuildCmd {
   c: string;
   level: number;
   recompile: boolean;
-  v: boolean;
+  forcePackage: boolean;
 }

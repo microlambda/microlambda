@@ -16,11 +16,20 @@ export const beforePackage = async (
   const options = await beforeBuild(project, cmd, eventsLog, false);
   if (cmd.recompile) {
     try {
-      logger.info('\nBuilding dependency graph\n');
+      logger.lf();
+      logger.info('Building dependency graph');
+      logger.lf();
       await typeCheck(options);
     } catch (e) {
       process.exit(1);
     }
   }
-  return { ...options, verbose: cmd.v, concurrency };
+  return {
+    ...options,
+    verbose: cmd.verbose,
+    concurrency,
+    forcePackage: cmd.forcePackage,
+    install: cmd.install,
+    recompile: cmd.recompile,
+  };
 };

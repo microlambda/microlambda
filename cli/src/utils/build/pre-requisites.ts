@@ -5,7 +5,6 @@ import { logger } from '../logger';
 import chalk from 'chalk';
 import { IBuildCmd } from './cmd-options';
 import { IBuildOptions } from './options';
-import { printAffected } from './print-affected';
 import { Project } from '@microlambda/core';
 
 export const beforeBuild = async (
@@ -14,10 +13,9 @@ export const beforeBuild = async (
   eventsLog: EventsLog,
   acceptPackages = false,
 ): Promise<IBuildOptions> => {
-  const affected = printAffected(cmd);
   let project: Project;
   if (typeof _project === 'string') {
-    project = (await init(_project, eventsLog)).project;
+    project = (await init(_project, eventsLog, cmd.install)).project;
   } else {
     project = _project;
   }
@@ -36,5 +34,5 @@ export const beforeBuild = async (
     }
     return [...project.services.values()];
   }
-  return { project, workspaces: resolveWorkspaces(), force: cmd.force || false, affected: affected };
+  return {project, workspaces: resolveWorkspaces(), force: cmd.force, install: cmd.install, verbose: cmd.verbose };
 };

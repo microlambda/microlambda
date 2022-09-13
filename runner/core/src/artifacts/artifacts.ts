@@ -83,7 +83,8 @@ export abstract class Artifacts {
       return;
     }
     try {
-      const toWrite = this._currentChecksums ?? await this._calculateArtifactsChecksums(this.config);
+      const toWrite = await this._calculateArtifactsChecksums(this.config);
+      this.logger?.debug('Writing artifact checksums', toWrite);
       this.logger?.debug('Writing artifact checksums');
       await this._write(toWrite);
     } catch (e) {

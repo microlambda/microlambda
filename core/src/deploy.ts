@@ -11,6 +11,7 @@ export type DeployEvent = RunCommandEvent & { region: string };
 export interface IDeployOptions {
   project: Project;
   concurrency?: number;
+  verbose: boolean;
   targets?: Workspace[];
   affected?: { rev1: string, rev2: string };
   force: boolean;

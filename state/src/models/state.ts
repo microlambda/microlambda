@@ -18,6 +18,19 @@ export interface IServiceInstanceRequest {
   checksums_key: string;
 }
 
+export interface ILayerChecksumsRequest {
+  service: string;
+  env: string;
+  checksums_buckets: string;
+  checksums_key: string;
+  region: string;
+}
+
+export interface ILayerChecksums extends ILayerChecksumsRequest {
+  k1: string; // $serviceName
+  k2: string; // layer|$env
+}
+
 export interface IServiceInstance extends IServiceInstanceRequest {
   k1: string; // $name
   k2: string; // service|$env|$region
@@ -90,6 +103,19 @@ export class State extends Model<unknown> {
       k1: req.name,
       k2: `service|${req.env}|${req.region}`,
       k3: `service|${req.env}`,
+      ...req,
+    })
+  }
+
+  async getLastLayerChecksums(service: string, env: string): Promise<ILayerChecksums> {
+    const layer = await this.get(service, `layer|${env}`);
+    return layer as ILayerChecksums;
+  }
+
+  async setLayerChecksums(req: ILayerChecksumsRequest): Promise<void> {
+    await this.save({
+      k1: req.service,
+      k2: `layer|${req.env}`,
       ...req,
     })
   }

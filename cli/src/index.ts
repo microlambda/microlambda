@@ -21,7 +21,7 @@ import { destroyReplicate } from './cmd/envs/destroy-replicate';
 
 const program = new Command();
 
-program.version('1.0.0-alpha.2');
+program.version('1.0.0-alpha.3');
 
 program
   .command('init')
@@ -132,7 +132,7 @@ program
 
 program
   .command('service <service> describe')
-  .description('check if service is valid')
+  .description('print information about a given service')
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
@@ -180,11 +180,10 @@ program
 // TODO: Watch option
 program
   .command('build')
-  .option('--install', 'skip bootstrapping dependencies', false)
-  .option('--only', 'skip compiling service dependencies', false)
+  .option('--verbose', 'print build commands output', false)
+  .option('--no-install', 'skip bootstrapping dependencies', false)
   .option('-s <service>, --service <service>', 'the service you want to build', '')
-  .option('--affected <rev1..rev2>', 'only rebuild services affected between two revisions', '')
-  .option('--force', 'skip compiling service dependencies', false)
+  .option('--force', 'ignore build command checksums and re-package', false)
   .description('compile packages and services')
   .action(
     async (cmd) =>
@@ -193,14 +192,15 @@ program
       }),
   );
 
-// TODO: From cache info
 program
   .command('package')
-  .option('-v, --verbose', 'print package commands output', false)
-  .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
-  .option('--no-recompile', 'skip package and service recompilation', false)
+  .option('--verbose', 'print package commands output', false)
+  .option('--no-install', 'skip installing dependencies', false)
+  .option('--no-recompile', 'skip workspaces recompilation', false)
+  .option('--force-package', 'ignore package command checksums and re-package', false)
+  .option('--force', 'skip bootstrapping dependencies', false)
   .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
-  .option('-s <service>, --service <service>', 'the service you want to package', false)
+  .option('-s <service>, --service <service>', 'the services you want to package (coma-seperated list)', false)
   .description('package services source code')
   .action(
     async (cmd) =>
@@ -209,18 +209,18 @@ program
       }),
   );
 
-// FIXME
 program
   .command('deploy')
-  // .option('-i, --interactive', 'interactively choose microservices', false)
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deployment')
   .option('--verbose', 'print child processes stdout and stderr', false)
-  .option('--force', 'ignore checksum and re-deploy', false)
-  .option('--no-bootstrap', 'skip bootstrapping dependencies', false)
+  .option('--no-install', 'skip installing dependencies', false)
   .option('--no-recompile', 'skip package and service recompilation', false)
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
   .option('--no-package', 'skip bundling service deployment package', false)
-  .option('-s <service>, --service <service>', 'the service you want to deploy')
-  .option('-e <stage>, --stage <stage>', 'target stage for deployment')
+  .option('--force-deploy', 'ignore deploy command checksums and re-deploy', false)
+  .option('--force-package', 'ignore package and deploy commands checksums and re-deploy', false)
+  .option('--force', 'ignore build, package and deploy checksums and re-deploy', false)
+  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
+  .option('-s <service>, --service <service>', 'the services you want to deploy (coma-seperated list)')
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
@@ -255,17 +255,14 @@ program
 program
   .command('test')
   .description('test microlambda services')
-  .option('--no-bootstrap', 'skip reinstalling dependencies before starting microservices', false)
-  .option('--no-recompile', 'skip recompiling dependency graph before starting microservices', false)
-  .option('--remote-cache', 'skip recompiling dependency graph before starting microservices', false)
-  .option('--branch', 'skip recompiling dependency graph before starting microservices', false)
-  .option('--affected-since', 'skip recompiling dependency graph before starting microservices', false)
-  .option('--only-self', 'only recompile target services', false)
-  .option('--unit', 'only run unit tests', false)
-  .option('--functional', 'only run functional tests', false)
-  .option('--stdio <stdio>', 'whether to print or not test command stdout', 'ignore')
+  .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('--no-install', 'skip reinstalling dependencies before running tests', false)
+  .option('--no-recompile', 'skip recompiling dependency graph before running tests', false)
+  .option('--force', 'ignore test command checksums and re-run tests', false)
+  .option('--remote-cache', 'use remote caching to skip tests execution if sources did not change', false)
+  .option('--affected-since', 'specify a revision as reference when using remote caching. This is optional, if not specified, last execution on current branch will be used', false)
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
-  .option('-s <service>, --service <service>', 'the service for which you want to test')
+  .option('-s <service>, --service <service>', 'the services to test (coma-seperated list)')
   .action(
     async () =>
       await commandWrapper(async () => {

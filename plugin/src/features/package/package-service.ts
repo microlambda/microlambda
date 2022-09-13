@@ -6,11 +6,13 @@ import chalk from "chalk";
 import { IBaseLogger, ServerlessInstance, IPluginConfig } from "@microlambda/types";
 import { assign } from "../../utils";
 import { join } from "path";
-import { existsSync, rmdirSync } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import { readJSONSync } from "fs-extra";
 import { aws } from '@microlambda/aws';
-import { ILayerChecksums, compareLayerChecksums, readLayerChecksums, calculateLayerChecksums, writeLayerChecksums } from '@microlambda/layers';
+import { shouldRecreateLayer, writeLayerChecksums } from '@microlambda/layers';
 import { checkPackageIntegrity } from './check-package-integrity';
+import { ISourcesChecksums } from '@microlambda/runner-core';
+import { ConfigReader } from '@microlambda/config';
 
 const DEFAULT_LEVEL = 4;
 
@@ -26,12 +28,27 @@ export const packageService = async (
   }
   const useLayer = config?.packagr?.useLayer === true;
   const useLayerChecksums = config?.packagr?.checksums;
-
+  const env = serverless.service.provider.stage;
+  if (!service.project) {
+    throw new Error('Assertion failed: project root should have resolved');
+  }
+  const rootConfig = new ConfigReader(service.project.root).rootConfig;
   const bundleLocation = join(service.root, ".package", "bundle.zip");
   const layerLocation = join(service.root, ".package", "layer.zip");
 
-  logger?.info('[package] Checking previous bundle.zip integrity')
-  const shouldRepackage = await checkPackageIntegrity(service);
+  logger?.info('[package] Generating bundle.zip at', bundleLocation);
+  logger?.info('[package] Using layer', useLayer);
+  logger?.info('[package] Using layer caching', useLayerChecksums);
+
+  let shouldRepackage = true;
+  if (existsSync(bundleLocation)) {
+    logger?.info('[package] Checking previous bundle.zip integrity')
+    const isPackageValid  = await checkPackageIntegrity(service, logger);
+    shouldRepackage = !isPackageValid;
+    logger?.info('[package] Should repackage', shouldRepackage);
+  } else {
+    logger?.info('[package] No previous bundle.zip found, repackaging...')
+  }
 
   const bundleMetadataLocation = join(
     service.root,
@@ -48,7 +65,7 @@ export const packageService = async (
   };
 
   return new Promise(async (resolve, reject) => {
-    const afterPackaged = async (shouldBuildLayer: boolean, currentChecksums?: ILayerChecksums | null): Promise<void> => {
+    const afterPackaged = async (shouldBuildLayer: boolean, currentChecksums?: ISourcesChecksums | null): Promise<void> => {
       setArtifact();
       if (useLayer && shouldBuildLayer) {
         let layerArn: string | undefined;
@@ -64,7 +81,13 @@ export const packageService = async (
           setLayer(layerArn);
           if (useLayerChecksums && currentChecksums) {
             logger?.info('Writing checksums', layerArn);
-            await writeLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, currentChecksums, serverless.providers.aws.getRegion(), logger)
+            await writeLayerChecksums(
+              service,
+              env,
+              rootConfig,
+              currentChecksums,
+              logger,
+            )
           }
           if (config?.packagr?.prune) {
             await aws.lambda.pruneLayers(config?.packagr?.prune, stackName, serverless.providers.aws.getRegion(), logger);
@@ -92,34 +115,27 @@ export const packageService = async (
       }
     }
 
-    let shouldBuildLayer = useLayer;
-    let currentChecksums: ILayerChecksums | undefined | null;
-    if (useLayerChecksums) {
-      logger?.info('[package] Calculating checksums');
-      currentChecksums = await calculateLayerChecksums(
-          service,
-          logger
-      );
-      logger?.info('[package] Fetching upstream checksums');
-      const readChecksums = await readLayerChecksums(useLayerChecksums.bucket, useLayerChecksums.key, serverless.providers.aws.getRegion(), logger);
+    let shouldRedeployLayer = true;
+    let currentChecksums: ISourcesChecksums | undefined | null;
 
-      logger?.debug('[package] Upstream checksums', currentChecksums);
-      logger?.debug('[package] Current checksums', currentChecksums);
-      shouldBuildLayer = !(await compareLayerChecksums(currentChecksums, readChecksums));
-      logger?.info('[package] Should re-build layer', shouldBuildLayer);
+    if (useLayerChecksums) {
+      const shouldRebuildLayer = await shouldRecreateLayer(service, env, rootConfig, logger);
+      currentChecksums = shouldRebuildLayer.currentChecksums;
+      shouldRedeployLayer = shouldRebuildLayer.recreate;
     }
-    if (shouldRepackage) {
-      logger?.info("[package] Already packaged. Using existing bundle.zip");
+    if (!shouldRepackage) {
+      logger?.info("[package] Existing bundle.zip up-to-date, using it.");
       if (useLayer) {
-        logger?.info("[package] Layer already create. Using existing layer.zip");
+        logger?.info("[package] Layer already created. Using existing layer.zip");
       }
       printMetadata();
-      afterPackaged(shouldBuildLayer, currentChecksums).then(resolve).catch(reject);
+      afterPackaged(shouldRedeployLayer, currentChecksums).then(resolve).catch(reject);
     } else {
+      logger?.info("[package] Cleaning previous packaging artifacts");
       if (existsSync(join(service.root, '.package'))) {
-        rmdirSync(join(service.root, '.package'), { recursive: true });
+        rmSync(join(service.root, '.package'), { recursive: true, force: true });
       }
-      const packager = new Packager(useLayer, shouldBuildLayer);
+      const packager = new Packager(useLayer, shouldRedeployLayer);
       packager.bundle(service.name, config?.packagr?.level || DEFAULT_LEVEL).subscribe(
         (evt) => {
           logger?.info(`[package] ${evt.message} (took ${evt.took}ms)`);
@@ -142,7 +158,7 @@ export const packageService = async (
           return reject(err);
         },
         () => {
-          afterPackaged(shouldBuildLayer, currentChecksums).then(resolve).catch(reject);
+          afterPackaged(shouldRedeployLayer, currentChecksums).then(resolve).catch(reject);
         }
       );
     }

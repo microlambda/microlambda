@@ -1,5 +1,5 @@
 {
-  "extends": "../mila.json",
+  "extends": "../mila.shared.json",
   "targets": {
     "build": {
       "cmd": [

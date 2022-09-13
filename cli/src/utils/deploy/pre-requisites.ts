@@ -2,7 +2,7 @@ import { logger } from '../logger';
 import chalk from 'chalk';
 import { checkWorkingDirectoryClean } from '@microlambda/runner-core';
 import { resolveProjectRoot } from '@microlambda/utils';
-import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
+import { EventsLog } from '@microlambda/logger';
 import { init } from '../init';
 import { IEnvironment, State } from '@microlambda/remote-state';
 import { verifyState } from '../verify-state';
@@ -24,7 +24,7 @@ export const beforeDeploy = async (cmd: IDeployCmd, eventsLog: EventsLog): Promi
   const projectRoot = resolveProjectRoot();
   log.debug('Project root resolved', projectRoot);
   // Validate env
-  const { config, project } = await init(projectRoot, eventsLog);
+  const { config, project } = await init(projectRoot, eventsLog, cmd.install);
 
   log.debug('Initializing and verifying state');
   const state = new State(config);

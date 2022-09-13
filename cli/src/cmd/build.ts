@@ -7,7 +7,7 @@ import { beforeBuild } from '../utils/build/pre-requisites';
 import { typeCheck } from '../utils/build/type-check';
 
 export const build = async (cmd: IBuildCmd): Promise<void> => {
-  printCommand('🔧 Building', cmd.s, cmd.only);
+  printCommand('🔧 Building', cmd.s);
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-build-${Date.now()}`)]);
   const options = await beforeBuild(projectRoot, cmd, eventsLog, true);

@@ -1,11 +1,11 @@
 import { IRunCommandErrorEvent, RunCommandEvent, RunCommandEventEnum, Runner } from '@microlambda/runner-core';
-import Spinnies from 'spinnies';
 import { Packager } from '@microlambda/core';
 import chalk from 'chalk';
 import { logger } from '../logger';
 import { IPackageOptions } from './options';
 import { printError } from '../print-process-error';
 import { EventsLog } from '@microlambda/logger';
+import { MilaSpinnies } from '../spinnies';
 
 export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog): Promise<{ failures: Set<RunCommandEvent>, success: Set<RunCommandEvent> }> => {
   return new Promise((resolve, reject) => {
@@ -15,16 +15,12 @@ export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog)
     const log = eventsLog?.scope('do-package');
     const success: Set<RunCommandEvent> = new Set();
     const failures: Set<IRunCommandErrorEvent> = new Set();
-    const spinnies = new Spinnies({
-      failColor: 'white',
-      succeedColor: 'white',
-      spinnerColor: 'cyan',
-    });
+    const spinnies = new MilaSpinnies(options.verbose);
     const onNext = (evt: RunCommandEvent): void => {
       switch (evt.type) {
         case RunCommandEventEnum.NODE_STARTED: {
           log?.debug('Packaging process started', evt.workspace.name);
-          spinnies.add(evt.workspace.name, { text: `Packaging ${evt.workspace.name}` });
+          spinnies.add(evt.workspace.name, `Packaging ${evt.workspace.name}`);
           break;
         }
         case RunCommandEventEnum.NODE_PROCESSED: {
@@ -35,24 +31,16 @@ export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog)
           const usesLayer = metadata.megabytes?.layer;
           const codeSize = metadata.megabytes?.code || metadata.megabytes;
           log?.debug(spinnies);
-          if (spinnies.pick(evt.workspace.name)) {
-            spinnies.succeed(evt.workspace.name, {
-              text: `${evt.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
-                usesLayer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
-              } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`,
-            });
-          }
+          spinnies.succeed(evt.workspace.name, `${evt.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
+            usesLayer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
+          } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`);
           break;
         }
         case RunCommandEventEnum.NODE_ERRORED: {
           log?.debug('Packaging process errored', evt.workspace.name);
           failures.add(evt);
           log?.debug(spinnies);
-          if (spinnies.pick(evt.workspace.name)) {
-            spinnies.fail(evt.workspace.name, {
-              text: `Failed to package ${evt.workspace.name}`,
-            });
-          }
+          spinnies.fail(evt.workspace.name, `Failed to package ${evt.workspace.name}`);
           break;
         }
       }
@@ -78,8 +66,8 @@ export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog)
       cmd: 'package',
       workspaces: options.workspaces,
       mode: 'parallel',
-      force: options.force,
-      stdio: options.verbose ? 'inherit' : 'pipe',
+      force: options.force || options.forcePackage,
+      stdio: spinnies.stdio,
     }).subscribe({ next: onNext, error: onError, complete: onComplete });
   });
 };
