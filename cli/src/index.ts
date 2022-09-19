@@ -192,6 +192,24 @@ program
       }),
   );
 
+// FIXME
+program
+  .command('test')
+  .description('test microlambda services')
+  .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('--no-install', 'skip reinstalling dependencies before running tests', false)
+  .option('-s <service>, --service <service>', 'the services to test (coma-seperated list)')
+  .option('--force', 'ignore test command checksums and re-run tests', false)
+  .option('--remote-cache', 'use remote caching to skip tests execution if sources did not change', false)
+  .option('--affected-since <sha1>', 'specify a revision as reference when using remote caching. This is optional, if not specified, last execution on current branch will be used')
+  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
+  .action(
+    async () =>
+      await commandWrapper(async () => {
+        //await runTests(cmd, scheduler, eventsLog);
+      }),
+  );
+
 program
   .command('package')
   .option('--verbose', 'print package commands output', false)
@@ -248,25 +266,6 @@ program
     async (cmd) =>
       await commandWrapper(async () => {
         await remove(cmd);
-      }),
-  );
-
-// FIXME
-program
-  .command('test')
-  .description('test microlambda services')
-  .option('--verbose', 'print child processes stdout and stderr', false)
-  .option('--no-install', 'skip reinstalling dependencies before running tests', false)
-  .option('--no-recompile', 'skip recompiling dependency graph before running tests', false)
-  .option('--force', 'ignore test command checksums and re-run tests', false)
-  .option('--remote-cache', 'use remote caching to skip tests execution if sources did not change', false)
-  .option('--affected-since', 'specify a revision as reference when using remote caching. This is optional, if not specified, last execution on current branch will be used', false)
-  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
-  .option('-s <service>, --service <service>', 'the services to test (coma-seperated list)')
-  .action(
-    async () =>
-      await commandWrapper(async () => {
-        //await runTests(cmd, scheduler, eventsLog);
       }),
   );
 

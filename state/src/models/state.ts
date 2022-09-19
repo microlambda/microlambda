@@ -26,6 +26,19 @@ export interface ILayerChecksumsRequest {
   region: string;
 }
 
+export interface ICmdExecutionRequest {
+  service: string;
+  branch: string;
+  cmd: string;
+  current_sha1: string;
+  region: string;
+}
+
+export interface ICmdExecution extends ICmdExecutionRequest {
+  k1: string; // $branch
+  k2: string; // executions|$service|$cmd
+}
+
 export interface ILayerChecksums extends ILayerChecksumsRequest {
   k1: string; // $serviceName
   k2: string; // layer|$env
@@ -118,5 +131,18 @@ export class State extends Model<unknown> {
       k2: `layer|${req.env}`,
       ...req,
     })
+  }
+
+  async getExecution(branch: string, command: string, service: string): Promise<ICmdExecution> {
+    const exec = await this.get(branch, `executions|${service}|${command}`);
+    return exec as ICmdExecution;
+  }
+
+  async saveExecution(request: ICmdExecutionRequest): Promise<void> {
+    await this.save({
+      pk: request.branch,
+      sk: `executions|${request.service}|${request.cmd}`,
+      ...request,
+    });
   }
 }
