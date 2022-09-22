@@ -37,17 +37,17 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
   await printAccountInfos();
   const currentRevision = currentSha1();
-  const lock = new LockManager(config);
-  if (await lock.isLocked(env.name)) {
+  const lock = new LockManager(config, env.name, cmd.s?.split(','));
+  if (await lock.isLocked()) {
     logger.lf();
     logger.info('🔒 Environment is locked. Waiting for the lock to be released');
-    await lock.waitLockToBeReleased(env.name);
+    await lock.waitLockToBeReleased();
   }
-  await lock.lock(env.name);
+  await lock.lock();
   const releaseLock = async (): Promise<void> => {
     logger.lf();
     const lockRelease = ora('🔒 Releasing lock...');
-    await lock.releaseLock(env.name);
+    await lock.releaseLock();
     lockRelease.succeed('🔒 Lock released !');
   }
   process.on('SIGINT', async () => {
@@ -55,7 +55,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
     logger.lf();
     const lockRelease = ora('🔒 SIGINT received, releasing lock...');
     try {
-      await lock.releaseLock(env.name);
+      await lock.releaseLock();
 
     } catch (e) {
       logger.error('Error releasing lock, you probably would have to do it yourself !');

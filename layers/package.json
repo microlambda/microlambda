@@ -20,6 +20,7 @@
   "dependencies": {
     "@aws-sdk/client-acm": "^3.150.0",
     "@microlambda/aws": "workspace:*",
+    "@microlambda/remote-state": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "@microlambda/utils": "workspace:*"
   },

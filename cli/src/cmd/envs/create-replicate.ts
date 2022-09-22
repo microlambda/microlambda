@@ -3,6 +3,8 @@ import { printAccountInfos } from './list';
 import { verifyState } from '../../utils/verify-state';
 import { regions } from '@microlambda/config';
 import { LockManager, State } from '@microlambda/remote-state';
+import { getDependenciesGraph } from '../../utils/parse-deps-graph';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export const createReplicate = async (env: string, region: string) => {
   logger.info('Creating regional replicate for', env);
@@ -15,7 +17,8 @@ export const createReplicate = async (env: string, region: string) => {
     process.exit(1);
   }
   const state = new State(config);
-  const lock = new LockManager(config);
+  const services = (await getDependenciesGraph(resolveProjectRoot())).services.keys();
+  const lock = new LockManager(config, env, [...services]);
   const environment = await state.findEnv(env);
   if (!environment) {
     logger.error('Environment not found', env);
@@ -25,13 +28,13 @@ export const createReplicate = async (env: string, region: string) => {
     logger.warn('Environment is already replicated in region', region);
     process.exit(2);
   }
-  if (await lock.isLocked(env)) {
+  if (await lock.isLocked()) {
     logger.error('Environment is locked, a deploy is probably in progress... aborting.');
     process.exit(1);
   }
-  await lock.lock(env);
+  await lock.lock();
   await state.createReplicate(env, region);
-  await lock.releaseLock(env);
+  await lock.releaseLock();
   logger.success('Replicate order created. On next deploy, environment resources will be replicated in', region);
   logger.success(`Run yarn mila deploy -e ${env} to create new resources on AWS Cloud`);
   process.exit(0);

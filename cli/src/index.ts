@@ -18,6 +18,7 @@ import { describeEnv } from './cmd/envs/describe';
 import { destroyEnv } from './cmd/envs/destroy';
 import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
+import { runTests } from './cmd/run-tests';
 
 const program = new Command();
 
@@ -204,9 +205,9 @@ program
   .option('--affected-since <sha1>', 'specify a revision as reference when using remote caching. This is optional, if not specified, last execution on current branch will be used')
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
   .action(
-    async () =>
+    async (cmd) =>
       await commandWrapper(async () => {
-        //await runTests(cmd, scheduler, eventsLog);
+        await runTests(cmd);
       }),
   );
 

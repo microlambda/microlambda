@@ -9,13 +9,13 @@ export const printReport = async (
   actions: Set<DeployEvent | RunCommandEvent>,
   failures: Set<DeployEvent | RunCommandEvent>,
   total: number,
-  action: 'deploy' | 'remove' | 'package',
+  action: 'deploy' | 'remove' | 'package' | 'test',
   verbose = false,
 ): Promise<void> => {
   if (failures.size) {
     logger.error(chalk.underline(chalk.bold('\n▼ Error summary\n')));
   }
-  const getActionVerbBase = (action: 'deploy' | 'remove' | 'package'): string => {
+  const getActionVerbBase = (action: 'deploy' | 'remove' | 'package' | 'test'): string => {
     switch (action) {
       case 'remove':
         return 'remov';

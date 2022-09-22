@@ -3,6 +3,8 @@ import { printAccountInfos } from './list';
 import { verifyState } from '../../utils/verify-state';
 import { regions } from '@microlambda/config';
 import { LockManager, State } from '@microlambda/remote-state';
+import { getDependenciesGraph } from '../../utils/parse-deps-graph';
+import { resolveProjectRoot } from '@microlambda/utils';
 
 export const destroyReplicate = async (env: string, region: string) => {
   logger.info('Removing regional replicate for', env);
@@ -15,7 +17,8 @@ export const destroyReplicate = async (env: string, region: string) => {
     process.exit(1);
   }
   const state = new State(config);
-  const lock = new LockManager(config);
+  const allServices = (await getDependenciesGraph(resolveProjectRoot())).services.keys();
+  const lock = new LockManager(config, env, [...allServices]);
   const environment = await state.findEnv(env);
   if (!environment) {
     logger.error('Environment not found', env);
@@ -25,13 +28,13 @@ export const destroyReplicate = async (env: string, region: string) => {
     logger.error('Environment is not replicated in region', region);
     process.exit(1);
   }
-  if (await lock.isLocked(env)) {
+  if (await lock.isLocked()) {
     logger.error('Environment is locked, a deploy is probably in progress... aborting.');
     process.exit(1);
   }
-  await lock.lock(env);
+  await lock.lock();
   await state.removeReplicate(env, region);
-  await lock.releaseLock(env);
+  await lock.releaseLock();
   logger.success('Replicate destruction order created. On next deploy, environment resources will be destroyed from', region);
   logger.success(`Run yarn mila deploy -e ${env} to remove resources from AWS Cloud`);
   process.exit(0);
