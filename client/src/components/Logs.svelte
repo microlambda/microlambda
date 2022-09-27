@@ -1,10 +1,10 @@
 <script lang="ts">
-  import * as ansi from 'ansi-html';
+  import Convert from 'ansi-to-html';
   import { afterUpdate, createEventDispatcher, onMount } from 'svelte';
   import { VirtualScroll } from "svelte-virtual-scroll-list";
   import Button from "./Button.svelte";
   export let logs: Array<{id: number, text: string }> = [];
-  const fromAnsi = ansi;
+  const fromAnsi = new Convert();
   export let height = 500;
   export let width = 500;
 
@@ -83,7 +83,7 @@
         on:bottom={() => scrolledToBottom()}
         on:top={() => scrolledToTop()}
       >
-        <pre>{ @html fromAnsi(data.text) }</pre>
+        <pre>{ @html fromAnsi.toHtml(data.text) }</pre>
       </VirtualScroll>
     {:else }
     <pre>No logs to show ¯\_(ツ)_/¯</pre>

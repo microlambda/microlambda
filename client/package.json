@@ -8,7 +8,7 @@
     "check": "../node_modules/.bin/svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "ansi-html": "^0.0.7",
+    "ansi-to-html": "^0.7.2",
     "dagre-d3": "^0.6.4",
     "socket.io-client": "^4.4.1",
     "svelte": "^3.24.0",
