@@ -160,7 +160,6 @@ export const startServer = (
   const http = createServer(app);
   return new Promise<Server>((resolve) => {
     http.listen(port, () => {
-      console.debug('Listening on', port)
       resolve(http);
     });
   });

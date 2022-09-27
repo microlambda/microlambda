@@ -60,8 +60,6 @@ export class Scheduler {
     if (this.project.services.size > (this._runners.start?.size || 0)) {
       this.project.services.forEach((w) => this._targets.add(w));
       return this._exec({ toStart: new Set([...this.project.services.values()]), toStop: new Set() });
-    } else {
-      console.debug('All services already started');
     }
   }
 
@@ -180,7 +178,6 @@ export class Scheduler {
       if (this._runners.start.has(w.name)) {
         this._events$.next({ service: w, type: 'stopping' });
         this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPING);
-        console.debug('Killing', w.name);
         await w.kill('start', [w.ports?.http, w.ports?.lambda, w.ports?.websocket].filter((p) => p != null) as number[]);
         this._logger.info('Serverless offline process killed', w.name);
         this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPED);
@@ -188,7 +185,6 @@ export class Scheduler {
         this._subscriptions.start.get(w.name)?.unsubscribe();
         this._runners.start.delete(w.name);
       } else {
-        console.debug('Not started', w.name);
         this._logger.warn('Service not registered as running ', w.name);
       }
     })).then(() => {
