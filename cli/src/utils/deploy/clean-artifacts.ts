@@ -5,7 +5,7 @@ import { pathExists, remove } from 'fs-extra';
 import chalk from 'chalk';
 import { IDeployOptions } from './options';
 
-export const cleanArtifacts = async (options: IDeployOptions) => {
+export const cleanArtifacts = async (options: IDeployOptions): Promise<void> => {
   if(options.force) {
     logger.info('\n▼ Clean artifacts directories\n');
     // Cleaning artifact location

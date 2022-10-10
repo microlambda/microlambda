@@ -3,7 +3,7 @@ import { State } from '@microlambda/remote-state';
 import { printAccountInfos } from './list';
 import { verifyState } from '../../utils/verify-state';
 
-export const describeEnv = async (name: string) => {
+export const describeEnv = async (name: string): Promise<void> => {
   logger.info('Creating environment');
   logger.lf();
   const config = await printAccountInfos();

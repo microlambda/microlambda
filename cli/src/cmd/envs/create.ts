@@ -5,7 +5,7 @@ import { regions } from '@microlambda/config';
 import { prompt } from 'inquirer';
 import { verifyState } from '../../utils/verify-state';
 
-export const createEnv = async (name: string) => {
+export const createEnv = async (name: string): Promise<void> => {
   logger.info('Creating environment');
   logger.lf();
   const config = await printAccountInfos();
@@ -20,7 +20,7 @@ export const createEnv = async (name: string) => {
     name: 'regions',
     message: 'Choose regions where the environment should be deployed (coma-seperated list)',
     default: config.defaultRegion,
-    validate: (input: string) => {
+    validate: (input: string): boolean => {
       const allValid = input.split(',').every((value) => regions.includes(value));
       if (!allValid) {
         logger.error('Some regions are not valid. Accepted regions are', regions.join(', '));

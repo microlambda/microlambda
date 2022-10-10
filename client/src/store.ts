@@ -16,7 +16,7 @@ import { logger } from "./logger";
 const DEFAULT_POLLING_RATE = 500;
 const log = logger.scope("(store)");
 
-let isConnected = false;
+const isConnected = false;
 export const connected = readable(false, (set) => {
   setInterval(() => {
     healthCheck().then((connected) => {
@@ -48,7 +48,7 @@ export const packages = derived(graph, ($graph) =>
   $graph.packages
 );
 
-const areGraphEquals = (g1: IGraph, g2: IGraph) => {
+const areGraphEquals = (g1: IGraph, g2: IGraph): boolean => {
   if(g1.services.length === g2.services.length && g1.packages.length === g2.packages.length) {
     return g1.services.every((s1) => {
       const service = g2.services.find((s2) => s1.name === s2.name);
@@ -69,7 +69,7 @@ const areGraphEquals = (g1: IGraph, g2: IGraph) => {
 
 type Slice = [number, number?];
 
-let currentSlices: {
+const currentSlices: {
   eventsLog?: Slice,
   buildLogs?: Slice,
   offlineLogs?: Slice,
@@ -79,7 +79,7 @@ let currentSlices: {
   offlineLogs: [0],
 }
 
-let pollers: {
+const pollers: {
   eventsLog?: NodeJS.Timer,
   buildLogs?: NodeJS.Timer,
   offlineLogs?: NodeJS.Timer,
@@ -90,7 +90,7 @@ const handleLogsResponse = (
   response: ILogsResponse<string | IEventLog>,
   type: 'eventsLog' | 'buildLogs' | 'offlineLogs',
   writable: ICreateWritable<ILogsResponse<string | IEventLog>, string | void>,
-) => {
+): void => {
   if (response.metadata.slice[1] > currentSlices[type][1]) {
     log.info('Additional logs received', type);
     currentSlices[type][1] = response.metadata.slice[1];

@@ -5,6 +5,15 @@ import { join } from 'path';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { ITargetConfig } from '@microlambda/config';
 
+interface IGlobsConfig {
+  sources: {
+    internals: string[];
+    deps: string[];
+    root: string[];
+  };
+  artifacts: string[];
+}
+
 export class GlobsHelpers {
   private readonly logger: EventsLogger | undefined;
   static readonly scope = 'runner-core/globs';
@@ -21,7 +30,7 @@ export class GlobsHelpers {
     return typeof this.cmd === 'string' ? this.workspace.config[this.cmd] : this.cmd;
   }
 
-  get globs() {
+  get globs(): IGlobsConfig {
     return {
       sources: {
         internals: this.config?.src?.internals || [],
@@ -43,7 +52,7 @@ export class GlobsHelpers {
 
 
 
-    const resolveGlobs = (globs: string[], relativeTo: string) => {
+    const resolveGlobs = (globs: string[], relativeTo: string): string[] => {
       const paths = this._resolveGlobs(globs, relativeTo);
       paths.forEach((p) => files.add(p));
       return paths;
@@ -67,7 +76,7 @@ export class GlobsHelpers {
     return Array.from(new Set(paths));
   }
 
-  private _resolveGlobs(globs: string[], relativeTo: string) {
+  private _resolveGlobs(globs: string[], relativeTo: string): string[] {
     return globs.map((s) => glob(join(relativeTo, s))).reduce((acc, val) => {
       acc = acc.concat(val);
       return acc;

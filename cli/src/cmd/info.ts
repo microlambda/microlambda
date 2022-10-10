@@ -4,8 +4,8 @@ import chalk from 'chalk';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { logger } from '../utils/logger';
 
-const printTree = (wks: Workspace) => {
-  const printDeps = (_wks: Workspace, depth = 0) => {
+const printTree = (wks: Workspace): void => {
+  const printDeps = (_wks: Workspace, depth = 0): void => {
     for (const dep of _wks.dependencies()) {
       logger.info('   '.repeat(depth), chalk.grey(depth ? '|__' : ''), dep.name);
       printDeps(dep, depth + 1);

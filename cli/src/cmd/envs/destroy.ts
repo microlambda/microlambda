@@ -6,7 +6,7 @@ import { LockManager } from '@microlambda/remote-state';
 import { getDependenciesGraph } from '../../utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
 
-export const destroyEnv = async (name : string) => {
+export const destroyEnv = async (name : string): Promise<void> => {
   logger.info('Preparing to destroy environment');
   logger.lf();
   const config = await printAccountInfos();

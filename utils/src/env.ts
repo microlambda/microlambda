@@ -6,7 +6,6 @@ export const loadEnv = (projectRoot: string): void => {
     path: join(projectRoot, '.env'),
   });
   if (load.error) {
-    console.error(load.error);
     throw new Error('Unable to read .env file');
   }
 };

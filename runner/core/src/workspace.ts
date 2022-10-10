@@ -556,7 +556,7 @@ export class Workspace {
   async invalidateLocalCache(
     cmd: string,
   ): Promise<void> {
-    let cache = new LocalCache(this, cmd);
+    const cache = new LocalCache(this, cmd);
     await cache.invalidate();
   }
 

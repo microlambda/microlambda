@@ -135,7 +135,7 @@ export class Scheduler {
         this._events$.next({ ...evt, cmd: "transpile" });
       },
       error: (error) => {
-        console.error(error);
+        this._logger.error(error);
       },
       complete: () => {
         delete this._subscriptions.transpile;
@@ -165,7 +165,7 @@ export class Scheduler {
         this._events$.next({ ...evt, cmd: "build" });
       },
       error: (error) => {
-        console.error(error);
+        this._logger.error(error);
       },
       complete: () => {
         delete this._subscriptions.build;

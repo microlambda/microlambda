@@ -6,7 +6,7 @@ import { LockManager, State } from '@microlambda/remote-state';
 import { getDependenciesGraph } from '../../utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
 
-export const createReplicate = async (env: string, region: string) => {
+export const createReplicate = async (env: string, region: string): Promise<void> => {
   logger.info('Creating regional replicate for', env);
   logger.lf();
   const config = await printAccountInfos();

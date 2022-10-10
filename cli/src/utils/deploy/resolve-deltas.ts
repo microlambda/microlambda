@@ -4,7 +4,7 @@ import { logger } from '../logger';
 import chalk from 'chalk';
 import { IEnvironment, State } from '@microlambda/remote-state';
 import Table from 'cli-table3';
-import { Project, Workspace } from '@microlambda/core';
+import { Project } from '@microlambda/core';
 import { IDeployCmd } from './cmd-options';
 import { IRootConfig } from '@microlambda/config';
 import { EventsLog } from '@microlambda/logger';
@@ -18,7 +18,7 @@ export const resolveDeltas = async (
   state: State,
   config: IRootConfig,
   eventsLog: EventsLog,
-) => {
+): Promise<Map<string, Map<string, ActionType>>> => {
 
   const log = eventsLog.scope('resolve-deltas');
   logger.lf();
@@ -126,6 +126,7 @@ export const resolveDeltas = async (
     }
     table.push(row);
   }
+  // eslint-disable-next-line no-console
   console.log(table.toString());
   logger.lf();
   return operations;

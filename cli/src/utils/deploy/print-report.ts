@@ -32,15 +32,15 @@ export const printReport = async (
     const region = (evt as DeployEvent).region;
     if (region && evt.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
       logger.error(
-        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace.name} in ${region} region\n`)),
+        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as { workspace?: { name: string }}).workspace?.name} in ${region} region\n`)),
       );
     } else {
-      logger.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as any).workspace?.name}\n`)));
+      logger.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as { workspace?: { name: string }}).workspace?.name}\n`)));
     }
 
-    if ((evt as any).error) {
+    if ((evt as { error: unknown }).error) {
       logger.error(chalk.bold(`#${i} - Error details:`));
-      printError((evt as any).error);
+      printError((evt as { error: unknown }).error);
       logger.lf();
     }
   }

@@ -17,7 +17,7 @@ export class MilaSpinnies {
     return this.tty ? undefined : 'inherit';
   }
 
-  add(key: string, message: string) {
+  add(key: string, message: string): void {
     if (this.tty) {
       this._spinnies.add(key, {text: message });
     } else {
@@ -25,7 +25,7 @@ export class MilaSpinnies {
     }
   }
 
-  succeed(key: string, message: string) {
+  succeed(key: string, message: string): void {
     if (this.tty && this._spinnies.pick(key)) {
       this._spinnies.succeed(key, { text: message });
     } else if(!this.tty) {
@@ -33,7 +33,7 @@ export class MilaSpinnies {
     }
   }
 
-  fail(key: string, message: string) {
+  fail(key: string, message: string): void {
     if (this.tty && this._spinnies.pick(key)) {
       this._spinnies.fail(key, { text: message });
     } else if(!this.tty) {
@@ -41,7 +41,7 @@ export class MilaSpinnies {
     }
   }
 
-  update(key: string, message: string) {
+  update(key: string, message: string): void {
     if (this.tty && this._spinnies.pick(key)) {
       this._spinnies.update(key, { text: message });
     } else if(!this.tty) {
@@ -49,7 +49,7 @@ export class MilaSpinnies {
     }
   }
 
-  stopAll() {
+  stopAll(): void {
     this._spinnies.stopAll();
   }
 }

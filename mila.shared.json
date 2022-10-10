@@ -12,6 +12,18 @@
         ]
       }
     },
+    "lint:fix": {
+      "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml} --fix",
+      "src": {
+        "internals": [
+          "{src,test}/**/*.{ts,tsx,json,yml}",
+          "eslintrc"
+        ],
+        "root": [
+          "eslintrc"
+        ]
+      }
+    },
     "publish": {
       "cmd": "yarn npm publish --access public",
       "src": {

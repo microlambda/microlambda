@@ -19,6 +19,6 @@ export class WebsocketLogsHandler extends AbstractLogsHandler<unknown> {
     }
   }
 
-  close(target: string): void {}
-  open(target: string): void {}
+  close(target: string): void {/* no overloaded */}
+  open(target: string): void {/* no overloaded */}
 }

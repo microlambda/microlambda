@@ -2,9 +2,8 @@ import { getProject } from './mocks/utils';
 import { SinonStub, stub } from 'sinon';
 import { Project, RunCommandEventEnum, Runner, TargetsResolver, Workspace } from '../src';
 import { expectObservable } from './utils/runner-observable';
-import { bufferTime, delay, from, mergeAll, Observable, of, Subject, switchMap, throwError } from "rxjs";
+import { delay, from, mergeAll, Observable, of, switchMap, throwError } from "rxjs";
 import { Watcher, WatchEvent } from "../src/watcher";
-import { map } from "rxjs/operators";
 
 const resolveAfter = <T>(value: T, ms: number): Promise<T> => new Promise<T>((resolve) => {
   setTimeout(() => resolve(value), ms);
@@ -77,7 +76,8 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
         });
@@ -110,7 +110,8 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
         });
@@ -154,7 +155,8 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
         });
@@ -200,7 +202,8 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
         });
@@ -241,7 +244,8 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
         });
@@ -273,7 +277,8 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
         });
@@ -319,7 +324,8 @@ describe('[class] Runner', () => {
       stubs.invalidate?.onCall(2).resolves();
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
         });
@@ -377,10 +383,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 4);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-444333-1781-3-71-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -414,10 +425,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-33-7-1133-7-1134-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -448,10 +464,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 8);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-333344-7-1111', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -497,10 +518,15 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project, 8);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
-        }, [], {}, true, 20);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 20,
+        });
         await expectObservable(Date.now(), execution$, '0-444333-777881-33-77781-3-17777-33-11', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -537,10 +563,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 8);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         /*
 
               { type: 3, workspace: '@org/workspace-a' },
@@ -605,10 +636,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 4);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-33-11-5555-3-78-3-1-5555-3-1-555-33-788-3-1-5555-3-1-555-33-11-5-3-1-7-3-1-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -648,10 +684,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 4);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-337-11-5555-37-1-555-337115-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -691,10 +732,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-33-1783-1-555-3-1-555-33-11-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -734,10 +780,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-33-113-7-1-555-3-1-555-33-11-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -772,10 +823,15 @@ describe('[class] Runner', () => {
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand('build', {
+        const execution$ = runner.runCommand({
+          cmd: 'build',
           mode: 'topological',
           force: false,
-        }, [], {}, true, 8);
+          args: [],
+          env: {},
+          watch: true,
+          debounce: 8,
+        });
         await expectObservable(Date.now(), execution$, '0-33-7-1131-555-33-11-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -798,7 +854,8 @@ describe('[class] Runner', () => {
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand('lint', {
+        const execution$ = runner.runCommand({
+          cmd: 'lint',
           mode: 'parallel',
           force: false,
         });

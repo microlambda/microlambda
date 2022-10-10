@@ -220,7 +220,7 @@ class ServerlessMicrolambdaPlugin {
       await this._getDependenciesGraph();
     }
     if (!this._graph) {
-      console.error('Assertion failed: dependencies graph is not resolved');
+      this._log.error('Assertion failed: dependencies graph is not resolved');
       process.exit(1);
     }
     if (!this._service) {

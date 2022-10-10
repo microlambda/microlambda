@@ -26,7 +26,7 @@ export class EventsLogger implements IBaseLogger {
     }
     const scopes = process.env.MILA_DEBUG.split(',');
     const wildcardMatch = (scope: string, rule: string): boolean => {
-      const escapeRegex = (str: string) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+      const escapeRegex = (str: string): string => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
       return new RegExp("^" + rule.split("*").map(escapeRegex).join(".*") + "$").test(scope);
     }
     return scopes.some((scope) => wildcardMatch(this.scope!, scope));
@@ -34,6 +34,7 @@ export class EventsLogger implements IBaseLogger {
 
   silly(...args: unknown[]): void {
     if (['silly'].includes(this.level) && this.inScope) {
+      // eslint-disable-next-line no-console
       console.debug(this.options.prefix.silly, bold(this.scope), ...args.map(this._toString.bind(this)));
     }
     this._handleLogEntry('silly', args);
@@ -41,6 +42,7 @@ export class EventsLogger implements IBaseLogger {
 
   debug(...args: unknown[]): void {
     if (['silly', 'debug'].includes(this.level) && this.inScope) {
+      // eslint-disable-next-line no-console
       console.debug(this.options.prefix.debug, bold(this.scope), ...args.map(this._toString.bind(this)));
     }
     this._handleLogEntry('debug', args);
@@ -48,6 +50,7 @@ export class EventsLogger implements IBaseLogger {
 
   info (...args: unknown[]): void {
     if (['silly', 'debug', 'info'].includes(this.level) && this.inScope) {
+      // eslint-disable-next-line no-console
       console.info(this.options.prefix.info, bold(this.scope), ...args.map(this._toString.bind(this)));
     }
     this._handleLogEntry('info', args);
@@ -55,6 +58,7 @@ export class EventsLogger implements IBaseLogger {
 
   warn (...args: unknown[]): void {
     if (['silly', 'debug', 'info', 'warn'].includes(this.level) && this.inScope) {
+      // eslint-disable-next-line no-console
       console.warn(this.options.prefix.warn, bold(this.scope), ...args.map(this._toString.bind(this)));
     }
     this._handleLogEntry('warn', args);
@@ -62,12 +66,13 @@ export class EventsLogger implements IBaseLogger {
 
   error(...args: unknown[]): void {
     if (['silly', 'debug', 'info', 'warn', 'error'].includes(this.level)) {
+      // eslint-disable-next-line no-console
       console.error(this.options.prefix.error, bold(this.scope), ...args.map(this._toString.bind(this)));
     }
     this._handleLogEntry('error', args);
   }
 
-  private _handleLogEntry(level: LogLevel, args: unknown[]) {
+  private _handleLogEntry(level: LogLevel, args: unknown[]): void {
     const entry = this._toEntry(level, args);
     this.buffer.push(entry);
     if (this.buffer.length >= this.options.bufferSize) {
@@ -85,7 +90,7 @@ export class EventsLogger implements IBaseLogger {
     }
   }
 
-  private _toString(arg: unknown) {
+  private _toString(arg: unknown): string {
     return typeof arg === 'string' ? arg : inspect(arg, false, this.options?.inspectDepth || DEFAULT_INSPECT_DEPTH, true);
   }
 }

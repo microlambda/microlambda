@@ -4,7 +4,7 @@ import { verifyStateKeysSchema } from '@microlambda/remote-state';
 import { IRootConfig } from '@microlambda/config';
 
 export const verifyState = async (config: IRootConfig): Promise<void> => {
-  const printError = () => {
+  const printError = (): void => {
     logger.error('State verification failed. Please double-check config.state');
     logger.error('Have you initialized the state using yarn mila init ?');
   }

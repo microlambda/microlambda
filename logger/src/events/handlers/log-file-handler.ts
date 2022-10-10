@@ -20,7 +20,7 @@ export class EventLogsFileHandler implements IEventsLogHandler {
     this._stream.write(`\n[${entry.level}] (${entry.scope || 'unscoped'}) (${entry.date}) ${entry.args.map(EventLogsFileHandler._toString).join(' ')}`);
   };
 
-  private static _toString(arg: unknown) {
+  private static _toString(arg: unknown): string {
     return typeof arg === 'string'
       ? arg
       : inspect(

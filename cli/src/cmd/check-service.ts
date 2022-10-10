@@ -2,14 +2,14 @@ import chalk from 'chalk';
 import { EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { init } from '../utils/init';
+import { logger } from '../utils/logger';
 
 export const checkService = async (cmd: string): Promise<void> => {
-  const logger = new EventsLog();
-  const { project } = await init(resolveProjectRoot(), logger);
+  const { project } = await init(resolveProjectRoot(), new EventsLog());
   if (!project.services.has(cmd)) {
-    console.info(`\n${chalk.red('✖')} Unknown service`, cmd);
+    logger.info(`\n${chalk.red('✖')} Unknown service`, cmd);
     process.exit(1);
   }
-  console.info(`\n${chalk.green('✔')} Valid service`, cmd);
+  logger.info(`\n${chalk.green('✔')} Valid service`, cmd);
   process.exit(0);
 };

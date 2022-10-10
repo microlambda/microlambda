@@ -97,7 +97,7 @@ export class IOSocketManager {
     });
   }
 
-  private _handleRunCommandEvent(evt: RunCommandSchedulerEvent) {
+  private _handleRunCommandEvent(evt: RunCommandSchedulerEvent): void {
     switch (evt.type) {
       case RunCommandEventEnum.NODE_STARTED:
         switch (evt.cmd) {

@@ -24,11 +24,11 @@ export class LocalCache extends Cache {
 
   private _creatingCacheDirectory: Promise<void> | undefined;
 
-  static cacheFolder(workspace: Workspace, cmd: string) {
+  static cacheFolder(workspace: Workspace, cmd: string): string {
     return join(workspace.root, '.caches', cmd);
   }
 
-  get cacheFolder() {
+  get cacheFolder(): string {
     return LocalCache.cacheFolder(this.workspace, this.cmd);
   }
 

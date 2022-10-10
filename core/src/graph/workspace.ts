@@ -22,19 +22,19 @@ export class Workspace extends CentipodWorkspace {
   private _started: ServiceStatus | null = null;
   private _metrics: ICommandMetrics = {};
 
-  get enabled() { return this._enabled }
-  get transpiled() { return this._transpiled }
-  get typechecked() { return this._typechecked }
-  get started() { return this._started }
-  get ports() { return this._ports }
-  get metrics() { return this._metrics }
+  get enabled(): boolean { return this._enabled }
+  get transpiled(): TranspilingStatus { return this._transpiled }
+  get typechecked(): TypeCheckStatus { return this._typechecked }
+  get started(): ServiceStatus | null { return this._started }
+  get ports(): IServicePortsConfig | undefined { return this._ports }
+  get metrics(): ICommandMetrics { return this._metrics }
 
-  assignPorts(ports: IServicePortsConfig) { this._ports = ports }
+  assignPorts(ports: IServicePortsConfig): void { this._ports = ports }
 
-  enable() { this._enabled = true; }
-  disable() { this._enabled = true; }
+  enable(): void { this._enabled = true; }
+  disable(): void { this._enabled = true; }
 
-  updateStatus() {
+  updateStatus(): { transpiled: (to: TranspilingStatus) => void, typechecked: (to: TypeCheckStatus) => void, started: (to: ServiceStatus) => void } {
     return {
       transpiled: (to: TranspilingStatus) => this._transpiled = to,
       typechecked: (to: TypeCheckStatus) => this._typechecked = to,
@@ -42,7 +42,7 @@ export class Workspace extends CentipodWorkspace {
     }
   }
 
-  updateMetric() {
+  updateMetric(): { transpile: (to: ICommandMetric) => void, typecheck: (to: ICommandMetric) => void, start: (to: ICommandMetric) => void }  {
     return {
       transpile: (metric: ICommandMetric) => this._metrics.transpile = metric,
       typecheck: (metric: ICommandMetric) => this._metrics.typecheck = metric,

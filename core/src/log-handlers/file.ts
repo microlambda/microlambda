@@ -15,7 +15,7 @@ export class LogsFileHandler extends LogFilesHandler {
     this._createLogsDirectory();
   }
 
-  private _createLogsDirectory() {
+  private _createLogsDirectory(): void {
     if (!existsSync(this.logsRoot)) {
       mkdirSync(this.logsRoot, { recursive: true });
     }

@@ -19,7 +19,7 @@ export class EventsLog {
 
   private _buffer: IEventsLogEntry[] = [];
 
-  get buffer() {
+  get buffer(): IEventsLogEntry[] {
     return this._buffer;
   }
 

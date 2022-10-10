@@ -7,7 +7,7 @@ import { verifyStateKeysSchema, createStateTable } from '@microlambda/remote-sta
 import { readConfig } from '../utils/read-config';
 import { resolveProjectRoot } from '@microlambda/utils';
 
-export const init = async (cmd: { prompt: boolean }) => {
+export const init = async (cmd: { prompt: boolean }): Promise<void> => {
   logger.lf();
   logger.info('✨ Initializing remote state');
   logger.lf();
@@ -38,7 +38,7 @@ export const init = async (cmd: { prompt: boolean }) => {
   }
 
   logger.lf();
-  let creatingChecksumsBucket = ora();
+  const creatingChecksumsBucket = ora();
   creatingChecksumsBucket.start('Creating checksums S3 bucket');
   try {
     if (await aws.s3.bucketExists(config.defaultRegion, config.state.checksums)) {
@@ -54,15 +54,15 @@ export const init = async (cmd: { prompt: boolean }) => {
     process.exit(1);
   }
 
-  let creatingStateTable = ora();
+  const creatingStateTable = ora();
   creatingStateTable.start('Creating remote state table');
-  const onError = (e: unknown) => {
+  const onError = (e: unknown): void => {
     creatingStateTable.fail('Error creating remote state');
     logger.lf();
     logger.error(e);
     process.exit(1);
   }
-  const onSuccess = () => {
+  const onSuccess = (): void => {
     logger.lf();
     logger.success('Remote state successfully initialized !')
     process.exit(0);

@@ -23,7 +23,7 @@ import { map, mergeAll } from 'rxjs/operators';
 import chalk from 'chalk';
 import { printAccountInfos } from './envs/list';
 
-export const runTests = async (cmd: ITestCommand) => {
+export const runTests = async (cmd: ITestCommand): Promise<void> => {
   try {
 
     logger.info('Running tests ✅');
@@ -103,6 +103,7 @@ export const runTests = async (cmd: ITestCommand) => {
                 if (isNotDaemon(cmdResult)) {
                   logger.info(chalk.grey('>'), chalk.grey(cmdResult.command));
                   logger.lf();
+                  // eslint-disable-next-line no-console
                   console.log(cmdResult.all || 'No logs to show');
                 }
               });

@@ -52,7 +52,7 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
     logger.error('Cannot using watch mode and remote caching simultaneously');
     process.exit(1);
   }
-  const resolveCache = () => {
+  const resolveCache = (): { bucket: string, region: string } => {
     const config = (new ConfigReader(project.root)).rootConfig;
     const bucket = config.state.checksums;
     const region = config.defaultRegion;
