@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/errors",
-  "version": "1.0.0-alpha.8",
+  "version": "1.0.0-alpha.11",
   "description": "Microlambda generic error management",
   "author": "Mario Arnautou",
   "repository": {

@@ -28,7 +28,7 @@ export class LockManager {
   }
 
   async getLocks(): Promise<Array<ILock>> {
-    const locks = await this.state.query('GS1').keys({
+    const locks = await this.state.query().keys({
       k1: this.env,
       k2: beginsWith('lock|'),
     }).execAll();

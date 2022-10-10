@@ -139,7 +139,6 @@ export class State extends Model<unknown> {
   }
 
   async saveExecution(request: ICmdExecutionRequest): Promise<void> {
-    console.debug(request);
     await this.save({
       k1: request.branch,
       k2: `executions|${request.service}|${request.cmd}`,

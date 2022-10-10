@@ -46,7 +46,6 @@ export class TarArchive {
           callback(err);
         } else {
           this.size += file.size;
-          console.log(`Added ${file.name}`, file.size, this.size, `${total - this.streamQueue.length}/${total}`);
           this.nextEntry(callback, total);
         }
       });

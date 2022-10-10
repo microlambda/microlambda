@@ -21,9 +21,14 @@ import { execSync } from 'child_process';
 import { from, Observable } from 'rxjs';
 import { map, mergeAll } from 'rxjs/operators';
 import chalk from 'chalk';
+import { printAccountInfos } from './envs/list';
 
 export const runTests = async (cmd: ITestCommand) => {
   try {
+
+    logger.info('Running tests ✅');
+    logger.lf();
+
     const projectRoot = resolveProjectRoot();
     const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-test-${Date.now()}`)]);
     const options: ITestOptions = {
@@ -34,25 +39,26 @@ export const runTests = async (cmd: ITestCommand) => {
       verbose: cmd.verbose,
     };
 
-    // Check that git state clean
-    if (cmd.remoteCache) {
-      logger.info('Using remote cache');
-      checkWorkingDirectoryClean();
-    }
-
     let currentBranch: string;
-    if (cmd.remoteCache && !cmd.affectedSince) {
-      try {
-        currentBranch = execSync('git branch --show-current').toString().split('\n')[0];
-        if (!currentBranch) {
-          logger.error('Cannot determine current branch, you are probably in detached HEAD state. You cannot use remote caching on detached HEAD state without giving a value for option --affectedSince');
+    if (cmd.remoteCache) {
+      logger.lf();
+      logger.info('☁️  Using remote cache');
+      await printAccountInfos();
+      checkWorkingDirectoryClean();
+      if (cmd.remoteCache && !cmd.affectedSince) {
+        try {
+          currentBranch = execSync('git branch --show-current').toString().split('\n')[0];
+          if (!currentBranch) {
+            logger.error('Cannot determine current branch, you are probably in detached HEAD state. You cannot use remote caching on detached HEAD state without giving a value for option --affectedSince');
+            process.exit(1);
+          }
+          logger.info('Current branch:', chalk.cyan.bold(currentBranch));
+        } catch (e) {
+          logger.error('Cannot determine current branch', e);
           process.exit(1);
         }
-        logger.info('Current branch:', currentBranch);
-      } catch (e) {
-        logger.error('Cannot determine current branch', e);
-        process.exit(1);
       }
+      logger.lf();
     }
 
     const config = new ConfigReader(projectRoot, eventsLog).rootConfig;
@@ -70,13 +76,16 @@ export const runTests = async (cmd: ITestCommand) => {
           affectedInfos += ' affected since ';
           affectedInfos += (next.runOptions as IRemoteCacheRunOptions).affected;
           if (currentBranch) {
-            affectedInfos += ` ( branch ${currentBranch})`;
+            affectedInfos += ` (branch ${currentBranch})`;
           }
         }
         switch (next.evt.type) {
           case RunCommandEventEnum.NODE_STARTED: {
             log?.debug('Testing process started', next.evt.workspace.name);
-            spinnies.add(next.evt.workspace.name, `Testing ${next.evt.workspace.name} ${chalk.grey(affectedInfos)}`);
+            spinnies.add(next.evt.workspace.name, `Testing ${next.evt.workspace.name}${chalk.magenta(affectedInfos)}`);
+            if (cmd.verbose) {
+              logger.lf();
+            }
             break;
           }
           case RunCommandEventEnum.NODE_PROCESSED: {
@@ -85,17 +94,21 @@ export const runTests = async (cmd: ITestCommand) => {
             log?.debug(spinnies);
             let fromCache = '';
             if (next.evt.result.remoteCache) {
-              fromCache = ` from remote cache - ${affectedInfos}`;
+              fromCache = ` ${chalk.cyan.bold('from remote cache')} -${affectedInfos}`;
             } else if (next.evt.result.fromCache) {
-              fromCache = ' from local cache';
+              fromCache = ' ' + chalk.cyan.bold('from local cache');
             }
             if (cmd.verbose && next.evt.result.fromCache) {
               next.evt.result.commands.forEach((cmdResult) => {
                 if (isNotDaemon(cmdResult)) {
-                  logger.info('>', cmdResult.command);
-                  console.log(cmdResult.all);
+                  logger.info(chalk.grey('>'), chalk.grey(cmdResult.command));
+                  logger.lf();
+                  console.log(cmdResult.all || 'No logs to show');
                 }
               });
+            }
+            if (cmd.verbose) {
+              logger.lf();
             }
             if (cmd.remoteCache && next.evt.result.commands.every((cmdResult) => {
               if (isNotDaemon(cmdResult)) {
@@ -103,14 +116,14 @@ export const runTests = async (cmd: ITestCommand) => {
               }
               return false;
             })) {
-              logger.info('Caching results for next executions');
+              logger.info('☁️  Caching results for next executions');
               try {
                 let _currentBranch = currentBranch;
                 if (!_currentBranch) {
                   _currentBranch = execSync('git branch --show-current').toString().split('\n')[0];
                 }
                 const sha1 = currentSha1();
-                logger.info('Current sha1:', sha1);
+                logger.info('Current sha1:', chalk.cyan.bold(sha1));
                 if (currentBranch && sha1) {
                   saveExecutions$.push(state.saveExecution({
                     service: next.evt.workspace.name,
@@ -123,8 +136,9 @@ export const runTests = async (cmd: ITestCommand) => {
               } catch (e) {
                 logger.warn(next.evt.workspace.name, ':' ,'Failed to cache results for next execution. Tests will be re-run next time.')
               }
+              logger.lf();
             }
-            spinnies.succeed(next.evt.workspace.name, `${next.evt.workspace.name} tested${chalk.grey(fromCache)}`);
+            spinnies.succeed(next.evt.workspace.name, `${next.evt.workspace.name} tested${chalk.magenta(fromCache)}`);
             break;
           }
           case RunCommandEventEnum.NODE_ERRORED: {
@@ -162,13 +176,9 @@ export const runTests = async (cmd: ITestCommand) => {
         let affected: string | undefined = undefined;
         if (options.remoteCache) {
           remoteCache = { bucket: config.state.checksums, region: config.defaultRegion };
-          if (options.affectedSince) {
-            affected = options.affectedSince;
-          } else {
-            const lastTestExecution = await state.getExecution(currentBranch, 'test', workspace.name);
-            if (lastTestExecution) {
-              affected = lastTestExecution.current_sha1;
-            }
+          const lastTestExecution = await state.getExecution(options.affectedSince || currentBranch, 'test', workspace.name);
+          if (lastTestExecution) {
+            affected = lastTestExecution.current_sha1;
           }
         }
         const runOptions: RunOptions = {

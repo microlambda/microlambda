@@ -37,7 +37,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
   await printAccountInfos();
   const currentRevision = currentSha1();
-  const lock = new LockManager(config, env.name, cmd.s?.split(','));
+  const lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
   if (await lock.isLocked()) {
     logger.lf();
     logger.info('🔒 Environment is locked. Waiting for the lock to be released');
