@@ -39,13 +39,15 @@ describe('[class] workspace', () => {
     afterEach(() => Object.values(stubs).forEach((s) => s.restore()));
     it('should run a given target and emit process result', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: `node ${mockedProcesses.succeed}`,
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
         },
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result.overall).toBeGreaterThan(0);
         expect(result.fromCache).toBe(false);
         expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
@@ -55,13 +57,15 @@ describe('[class] workspace', () => {
     });
     it('should run a given target and emit process result - from cache', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: `node ${mockedProcesses.succeed}`,
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
         },
       });
       stubs.cacheRead.resolves([{ stdout: 'Hello world' }]);
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result.overall).toBeGreaterThan(0);
         expect(result.fromCache).toBe(true);
         expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
@@ -71,13 +75,15 @@ describe('[class] workspace', () => {
     });
     it('should run a given target and emit process result - cache read fails', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: `node ${mockedProcesses.succeed}`,
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
         },
       });
       stubs.cacheRead.rejects();
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result.overall).toBeGreaterThan(0);
         expect(result.fromCache).toBe(false);
         expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
@@ -87,13 +93,15 @@ describe('[class] workspace', () => {
     });
     it('should run a given target and emit process result - cache write fails', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: `node ${mockedProcesses.succeed}`,
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
         },
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.rejects();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result.overall).toBeGreaterThan(0);
         expect(result.fromCache).toBe(false);
         expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
@@ -103,13 +111,15 @@ describe('[class] workspace', () => {
     });
     it('should run a given target and emit error', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: `node ${mockedProcesses.failed}`,
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.failed}`,
+          },
         },
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheInvalidate.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result).toBeFalsy();
       }, (e) => {
         expect(e.stderr).toBe('Boom');
@@ -118,13 +128,15 @@ describe('[class] workspace', () => {
     });
     it('should run a given target and emit error - cache invalidate fails', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: `node ${mockedProcesses.failed}`,
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.failed}`,
+          },
         },
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheInvalidate.rejects();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result).toBeFalsy();
       }, (e) => {
         expect(e.stderr).toBe('Boom');
@@ -133,22 +145,24 @@ describe('[class] workspace', () => {
     });
     it('should run a given daemon and emit success', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: {
-            run: `node ${mockedDaemons.succeed}`,
-            daemon: {
-              type: 'success',
-              stdio: 'stdout',
-              matcher: 'contains',
-              value: 'up and running',
-              timeout: 1000,
-            }
+        targets: {
+          foo: {
+            cmd: {
+              run: `node ${mockedDaemons.succeed}`,
+              daemon: {
+                type: 'success',
+                stdio: 'stdout',
+                matcher: 'contains',
+                value: 'up and running',
+                timeout: 1000,
+              },
+            },
           },
-        },
+        }
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect((result.commands[0] as IDaemonCommandResult).process).toBeTruthy();
         (result.commands[0] as IDaemonCommandResult).process.kill();
       }, (e) => {
@@ -158,27 +172,29 @@ describe('[class] workspace', () => {
     });
     it('should run a given daemon and report error - logs condition', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: {
-            run: `node ${mockedDaemons.failed}`,
-            daemon: [{
-              type: 'success',
-              stdio: 'stdout',
-              matcher: 'contains',
-              value: 'up and running',
-            }, {
-              type: 'failure',
-              stdio: 'stderr',
-              matcher: 'contains',
-              value: 'wrong happened',
-              timeout: 1000,
-            }]
+        targets: {
+          foo: {
+            cmd: {
+              run: `node ${mockedDaemons.failed}`,
+              daemon: [{
+                type: 'success',
+                stdio: 'stdout',
+                matcher: 'contains',
+                value: 'up and running',
+              }, {
+                type: 'failure',
+                stdio: 'stderr',
+                matcher: 'contains',
+                value: 'wrong happened',
+                timeout: 1000,
+              }],
+            },
           },
-        },
+        }
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result).toBeFalsy();
       }, (e) => {
         expect(e).toBe("Log condition explicitly failed : {\"type\":\"failure\",\"stdio\":\"stderr\",\"matcher\":\"contains\",\"value\":\"wrong happened\",\"timeout\":1000}");
@@ -187,28 +203,30 @@ describe('[class] workspace', () => {
     });
     it('should run a given daemon and report error - timeout exceeded', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: {
-            run: `node ${mockedDaemons.succeed}`,
-            daemon: [{
-              type: 'success',
-              stdio: 'stdout',
-              matcher: 'contains',
-              value: 'up and running',
-              timeout: 10,
-            }, {
-              type: 'failure',
-              stdio: 'stderr',
-              matcher: 'contains',
-              value: 'wrong happened',
-              timeout: 1000,
-            }]
+        targets: {
+          foo: {
+            cmd: {
+              run: `node ${mockedDaemons.succeed}`,
+              daemon: [{
+                type: 'success',
+                stdio: 'stdout',
+                matcher: 'contains',
+                value: 'up and running',
+                timeout: 10,
+              }, {
+                type: 'failure',
+                stdio: 'stderr',
+                matcher: 'contains',
+                value: 'wrong happened',
+                timeout: 1000,
+              }],
+            },
           },
-        },
+        }
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result).toBeFalsy();
       }, (e) => {
         expect(e).toBe('Timeout (10ms) for log condition exceeded');
@@ -217,22 +235,24 @@ describe('[class] workspace', () => {
     });
     it('should run a given daemon and report error - crash', (done) => {
       const workspace = new Workspace({} as any, '', {
-        foo: {
-          cmd: {
-            run: `node ${mockedDaemons.crashed}`,
-            daemon: [{
-              type: 'success',
-              stdio: 'stdout',
-              matcher: 'contains',
-              value: 'up and running',
-              timeout: 1000,
-            }]
+        targets: {
+          foo: {
+            cmd: {
+              run: `node ${mockedDaemons.crashed}`,
+              daemon: [{
+                type: 'success',
+                stdio: 'stdout',
+                matcher: 'contains',
+                value: 'up and running',
+                timeout: 1000,
+              }],
+            },
           },
-        },
+        }
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.resolves();
-      workspace.run('foo').subscribe((result) => {
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
         expect(result).toBeFalsy();
       }, (e) => {
         expect(e.exitCode).toBe(1);

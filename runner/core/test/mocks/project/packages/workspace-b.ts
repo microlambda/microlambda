@@ -19,17 +19,21 @@ export const centipod = {
       "cmd": [
         "../node_modules/.bin/tsc --build"
       ],
-      "src": [
-        "src/**/*.ts"
-      ]
+      "src": {
+        'internals': [
+          'src/**/*.ts',
+        ],
+      },
     },
     "test": {
       "cmd": [
         "../node_modules/.bin/tsc --build"
       ],
-      "src": [
-        "src/**/*.ts"
-      ]
-    },
+      "src": {
+        'internals': [
+          'src/**/*.ts',
+        ],
+      },
+    }
   }
 }

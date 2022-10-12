@@ -1,18 +1,16 @@
-// @ts-ignore
-import { Project, TargetsResolver, Workspace } from '../src';
-// @ts-ignore
+import { Project, TargetsResolver } from '../src';
 import { getProject } from './mocks/utils';
-import { SinonStub, stub } from 'sinon';
 
 describe('[class] TargetsResolver', () => {
   describe('[method] resolve', () => {
     let project: Project;
     beforeEach(async() => {
-      project = await getProject();
+      project = await getProject({});
     })
     it('should resolve all targets that have the command - parallel', async () => {
       const resolver = new TargetsResolver(project);
       const targets = await resolver.resolve('lint', {
+        cmd: 'lint',
         mode: 'parallel',
         force: false,
       });
@@ -24,6 +22,7 @@ describe('[class] TargetsResolver', () => {
     it('should resolve all targets that have the command - topological', async () => {
       const resolver = new TargetsResolver(project);
       const targets = await resolver.resolve('build', {
+        cmd: 'build',
         mode: 'topological',
         force: false,
       });
@@ -43,6 +42,7 @@ describe('[class] TargetsResolver', () => {
     it('should resolve all targets that have the command - topological & partial (no command)', async () => {
       const resolver = new TargetsResolver(project);
       const targets = await resolver.resolve('lint', {
+        cmd: 'lint',
         mode: 'topological',
         force: false,
       });
@@ -61,6 +61,7 @@ describe('[class] TargetsResolver', () => {
     it('should resolve all targets that have the command - topological & partial with "dependency gap"', async () => {
       const resolver = new TargetsResolver(project);
       const targets = await resolver.resolve('test', {
+        cmd: 'test',
         mode: 'topological',
         force: false,
       });
@@ -79,6 +80,7 @@ describe('[class] TargetsResolver', () => {
     it('should resolve all targets with single --to - topological', async () => {
       const resolver = new TargetsResolver(project);
       const targets = await resolver.resolve('build', {
+        cmd: 'build',
         mode: 'topological',
         to: [project.getWorkspace('@org/app-a')!],
         force: false,
@@ -93,6 +95,7 @@ describe('[class] TargetsResolver', () => {
     it('should resolve all targets with multiple --to - topological', async () => {
       const resolver = new TargetsResolver(project);
       const targets = await resolver.resolve('build', {
+        cmd: 'build',
         mode: 'topological',
         to: [project.getWorkspace('@org/app-a')!, project.getWorkspace('@org/api')!],
         force: false,

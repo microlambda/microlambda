@@ -21,17 +21,21 @@ export const centipod = {
   "targets": {
     "lint": {
       "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
-      "src": [
-        "{src,test}/**/*.{ts,tsx,json,yml}"
-      ]
+      "src": {
+        'internals': [
+          '{src,test}/**/*.{ts,tsx,json,yml}',
+        ],
+      }
     },
     "build": {
       "cmd": [
         "../node_modules/.bin/tsc --build"
       ],
-      "src": [
-        "src/**/*.ts"
-      ]
+      "src": {
+        "internals": [
+          "src/**/*.ts"
+        ]
+      }
     },
   }
 }

@@ -4,6 +4,7 @@ import { Project, RunCommandEventEnum, Runner, TargetsResolver, Workspace } from
 import { expectObservable } from './utils/runner-observable';
 import { delay, from, mergeAll, Observable, of, switchMap, throwError } from "rxjs";
 import { Watcher, WatchEvent } from "../src/watcher";
+import { RunOptions } from '../src';
 
 const resolveAfter = <T>(value: T, ms: number): Promise<T> => new Promise<T>((resolve) => {
   setTimeout(() => resolve(value), ms);
@@ -15,7 +16,7 @@ const rejectAfter = <E>(error: E, ms: number): Promise<never> => new Promise<nev
 
 interface IRunStub {
   resolve: boolean;
-  args: unknown[];
+  options: RunOptions;
   fromCache?: boolean;
   delay?: number;
   error?: unknown;
@@ -25,13 +26,14 @@ const stubRun = (stub: SinonStub, calls: IRunStub[]) => {
   calls.forEach((call, idx) => {
     // console.log('stubbing', { stub, call, idx });
     if (call.resolve) {
-      stub.withArgs(...call.args).onCall(idx).returns(of({
+      console.debug('STUBBED WITH', call.options)
+      stub.withArgs(call.options).onCall(idx).returns(of({
         commands:[],
         overall: call.delay || 0,
         fromCache: call.fromCache || false,
       }).pipe(delay(call.delay || 0)))
     } else {
-      stub.withArgs(...call.args).onCall(idx).returns(of('').pipe(
+      stub.withArgs(call.options).onCall(idx).returns(of('').pipe(
         delay(call.delay || 0),
         switchMap(() => throwError(call.error))
       ))
@@ -46,10 +48,14 @@ describe('[class] Runner', () => {
     invalidate?: SinonStub,
     targets?: SinonStub,
     watch?: SinonStub,
+    loadPackage?: SinonStub,
+    loadConfig?: SinonStub,
+    glob?: SinonStub,
+
   } = {};
   beforeEach(async() => {
-    project = await getProject();
-    stubs.invalidate = stub(Workspace.prototype, 'invalidate');
+    project = await getProject(stubs);
+    stubs.invalidate = stub(Workspace.prototype, 'invalidateLocalCache');
     stubs.invalidate.resolves();
     stubs.run = stub(Workspace.prototype, 'run');
     stubs.targets = stub(TargetsResolver.prototype, 'resolve');
@@ -70,17 +76,18 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 14 },
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 23 },
+        { resolve: true, options, delay: 14 },
+        { resolve: true, options, delay: 23 },
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444433-11', {
           1: ['@org/workspace-a', '@org/api'],
           2: [],
@@ -102,19 +109,20 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 14 },
-        { resolve: false, args: ['lint', false, [], 'pipe'], delay: 7, error: new Error('Unexpected') },
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 13 },
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 23 },
+        { resolve: true, options, delay: 14 },
+        { resolve: false, options, delay: 7, error: new Error('Unexpected') },
+        { resolve: true, options, delay: 13 },
+        { resolve: true, options, delay: 23 },
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-443333-11152', {
           4: ['@org/workspace-b', '@org/app-a'],
           3: ['@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
@@ -145,21 +153,22 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 14 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 7 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 13 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 23 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 12 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 4 },
+        { resolve: true, options, delay: 14 },
+        { resolve: true, options, delay: 7 },
+        { resolve: true, options, delay: 13 },
+        { resolve: true, options, delay: 23 },
+        { resolve: true, options, delay: 12 },
+        { resolve: true, options, delay: 4 },
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-115555-33-1155-3-15-3-1', {
           1: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
           3: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
@@ -192,21 +201,22 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 14, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 7, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 13, fromCache: true },
-        { resolve: false, args: ['build', false, [], 'pipe'], delay: 23 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 12 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 4 },
+        { resolve: true, options, delay: 14, fromCache: true },
+        { resolve: true, options, delay: 7, fromCache: true },
+        { resolve: true, options, delay: 13, fromCache: true },
+        { resolve: false, options, delay: 23 },
+        { resolve: true, options, delay: 12 },
+        { resolve: true, options, delay: 4 },
       ]);
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-33-12555-X', {
           1: ['@org/workspace-b', '@org/workspace-a', '@org/workspace-c'],
           2: ['@org/app-a'],
@@ -234,21 +244,22 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 14, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 7, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 13, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 23 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 12 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 4 },
+        { resolve: true, options, delay: 14, fromCache: true },
+        { resolve: true, options, delay: 7, fromCache: true },
+        { resolve: true, options, delay: 13, fromCache: true },
+        { resolve: true, options, delay: 23 },
+        { resolve: true, options, delay: 12 },
+        { resolve: true, options, delay: 4 },
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-33-1155-3-15-3-1', {
           1: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
           3: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
@@ -270,18 +281,19 @@ describe('[class] Runner', () => {
         ]
       ], 12));
       stubs.invalidate?.rejects();
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 14 },
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 8 },
-        { resolve: false, args: ['lint', false, [], 'pipe'], delay: 23 },
+        { resolve: true, options, delay: 14 },
+        { resolve: true, options, delay: 8 },
+        { resolve: false, options, delay: 23 },
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444333-1126-X', {
           1: ['@org/workspace-a', '@org/app-b'],
           2: ['@org/api'],
@@ -311,24 +323,25 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 14, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 7, fromCache: true },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 13, fromCache: true },
-        { resolve: false, args: ['build', false, [], 'pipe'], delay: 23 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 12 },
-        { resolve: true, args: ['build', false, [], 'pipe'], delay: 4 },
+        { resolve: true, options, delay: 14, fromCache: true },
+        { resolve: true, options, delay: 7, fromCache: true },
+        { resolve: true, options, delay: 13, fromCache: true },
+        { resolve: false, options, delay: 23 },
+        { resolve: true, options, delay: 12 },
+        { resolve: true, options, delay: 4 },
       ]);
       stubs.invalidate?.onCall(0).resolves();
       stubs.invalidate?.onCall(1).rejects();
       stubs.invalidate?.onCall(2).resolves();
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-33-12556-X', {
           1: ['@org/workspace-b', '@org/workspace-a', '@org/workspace-c'],
           2: ['@org/app-a'],
@@ -373,25 +386,26 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/api'], delay: 150},
         { workspaceNames: ['@org/app-a'], delay: 450},
       ]));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // +100ms
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 200 }, // + 200ms
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 200 }, // + 200ms (api)
+        { resolve: true, options, delay: 100 }, // +100ms
+        { resolve: true, options, delay: 200 }, // + 200ms
+        { resolve: true, options, delay: 200 }, // + 200ms (api)
 
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 200 }, // + 400ms
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 10 },
+        { resolve: true, options, delay: 200 }, // + 400ms
+        { resolve: true, options, delay: 10 },
       ]);
       try {
         const runner = new Runner(project, 4);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444333-1781-3-71-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -412,28 +426,29 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/app-a'], delay: 50},
         { workspaceNames: ['@org/api'], delay: 150},
       ]));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
         // Initial
         // 0-333444-1-78-1-31-7-3-1
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // +0ms
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 },
+        { resolve: true, options, delay: 100 }, // +0ms
+        { resolve: true, options, delay: 100 },
 
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // +100ms
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 },
+        { resolve: true, options, delay: 100 }, // +100ms
+        { resolve: true, options, delay: 100 },
 
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // + 200ms
+        { resolve: true, options, delay: 100 }, // + 200ms
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-7-1133-7-1134-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -453,26 +468,27 @@ describe('[class] Runner', () => {
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/api'], delay: 30},
       ]));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
         // Initial
         // 0-333444-1-78-1-31-7-3-1
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // +0ms
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 },
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 },
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 },
+        { resolve: true, options, delay: 100 }, // +0ms
+        { resolve: true, options, delay: 100 },
+        { resolve: true, options, delay: 100 },
+        { resolve: true, options, delay: 100 },
         // +100ms
       ]);
       try {
         const runner = new Runner(project, 8);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-333344-7-1111', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -502,31 +518,32 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/app-b'], delay: 650},
 
       ]));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 20,
+      };
       stubRun(stubs.run!, [
         // First round
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 200 }, // + 0ms //w-a
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 250 }, // app-b
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 200 }, // api
+        { resolve: true, options, delay: 200 }, // + 0ms //w-a
+        { resolve: true, options, delay: 250 }, // app-b
+        { resolve: true, options, delay: 200 }, // api
         // First recompile
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 220 }, // +250ms (w-a)
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 240 }, // (api)
+        { resolve: true, options, delay: 220 }, // +250ms (w-a)
+        { resolve: true, options, delay: 240 }, // (api)
         // Second recompile
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 220 }, // ~ +500ms (api)
+        { resolve: true, options, delay: 220 }, // ~ +500ms (api)
         // Second round
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 26 }, // (workspace-a-a)
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 23 }, // (app-b)
+        { resolve: true, options, delay: 26 }, // (workspace-a-a)
+        { resolve: true, options, delay: 23 }, // (app-b)
       ])
       try {
         const runner = new Runner(project, 8);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 20,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444333-777881-33-77781-3-17777-33-11', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -548,30 +565,31 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/app-a'], delay: 600},
         { workspaceNames: ['@org/app-a'], delay: 750},
       ]));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
         // Initial
-        { resolve: false, args: ['lint', false, [], 'pipe', {}], delay: 100, error: new Error('Mocked') }, // +0ms w-a
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 400 }, // wb
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 120 }, // wc
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // +400ms // app-a
+        { resolve: false, options, delay: 100, error: new Error('Mocked') }, // +0ms w-a
+        { resolve: true, options, delay: 400 }, // wb
+        { resolve: true, options, delay: 120 }, // wc
+        { resolve: true, options, delay: 100 }, // +400ms // app-a
         // + 250ms - recompile workspace-a
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // +550ms // w-a
+        { resolve: true, options, delay: 100 }, // +550ms // w-a
         // + 600ms - broke app-a
-        { resolve: false, args: ['lint', false, [], 'pipe', {}], delay: 100, error: new Error('Mocked') }, // app-a
+        { resolve: false, options, delay: 100, error: new Error('Mocked') }, // app-a
         // + 750ms -fix
-        { resolve: true, args: ['lint', false, [], 'pipe', {}], delay: 100 }, // app-a
+        { resolve: true, options, delay: 100 }, // app-a
       ]);
       try {
         const runner = new Runner(project, 8);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         /*
 
               { type: 3, workspace: '@org/workspace-a' },
@@ -610,41 +628,42 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/workspace-a'], delay: 840},
         { workspaceNames: ['@org/app-a'], delay: 1200},
       ]));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
         // Schedule 1
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 300 }, // (w-c) // +200ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (app-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // app-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (api)
+        { resolve: true, options, delay: 200 }, // (w-a)
+        { resolve: true, options, delay: 200 }, // (w-b)
+        { resolve: true, options, delay: 300 }, // (w-c) // +200ms
+        { resolve: true, options, delay: 0 }, // (app-a)
+        { resolve: true, options, delay: 0 }, // app-b)
+        { resolve: true, options, delay: 0 }, // (api)
         // Schedule 2
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-a) // +350ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // w-c // +550ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // app-a // +750ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // app-b
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (api)
+        { resolve: true, options, delay: 200 }, // (w-a) // +350ms
+        { resolve: true, options, delay: 200 }, // w-c // +550ms
+        { resolve: true, options, delay: 200 }, // app-a // +750ms
+        { resolve: true, options, delay: 200 }, // app-b
+        { resolve: true, options, delay: 0 }, // (api)
         // Schedule 3
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // w-a // +870ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // w-c // +890ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-a // +910ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-b //
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // api // +930ms
+        { resolve: true, options, delay: 200 }, // w-a // +870ms
+        { resolve: true, options, delay: 20 }, // w-c // +890ms
+        { resolve: true, options, delay: 20 }, // app-a // +910ms
+        { resolve: true, options, delay: 20 }, // app-b //
+        { resolve: true, options, delay: 20 }, // api // +930ms
         // Schedule 4 (idle)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-a // +910ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // api // +930ms
+        { resolve: true, options, delay: 20 }, // app-a // +910ms
+        { resolve: true, options, delay: 20 }, // api // +930ms
       ]);
       try {
         const runner = new Runner(project, 4);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-5555-3-78-3-1-5555-3-1-555-33-788-3-1-5555-3-1-555-33-11-5-3-1-7-3-1-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -672,27 +691,28 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/app-a'], delay: 400},
         { workspaceNames: ['@org/api'], delay: 650},
       ]));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
         // Schedule 1
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 300 }, // (w-c) // +200ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 100 }, // (app-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // app-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 100 }, // (api)
+        { resolve: true, options, delay: 200 }, // (w-a)
+        { resolve: true, options, delay: 200 }, // (w-b)
+        { resolve: true, options, delay: 300 }, // (w-c) // +200ms
+        { resolve: true, options, delay: 100 }, // (app-a)
+        { resolve: true, options, delay: 200 }, // app-b)
+        { resolve: true, options, delay: 100 }, // (api)
         // Schedule 2
       ]);
       try {
         const runner = new Runner(project, 4);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-337-11-5555-37-1-555-337115-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -716,31 +736,32 @@ describe('[class] Runner', () => {
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/workspace-b'], delay: 150},
       ]));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
       stubRun(stubs.run!, [
         // Schedule 1
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 300 }, // (w-c) // +200ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (app-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // app-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (api)
+        { resolve: true, options, delay: 200 }, // (w-a)
+        { resolve: true, options, delay: 200 }, // (w-b)
+        { resolve: true, options, delay: 300 }, // (w-c) // +200ms
+        { resolve: true, options, delay: 0 }, // (app-a)
+        { resolve: true, options, delay: 0 }, // app-b)
+        { resolve: true, options, delay: 0 }, // (api)
         // Schedule 2
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // w-b // +550ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-a // +750ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-b
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // (api)
+        { resolve: true, options, delay: 200 }, // w-b // +550ms
+        { resolve: true, options, delay: 20 }, // app-a // +750ms
+        { resolve: true, options, delay: 20 }, // app-b
+        { resolve: true, options, delay: 20 }, // (api)
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-1783-1-555-3-1-555-33-11-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -764,31 +785,32 @@ describe('[class] Runner', () => {
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/workspace-a'], delay: 250},
       ]));
+      const options: RunOptions = {
+        cmd: 'build',
+        mode: 'topological',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      }
       stubRun(stubs.run!, [
         // Schedule 1
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 300 }, // (w-c) // +200ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (app-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // app-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 0 }, // (api)
+        { resolve: true, options, delay: 200 }, // (w-a)
+        { resolve: true, options, delay: 200 }, // (w-b)
+        { resolve: true, options, delay: 300 }, // (w-c) // +200ms
+        { resolve: true, options, delay: 0 }, // (app-a)
+        { resolve: true, options, delay: 0 }, // app-b)
+        { resolve: true, options, delay: 0 }, // (api)
         // Schedule 2
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // w-c // +550ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-a // +750ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // app-b
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 20 }, // (api)
+        { resolve: true, options, delay: 200 }, // w-c // +550ms
+        { resolve: true, options, delay: 20 }, // app-a // +750ms
+        { resolve: true, options, delay: 20 }, // app-b
+        { resolve: true, options, delay: 20 }, // (api)
       ]);
       try {
         const runner = new Runner(project, 2);
-        const execution$ = runner.runCommand({
-          cmd: 'build',
-          mode: 'topological',
-          force: false,
-          args: [],
-          env: {},
-          watch: true,
-          debounce: 8,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-113-7-1-555-3-1-555-33-11-5-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
@@ -814,12 +836,12 @@ describe('[class] Runner', () => {
       ]));
       stubRun(stubs.run!, [
         // Schedule 1
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 200 }, // (w-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 300 }, // (w-c) // +200ms
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 100 }, // (app-a)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 100 }, // app-b)
-        { resolve: true, args: ['build', false, [], 'pipe', {}], delay: 100 }, // (api)
+        { resolve: true, options: { cmd: 'build', mode: 'topological', force: false, args: [], env: {}, watch: true, debounce: 8 }, delay: 200 }, // (w-a)
+        { resolve: true, options: { cmd: 'build', mode: 'topological', force: false, args: [], env: {}, watch: true, debounce: 8 }, delay: 200 }, // (w-b)
+        { resolve: true, options: { cmd: 'build', mode: 'topological', force: false, args: [], env: {}, watch: true, debounce: 8 }, delay: 300 }, // (w-c) // +200ms
+        { resolve: true, options: { cmd: 'build', mode: 'topological', force: false, args: [], env: {}, watch: true, debounce: 8 }, delay: 100 }, // (app-a)
+        { resolve: true, options: { cmd: 'build', mode: 'topological', force: false, args: [], env: {}, watch: true, debounce: 8 }, delay: 100 }, // app-b)
+        { resolve: true, options: { cmd: 'build', mode: 'topological', force: false, args: [], env: {}, watch: true, debounce: 8 }, delay: 100 }, // (api)
       ]);
       try {
         const runner = new Runner(project, 2);
@@ -848,17 +870,18 @@ describe('[class] Runner', () => {
           { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
         ]
       ], 12));
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+      }
       stubRun(stubs.run!, [
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 14 },
-        { resolve: true, args: ['lint', false, [], 'pipe'], delay: 23 },
+        { resolve: true, options, delay: 14 },
+        { resolve: true, options, delay: 23 },
       ])
       try {
         const runner = new Runner(project);
-        const execution$ = runner.runCommand({
-          cmd: 'lint',
-          mode: 'parallel',
-          force: false,
-        });
+        const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444433-11', {
           1: ['@org/workspace-a', '@org/api'],
           2: [],

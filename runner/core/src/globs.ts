@@ -66,7 +66,6 @@ export class GlobsHelpers {
       const paths = resolveGlobs(this.globs.sources.deps, dep.root);
       this.logger?.debug(this.globs.sources.deps, paths);
     }
-
     return Array.from(files);
   }
 

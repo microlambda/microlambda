@@ -1,2 +1,2 @@
 console.info('Hello world');
-process.exit(0);
+setTimeout(() => process.exit(0), 200);

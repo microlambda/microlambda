@@ -32,29 +32,30 @@ export abstract class Cache {
 
   async read(): Promise<Array<ICommandResult> | null> {
     if (!this.config.src) {
-      this.logger?.warn('No sources declared in config, skipping cache');
+      this._logger?.warn('No sources declared in config, skipping cache');
       return null;
     }
     try {
-      this.logger?.debug('Calculating checksums');
+      this._logger?.debug('Calculating checksums');
       const checksums = new Checksums(this.workspace, this.cmd, this.args, this.env, this.logger?.logger);
       const [currentChecksums, storedChecksum] = await Promise.all([
         checksums.calculate(),
         this._readChecksums(),
       ]);
+      this._logger?.debug({currentChecksums, storedChecksum});
       this._checksums = currentChecksums;
       if (!Checksums.compare(currentChecksums, storedChecksum)) {
-        this.logger?.debug('IS NOT SAME');
+        this._logger?.debug('IS NOT SAME');
         return null;
       }
-      this.logger?.debug('IS SAME');
-      return this._readOutput();
+      this._logger?.debug('IS SAME');
+      return await this._readOutput();
     } catch (e) {
       if ((e as MilaError).code === MilaErrorCode.NO_FILES_TO_CACHE) {
-        this.logger?.warn(chalk.yellow(`Patterns ${JSON.stringify(this.config.src)} has no match: ignoring cache`, e));
+        this._logger?.warn(chalk.yellow(`Patterns ${JSON.stringify(this.config.src)} has no match: ignoring cache`, e));
         return null;
       }
-      this.logger?.warn('Cannot read from cache', e);
+      this._logger?.warn('Cannot read from cache', e);
       return null;
     }
   }
@@ -66,14 +67,14 @@ export abstract class Cache {
     try {
       const checksums = new Checksums(this.workspace, this.cmd, this.args, this.env, this.logger?.logger);
       const toWrite = this._checksums ?? await checksums.calculate();
-      this.logger?.debug('Writing checksums');
+      this._logger?.debug('Writing checksums');
       await Promise.all([
         this._writeChecksums(toWrite),
         this._writeOutput(output),
       ]);
-      this.logger?.info('Checksums written !');
+      this._logger?.info('Checksums written !');
     } catch (e) {
-      this.logger?.warn('Error writing cache', e);
+      this._logger?.warn('Error writing cache', e);
       await this.invalidate();
     }
   }

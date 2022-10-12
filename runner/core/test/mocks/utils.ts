@@ -1,17 +1,18 @@
-import { stub } from 'sinon';
-// @ts-ignore
+import { SinonStub, stub } from 'sinon';
 import { Project, Workspace } from '../../src';
 import fastGlob from 'fast-glob';
 import { join } from 'path';
-// @ts-ignore
 import { mockedPackages } from './project/package-json';
 import { mockedCentipods } from './project/centipod-json';
 
-export const getProject = async (): Promise<Project> => {
+export const getProject = async (stubs: Record<string, SinonStub>): Promise<Project> => {
   const root = '/somewhere/on/filesystem';
   const loadPackage = stub(Workspace, 'loadPackage');
   const loadConfig = stub(Workspace, 'loadConfig');
   const glob = stub(fastGlob, 'sync');
+  stubs.loadPackage = loadPackage;
+  stubs.loadConfig = loadConfig;
+  stubs.glob = glob;
   loadPackage.rejects();
   loadConfig.rejects();
   glob.throws();
@@ -34,13 +35,13 @@ export const getProject = async (): Promise<Project> => {
   loadPackage.withArgs(join(root, 'api')).resolves(mockedPackages.workspaces.api);
   loadPackage.withArgs(join(root, 'apps/app-a')).resolves(mockedPackages.workspaces.appA);
   loadPackage.withArgs(join(root, 'apps/app-b')).resolves(mockedPackages.workspaces.appB);
-  loadConfig.withArgs(root).resolves({});
-  loadConfig.withArgs(join(root, 'packages/workspace-a')).resolves(mockedCentipods.workspaceA.targets);
-  loadConfig.withArgs(join(root, 'packages/workspace-b')).resolves(mockedCentipods.workspaceB.targets);
-  loadConfig.withArgs(join(root, 'packages/workspace-c')).resolves(mockedCentipods.workspaceC.targets);
-  loadConfig.withArgs(join(root, 'api')).resolves(mockedCentipods.api.targets);
-  loadConfig.withArgs(join(root, 'apps/app-a')).resolves(mockedCentipods.appA.targets);
-  loadConfig.withArgs(join(root, 'apps/app-b')).resolves(mockedCentipods.appB.targets);
+  loadConfig.withArgs('test-project', root).resolves({ targets: {}});
+  loadConfig.withArgs('@org/workspace-a', join(root, 'packages/workspace-a')).resolves({ targets: mockedCentipods.workspaceA.targets });
+  loadConfig.withArgs('@org/workspace-b', join(root, 'packages/workspace-b')).resolves({ targets: mockedCentipods.workspaceB.targets });
+  loadConfig.withArgs('@org/workspace-c', join(root, 'packages/workspace-c')).resolves({ targets: mockedCentipods.workspaceC.targets });
+  loadConfig.withArgs('@org/api', join(root, 'api')).resolves({ targets: mockedCentipods.api.targets });
+  loadConfig.withArgs('@org/app-a', join(root, 'apps/app-a')).resolves({ targets: mockedCentipods.appA.targets });
+  loadConfig.withArgs('@org/app-b', join(root, 'apps/app-b')).resolves({ targets: mockedCentipods.appB.targets });
   const project = await Project.loadProject(root);
   loadPackage.restore();
   loadConfig.restore();

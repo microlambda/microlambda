@@ -1,11 +1,10 @@
 import {SinonStub, stub} from "sinon";
-// @ts-ignore
 import {Project, Workspace} from "../src";
 import fastGlob from 'fast-glob';
-import {CentipodError, CentipodErrorCode} from "../src";
 import { join } from 'path';
-// @ts-ignore
 import {mockedPackages} from "./mocks/project/package-json";
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
+import { mockedCentipods } from './mocks/project/centipod-json';
 
 describe('[class] Project', () => {
   let loadPackage: SinonStub;
@@ -38,13 +37,13 @@ describe('[class] Project', () => {
     loadPackage.withArgs(join(root, 'api')).resolves(mockedPackages.workspaces.api);
     loadPackage.withArgs(join(root, 'apps/app-a')).resolves(mockedPackages.workspaces.appA);
     loadPackage.withArgs(join(root, 'apps/app-b')).resolves(mockedPackages.workspaces.appB);
-    loadConfig.withArgs(root).resolves({});
-    loadConfig.withArgs(join(root, 'packages/workspace-a')).resolves({});
-    loadConfig.withArgs(join(root, 'packages/workspace-b')).resolves({});
-    loadConfig.withArgs(join(root, 'packages/workspace-c')).resolves({});
-    loadConfig.withArgs(join(root, 'api')).resolves({});
-    loadConfig.withArgs(join(root, 'apps/app-a')).resolves({});
-    loadConfig.withArgs(join(root, 'apps/app-b')).resolves({});
+    loadConfig.withArgs('test-project', root).resolves({ targets: {}});
+    loadConfig.withArgs('@org/workspace-a', join(root, 'packages/workspace-a')).resolves({ targets: mockedCentipods.workspaceA.targets });
+    loadConfig.withArgs('@org/workspace-b', join(root, 'packages/workspace-b')).resolves({ targets: mockedCentipods.workspaceB.targets });
+    loadConfig.withArgs('@org/workspace-c', join(root, 'packages/workspace-c')).resolves({ targets: mockedCentipods.workspaceC.targets });
+    loadConfig.withArgs('@org/api', join(root, 'api')).resolves({ targets: mockedCentipods.api.targets });
+    loadConfig.withArgs('@org/app-a', join(root, 'apps/app-a')).resolves({ targets: mockedCentipods.appA.targets });
+    loadConfig.withArgs('@org/app-b', join(root, 'apps/app-b')).resolves({ targets: mockedCentipods.appB.targets });
   });
   afterEach(() => {
     loadPackage.restore();
@@ -57,15 +56,15 @@ describe('[class] Project', () => {
       expect(project.workspaces.size).toBe(6);
     });
     it('should throw if at least one workspace fails to load', async () => {
-      loadConfig.withArgs(join(root, 'packages/workspace-c')).rejects('Invalid package JSON');
+      loadConfig.withArgs('@org/workspace-c', join(root, 'packages/workspace-c')).rejects('Invalid package JSON');
       try {
         await Project.loadProject(root);
         fail('should throw');
       } catch (e) {
         expect(e).toBeTruthy();
-        expect(e instanceof CentipodError).toBe(true);
-        expect((e as CentipodError).message.includes('Invalid package JSON')).toBe(true);
-        expect((e as CentipodError).code).toBe(CentipodErrorCode.UNABLE_TO_LOAD_WORKSPACE);
+        console.error(e);
+        expect(e instanceof MilaError).toBe(true);
+        expect((e as MilaError).code).toBe(MilaErrorCode.UNABLE_TO_LOAD_WORKSPACE);
       }
     });
   });

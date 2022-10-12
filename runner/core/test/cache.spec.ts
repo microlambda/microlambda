@@ -1,12 +1,8 @@
-// @ts-ignore
-import {Cache} from "../src/cache";
-// @ts-ignore
-import {CentipodErrorCode, CentipodError, Workspace} from "../src";
-import {spy, stub } from "sinon";
-import {Checksums} from "../src/checksum";
+import {LocalCache, Workspace, Checksums} from "../src";
+import { stub } from "sinon";
 import { promises as nodeFs } from 'fs';
-import { logger } from '../src/logger';
 import { F_OK } from 'constants';
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
 
 describe('[class] Cache manager', () => {
   describe('[method] read()', () => {
@@ -20,32 +16,34 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
         args: '[]',
         cmd: 'foo',
-        env: '{}',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
-      });
-      checksums.read.resolves({
-        args: '[]',
-        env: '{}',
-        cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
+        env: {},
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: [] },
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        }
       });
       fs.rejects();
+      fs.withArgs('/tmp/fake/location/.caches/foo/checksums.json').resolves(Buffer.from(JSON.stringify({
+        args: '[]',
+        cmd: 'foo',
+        env: {},
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: [] },
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        }
+      })))
       fs.withArgs('/tmp/fake/location/.caches/foo/output.json').resolves(Buffer.from(JSON.stringify([{ cmd: 'foo', exitCode: 0, stderr: '', stdout: 'success', all: 'success'}])));
       const output = await cache.read();
-      checksums.read.restore();
       checksums.calculate.restore();
       fs.restore();
       expect(output).toEqual([{ cmd: 'foo', exitCode: 0, stderr: '', stdout: 'success', all: 'success'}]);
@@ -60,28 +58,34 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
-      });
-      checksums.read.resolves({
-        cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d83edf20e',
-        'foo/baz.ts:': '022cf092d78977',
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
       });
       fs.rejects();
+      fs.withArgs('/tmp/fake/location/.caches/foo/checksums.json').resolves(Buffer.from(JSON.stringify({
+        cmd: 'foo',
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bdf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
+      })));
       fs.withArgs('/tmp/fake/location/.caches/foo/output.json').resolves(Buffer.from(JSON.stringify([{ cmd: 'foo', exitCode: 0, stderr: '', stdout: 'success', all: 'success'}])));
       const output = await cache.read();
-      checksums.read.restore();
       checksums.calculate.restore();
       fs.restore();
       expect(output).toBe(null);
@@ -96,20 +100,24 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
+      const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
       });
-      checksums.read.rejects('Error happened reading checksums')
+      fs.withArgs('/tmp/fake/location/.caches/foo/checksums.json').rejects('Error happened reading checksums')
       const output = await cache.read();
-      checksums.read.restore();
+      fs.restore();
       checksums.calculate.restore();
       expect(output).toBe(null);
     });
@@ -123,21 +131,25 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
+      const fs = stub(nodeFs, 'readFile');
       checksums.calculate.rejects('Error happened calculating checksums')
-      checksums.read.resolves({
+      fs.withArgs('/tmp/fake/location/.caches/foo/checksums.json').resolves(Buffer.from(JSON.stringify({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d83edf20e',
-        'foo/baz.ts:': '022cf092d78977',
-      });
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
+      })));
       const output = await cache.read();
-      checksums.read.restore();
       checksums.calculate.restore();
+      fs.restore();
       expect(output).toBe(null);
     });
     it('should return null if something wrong happen reading cached command output', async () => {
@@ -150,27 +162,33 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
       });
-      checksums.read.resolves({
+      fs.withArgs('/tmp/fake/location/.caches/foo/checksums.json').resolves(Buffer.from(JSON.stringify({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
-      });
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
+      })));
       fs.rejects('Error reading file');
       const output = await cache.read();
-      checksums.read.restore();
       checksums.calculate.restore();
       fs.restore();
       expect(output).toEqual(null);
@@ -185,28 +203,34 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
       const fs = stub(nodeFs, 'readFile');
       checksums.calculate.resolves({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
       });
-      checksums.read.resolves({
+      fs.withArgs('/tmp/fake/location/.caches/foo/checksums.json').resolves(Buffer.from(JSON.stringify({
         cmd: 'foo',
-        globs: 'foo/**/*.ts,bar/**/*;ts',
-        'foo/bar.ts:': 'b6a73d8bc3edf20e',
-        'foo/baz.ts:': '022cf092d78977',
-      });
+        globs: { internals: ['foo/**/*.ts,bar/**/*;ts'], deps: [], root: []  },
+        args: '[]',
+        env: {},
+        checksums: {
+          'foo/bar.ts:': 'b6a73d8bc3edf20e',
+          'foo/baz.ts:': '022cf092d78977',
+        },
+      })));
       fs.rejects();
       fs.withArgs('/tmp/fake/location/.caches/foo/output.json').resolves(Buffer.from('Not parseable content'));
       const output = await cache.read();
-      checksums.read.restore();
       checksums.calculate.restore();
       fs.restore();
       expect(output).toEqual(null);
@@ -221,25 +245,22 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const checksums = {
         calculate: stub(Checksums.prototype, 'calculate'),
-        read: stub(Checksums.prototype, 'read'),
       };
-      const log = spy(logger, 'warn');
-      checksums.calculate.rejects(new CentipodError(CentipodErrorCode.NO_FILES_TO_CACHE, 'No path to cache'));
-      checksums.read.resolves({
+      const fs = stub(nodeFs, 'readFile');
+      checksums.calculate.rejects(new MilaError(MilaErrorCode.NO_FILES_TO_CACHE, 'No path to cache'));
+      fs.resolves(JSON.stringify({
         cmd: 'foo',
         globs: 'foo/**/*.ts,bar/**/*;ts',
         'foo/bar.ts:': 'b6a73d83edf20e',
         'foo/baz.ts:': '022cf092d78977',
-      });
+      }));
+      fs.restore();
       const output = await cache.read();
-      checksums.read.restore();
       checksums.calculate.restore();
-      log.restore();
       expect(output).toBe(null);
-      expect(log.called).toBe(true);
     });
   });
   describe('[method] write()', () => {
@@ -248,7 +269,15 @@ describe('[class] Cache manager', () => {
       const mkdir = stub(nodeFs, 'mkdir');
       const writeFile = stub(nodeFs, 'writeFile');
       const calculate = stub(Checksums.prototype, 'calculate');
-      calculate.resolves({ foo: 'bar' });
+      calculate.resolves({
+        "args": "[]",
+        "env": {},
+        "cmd": "npm run pre:test,npm run test",
+        "globs": { internals: ['src/**/*.ts'], deps: [], root: [] },
+        checksums: {
+          '/tmp/fake/location/src/index.ts': '1234',
+        }
+      });
       access.rejects();
       writeFile.resolves();
       mkdir.resolves();
@@ -261,7 +290,7 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       await cache.write([]);
       access.restore();
       writeFile.restore();
@@ -275,7 +304,15 @@ describe('[class] Cache manager', () => {
       const mkdir = stub(nodeFs, 'mkdir');
       const writeFile = stub(nodeFs, 'writeFile');
       const calculate = stub(Checksums.prototype, 'calculate');
-      calculate.resolves({ foo: 'bar' });
+      calculate.resolves({
+        "args": "[]",
+        "env": {},
+        "cmd": "npm run pre:test,npm run test",
+        "globs": { internals: ['src/**/*.ts'], deps: [], root: [] },
+        checksums: {
+          '/tmp/fake/location/src/index.ts': '1234',
+        }
+      });
       access.rejects();
       access.withArgs('/tmp/fake/location/.caches/foo', F_OK).resolves();
       writeFile.resolves();
@@ -289,7 +326,7 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       await cache.write([]);
       access.restore();
       writeFile.restore();
@@ -313,7 +350,7 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       cache._checksums = { foo: 'bar '};
@@ -327,7 +364,15 @@ describe('[class] Cache manager', () => {
       const access = stub(nodeFs, 'access');
       const writeFile = stub(nodeFs, 'writeFile');
       const calculate = stub(Checksums.prototype, 'calculate');
-      calculate.resolves({ foo: 'bar' });
+      calculate.resolves({
+        "args": "[]",
+        "env": {},
+        "cmd": "npm run pre:test,npm run test",
+        "globs": { internals: ['src/**/*.ts'], deps: [], root: [] },
+        checksums: {
+          '/tmp/fake/location/src/index.ts': '1234',
+        }
+      });
       access.rejects();
       writeFile.resolves();
       const workspace = {
@@ -339,7 +384,7 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       await cache.write([]);
       access.restore();
       writeFile.restore();
@@ -351,8 +396,7 @@ describe('[class] Cache manager', () => {
       const mkdir = stub(nodeFs, 'mkdir');
       const writeFile = stub(nodeFs, 'writeFile');
       const calculate = stub(Checksums.prototype, 'calculate');
-      const invalidate = stub(Cache.prototype, 'invalidate');
-      const log = stub(logger, 'warn');
+      const invalidate = stub(LocalCache.prototype, 'invalidate');
       const workspace = {
         root: '/tmp/fake/location',
         config: {
@@ -362,14 +406,13 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as unknown as Workspace, 'foo');
       const restore = (): void => {
         access.restore();
         writeFile.restore();
         mkdir.restore();
         calculate.restore();
         invalidate.restore();
-        log.restore();
       }
       // cache calculation failed
       try {
@@ -381,12 +424,19 @@ describe('[class] Cache manager', () => {
         restore();
         fail('should throw');
       } catch (e) {
-        expect(log.callCount).toBe(1);
         expect(invalidate.callCount).toBe(1);
       }
       // access and mkdir failed
       try {
-        calculate.resolves({ foo: 'bar' });
+        calculate.resolves({
+          "args": "[]",
+          "env": {},
+          "cmd": "npm run pre:test,npm run test",
+          "globs": { internals: ['src/**/*.ts'], deps: [], root: [] },
+          checksums: {
+            '/tmp/fake/location/src/index.ts': '1234',
+          }
+        });
         access.rejects();
         mkdir.rejects();
         writeFile.resolves();
@@ -394,12 +444,19 @@ describe('[class] Cache manager', () => {
         restore();
         fail('should throw');
       } catch (e) {
-        expect(log.callCount).toBe(1);
         expect(invalidate.callCount).toBe(1);
       }
       // write file failed
       try {
-        calculate.resolves({ foo: 'bar' });
+        calculate.resolves({
+          "args": "[]",
+          "env": {},
+          "cmd": "npm run pre:test,npm run test",
+          "globs": { internals: ['src/**/*.ts'], deps: [], root: [] },
+          checksums: {
+            '/tmp/fake/location/src/index.ts': '1234',
+          }
+        });
         access.resolves();
         writeFile.resolves();
         mkdir.rejects();
@@ -407,7 +464,6 @@ describe('[class] Cache manager', () => {
         restore();
         fail('should throw');
       } catch (e) {
-        expect(log.callCount).toBe(1);
         expect(invalidate.callCount).toBe(1);
       }
       restore();
@@ -419,16 +475,16 @@ describe('[class] Cache manager', () => {
       const unlink = stub(nodeFs, 'unlink');
       access.resolves();
       unlink.resolves();
-      const workspace = {
+      const workspace: Partial<Workspace> = {
         root: '/tmp/fake/location',
         config: {
           foo: {
-            src: ['**'],
+            src: { internals: ['**'] },
             cmd: 'npm run foo',
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as Workspace, 'foo');
       await cache.invalidate();
       access.restore();
       unlink.restore();
@@ -446,16 +502,16 @@ describe('[class] Cache manager', () => {
       access.withArgs('/tmp/fake/location/.caches/foo/output.json', F_OK).rejects({ code: 'ENOENT' });
       access.withArgs('/tmp/fake/location/.caches/foo/checksums.json', F_OK).rejects({ code: 'ENOENT' });
       unlink.resolves();
-      const workspace = {
+      const workspace: Partial<Workspace> = {
         root: '/tmp/fake/location',
         config: {
           foo: {
-            src: ['**'],
+            src: { internals: ['**'] },
             cmd: 'npm run foo',
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as Workspace, 'foo');
       await cache.invalidate();
       access.restore();
       unlink.restore();
@@ -468,16 +524,16 @@ describe('[class] Cache manager', () => {
       const unlink = stub(nodeFs, 'unlink');
       access.rejects('Unknown error')
       unlink.resolves();
-      const workspace = {
+      const workspace: Partial<Workspace> = {
         root: '/tmp/fake/location',
         config: {
           foo: {
-            src: ['**'],
+            src: { internals: ['**'] },
             cmd: 'npm run foo',
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as Workspace, 'foo');
       try {
         await cache.invalidate();
         access.restore();
@@ -486,8 +542,8 @@ describe('[class] Cache manager', () => {
       } catch (e) {
         access.restore();
         unlink.restore();
-        expect(e instanceof CentipodError).toBe(true);
-        expect((e as CentipodError).code).toBe(CentipodErrorCode.INVALIDATING_CACHE_FAILED);
+        expect(e instanceof MilaError).toBe(true);
+        expect((e as MilaError).code).toBe(MilaErrorCode.INVALIDATING_CACHE_FAILED);
       }
     });
     it('should throw a fatal error and warn user if caches exist but cannot be removed', async () => {
@@ -496,16 +552,16 @@ describe('[class] Cache manager', () => {
       access.resolves()
       unlink.resolves();
       unlink.withArgs('/tmp/fake/location/.caches/foo/output.json').rejects();
-      const workspace = {
+      const workspace: Partial<Workspace> = {
         root: '/tmp/fake/location',
         config: {
           foo: {
-            src: ['**'],
+            src: { internals: ['**'] },
             cmd: 'npm run foo',
           }
         }
       }
-      const cache = new Cache(workspace as unknown as Workspace, 'foo');
+      const cache = new LocalCache(workspace as Workspace, 'foo');
       try {
         await cache.invalidate();
         access.restore();
@@ -514,8 +570,8 @@ describe('[class] Cache manager', () => {
       } catch (e) {
         access.restore();
         unlink.restore();
-        expect(e instanceof CentipodError).toBe(true);
-        expect((e as CentipodError).code).toBe(CentipodErrorCode.INVALIDATING_CACHE_FAILED);
+        expect(e instanceof MilaError).toBe(true);
+        expect((e as MilaError).code).toBe(MilaErrorCode.INVALIDATING_CACHE_FAILED);
       }
     });
   });

@@ -45,6 +45,7 @@ export class LocalCache extends Cache {
       const checksums = await fs.readFile(this.checksumsPath);
       return JSON.parse(checksums.toString());
     } catch (e) {
+      console.debug(e);
       return {} as ISourcesChecksums;
     }
   }
@@ -70,11 +71,10 @@ export class LocalCache extends Cache {
   }
 
   private async _ensureCacheDirectoryExists(): Promise<void> {
-    if (this._creatingCacheDirectory) {
-      await this._creatingCacheDirectory;
-    } else {
-      await this._createCacheDirectory();
+    if (!this._creatingCacheDirectory) {
+      this._creatingCacheDirectory = this._createCacheDirectory();
     }
+    await this._creatingCacheDirectory;
   }
 
   private async _createCacheDirectory(): Promise<void> {
