@@ -34,5 +34,5 @@ export const beforeBuild = async (
     }
     return [...project.services.values()];
   }
-  return {project, workspaces: resolveWorkspaces(), force: cmd.force, install: cmd.install, verbose: cmd.verbose };
+  return {project, workspaces: resolveWorkspaces(), force: cmd.force || process.env.MILA_FORCE === 'true', install: cmd.install, verbose: cmd.verbose };
 };

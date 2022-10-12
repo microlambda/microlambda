@@ -179,7 +179,22 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
           remoteCache = { bucket: config.state.checksums, region: config.defaultRegion };
           const lastTestExecution = await state.getExecution(options.affectedSince || currentBranch, 'test', workspace.name);
           if (lastTestExecution) {
-            affected = lastTestExecution.current_sha1;
+            if (options.affectedSince) {
+              logger.info('Running command if sources affected since', chalk.magenta(options.affectedSince));
+              try {
+                const lastCommitOnTargetBranch = execSync(`git log -n 1 --pretty=format:"%H" ${options.affectedSince}`).toString();
+                logger.info('Last commit on branch', options.affectedSince, ':', lastCommitOnTargetBranch);
+                if (lastCommitOnTargetBranch === lastTestExecution.current_sha1) {
+                  affected = lastTestExecution.current_sha1;
+                } else {
+                  logger.info('Last cached execution (', lastTestExecution.current_sha1, ') is not up-to-date. Command will be re-run.')
+                }
+              } catch (e) {
+                logger.warn('Unable to find last commit of target branch, remote caching will be ignored', e);
+              }
+            } else {
+              affected = lastTestExecution.current_sha1;
+            }
           }
         }
         const runOptions: RunOptions = {
