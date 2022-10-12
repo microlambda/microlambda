@@ -420,7 +420,6 @@ export class Runner {
     target: IResolvedTarget,
   ) : Observable<CaughtProcessExecution>{
     this._logger?.info('Preparing command', {cmd: options.cmd, workspace: target.workspace.name});
-    console.debug('CALL WITH', options)
     const command$ = target.workspace.run(options);
     return command$.pipe(
       map((result) => ({ status: 'ok' as const, result, target })),

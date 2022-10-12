@@ -45,7 +45,6 @@ export class LocalCache extends Cache {
       const checksums = await fs.readFile(this.checksumsPath);
       return JSON.parse(checksums.toString());
     } catch (e) {
-      console.debug(e);
       return {} as ISourcesChecksums;
     }
   }
