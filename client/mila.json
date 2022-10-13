@@ -18,20 +18,6 @@
         "build/**/*",
         "dist/**/*"
       ]
-    },
-    "test": {
-      "cmd": "../../node_modules/.bin/jest",
-      "src": {
-        "internals": [
-          "{src,test}/**/*.spec.ts",
-          "tsconfig.json",
-          "jest.config.js"
-        ],
-        "deps": [
-          "src/**/*.ts",
-          "tsconfig.json"
-        ]
-      }
     }
   }
 }
