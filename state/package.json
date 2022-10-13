@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/remote-state",
-  "version": "1.0.0-alpha.13",
+  "version": "1.0.0-alpha.17",
   "description": "Utilities to manage Microlambda remote state",
   "author": "Mario Arnautou",
   "repository": {
@@ -14,6 +14,7 @@
     "@microlambda/config": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
+    "aws-sdk": "^2.1231.0",
     "dynamodels": "^1.6.2"
   }
 }

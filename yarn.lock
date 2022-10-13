@@ -3549,7 +3549,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@microlambda/aws@1.0.0-alpha.13, @microlambda/aws@workspace:*, @microlambda/aws@workspace:aws":
+"@microlambda/aws@1.0.0-alpha.16, @microlambda/aws@workspace:*, @microlambda/aws@workspace:aws":
   version: 0.0.0-use.local
   resolution: "@microlambda/aws@workspace:aws"
   dependencies:
@@ -3640,7 +3640,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/core@1.0.0-alpha.13, @microlambda/core@workspace:*, @microlambda/core@workspace:core":
+"@microlambda/core@1.0.0-alpha.16, @microlambda/core@workspace:*, @microlambda/core@workspace:core":
   version: 0.0.0-use.local
   resolution: "@microlambda/core@workspace:core"
   dependencies:
@@ -3726,7 +3726,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/layers@1.0.0-alpha.13, @microlambda/layers@workspace:layers":
+"@microlambda/layers@1.0.0-alpha.16, @microlambda/layers@workspace:layers":
   version: 0.0.0-use.local
   resolution: "@microlambda/layers@workspace:layers"
   dependencies:
@@ -3760,6 +3760,7 @@ __metadata:
     "@microlambda/config": "workspace:*"
     "@microlambda/logger": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
+    aws-sdk: ^2.1231.0
     dynamodels: ^1.6.2
   languageName: unknown
   linkType: soft
@@ -3778,10 +3779,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/runner-core@1.0.0-alpha.13, @microlambda/runner-core@workspace:*, @microlambda/runner-core@workspace:runner/core":
+"@microlambda/runner-core@1.0.0-alpha.16, @microlambda/runner-core@workspace:*, @microlambda/runner-core@workspace:runner/core":
   version: 0.0.0-use.local
   resolution: "@microlambda/runner-core@workspace:runner/core"
   dependencies:
+    "@microlambda/aws": "workspace:*"
     "@microlambda/config": "workspace:*"
     "@microlambda/errors": "workspace:*"
     "@microlambda/logger": "workspace:*"
@@ -3813,9 +3815,14 @@ __metadata:
   dependencies:
     "@microlambda/client": "workspace:*"
     "@microlambda/core": "workspace:*"
+    "@microlambda/logger": "workspace:*"
+    "@microlambda/runner-core": "workspace:*"
     "@microlambda/types": "workspace:*"
     "@types/express": ^4.17.13
+    body-parser: ^1.20.1
+    cors: ^2.8.5
     express: ^4.17.1
+    rxjs: ^7.5.7
     socket.io: ^4.4.0
   languageName: unknown
   linkType: soft
@@ -3830,7 +3837,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/types@1.0.0-alpha.13, @microlambda/types@workspace:*, @microlambda/types@workspace:types":
+"@microlambda/types@1.0.0-alpha.16, @microlambda/types@workspace:*, @microlambda/types@workspace:types":
   version: 0.0.0-use.local
   resolution: "@microlambda/types@workspace:types"
   languageName: unknown
@@ -3840,7 +3847,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/utils@workspace:utils"
   dependencies:
+    "@microlambda/errors": "workspace:*"
     "@microlambda/logger": "workspace:*"
+    dotenv: ^16.0.3
+    typescript: ^4.8.4
   languageName: unknown
   linkType: soft
 
@@ -6355,6 +6365,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"aws-sdk@npm:^2.1231.0":
+  version: 2.1231.0
+  resolution: "aws-sdk@npm:2.1231.0"
+  dependencies:
+    buffer: 4.9.2
+    events: 1.1.1
+    ieee754: 1.1.13
+    jmespath: 0.16.0
+    querystring: 0.2.0
+    sax: 1.2.1
+    url: 0.10.3
+    util: ^0.12.4
+    uuid: 8.0.0
+    xml2js: 0.4.19
+  checksum: 34597bc47b8efa84f0c637f8aea92e01010f282eeb878097cd198f67b9d04110115d949c0e641a799cd9a06e4da57697f0b8a682dd7c2be78c717d21d5c4720a
+  languageName: node
+  linkType: hard
+
 "aws-sdk@npm:^2.888.0":
   version: 2.1198.0
   resolution: "aws-sdk@npm:2.1198.0"
@@ -6697,6 +6725,26 @@ __metadata:
     type-is: ~1.6.18
     unpipe: 1.0.0
   checksum: 12fffdeac82fe20dddcab7074215d5156e7d02a69ae90cbe9fee1ca3efa2f28ef52097cbea76685ee0a1509c71d85abd0056a08e612c09077cad6277a644cf88
+  languageName: node
+  linkType: hard
+
+"body-parser@npm:^1.20.1":
+  version: 1.20.1
+  resolution: "body-parser@npm:1.20.1"
+  dependencies:
+    bytes: 3.1.2
+    content-type: ~1.0.4
+    debug: 2.6.9
+    depd: 2.0.0
+    destroy: 1.2.0
+    http-errors: 2.0.0
+    iconv-lite: 0.4.24
+    on-finished: 2.4.1
+    qs: 6.11.0
+    raw-body: 2.5.1
+    type-is: ~1.6.18
+    unpipe: 1.0.0
+  checksum: f1050dbac3bede6a78f0b87947a8d548ce43f91ccc718a50dd774f3c81f2d8b04693e52acf62659fad23101827dd318da1fb1363444ff9a8482b886a3e4a5266
   languageName: node
   linkType: hard
 
@@ -7864,7 +7912,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cors@npm:~2.8.5":
+"cors@npm:^2.8.5, cors@npm:~2.8.5":
   version: 2.8.5
   resolution: "cors@npm:2.8.5"
   dependencies:
@@ -14709,7 +14757,6 @@ __metadata:
     "@types/sinon": ^10.0.6
     "@typescript-eslint/eslint-plugin": ^5.4.0
     "@typescript-eslint/parser": ^5.4.0
-    dotenv: ^16.0.3
     eslint: ^8.3.0
     eslint-config-prettier: ^8.3.0
     eslint-plugin-prettier: ^4.0.0
@@ -16818,7 +16865,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:^6.4.0, qs@npm:^6.9.4":
+"qs@npm:6.11.0, qs@npm:^6.4.0, qs@npm:^6.9.4":
   version: 6.11.0
   resolution: "qs@npm:6.11.0"
   dependencies:
@@ -17665,6 +17712,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"rxjs@npm:^7.5.7":
+  version: 7.5.7
+  resolution: "rxjs@npm:7.5.7"
+  dependencies:
+    tslib: ^2.1.0
+  checksum: edabcdb73b0f7e0f5f6e05c2077aff8c52222ac939069729704357d6406438acca831c24210db320aba269e86dbe1a400f3769c89101791885121a342fb15d9c
+  languageName: node
+  linkType: hard
+
 "safe-buffer@npm:5.2.1, safe-buffer@npm:>=5.1.0, safe-buffer@npm:^5.0.1, safe-buffer@npm:^5.1.1, safe-buffer@npm:^5.1.2, safe-buffer@npm:~5.2.0":
   version: 5.2.1
   resolution: "safe-buffer@npm:5.2.1"
@@ -17885,11 +17941,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "serverless-microlambda@workspace:plugin"
   dependencies:
-    "@microlambda/aws": 1.0.0-alpha.13
-    "@microlambda/core": 1.0.0-alpha.13
-    "@microlambda/layers": 1.0.0-alpha.13
-    "@microlambda/runner-core": 1.0.0-alpha.13
-    "@microlambda/types": 1.0.0-alpha.13
+    "@microlambda/aws": 1.0.0-alpha.16
+    "@microlambda/core": 1.0.0-alpha.16
+    "@microlambda/layers": 1.0.0-alpha.16
+    "@microlambda/runner-core": 1.0.0-alpha.16
+    "@microlambda/types": 1.0.0-alpha.16
     chokidar: ^3.5.2
     hasha: ^5.2.2
     joi: ^17.4.2
@@ -19699,6 +19755,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:^4.8.4":
+  version: 4.8.4
+  resolution: "typescript@npm:4.8.4"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 3e4f061658e0c8f36c820802fa809e0fd812b85687a9a2f5430bc3d0368e37d1c9605c3ce9b39df9a05af2ece67b1d844f9f6ea8ff42819f13bcb80f85629af0
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@^3.9.10#~builtin<compat/typescript>, typescript@patch:typescript@^3.9.5#~builtin<compat/typescript>, typescript@patch:typescript@^3.9.7#~builtin<compat/typescript>":
   version: 3.9.10
   resolution: "typescript@patch:typescript@npm%3A3.9.10#~builtin<compat/typescript>::version=3.9.10&hash=ddd1e8"
@@ -19716,6 +19782,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 96d3030cb01143570567cb4f3a616b10df65f658f0e74e853e77a089a6a954e35c800be7db8b9bfe9a1ae05d9c2897e281359f65e4caa1caf266368e1c4febd3
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@^4.8.4#~builtin<compat/typescript>":
+  version: 4.8.4
+  resolution: "typescript@patch:typescript@npm%3A4.8.4#~builtin<compat/typescript>::version=4.8.4&hash=ddd1e8"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 563a0ef47abae6df27a9a3ab38f75fc681f633ccf1a3502b1108e252e187787893de689220f4544aaf95a371a4eb3141e4a337deb9895de5ac3c1ca76430e5f0
   languageName: node
   linkType: hard
 

@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/runner-core",
-  "version": "1.0.0-alpha.13",
+  "version": "1.0.0-alpha.17",
   "description": "Microlambda builder core package. This package is responsible for computing checksums and run commands if necessary.",
   "author": "Mario Arnautou",
   "license": "MIT",
@@ -10,6 +10,7 @@
     "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@microlambda/aws": "workspace:*",
     "@microlambda/config": "workspace:*",
     "@microlambda/errors": "workspace:*",
     "@microlambda/logger": "workspace:*",
