@@ -1,4 +1,4 @@
-image: marioarnautou/node-chrome
+image: node:latest
 
 before_script:
   - yarn install --immutable
@@ -8,13 +8,11 @@ cache: &yarn_cache
     - .yarn/cache
 
 stages:
-  - lint
-  - build
-  - test
+  - validate
   - publish
 
 build:
-  stage: build
+  stage: validate
   cache:
     <<: *yarn_cache
   script:
@@ -26,18 +24,21 @@ build:
     expire_in: 1h
 
 lint:
-  stage: lint
+  stage: validate
   cache:
     <<: *yarn_cache
   script:
     - npx --yes  @microlambda/runner-cli@latest run lint -p --force
 
 test:
-  stage: lint
+  stage: validate
   cache:
     <<: *yarn_cache
   script:
     - npx --yes  @microlambda/runner-cli@latest run test -p --force
+  artifacts:
+    paths:
+      - ./*/coverage
 
 publish:
   stage: publish
