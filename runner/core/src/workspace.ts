@@ -534,7 +534,7 @@ export class Workspace {
     this._logger?.info('Preparing command', { cmd: options.cmd, workspace: this.name });
     return new Observable<IProcessResult>((obs) => {
       if (isUsingRemoteCache(options) && options.remoteCache) {
-        checkWorkingDirectoryClean();
+        checkWorkingDirectoryClean(this.project?.root);
       }
       this._logger?.info('Running cmd', { cmd: options.cmd, target: this.name });
       this._logger?.debug('Running cmd', options.cmd)
