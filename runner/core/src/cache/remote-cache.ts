@@ -33,7 +33,7 @@ export class RemoteCache extends Cache {
   }
 
   get currentChecksumsKey(): string {
-    return `${this.cachePrefix}/${currentSha1()}/checksums.json`;
+    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/checksums.json`;
   }
 
   get storedChecksumsKey(): string {
@@ -51,7 +51,7 @@ export class RemoteCache extends Cache {
   }
 
   get currentOutputKey(): string {
-    return `${this.cachePrefix}/${currentSha1()}/outputs.json`;
+    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/outputs.json`;
   }
 
   protected async _readChecksums(): Promise<ISourcesChecksums> {

@@ -36,7 +36,7 @@ export class RemoteArtifacts extends Artifacts {
   }
 
   get currentArtifactsChecksumsKey(): string {
-    return `${this.cachePrefix}/${currentSha1()}/artifacts.json`;
+    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/artifacts.json`;
   }
 
   get storedArtifactsChecksumsKey(): string {
@@ -47,7 +47,7 @@ export class RemoteArtifacts extends Artifacts {
   }
 
   get currentArtifactsZipKey(): string {
-    return `${this.cachePrefix}/${currentSha1()}/artifacts.zip`;
+    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/artifacts.zip`;
   }
 
   get storedArtifactsZipKey(): string {

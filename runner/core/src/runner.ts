@@ -144,7 +144,7 @@ export class Runner {
   runCommand(options: RunOptions): Observable<RunCommandEvent> {
     return new Observable((obs) => {
       if (isUsingRemoteCache(options) && options.remoteCache) {
-        checkWorkingDirectoryClean();
+        checkWorkingDirectoryClean(this._project.root);
       }
       this._logger?.info('Resolving for command', options.cmd);
       const targets = new TargetsResolver(this._project, this._logger?.logger);
