@@ -22,6 +22,7 @@ import { from, Observable } from 'rxjs';
 import { map, mergeAll } from 'rxjs/operators';
 import chalk from 'chalk';
 import { printAccountInfos } from './envs/list';
+import { typeCheck } from '../utils/build/type-check';
 
 export const runTests = async (cmd: ITestCommand): Promise<void> => {
   try {
@@ -63,6 +64,8 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
 
     const config = new ConfigReader(projectRoot, eventsLog).rootConfig;
     const state = new State(config);
+
+    await typeCheck(options);
 
     const { failures, success } = await new Promise(async (resolve, reject) => {
       const log = eventsLog.scope('run-tests');

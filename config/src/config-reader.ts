@@ -81,6 +81,7 @@ export class ConfigReader {
     this._logger?.debug('Raw config file read', raw);
     const { error, value } = ConfigReader.schemas.package.validate(raw);
     if (error) {
+      console.debug(JSON.stringify(error, null, 2));
       this._logger?.error('Invalid config file', path,  error);
       throw new MilaError(MilaErrorCode.INVALID_PACKAGE_CONFIG, `Invalid package configuration ${path}`, error);
     }

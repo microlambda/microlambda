@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/runner-core",
-  "version": "1.0.0-alpha.17",
+  "version": "1.0.0-alpha.19",
   "description": "Microlambda builder core package. This package is responsible for computing checksums and run commands if necessary.",
   "author": "Mario Arnautou",
   "license": "MIT",

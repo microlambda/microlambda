@@ -1,4 +1,5 @@
 export interface Package {
+  scripts: Record<string, string>;
   name: string;
   version?: string;
   private?: boolean;

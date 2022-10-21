@@ -23,7 +23,7 @@ import { AbstractLogsHandler, ILogsHandler } from "./logs-handler";
 import processTree from "ps-tree";
 import { isPortAvailable } from "./port-available";
 import { EventsLog, EventsLogger } from '@microlambda/logger';
-import { ITargetsConfig, ConfigReader, ILogsCondition, ICommandConfig } from '@microlambda/config';
+import { ITargetsConfig, ConfigReader, ILogsCondition, ICommandConfig, isScriptTarget, ITargetConfig } from '@microlambda/config';
 import { LocalCache } from "./cache/local-cache";
 import { LocalArtifacts } from './artifacts/local-artifacts';
 import { Cache } from './cache/cache';
@@ -193,8 +193,21 @@ export class Workspace {
     return await this._testDepsAffected(new Set(), rev1, rev2, patterns);
   }
 
-  hasCommand(cmd: string): boolean {
-    return !!this.config[cmd];
+  async resolveScript(name: string): Promise<string | undefined> {
+    const manifest = await Workspace.loadPackage(this.root);
+    return manifest.scripts[name];
+
+  }
+
+  async hasCommand(cmd: string): Promise<boolean> {
+    const config = this.config[cmd];
+    if (!config) {
+      return false;
+    }
+    if (isScriptTarget(config)) {
+      return !!(await this.resolveScript(config.script));
+    }
+    return Array.isArray(config.cmd) ? config.cmd.length > 0 : true;
   }
 
   private async _handleDaemon<T = string>(
@@ -346,14 +359,13 @@ export class Workspace {
 
   private async _runCommand(
     target: string,
-    cmd: string | ICommandConfig,
+    cmd: { cmd: string; daemon?: ILogsCondition[], env?: Record<string, string> },
     args?: string,
     env: {[key: string]: string} = {},
     stdio: 'pipe' | 'inherit' = 'pipe',
   ): Promise<CommandResult> {
     const startedAt = Date.now();
-    const _cmd = typeof cmd === 'string' ? cmd : cmd.run;
-    const _fullCmd = args ? [_cmd, args].join(' ') : _cmd;
+    const _fullCmd = args ? [cmd.cmd, args].join(' ') : cmd.cmd;
     this._logger?.info('Launching process', { cmd: target, target: this.name });
     this._handleLogs('commandStarted', target, _fullCmd);
     const cmdId = _fullCmd + '-' + Date.now();
@@ -373,7 +385,7 @@ export class Workspace {
     _process.all?.on('data', (chunk) => {
       this._handleLogs('append', target, chunk);
     });
-    if (typeof cmd !== 'string' && cmd.daemon) {
+    if (cmd.daemon) {
       this._logger?.info('Command flagged as daemon', { cmd: target, target: this.name });
       this._logger?.debug('Handling daemon', { cmd: target, target: this.name });
       return this._handleDaemon(target, cmd.daemon, _process, startedAt);
@@ -394,6 +406,44 @@ export class Workspace {
     }
   }
 
+  private async _resolveCommands(config: ITargetConfig): Promise<Array<{ cmd: string; daemon?: ILogsCondition[], env?: Record<string, string> }>> {
+    if (isScriptTarget(config)) {
+      const script = await this.resolveScript(config.script);
+      if (!script) {
+        return [];
+      }
+      const result: { cmd: string; daemon?: ILogsCondition[], env?: Record<string, string>} = { cmd: script, env: config.env };
+      if (!!config.daemon) {
+        result.daemon = Array.isArray(config.daemon) ? config.daemon : [config.daemon];
+      }
+      return [result];
+    }
+    const reformatCommandConfig = (cmd: string | ICommandConfig): { cmd: string; daemon?: ILogsCondition[], env?: Record<string, string> } => {
+      if (typeof cmd === 'string') {
+        return { cmd };
+      }
+      const result: { cmd: string; daemon?: ILogsCondition[], env?: Record<string, string>} = { cmd: cmd.run, env: cmd.env };
+      if (!!cmd.daemon) {
+        result.daemon = Array.isArray(cmd.daemon) ? cmd.daemon : [cmd.daemon];
+      }
+      return result;
+    }
+    if (Array.isArray(config.cmd)) {
+      return config.cmd.map(reformatCommandConfig);
+    }
+    return [reformatCommandConfig(config.cmd)];
+  }
+
+  private static isDaemon(config: ITargetConfig): boolean {
+    if (isScriptTarget(config)) {
+      return !!config.daemon;
+    }
+    if (Array.isArray(config.cmd)) {
+      return config.cmd.some((cmd) => typeof cmd !== 'string' && !!cmd.daemon);
+    }
+    return typeof config.cmd !== 'string' && !!config.cmd.daemon;
+  }
+
   private async _runCommands(
     target: string,
     args: string[] | string = [],
@@ -402,17 +452,17 @@ export class Workspace {
   ): Promise<Array<CommandResult>> {
     const results: Array<CommandResult> = [];
     const config = this.config[target];
-    const commands = config.cmd;
+    const commands = await this._resolveCommands(config);
     const _args = Array.isArray(args) ? args : [args];
     let idx = 0;
     this._handleLogs('open', target);
-    for (const _cmd of Array.isArray(commands) ? commands : [commands]) {
+    for (const _cmd of commands) {
       this._logger?.debug('cmd', JSON.stringify(_cmd));
       this._logger?.info('Do run command', { target: this.name, cmd: _cmd, args: _args[idx], env, stdio});
       results.push(await this._runCommand(target, _cmd, _args[idx], env, stdio));
       idx++;
     }
-    if (Array.isArray(commands) ? commands : [commands].some((cmd) => typeof cmd !== 'string' && cmd.daemon)) {
+    if (!Workspace.isDaemon(config)) {
       this._handleLogs('close', target);
     }
     this._logger?.info('All commands run', { cmd: target, target: this.name }, results);

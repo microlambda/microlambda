@@ -11,19 +11,26 @@ const commandConfigSchema = joi.object().keys({
   ).optional(),
 });
 
-export const targetConfigSchema = joi.object().keys({
-  cmd: joi.alternatives(
-    joi.string().required(),
-    joi.array().items(joi.string().required()).required(),
-    commandConfigSchema.required(),
-    joi.array().items(commandConfigSchema.required()).required(),
-  ),
+const cachingSchema = joi.object().keys({
   src: joi.object().keys({
     internals: joi.array().items(joi.string().required()).optional(),
     deps: joi.array().items(joi.string().required()).optional(),
     root: joi.array().items(joi.string().required()).optional(),
   }).optional(),
   artifacts: joi.array().items(joi.string().required()).optional(),
-})
+});
 
-export const targetsConfigSchema = joi.object().pattern(joi.string(), targetConfigSchema);
+export const targetConfigSchemaCmds = cachingSchema.keys({
+  cmd: joi.alternatives(
+    joi.string().required(),
+    joi.array().items(joi.string().required()).required(),
+    commandConfigSchema.required(),
+    joi.array().items(commandConfigSchema.required()).required(),
+  ),
+});
+
+export const targetConfigSchemaScript = cachingSchema.keys({
+  script: joi.string().required(),
+});
+
+export const targetsConfigSchema = joi.object().pattern(joi.string(), joi.alternatives(targetConfigSchemaCmds, targetConfigSchemaScript));

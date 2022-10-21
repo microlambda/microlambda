@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/runner-cli",
-  "version": "1.0.0-alpha.17",
+  "version": "1.0.0-alpha.19",
   "description": "Microlambda low-level command line interface for running commands on targets",
   "author": "Mario Arnautou",
   "license": "MIT",

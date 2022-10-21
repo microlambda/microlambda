@@ -8,12 +8,11 @@ export interface ILogsCondition {
 
 export interface ICommandConfig {
   run: string;
-  env?: {[key: string]: string};
+  env?: Record<string, string>;
   daemon?: false | Array<ILogsCondition> | ILogsCondition;
 }
 
-export interface ITargetConfig {
-  cmd: string | string[] | ICommandConfig | Array<ICommandConfig>;
+export interface ITargetCacheConfig {
   src?: {
     internals?: string[];
     deps?: string[];
@@ -21,6 +20,20 @@ export interface ITargetConfig {
   }
   artifacts?: string[];
 }
+
+export interface ITargetConfigScript extends ITargetCacheConfig {
+  script: string;
+  env?: Record<string, string>;
+  daemon?: false | Array<ILogsCondition> | ILogsCondition;
+}
+
+export interface ITargetConfigCmd extends ITargetCacheConfig {
+  cmd: string | string[] | ICommandConfig | Array<ICommandConfig>;
+}
+
+export type ITargetConfig = ITargetConfigScript | ITargetConfigCmd;
+
+export const isScriptTarget = (target: ITargetConfig): target is ITargetConfigScript => !!(target as ITargetConfigScript).script;
 
 export interface ITargetsConfig {
   [cmd: string]: ITargetConfig;

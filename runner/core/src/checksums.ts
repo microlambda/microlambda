@@ -4,7 +4,7 @@ import { fs as fsUtils } from '@microlambda/utils';
 import { GlobsHelpers } from './globs';
 import { EventsLog } from '@microlambda/logger';
 import { Workspace } from './workspace';
-import { ICommandConfig, ITargetConfig } from '@microlambda/config';
+import { ICommandConfig, isScriptTarget, ITargetConfig } from '@microlambda/config';
 import { isEqual } from 'lodash';
 
 interface ICommonChecksums {
@@ -45,6 +45,22 @@ export class Checksums {
     return isEqual(current, stored);
   }
 
+  private async _resolveCmd(config: ITargetConfig): Promise<Array<ICommandConfig>> {
+    if (isScriptTarget(config)) {
+      return [{ run: (await this.workspace.resolveScript(config.script))!, daemon: config.daemon, env: config.env }];
+    }
+    const reformatCommand = (cmd: string | ICommandConfig): ICommandConfig => {
+      if (typeof cmd === 'string') {
+        return { run: cmd }
+      }
+      return cmd;
+    }
+    if (Array.isArray(config.cmd)) {
+      return config.cmd.map((reformatCommand));
+    }
+    return [reformatCommand(config.cmd)];
+  }
+
   async calculate(): Promise<ISourcesChecksums> {
     const config = this.config;
     if (!config?.src) {
@@ -57,7 +73,7 @@ export class Checksums {
     }
     const checksums = await this.computeHash(src);
     return {
-      cmd: config.cmd,
+      cmd: await this._resolveCmd(config),
       globs: globs.globs.sources,
       args: this.args,
       env: this.env,

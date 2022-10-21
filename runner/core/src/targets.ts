@@ -30,7 +30,7 @@ export class TargetsResolver {
   private async _findTargets(eligible: Workspace[], cmd: string, options: RunOptions): Promise<Array<IResolvedTarget>> {
     const targets: Array<IResolvedTarget> = [];
     await Promise.all(Array.from(eligible).map(async (workspace) => {
-      const hasCommand = workspace.hasCommand(cmd);
+      const hasCommand = await workspace.hasCommand(cmd);
       targets.push({ workspace, affected: true, hasCommand});
     }));
     return targets;
