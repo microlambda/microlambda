@@ -12,7 +12,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - run: yarn install --immutable
+      - run: yarn install --immutable --json
       - run: npx --yes  @microlambda/runner-cli@latest run lint -p --force
   build:
     runs-on: ubuntu-latest
