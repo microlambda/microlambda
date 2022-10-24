@@ -6,12 +6,18 @@ const areEquivalent = (arr1: Array<boolean | number | string>, arr2: Array<boole
 
 type ReceivedEvent = {type: RunCommandEventEnum | 'X', workspace?: string};
 
+const logger = (...args: unknown[]): void => {
+  if (process.env.DEBUG_MILA_TEST) {
+    console.debug(args);
+  }
+}
+
 const expectTimeframe = (
   receivedEvents: ReceivedEvent[],
   expectedTimeframe: string,
   reject: (err: unknown) => void,
 ) => {
-  console.debug(receivedEvents);
+  logger(receivedEvents);
   const expectedFrames = expectedTimeframe.split('-');
   const expectedEventCount = expectedFrames.map((frame) => [...frame]).reduce((acc, val) => acc += val.length, 0);
   if (expectedEventCount !== receivedEvents.length) {
@@ -23,15 +29,15 @@ const expectTimeframe = (
   let timeframeError = false;
   let receivedFrame = '';
   for (const expectedFrame of expectedFrames) {
-    console.debug({ offset });
+    logger({ offset });
     const expectedEventTypes: (number | 'X')[] = [...expectedFrame].map((t) => t === 'X' ? 'X' : Number(t));
     const receivedEventTypes = receivedEvents.slice(offset, offset + expectedEventTypes.length).map((e) => e.type);
-    console.debug({ expectedEventTypes, receivedEventTypes });
+    logger({ expectedEventTypes, receivedEventTypes });
     const isComparable = areEquivalent(receivedEventTypes, expectedEventTypes);
     if (!isComparable) {
       timeframeError = true;
     }
-    console.log(receivedEventTypes.join(''));
+    logger(receivedEventTypes.join(''));
     receivedFrame += (offset ? '-' : '') + receivedEventTypes.join('')
     offset += expectedEventTypes.length;
   }
@@ -95,13 +101,13 @@ export const expectObservable = async (
           clearTimeout(timeout);
         }
         timeout = setTimeout(() => {
-          console.info('+', Date.now() - startedAt, 'ms', 'TIMEOUT REACHED')
+          logger('+', Date.now() - startedAt, 'ms', 'TIMEOUT REACHED')
           verifyAssertions(receivedEvents, expectedTimeframe, expectedWorkspaces, resolve, reject, predicate);
         }, completeAfter);
       }
     }
     runCommand$.subscribe((evt) => {
-      //console.debug('+', Date.now() - startedAt, 'ms', evt);
+      //logger('+', Date.now() - startedAt, 'ms', evt);
       switch (evt.type) {
         case RunCommandEventEnum.TARGETS_RESOLVED:
           receivedEvents.push({ type: evt.type });
@@ -113,27 +119,27 @@ export const expectObservable = async (
         case RunCommandEventEnum.ERROR_INVALIDATING_CACHE:
         case RunCommandEventEnum.CACHE_INVALIDATED:
         case RunCommandEventEnum.NODE_INTERRUPTED:
-          console.log('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.workspace?.name });
+          logger('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.workspace?.name });
           receivedEvents.push({ type: evt.type, workspace: evt.workspace?.name });
           break;
         case RunCommandEventEnum.SOURCES_CHANGED:
-          console.log('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.target.workspace?.name });
+          logger('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.target.workspace?.name });
           receivedEvents.push({ type: evt.type, workspace: evt.target.workspace?.name });
           break;
         default:
-          console.error('+', Date.now() - startedAt, 'ms', 'Unexpected event type', evt);
+          logger('+', Date.now() - startedAt, 'ms', 'Unexpected event type', evt);
           reject();
           break;
       }
       timedOut();
     }, (err) => {
-      console.debug('+', Date.now() - startedAt, 'ms', 'ERRORED', err);
+      logger('+', Date.now() - startedAt, 'ms', 'ERRORED', err);
       receivedEvents.push({
         type: 'X' as const,
       })
       verifyAssertions(receivedEvents, expectedTimeframe, expectedWorkspaces, resolve, reject, predicate);
     }, () => {
-      console.debug('+', Date.now() - startedAt, 'ms', 'COMPLETED');
+      logger('+', Date.now() - startedAt, 'ms', 'COMPLETED');
       verifyAssertions(receivedEvents, expectedTimeframe, expectedWorkspaces, resolve, reject, predicate);
     });
   });

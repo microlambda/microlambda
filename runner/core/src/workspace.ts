@@ -1,30 +1,30 @@
 // Class
-import {Project} from './project';
-import {promises as fs} from 'fs';
-import {join, relative} from 'path';
-import {INpmInfos, Package} from './package';
-import {git} from './git';
-import {sync as glob} from 'fast-glob';
-import { command, ExecaChildProcess, ExecaError, ExecaReturnValue } from "execa";
-import {
-  CommandResult,
-  ICommandResult,
-  IDaemonCommandResult,
-  IProcessResult,
-  isDaemon,
-} from "./process";
-import {Publish, PublishActions, PublishEvent} from './publish';
-import { Observable, race, throwError } from "rxjs";
-import {MilaError, MilaErrorCode} from '@microlambda/errors';
+import { Project } from './project';
+import { promises as fs } from 'fs';
+import { join, relative } from 'path';
+import { INpmInfos, Package } from './package';
+import { git } from './git';
+import { sync as glob } from 'fast-glob';
+import { command, ExecaChildProcess, ExecaError, ExecaReturnValue } from 'execa';
+import { CommandResult, ICommandResult, IDaemonCommandResult, IProcessResult, isDaemon } from './process';
+import { Publish, PublishActions, PublishEvent } from './publish';
+import { Observable, race, throwError } from 'rxjs';
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import semver from 'semver';
-import { catchError, finalize } from "rxjs/operators";
-import Timer = NodeJS.Timer;
-import { AbstractLogsHandler, ILogsHandler } from "./logs-handler";
-import processTree from "ps-tree";
-import { isPortAvailable } from "./port-available";
+import { catchError, finalize } from 'rxjs/operators';
+import { AbstractLogsHandler, ILogsHandler } from './logs-handler';
+import processTree from 'ps-tree';
+import { isPortAvailable } from './port-available';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
-import { ITargetsConfig, ConfigReader, ILogsCondition, ICommandConfig, isScriptTarget, ITargetConfig } from '@microlambda/config';
-import { LocalCache } from "./cache/local-cache";
+import {
+  ConfigReader,
+  ICommandConfig,
+  ILogsCondition,
+  isScriptTarget,
+  ITargetConfig,
+  ITargetsConfig,
+} from '@microlambda/config';
+import { LocalCache } from './cache/local-cache';
 import { LocalArtifacts } from './artifacts/local-artifacts';
 import { Cache } from './cache/cache';
 import { Artifacts } from './artifacts/artifacts';
@@ -32,6 +32,7 @@ import { RemoteCache } from './cache/remote-cache';
 import { RemoteArtifacts } from './artifacts/remote-artifacts';
 import { isUsingRemoteCache, RunOptions } from './runner';
 import { checkWorkingDirectoryClean } from './remote-cache-utils';
+import Timer = NodeJS.Timer;
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -193,19 +194,21 @@ export class Workspace {
     return await this._testDepsAffected(new Set(), rev1, rev2, patterns);
   }
 
-  async resolveScript(name: string): Promise<string | undefined> {
-    const manifest = await Workspace.loadPackage(this.root);
-    return manifest.scripts[name];
-
+  resolveScript(name: string): string | undefined {
+    const manifest = this.pkg;
+    if (!manifest) {
+      throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_WORKSPACE, 'Assertion failed: package.json should have been parsed');
+    }
+    return manifest.scripts ? manifest.scripts[name] : undefined;
   }
 
-  async hasCommand(cmd: string): Promise<boolean> {
+  hasCommand(cmd: string): boolean {
     const config = this.config[cmd];
     if (!config) {
       return false;
     }
     if (isScriptTarget(config)) {
-      return !!(await this.resolveScript(config.script));
+      return !!this.resolveScript(config.script);
     }
     return Array.isArray(config.cmd) ? config.cmd.length > 0 : true;
   }
@@ -406,9 +409,9 @@ export class Workspace {
     }
   }
 
-  private async _resolveCommands(config: ITargetConfig): Promise<Array<{ cmd: string; daemon?: ILogsCondition[], env?: Record<string, string> }>> {
+  private _resolveCommands(config: ITargetConfig): Array<{ cmd: string; daemon?: ILogsCondition[], env?: Record<string, string> }> {
     if (isScriptTarget(config)) {
-      const script = await this.resolveScript(config.script);
+      const script = this.resolveScript(config.script);
       if (!script) {
         return [];
       }

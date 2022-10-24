@@ -31,6 +31,12 @@ export const targetConfigSchemaCmds = cachingSchema.keys({
 
 export const targetConfigSchemaScript = cachingSchema.keys({
   script: joi.string().required(),
+  env: joi.object().pattern(joi.string(), joi.string().required()).optional(),
+  daemon: joi.alternatives(
+    joi.boolean().valid(false).required(),
+    logConditionsSchema.required(),
+    joi.array().items(logConditionsSchema).required(),
+  ).optional(),
 });
 
 export const targetsConfigSchema = joi.object().pattern(joi.string(), joi.alternatives(targetConfigSchemaCmds, targetConfigSchemaScript));

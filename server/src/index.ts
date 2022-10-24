@@ -32,7 +32,7 @@ export const startServer = (
     res.status(200).send('Pong')
   });
 
-  app.get('/api/graph', (req, res) => {
+  app.get('/api/graph', async (req, res) => {
     const summaryMapper = (n: Workspace): INodeSummary => ({
       name: n.name,
       version: n.version || '',

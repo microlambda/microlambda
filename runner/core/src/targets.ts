@@ -19,26 +19,25 @@ export class TargetsResolver {
 
   private _logger: EventsLogger | undefined;
 
+  // FIXME: Could be sync
   async resolve(cmd: string, options: RunOptions): Promise<OrderedTargets> {
     if (isTopological(options)) {
       return this._recursivelyResolveTargets(cmd, options);
     }
     const workspaces = options.workspaces || Array.from(this._project.workspaces.values());
-    return [await this._findTargets(workspaces, cmd, options)];
+    return [this._findTargets(workspaces, cmd)];
   }
 
-  private async _findTargets(eligible: Workspace[], cmd: string, options: RunOptions): Promise<Array<IResolvedTarget>> {
-    const targets: Array<IResolvedTarget> = [];
-    await Promise.all(Array.from(eligible).map(async (workspace) => {
-      const hasCommand = await workspace.hasCommand(cmd);
-      targets.push({ workspace, affected: true, hasCommand});
-    }));
-    return targets;
+  private _findTargets(eligible: Workspace[], cmd: string): Array<IResolvedTarget> {
+    return eligible.map((workspace) => {
+      const hasCommand = workspace.hasCommand(cmd);
+      return { workspace, affected: true, hasCommand};
+    });
   }
 
-  private async _recursivelyResolveTargets(cmd: string, options: ITopologicalRunOptions | ITopologicalRemoteCacheRunOptions): Promise<OrderedTargets> {
+  private _recursivelyResolveTargets(cmd: string, options: ITopologicalRunOptions | ITopologicalRemoteCacheRunOptions): OrderedTargets {
     this._logger?.silly('Recursively resolving targets');
-    const targets = await this._findTargets(Array.from(this._project.getTopologicallySortedWorkspaces(options.to)), cmd, options);
+    const targets = this._findTargets(Array.from(this._project.getTopologicallySortedWorkspaces(options.to)), cmd);
     // Find targets we will not run command on as it is either unaffected or it has not the command
     const inactiveTargets = targets.filter((t) => !t.hasCommand || !t.affected);
     // We also store the names for better performance in further recursion

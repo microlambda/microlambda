@@ -50,7 +50,7 @@ describe('[class] Checksum manager', () => {
       fromFile.restore();
       const expected: ISourcesChecksums = {
         "args": [],
-        "cmd": ["npm run foo"],
+        "cmd": [{ run: 'npm run foo' }],
         "env": {},
         "globs": { internals: [ "src/**/*.ts", "test/**/*.ts"], deps: [], root: [] },
         checksums: {
@@ -84,7 +84,7 @@ describe('[class] Checksum manager', () => {
       const expected: ISourcesChecksums = {
         "args": [],
         "env": {},
-        "cmd": ["npm run pre:test", "npm run test"],
+        "cmd": [{ run: 'npm run pre:test' }, { run: 'npm run test' }],
         "globs": { internals: ['src/**/*.ts'], deps: [], root: [] },
         checksums: {
           '/somewhere/on/filesystem/packages/workspace-a/src/index.ts': '1234',

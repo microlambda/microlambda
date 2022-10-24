@@ -1,8 +1,8 @@
 import { EventsLogger } from '@microlambda/logger';
 import { Workspace } from '../workspace';
 import { GlobsHelpers } from '../globs';
-import { Checksums, IArtifactsChecksums } from '../checksums';
-import { ICommandConfig, isScriptTarget, ITargetConfig } from '@microlambda/config';
+import { Checksums, IArtifactsChecksums, resolveCommands } from '../checksums';
+import { ITargetConfig } from '@microlambda/config';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { fs as fsUtils } from '@microlambda/utils';
 
@@ -46,27 +46,11 @@ export abstract class Artifacts {
   protected abstract _read(): Promise<IArtifactsChecksums>;
   protected  abstract _write(data: IArtifactsChecksums): Promise<void>;
 
-  private async _resolveCmd(config: ITargetConfig): Promise<Array<ICommandConfig>> {
-    if (isScriptTarget(config)) {
-      return [{ run: (await this.workspace.resolveScript(config.script))!, daemon: config.daemon, env: config.env }];
-    }
-    const reformatCommand = (cmd: string | ICommandConfig): ICommandConfig => {
-      if (typeof cmd === 'string') {
-        return { run: cmd }
-      }
-      return cmd;
-    }
-    if (Array.isArray(config.cmd)) {
-      return config.cmd.map((reformatCommand));
-    }
-    return [reformatCommand(config.cmd)];
-  }
-
   private async _calculateArtifactsChecksums(config: ITargetConfig): Promise<IArtifactsChecksums> {
     const artifacts = await this._resolveArtifactsPaths();
     const checksums = new Checksums(this.workspace, this.cmd, this.args, this.env, this.logger?.logger);
     return {
-      cmd: await this._resolveCmd(config),
+      cmd: resolveCommands(config, this.workspace),
       args: this.args,
       globs: config.artifacts || [],
       env: this.env,

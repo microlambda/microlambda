@@ -24,9 +24,7 @@ interface IRunStub {
 
 const stubRun = (stub: SinonStub, calls: IRunStub[]) => {
   calls.forEach((call, idx) => {
-    // console.log('stubbing', { stub, call, idx });
     if (call.resolve) {
-      console.debug('STUBBED WITH', call.options)
       stub.withArgs(call.options).onCall(idx).returns(of({
         commands:[],
         overall: call.delay || 0,

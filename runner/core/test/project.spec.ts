@@ -62,7 +62,6 @@ describe('[class] Project', () => {
         fail('should throw');
       } catch (e) {
         expect(e).toBeTruthy();
-        console.error(e);
         expect(e instanceof MilaError).toBe(true);
         expect((e as MilaError).code).toBe(MilaErrorCode.UNABLE_TO_LOAD_WORKSPACE);
       }

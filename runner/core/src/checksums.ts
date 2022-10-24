@@ -28,6 +28,29 @@ export interface IArtifactsChecksums extends ICommonChecksums{
 
 type IChecksums = ISourcesChecksums | IArtifactsChecksums;
 
+export const resolveCommands = (config: ITargetConfig, workspace: Workspace): Array<ICommandConfig> => {
+  if (isScriptTarget(config)) {
+    const result: ICommandConfig = { run: workspace.resolveScript(config.script)! };
+    if (config.daemon) {
+      result.daemon = config.daemon;
+    }
+    if (config.daemon) {
+      result.env = config.env;
+    }
+    return [result];
+  }
+  const reformatCommand = (cmd: string | ICommandConfig): ICommandConfig => {
+    if (typeof cmd === 'string') {
+      return { run: cmd }
+    }
+    return cmd;
+  }
+  if (Array.isArray(config.cmd)) {
+    return config.cmd.map((reformatCommand));
+  }
+  return [reformatCommand(config.cmd)];
+}
+
 export class Checksums {
   constructor (
     readonly workspace: Workspace,
@@ -45,22 +68,6 @@ export class Checksums {
     return isEqual(current, stored);
   }
 
-  private async _resolveCmd(config: ITargetConfig): Promise<Array<ICommandConfig>> {
-    if (isScriptTarget(config)) {
-      return [{ run: (await this.workspace.resolveScript(config.script))!, daemon: config.daemon, env: config.env }];
-    }
-    const reformatCommand = (cmd: string | ICommandConfig): ICommandConfig => {
-      if (typeof cmd === 'string') {
-        return { run: cmd }
-      }
-      return cmd;
-    }
-    if (Array.isArray(config.cmd)) {
-      return config.cmd.map((reformatCommand));
-    }
-    return [reformatCommand(config.cmd)];
-  }
-
   async calculate(): Promise<ISourcesChecksums> {
     const config = this.config;
     if (!config?.src) {
@@ -73,7 +80,7 @@ export class Checksums {
     }
     const checksums = await this.computeHash(src);
     return {
-      cmd: await this._resolveCmd(config),
+      cmd: resolveCommands(config, this.workspace),
       globs: globs.globs.sources,
       args: this.args,
       env: this.env,
