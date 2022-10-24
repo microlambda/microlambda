@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/layers",
-  "version": "1.0.0-alpha.21",
+  "version": "1.0.0-alpha.22",
   "description": "Manage project lambda layers. Check if a republish is necessary and performs it if required",
   "author": "Mario Arnautou",
   "repository": {

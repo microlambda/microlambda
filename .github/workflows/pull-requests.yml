@@ -25,6 +25,7 @@ jobs:
       - run: npx --yes @microlambda/runner-cli@latest run build -t --force
       - uses: actions/upload-artifact@v3
         with:
+          retention-days: 2
           name: built-sources
           path: |
             ./*/dist
@@ -38,9 +39,13 @@ jobs:
         with:
           node-version: '16'
       - run: yarn install --immutable
+      - uses: actions/download-artifact@v3
+        with:
+          name: built-sources
       - run: npx --yes  @microlambda/runner-cli@latest run test -p --force
       - uses: actions/upload-artifact@v3
         with:
+          retention-days: 30
           name: coverage-reports
           path: |
             ./*/coverage
