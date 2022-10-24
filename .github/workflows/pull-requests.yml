@@ -12,10 +12,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - uses: actions/cache@v3
-        with:
-          path: |
-            .yarn/cache
       - run: yarn install --immutable
       - run: npx --yes  @microlambda/runner-cli@latest run lint -p --force
   build:
@@ -25,10 +21,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - uses: actions/cache@v3
-        with:
-          path: |
-            .yarn/cache
       - run: yarn install --immutable
       - run: npx --yes @microlambda/runner-cli@latest run build -t --force
       - uses: actions/upload-artifact@v3
@@ -45,10 +37,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - uses: actions/cache@v3
-        with:
-          path: |
-            .yarn/cache
       - run: yarn install --immutable
       - run: npx --yes  @microlambda/runner-cli@latest run test -p --force
       - uses: actions/upload-artifact@v3
