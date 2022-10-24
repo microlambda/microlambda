@@ -14,6 +14,7 @@ import { OrderedTargets, TargetsResolver } from "./targets";
 import { Watcher } from "./watcher";
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { checkWorkingDirectoryClean } from './remote-cache-utils';
+import { getDefaultThreads } from '@microlambda/utils';
 
 export interface ICommonRunOptions {
   cmd: string;
@@ -92,7 +93,7 @@ export class Runner {
 
   constructor(
     private readonly _project: Project,
-    private readonly _concurrency: number = 4,
+    private readonly _concurrency: number = getDefaultThreads(),
     readonly logger?: EventsLog,
   ) {
     this._logger = logger?.scope('runner-core/runner');

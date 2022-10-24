@@ -184,6 +184,7 @@ program
   .option('--verbose', 'print build commands output', false)
   .option('--no-install', 'skip bootstrapping dependencies', false)
   .option('-s <service>, --service <service>', 'the service you want to build', '')
+  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
   .option('--force', 'ignore build command checksums and re-package', false)
   .description('compile packages and services')
   .action(

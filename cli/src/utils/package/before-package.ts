@@ -12,7 +12,6 @@ export const beforePackage = async (
   cmd: IPackageCmd,
   eventsLog: EventsLog,
 ): Promise<IPackageOptions> => {
-  const concurrency = cmd.c ? getThreads(Number(cmd.c)) : getDefaultThreads();
   const options = await beforeBuild(project, cmd, eventsLog, false);
   if (cmd.recompile) {
     try {
@@ -27,7 +26,6 @@ export const beforePackage = async (
   return {
     ...options,
     verbose: cmd.verbose,
-    concurrency,
     forcePackage: cmd.forcePackage,
     install: cmd.install,
     recompile: cmd.recompile,
