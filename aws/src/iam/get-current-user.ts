@@ -26,6 +26,18 @@ const getUserArn = async (region: string): Promise<string | undefined> => {
   }
 }
 
+export const arnToCurrentUserIAM = (arn: string): ICurrentUserIAM => {
+    const matches = arn.match(/arn:aws:iam::(.+):user\/(.+)/);
+    if (matches?.length) {
+        return {
+            arn,
+            projectId: matches[1],
+            username: matches[2],
+        }
+    }
+    return { arn };
+}
+
 /**
  * Get the information of the currently connected user.
  */
@@ -34,10 +46,6 @@ export const getCurrentUser = async (region: string): Promise<ICurrentUserIAM> =
     if (!arn) {
       throw new Error('Unable to resolve current user ARN');
     }
-    const matches = arn.match(/arn:aws:iam::(.+):user\/(.+)/);
-    return {
-      arn,
-      projectId: matches?.at(1),
-      username: matches?.at(2),
-    }
+
+    return arnToCurrentUserIAM(arn);
 }
