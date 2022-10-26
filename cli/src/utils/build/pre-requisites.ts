@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import { IBuildCmd } from './cmd-options';
 import { IBuildOptions } from './options';
 import { Project } from '@microlambda/core';
+import { getDefaultThreads, getThreads } from '@microlambda/utils';
 
 export const beforeBuild = async (
   _project: string | Project,
@@ -19,6 +20,7 @@ export const beforeBuild = async (
   } else {
     project = _project;
   }
+  const concurrency = cmd.c ? getThreads(Number(cmd.c)) : getDefaultThreads();
   const resolveWorkspaces = (): CentipodWorkspace[] => {
     if (cmd.s) {
       const nodes = acceptPackages ? project.workspaces : project.services;
@@ -34,5 +36,5 @@ export const beforeBuild = async (
     }
     return [...project.services.values()];
   }
-  return {project, workspaces: resolveWorkspaces(), force: cmd.force || process.env.MILA_FORCE === 'true', install: cmd.install, verbose: cmd.verbose };
+  return {project, concurrency, workspaces: resolveWorkspaces(), force: cmd.force || process.env.MILA_FORCE === 'true', install: cmd.install, verbose: cmd.verbose };
 };

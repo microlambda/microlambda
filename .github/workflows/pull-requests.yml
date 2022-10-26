@@ -1,0 +1,51 @@
+name: validate-prs
+run-name: Pre-merge validation checks
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: yarn install --immutable --json
+      - run: npx --yes  @microlambda/runner-cli@latest run lint -p --force
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: yarn install --immutable
+      - run: npx --yes @microlambda/runner-cli@latest run build -t --force
+      - uses: actions/upload-artifact@v3
+        with:
+          retention-days: 2
+          name: built-sources
+          path: |
+            ./*/dist
+            ./*/lib
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: yarn install --immutable
+      - uses: actions/download-artifact@v3
+        with:
+          name: built-sources
+      - run: npx --yes  @microlambda/runner-cli@latest run test -p --force
+      - uses: actions/upload-artifact@v3
+        with:
+          retention-days: 30
+          name: coverage-reports
+          path: |
+            ./*/coverage

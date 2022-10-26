@@ -44,7 +44,7 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
     const onComplete = (): void => {
       return resolve();
     };
-    const runner = new Runner(options.project);
+    const runner = new Runner(options.project, options.concurrency);
     runner.runCommand({
       cmd: 'build',
       to: options.workspaces,
