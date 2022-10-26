@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/types",
-  "version": "1.0.0-alpha.22",
+  "version": "1.0.0-alpha.23",
   "description": "Types definitions shared between node and browser environments",
   "author": "Mario Arnautou",
   "repository": {
