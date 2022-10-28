@@ -1,9 +1,8 @@
 import { SinonStub, stub } from 'sinon';
-import { Checksums, Project, Workspace } from '../src';
+import { Checksums, Project, Workspace, ISourcesChecksums } from '../src';
 import fastGlob from 'fast-glob';
 import hasha from 'hasha';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
-import { ISourcesChecksums } from '../lib';
 import { getProject } from './mocks/utils';
 import { fs as fsUtils } from '@microlambda/utils';
 

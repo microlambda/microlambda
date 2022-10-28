@@ -84,7 +84,7 @@ describe('[class] workspace', () => {
       stubs.cacheRead.rejects();
       stubs.cacheWrite.resolves();
       workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
-        expect(result.overall).toBeGreaterThan(0);
+        expect(result.overall).toBeGreaterThanOrEqual(0);
         expect(result.fromCache).toBe(false);
         expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
       }, (e) => {
