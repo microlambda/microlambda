@@ -84,7 +84,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 23 },
       ])
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444433-11', {
           1: ['@org/workspace-a', '@org/api'],
@@ -119,7 +119,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 23 },
       ])
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-443333-11152', {
           4: ['@org/workspace-b', '@org/app-a'],
@@ -165,7 +165,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 4 },
       ])
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-115555-33-1155-3-15-3-1', {
           1: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
@@ -213,7 +213,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 4 },
       ]);
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-33-12555-X', {
           1: ['@org/workspace-b', '@org/workspace-a', '@org/workspace-c'],
@@ -256,7 +256,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 4 },
       ])
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-33-1155-3-15-3-1', {
           1: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
@@ -290,7 +290,7 @@ describe('[class] Runner', () => {
         { resolve: false, options, delay: 23 },
       ])
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444333-1126-X', {
           1: ['@org/workspace-a', '@org/app-b'],
@@ -338,7 +338,7 @@ describe('[class] Runner', () => {
       stubs.invalidate?.onCall(1).rejects();
       stubs.invalidate?.onCall(2).resolves();
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-33-11-33-12556-X', {
           1: ['@org/workspace-b', '@org/workspace-a', '@org/workspace-c'],
@@ -878,7 +878,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 23 },
       ])
       try {
-        const runner = new Runner(project);
+        const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
         await expectObservable(Date.now(), execution$, '0-444433-11', {
           1: ['@org/workspace-a', '@org/api'],
