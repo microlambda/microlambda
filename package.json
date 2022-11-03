@@ -19,10 +19,10 @@
   },
   "scripts": {
     "postinstall": "husky install",
-    "lint": "node ./runner/cli/dist/index.js run lint",
+    "lint": "node ./runner/cli/dist/index.js run -p lint",
     "build:runner": "yarn workspaces foreach -pv --topological-dev run build-runner",
     "build": "node ./runner/cli/dist/index.js run build",
-    "test": "node ./runner/cli/dist/index.js run test"
+    "test": "node ./runner/cli/dist/index.js run -p test"
   },
   "workspaces": [
     "aws",
@@ -66,32 +66,56 @@
     "typescript": "^4.5.2"
   },
   "lint-staged": {
-    "types/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:types --fix"
+    "aws/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/aws"
     ],
     "cli/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:cli --fix"
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/cli"
+    ],
+    "client/**/*.{ts,tsx,json,yml,svelte}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/client"
     ],
     "core/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:core --fix"
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/core"
     ],
-    "client/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:client --fix"
-    ],
-    "handling/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:handling --fix"
-    ],
-    "plugin/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:plugin --fix"
-    ],
-    "server/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:server --fix"
-    ],
-    "testing/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:testing --fix"
+    "errors/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/errors"
     ],
     "generators/**/*.{ts,tsx,json,yml}": [
-      "yarn lint:generators --fix"
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/generators"
+    ],
+    "handling/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/handling"
+    ],
+    "layers/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/layers"
+    ],
+    "logger/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/logger"
+    ],
+    "plugin/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces serverless-microlambda"
+    ],
+    "runner/cli/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/runner-cli"
+    ],
+    "runner/core/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/runner-core"
+    ],
+    "server/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/server"
+    ],
+    "state/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/state"
+    ],
+    "testing/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/testing"
+    ],
+    "types/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/types"
+    ],
+    "utils/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/utils"
     ]
   }
 }
