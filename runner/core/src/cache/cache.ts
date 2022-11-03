@@ -89,7 +89,7 @@ export abstract class Cache {
         this._removeOutput(),
       ]);
     } catch (e) {
-      throw new MilaError(MilaErrorCode.INVALIDATING_CACHE_FAILED, 'Fatal: error invalidating cache. Next command runs could have unexpected result !', e);
+      this._logger?.warn('Error invalidating cache. Next command runs could have unexpected result !', e);
     }
   }
 }
