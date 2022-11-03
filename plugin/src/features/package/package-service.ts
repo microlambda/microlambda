@@ -135,6 +135,7 @@ export const packageService = async (
       if (existsSync(join(service.root, '.package'))) {
         rmSync(join(service.root, '.package'), { recursive: true, force: true });
       }
+      logger?.info("[package] Packaging service...");
       const packager = new Packager(useLayer, shouldRedeployLayer);
       packager.bundle(service.name, config?.packagr?.level || DEFAULT_LEVEL).subscribe(
         (evt) => {

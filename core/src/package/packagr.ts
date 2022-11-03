@@ -214,7 +214,7 @@ export class Packager {
 
   private async _yarnInstall(project: Project): Promise<void> {
     try {
-      await command('yarn install', {
+      await command('yarn install --no-immutable', {
         cwd: project.root,
         stdio: process.env.MILA_DEBUG?.split(',').includes('packagr') ? 'inherit' : 'pipe',
       });
