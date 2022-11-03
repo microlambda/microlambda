@@ -1,11 +1,10 @@
-import { ISecretConfig } from "../../config";
-import { putSecret } from "../../aws";
-import { ILogger } from "../../types";
+import { aws } from "@microlambda/aws";
+import { IBaseLogger, ISecretConfig } from "@microlambda/types";
 
 export const createUpdateSecrets = async (
   region: string,
   secrets: ISecretConfig[],
-  logger?: ILogger
+  logger?: IBaseLogger
 ): Promise<Map<ISecretConfig, string | undefined>> => {
   let failures = 0;
   logger?.info("Creating/updating secrets", secrets);
@@ -14,7 +13,7 @@ export const createUpdateSecrets = async (
     secrets.map(async (secret) => {
       try {
         logger?.debug("Creating/updating secret", secret);
-        const arn = await putSecret(
+        const arn = await aws.secretsManager.putSecret(
           region,
           secret.name,
           secret.value,

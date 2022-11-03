@@ -70,16 +70,8 @@
 </svelte:head>
 
 <Header/>
-<!--<nav>
-  <ul>
-    <li>Start project</li>
-    <li>Stop project</li>
-    <li>Restart project</li>
-    <li>See event logs/li>
-  </ul>
-</nav>-->
 <section class="main">
-	{#if $connected}
+  {#if $connected}
     <Sidebar/>
     <div class="panel">
         {#if $selected}
@@ -88,7 +80,7 @@
         <EventLog/>
       {/if}
     </div>
-	{:else}
+  {:else}
     <Disconnected/>
-	{/if}
+  {/if}
 </section>

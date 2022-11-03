@@ -1,0 +1,23 @@
+{
+  "extends": "../mila.shared.json",
+  "targets": {
+    "build": {
+      "cmd": [
+        "../node_modules/.bin/vite build"
+      ],
+      "src": {
+        "internals": [
+          "src/**/*.ts",
+          "tsconfig.json"
+        ],
+        "root": [
+          "tsconfig.json"
+        ]
+      },
+      "artifacts": [
+        "build/**/*",
+        "dist/**/*"
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "displayName": {
+    "name": "Companies service - Unit tests",
+    "color": "white"
+  },
+  "preset": "../../../jest-unit-services-preset.json"
+}

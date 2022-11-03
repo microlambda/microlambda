@@ -1,0 +1,67 @@
+{
+  "targets": {
+    "lint": {
+      "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
+      "src": {
+        "internals": [
+          "{src,test}/**/*.{ts,tsx,json,yml}",
+          "eslintrc"
+        ],
+        "root": [
+          "eslintrc"
+        ]
+      }
+    },
+    "lint:fix": {
+      "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml} --fix",
+      "src": {
+        "internals": [
+          "{src,test}/**/*.{ts,tsx,json,yml}",
+          "eslintrc"
+        ],
+        "root": [
+          "eslintrc"
+        ]
+      }
+    },
+    "publish": {
+      "cmd": "yarn npm publish --access public",
+      "src": {
+        "internals": [
+          "lib/**/*.js",
+          "dist/**/*.js",
+          "package.json"
+        ],
+        "deps": [
+          "lib/**/*.js",
+          "dist/**/*.js",
+          "package.json"
+        ]
+      }
+    },
+    "build": {
+      "cmd": [
+        "../node_modules/.bin/tsc --build"
+      ],
+      "src": {
+        "internals": [
+          "src/**/*.ts",
+          "tsconfig.json"
+        ],
+        "deps": [
+          "src/**/*.ts",
+          "tsconfig.json"
+        ],
+        "root": [
+          "tsconfig.json"
+        ]
+      },
+      "artifacts": [
+        "lib/**/*.js",
+        "lib/**/*.d.ts",
+        "dist/**/*.js",
+        "dist/**/*.d.ts"
+      ]
+    }
+  }
+}

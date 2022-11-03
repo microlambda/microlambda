@@ -1,148 +1,52 @@
-image: marioarnautou/node-chrome
+image: node:latest
 
-cache: &global_cache
+before_script:
+  - yarn install --immutable --json
+
+cache: &yarn_cache
   paths:
-    - node_modules/
+    - .yarn/cache
 
 stages:
-  - install
-  - lint
-  - build
-  - test
+  - validate
   - publish
 
-install:
-  stage: install
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-
 build:
-  stage: build
+  stage: validate
   cache:
-    <<: *global_cache
+    <<: *yarn_cache
   script:
-    - yarn install --immutable
-    - yarn workspaces list --json
-    # FIXME: For some reason, the following command do not work, so build each workspace separately
-    # - yarn workspaces foreach -pv --topological-dev run build
-    - yarn workspace @microlambda/types run build
-    - yarn workspace @microlambda/core run build
-    - yarn workspace @microlambda/generators run build
-    - yarn workspace @microlambda/client run build
-    - yarn workspace @microlambda/server run build
-    - yarn workspace @microlambda/cli run build
-    - yarn workspace @microlambda/handling run build
-    - yarn workspace serverless-microlambda run build
+    - npx --yes @microlambda/runner-cli@latest run build -t --force
   artifacts:
-    public: false
     paths:
-      - cli/dist
-      - types/lib
-      - generators/lib
-      - server/dist
-      - core/lib
-      - plugin/dist
-      - handling/dist
+      - ./*/dist
+      - ./*/lib
     expire_in: 1h
+
+lint:
+  stage: validate
+  cache:
+    <<: *yarn_cache
+  script:
+    - npx --yes  @microlambda/runner-cli@latest run lint -p --force
+
+test:
+  stage: validate
+  cache:
+    <<: *yarn_cache
+  script:
+    - npx --yes  @microlambda/runner-cli@latest run test -p --force
+  artifacts:
+    paths:
+      - ./*/coverage
 
 publish:
   stage: publish
   cache:
-    <<: *global_cache
+    <<: *yarn_cache
   script:
     - yarn install --immutable
     - 'echo "npmAuthToken: $NPM_TOKEN" >> .yarnrc.yml'
     - yarn publish:all
   only:
     - master
-
-lint-cli:
-  stage: lint
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn lint:cli
-
-lint-client:
-  stage: lint
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn lint:client
-
-lint-core:
-  stage: lint
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn lint:core
-
-lint-plugin:
-  stage: lint
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn lint:plugin
-
-lint-server:
-  stage: lint
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn lint:server
-
-lint-types:
-  stage: lint
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn lint:types
-
-test-cli:
-  stage: test
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn test:cli
-
-test-core:
-  stage: test
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn test:core
-
-test-plugin:
-  stage: test
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn test:plugin
-
-test-server:
-  stage: test
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn test:server
-
-test-handling:
-  stage: test
-  cache:
-    <<: *global_cache
-  script:
-    - yarn install --immutable
-    - yarn test:handling
-

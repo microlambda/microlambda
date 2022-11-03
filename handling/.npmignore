@@ -8,3 +8,10 @@ tsconfig.json
 src/**/*.ts
 coverage
 dist/**/*.map
+mila.json
+tsconfig.eslint.json
+readme.md
+.prettierrc
+.gitkeep
+.caches
+.eslintrc

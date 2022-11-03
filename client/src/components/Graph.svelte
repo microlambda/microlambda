@@ -3,7 +3,6 @@
   import * as d3 from 'd3';
   import { onMount } from 'svelte';
   import { graph } from '../store';
-  import { ServiceStatus, TypeCheckStatus } from '@microlambda/types';
   import { logger } from '../logger';
   import { createEventDispatcher } from 'svelte';
 
@@ -58,14 +57,14 @@
        */
       if (_node.port) {
         switch (_node.status) {
-          case ServiceStatus.CRASHED:
+          case 4:
             node.style = 'fill: #e53935; stroke: white;';
             break;
-          case ServiceStatus.RUNNING:
-          case ServiceStatus.STOPPING:
+          case 1:
+          case 2:
             node.style = 'fill: #43a047; stroke: white;';
             break;
-          case ServiceStatus.STARTING:
+          case 0:
             node.style = 'fill: #1565c0; stroke: white;';
             break;
           default:
@@ -73,13 +72,13 @@
         }
       } else {
         switch (_node.typeChecked) {
-          case TypeCheckStatus.ERROR:
+          case 3:
             node.style = 'fill: #e53935; stroke: white;';
             break;
-          case TypeCheckStatus.SUCCESS:
+          case 2:
             node.style = 'fill: #43a047; stroke: white;';
             break;
-          case TypeCheckStatus.CHECKING:
+          case 1:
             node.style = 'fill: #1565c0; stroke: white;';
             break;
           default:
@@ -98,7 +97,7 @@
       const node = g.edge(v);
       node.style = 'fill: transparent; stroke: white;';
     });
-    const render = new dagreD3.default.render();
+    const render = new dagreD3.render();
 
     const _svg = d3.select("svg");
     if (svg) {
@@ -130,8 +129,8 @@
   onMount(() => {
     dispatch('mounted', container);
     graph.subscribe((_nodes) => {
-      nodes = _nodes;
-      log.debug('Nodes updated', _nodes.length);
+      nodes = [..._nodes.packages, ..._nodes.services];
+      log.debug('Nodes updated', nodes.length);
       renderGraph();
     });
   });
@@ -145,11 +144,6 @@
 </script>
 
 <style>
-  #graph {
-    padding: 30px;
-    width: 100%;
-    height: 100%;
-  }
   svg {
     width: 100%;
     height: 100%;

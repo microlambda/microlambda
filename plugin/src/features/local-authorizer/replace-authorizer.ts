@@ -1,11 +1,10 @@
-import { ILogger, ServerlessInstance } from "../../types";
+import { IBaseLogger, ServerlessInstance, ILocalAuthorizerConfig, IPluginConfig } from "@microlambda/types";
 import { areAuthorizersMatching } from "./matching-authorizers";
-import { ILocalAuthorizerConfig, IPluginConfig } from "../../config";
 
 export const replaceAuthorizer = (
   serverless: ServerlessInstance,
   config: IPluginConfig | undefined,
-  logger?: ILogger
+  logger?: IBaseLogger
 ): void => {
   const swaps =
     config && config.localAuthorizer

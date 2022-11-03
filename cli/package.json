@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/cli",
-  "version": "0.3.0-alpha.0",
+  "version": "1.0.0-alpha.22",
   "description": "µlambda framework CLI ",
   "author": "Mario Arnautou & Arthur Brunck",
   "repository": {
@@ -13,26 +13,27 @@
     "microlambda": "dist/index.js",
     "mila": "dist/index.js"
   },
-  "scripts": {
-    "test": "../node_modules/.bin/jest",
-    "build": "../node_modules/.bin/tsc --build",
-    "start": "node lib/src/start.js start",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
-  },
   "keywords": [
     "serverless",
     "typescript",
     "lerna"
   ],
   "dependencies": {
+    "@microlambda/config": "workspace:*",
     "@microlambda/core": "workspace:*",
+    "@microlambda/errors": "workspace:*",
+    "@microlambda/generators": "workspace:*",
+    "@microlambda/logger": "workspace:*",
+    "@microlambda/remote-state": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
     "@microlambda/server": "workspace:*",
+    "@microlambda/utils": "workspace:*",
     "chalk": "^4.1.2",
+    "cli-table3": "^0.6.2",
     "commander": "^8.3.0",
     "figlet": "^1.5.2",
     "inquirer": "^8.2.0",
-    "ora": "^6.0.1",
+    "ora": "^5.4.1",
     "spinnies": "^0.5.1"
   },
   "devDependencies": {

@@ -16,3 +16,6 @@ cli/src/app.js
 
 .DS_Store
 **/.DS_Store
+*/.caches
+
+.mila

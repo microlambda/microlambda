@@ -3,22 +3,19 @@
  */
 
 import { env } from "./env/dev.env";
-import type {
-  IEventLog,
-  INodeSummary,
-  ServiceLogs,
-  LogLevel,
-  SchedulerStatus,
-} from "@microlambda/types";
+import type { IEventLog, INodeSummary, LogLevel, SchedulerStatus } from "@microlambda/types";
 import { logger } from "./logger";
 
 const log = logger.scope("(api)");
 
-export async function fetchGraph(): Promise<INodeSummary[]> {
+export interface IGraph {
+  packages: INodeSummary[],
+  services: INodeSummary[],
+};
+
+export async function fetchGraph(): Promise<IGraph> {
   const response = await fetch(`${env.apiUrl}/api/graph`);
-  const updatedGraph = await response.json();
-  log.info("Graph fetched", updatedGraph.length);
-  return updatedGraph;
+  return response.json();
 }
 
 async function _doActionOnService(
@@ -72,36 +69,54 @@ export async function stopAll(): Promise<void> {
   return _doActionOnGraph("stopAll");
 }
 
-export async function fetchServiceLogs(service: string): Promise<ServiceLogs> {
-  const response = await fetch(
-    `${env.apiUrl}/api/services/${encodeURIComponent(service)}/logs`
-  );
-  const serviceLogs = await response.json();
-  log.info("Service Logs updated", service, serviceLogs.length);
-  return serviceLogs;
+let connected = false;
+
+export async function healthCheck(): Promise<boolean> {
+  try {
+    if (!connected) {
+      log.info('API Connected');
+    }
+    connected = true;
+    await fetch(
+      `${env.apiUrl}/api/ping`
+    );
+    return true;
+  } catch (e) {
+    if (connected) {
+      log.warn('API Disconnected');
+    }
+    connected = false;
+    return false;
+  }
 }
 
-export async function fetchCompilationLogs(node: string): Promise<string[]> {
-  const response = await fetch(
-    `${env.apiUrl}/api/nodes/${encodeURIComponent(node)}/tsc/logs`
-  );
-  const compilationLogs = await response.json();
-  log.info("Build Logs updated", node, compilationLogs.length);
-  return compilationLogs;
+export interface ILogsResponse<T = string> {
+  data: T[];
+  metadata: {
+    count: number;
+    slice: [number, number];
+  }
 }
 
-export async function fetchEventLogs(
-  level: LogLevel = "info"
-): Promise<IEventLog[]> {
-  const response = await fetch(`${env.apiUrl}/api/logs?level=` + level);
-  const compilationLogs = await response.json();
-  log.info("Events Log updated", level, compilationLogs.length);
-  return compilationLogs;
+export async function fetchServiceLogs(service: string, slice: [number, number?]): Promise<ILogsResponse> {
+  return (await fetch(
+    `${env.apiUrl}/api/services/${encodeURIComponent(service)}/logs?slice=${slice.join(',')}`
+  )).json();
+}
+
+export async function fetchCompilationLogs(node: string, slice: [number, number?]): Promise<ILogsResponse> {
+  return (await fetch(
+    `${env.apiUrl}/api/nodes/${encodeURIComponent(node)}/tsc/logs?slice=${slice.join(',')}`
+  )).json();
+}
+
+export async function fetchEventLogs(slice: [number, number?], level: LogLevel = 'info'): Promise<ILogsResponse<IEventLog>> {
+  return (await fetch(`${env.apiUrl}/api/logs?slice=${slice.join(',')}&level=` + level)).json();
 }
 
 export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {
-  const response = await fetch(`${env.apiUrl}/api/scheduler/status`);
+  /*const response = await fetch(`${env.apiUrl}/api/scheduler/status`);
   const status = await response.json();
-  log.info("Scheduler status", status);
-  return status.status;
+  log.info("Scheduler status", status);*/
+  return 0;
 }

@@ -1,0 +1,17 @@
+{
+  "testEnvironment": "node",
+  "roots": ["<rootDir>/test/unit"],
+  "transform": {
+    "^.+\\.tsx?$": "ts-jest"
+  },
+  "testRegex": ".+\\.(test|spec)\\.tsx?$",
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+  "moduleNameMapper": {
+    "@/(.*)": "<rootDir>/src/$1"
+  },
+  "coverageDirectory": "./coverage/unit",
+  "collectCoverage": true,
+  "collectCoverageFrom": ["src/**/*.ts"],
+  "coverageReporters": ["json", "html", "lcov"],
+  "verbose": true
+}

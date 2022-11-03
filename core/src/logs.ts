@@ -2,7 +2,7 @@ import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs'
 import rimraf from 'rimraf';
 import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
-import { Logger } from './logger';
+import { EventsLog } from '@microlambda/logger';
 import { ServerlessAction } from '@microlambda/types';
 
 // TODO: Move in $service/.microlambda/{logs,hashes,package}
@@ -14,7 +14,7 @@ export const getLogsPath = (projectRoot: string, service: string, type: Serverle
   return join(getLogsDirectory(projectRoot), fieName);
 };
 
-export const recreateLogDirectory = (projectRoot: string, logger: Logger): void => {
+export const recreateLogDirectory = (projectRoot: string, logger: EventsLog): void => {
   const logsDirectory = getLogsDirectory(projectRoot);
   if (!existsSync(logsDirectory)) {
     // Logs directory does not exists => create it
@@ -23,7 +23,7 @@ export const recreateLogDirectory = (projectRoot: string, logger: Logger): void 
   }
   if (!lstatSync(logsDirectory).isDirectory()) {
     // Path <project-root>/.logs exists but is a file / symlink etc..=> weird => throw
-    logger.log('logs').error(`${logsDirectory} is not a directory`);
+    logger.scope('logs').error(`${logsDirectory} is not a directory`);
     process.exit(1);
   }
   rimraf.sync(logsDirectory);
@@ -40,7 +40,7 @@ export const createLogFile = (projectRoot: string, service: string, type: Server
   }
 };
 
-export const tailLogs = (serviceName: string, projectRoot: string, logger: Logger): void => {
+export const tailLogs = (serviceName: string, projectRoot: string, logger: EventsLog): void => {
   const logsDirectory = getLogsDirectory(projectRoot);
 
   stat(`${logsDirectory}/${serviceName}.log`, (exists) => {
@@ -51,7 +51,7 @@ export const tailLogs = (serviceName: string, projectRoot: string, logger: Logge
       });
     } else {
       logger
-        .log('logs')
+        .scope('logs')
         .error(
           `There is not logs for the ${serviceName} service or the service specified does not exist.\n\tPlease run 'mila start' command first!`,
         );

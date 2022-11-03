@@ -1,0 +1,37 @@
+{
+  "name": "@microlambda/aws",
+  "version": "1.0.0-alpha.22",
+  "description": "Low-level package for AWS SDK interactions",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/aws"
+  },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "keywords": [
+    "serverless",
+    "typescript",
+    "yarn",
+    "microservices",
+    "aws",
+    "monorepo"
+  ],
+  "dependencies": {
+    "@aws-sdk/client-acm": "^3.150.0",
+    "@aws-sdk/client-apigatewayv2": "^3.150.0",
+    "@aws-sdk/client-cloudformation": "^3.150.0",
+    "@aws-sdk/client-dynamodb": "^3.150.0",
+    "@aws-sdk/client-iam": "^3.150.0",
+    "@aws-sdk/client-lambda": "^3.150.0",
+    "@aws-sdk/client-route-53": "^3.150.0",
+    "@aws-sdk/client-s3": "^3.150.0",
+    "@aws-sdk/client-secrets-manager": "^3.42.0",
+    "@aws-sdk/lib-storage": "^3.154.0"
+  },
+  "devDependencies": {
+    "@microlambda/types": "workspace:*",
+    "jest": "^27.5.1",
+    "typescript": "^4.5.2"
+  }
+}

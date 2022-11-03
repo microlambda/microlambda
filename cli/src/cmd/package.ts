@@ -1,120 +1,27 @@
-/* eslint-disable no-console */
-import {
-  RecompilationScheduler,
-  getDefaultThreads,
-  getThreads,
-  Logger,
-  DependenciesGraph,
-  Service,
-  IPackageEvent,
-} from '@microlambda/core';
-import { beforeBuild, IBuildCmd, typeCheck } from './build';
-import chalk from 'chalk';
-import Spinnies from 'spinnies';
-import { printReport } from './deploy';
+import { EventsLog } from "@microlambda/logger";
+import { resolveProjectRoot } from '@microlambda/utils';
+import { EventLogsFileHandler } from '@microlambda/logger/lib';
+import { logger } from '../utils/logger';
+import { printCommand } from '../utils/build/print-cmd';
+import { beforePackage } from '../utils/package/before-package';
+import { IPackageCmd } from '../utils/package/cmd-options';
+import { packageServices } from '../utils/package/do-package';
+import { printReport } from '../utils/deploy/print-report';
 
-export interface IPackageCmd extends IBuildCmd {
-  C: string;
-  level: number;
-  recompile: boolean;
-}
-
-export const beforePackage = async (
-  cmd: IPackageCmd,
-  scheduler: RecompilationScheduler,
-  logger: Logger,
-): Promise<{ projectRoot: string; concurrency: number; services: Service[]; graph: DependenciesGraph }> => {
-  const concurrency = cmd.C ? getThreads(Number(cmd.C)) : getDefaultThreads();
-  const { projectRoot, graph } = await beforeBuild(cmd, scheduler, logger);
-  const service = cmd.S ? graph.getServices().find((s) => s.getName() === cmd.S) : undefined;
-  let services: Service[];
-  let target: Service | DependenciesGraph;
-  if (cmd.S) {
-    if (!service) {
-      console.error(chalk.red('Unknown service'), cmd.S);
-      process.exit(1);
-    }
-    services = [service];
-    target = service;
-  } else {
-    services = graph.getServices();
-    target = graph;
-  }
-  if (cmd.recompile) {
-    try {
-      console.info('\nBuilding dependency graph\n');
-      await typeCheck(scheduler, target, cmd.onlySelf, false);
-    } catch (e) {
-      process.exit(1);
-    }
-  }
-  return { projectRoot, concurrency, services, graph };
-};
-
-export const packageServices = (
-  scheduler: RecompilationScheduler,
-  concurrency: number,
-  target: Array<Service>,
-): Promise<Set<IPackageEvent>> => {
-  return new Promise<Set<IPackageEvent>>((resolve, reject) => {
-    const failures: Set<IPackageEvent> = new Set();
-    const spinnies = new Spinnies({
-      failColor: 'white',
-      succeedColor: 'white',
-      spinnerColor: 'cyan',
-    });
-    const onNext = (evt: IPackageEvent): void => {
-      switch (evt.type) {
-        case 'started': {
-          spinnies.add(evt.service.getName(), { text: `Packaging ${evt.service.getName()}` });
-          break;
-        }
-        case 'succeeded': {
-          spinnies.succeed(evt.service.getName(), {
-            text: `${evt.service.getName()} packaged ${chalk.cyan(evt.megabytes?.code + 'MB')}${
-              evt.megabytes?.layer ? chalk.cyan(` (using ${evt.megabytes?.layer + 'MB'} layer)`) : ''
-            } ${chalk.gray(evt.took + 'ms')}`,
-          });
-          break;
-        }
-        case 'failed': {
-          failures.add(evt);
-          spinnies.fail(evt.service.getName(), {
-            text: `Failed to package ${evt.service.getName()}`,
-          });
-          break;
-        }
-      }
-    };
-    const onError = async (error: unknown): Promise<void> => {
-      spinnies.stopAll();
-      return reject(error);
-    };
-    const onComplete = (): void => {
-      if (!failures.size) {
-        console.info('\nSuccessfully packaged 📦');
-      } else {
-        console.error('\nError packaging', failures.size, 'packages !');
-      }
-      return resolve(failures);
-    };
-    scheduler.setConcurrency(concurrency);
-    scheduler.package(target).subscribe(onNext, onError, onComplete);
-  });
-};
-
-export const packagr = async (cmd: IPackageCmd, logger: Logger, scheduler: RecompilationScheduler): Promise<void> => {
+export const packagr = async (cmd: IPackageCmd): Promise<void> => {
   try {
-    const { concurrency, services } = await beforePackage(cmd, scheduler, logger);
-    console.info('\nPackaging services\n');
-    const failures = await packageServices(scheduler, concurrency, services);
+    printCommand('📦 Packaging', cmd.s, true);
+    const projectRoot = resolveProjectRoot();
+    const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-package-${Date.now()}`)]);
+    const options = await beforePackage(projectRoot, cmd, eventsLog);
+    const { failures, success } = await packageServices(options);
     if (failures.size) {
-      await printReport(failures, services.length, 'package');
+      await printReport(success, failures, options.workspaces.length, 'package', options.verbose);
       process.exit(1);
     }
     process.exit(0);
   } catch (e) {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
   }
 };

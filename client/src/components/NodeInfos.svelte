@@ -16,9 +16,9 @@
     if ($selected) {
       logger.scope('<NodeInfos/>').debug(from, $selected.name, $selected.metrics);
       isService = $selected.type === 'service';
-      transpiled = $selected.metrics.lastTranspiled ? `${ago($selected.metrics.lastTranspiled)} (took ${numberWithThousandsSeparator($selected.metrics.transpileTook)}ms)` : '-';
-      typeChecked = $selected.metrics.lastTypeCheck ? `${ago($selected.metrics.lastTypeCheck)} (took ${numberWithThousandsSeparator($selected.metrics.typeCheckTook)}ms) ${$selected.metrics.typeCheckFromCache ? '[from cache]' : ''}` : '-';
-      started = $selected.metrics.lastStarted ? `${ago($selected.metrics.lastStarted)} (took ${numberWithThousandsSeparator($selected.metrics.startedTook)}ms)` : '-';
+      transpiled = $selected.metrics.transpile?.finishedAt ? `${ago($selected.metrics.transpile.finishedAt)} (took ${numberWithThousandsSeparator($selected.metrics.transpile.took)}ms)${$selected.metrics.transpile.fromCache ? ' [from cache]' : ''}` : '-';
+      typeChecked = $selected.metrics.typecheck?.finishedAt ? `${ago($selected.metrics.typecheck.finishedAt)} (took ${numberWithThousandsSeparator($selected.metrics.typecheck.took)}ms)${$selected.metrics.typecheck.fromCache ? ' [from cache]' : ''}` : '-';
+      started = $selected.metrics.start?.finishedAt ? `${ago($selected.metrics.start.finishedAt)} (took ${numberWithThousandsSeparator($selected.metrics.start.took)}ms)` : '-';
     }
   }
 

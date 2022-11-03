@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/types",
-  "version": "0.3.0-alpha.0",
+  "version": "1.0.0-alpha.22",
   "description": "Types definitions shared between node and browser environments",
   "author": "Mario Arnautou",
   "repository": {
@@ -9,12 +9,6 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "scripts": {
-    "build": "rm -rf ./lib && ../node_modules/.bin/tsc --build",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "test": "echo No tests for this package && exit 0"
-  },
   "keywords": [
     "serverless",
     "typescript",

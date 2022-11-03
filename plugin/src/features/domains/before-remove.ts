@@ -1,34 +1,29 @@
-import {
-  deleteBasePathMapping,
-  getBasePathMapping,
-  getCustomDomain,
-} from "../../aws";
-import { IDomainConfig } from "../../config";
-import { ILogger } from "../../types";
+import { aws } from "@microlambda/aws";
+import { IBaseLogger, IDomainConfig } from "@microlambda/types";
 
 export const beforeRemove = async (
   region: string,
   domain?: IDomainConfig,
-  logger?: ILogger
+  logger?: IBaseLogger
 ): Promise<void> => {
   // delete base path mapping if exists
-  if (!domain) {
+  if (!domain || domain.domainName === 'null') {
     logger?.info("No custom domain configured");
     return;
   }
-  const domainExists = await getCustomDomain(region, domain.domainName, logger);
+  const domainExists = await aws.apiGateway.getCustomDomain(region, domain.domainName, logger);
   if (!domainExists) {
     logger?.info("No related domain found. Skipping...");
     return;
   }
-  const mapping = await getBasePathMapping(
+  const mapping = await  aws.apiGateway.getBasePathMapping(
     region,
     domain.domainName,
     domain.basePath,
     logger
   );
   if (mapping) {
-    await deleteBasePathMapping(
+    await  aws.apiGateway.deleteBasePathMapping(
       region,
       domain.domainName,
       domain.basePath,

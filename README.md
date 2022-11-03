@@ -18,4 +18,6 @@ The project is maintained as a monorepo (using yarn workspaces) and contains the
 ## Getting started
 
 1. Clone this repo
-2. Install dependencies `yarn`
+2. Install dependencies with `yarn`
+3. Mila is designed to build itself, to do so, build mila-runner using ``yarn build:runner``
+4. Once the runner is built, use it to build the entire project ``yarn build``

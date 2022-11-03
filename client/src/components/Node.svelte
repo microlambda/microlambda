@@ -1,5 +1,4 @@
 <script lang="ts">
-  import * as ansi from 'ansi-html';
   import NodeInfos from './NodeInfos.svelte';
   import NodeActions from './NodeActions.svelte';
   import type { INodeSummary } from '@microlambda/types';
@@ -12,9 +11,6 @@
   import { selected } from '../store';
   import { fade } from 'svelte/transition';
   import { env } from '../env/dev.env';
-
-  const fromAnsi = ansi.default;
-
   const tabs: ITab[] = [
     { name: 'Dependencies graph', component: DependenciesGraph },
     { name: 'Service logs', component: ServiceLogs },

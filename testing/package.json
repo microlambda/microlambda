@@ -1,17 +1,14 @@
 {
   "name": "@microlambda/testing",
-  "version": "0.0.1-alpha.0",
+  "version": "1.0.0-alpha.22",
   "description": "Microlambda testing utilities",
   "author": "Mario Arnautou",
   "repository": {
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "license": "MIT",
-  "scripts": {
-    "build": "rm -rf ./dist && ../node_modules/.bin/tsc",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "test": "echo No tests for this package && exit 0"
+  "dependencies": {
+    "aws-lambda": "^1.0.7"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.85",

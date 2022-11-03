@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/server",
-  "version": "0.3.0-alpha.0",
+  "version": "1.0.0-alpha.22",
   "description": "µlambda framework server",
   "author": "Mario Arnautou",
   "repository": {
@@ -8,16 +8,6 @@
   },
   "license": "MIT",
   "main": "dist/index.js",
-  "scripts": {
-    "test": "../node_modules/.bin/jest",
-    "build": "yarn run pre:build && ../node_modules/.bin/tsc --build && yarn run post:build",
-    "build:watch": "../node_modules/.bin/tsc --watch",
-    "pre:build": "rm -rf ./dist",
-    "post:build": "cp -r ../client/build ./dist/static",
-    "start": "node dist/index.js",
-    "prettier": "../node_modules/.bin/prettier --write '{src,test}/**/*.{ts,tsx,json,yml}'",
-    "lint": "../node_modules/.bin/eslint '{src,test}/**/*.{ts,tsx,json,yml}'"
-  },
   "keywords": [
     "serverless",
     "typescript",
@@ -26,7 +16,12 @@
   "dependencies": {
     "@microlambda/client": "workspace:*",
     "@microlambda/core": "workspace:*",
+    "@microlambda/logger": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
+    "rxjs": "^7.5.7",
     "socket.io": "^4.4.0"
   },
   "devDependencies": {

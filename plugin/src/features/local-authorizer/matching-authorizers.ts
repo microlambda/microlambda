@@ -1,4 +1,4 @@
-import { IAuthorizerConfig } from "../../types";
+import { IAuthorizerConfig } from "@microlambda/types";
 
 export const areAuthorizersMatching = (
   auth1: Partial<IAuthorizerConfig> | undefined,

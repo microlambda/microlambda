@@ -1,0 +1,99 @@
+openapi: 3.0.0
+info:
+  title: Companies
+  version: '1.0'
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  '/v4/companies/{name}':
+    parameters:
+      - schema:
+          type: string
+        name: name
+        in: path
+        required: true
+        description: Requested Company name
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          description: 'If no error, returns the requested ''Company'' object'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        '403':
+          description: Returns a 'Forbidden' error if the current user does not have the permission to list portals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-v4-companies-name
+      description: Gets the information about the Company related to the given Company name
+  /v4/companies:
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses:
+        '200':
+          description: 'If no error, returns the list of every Company'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Company'
+        '403':
+          description: Returns a 'Forbidden' error if the current user does not have the permission to update a portal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-v4-companies
+      description: Lists every Company inside the Data Portal
+components:
+  schemas:
+    Error:
+      title: Error
+      type: object
+      properties:
+        message:
+          type: string
+        X-Request-Id:
+          type: string
+      required:
+        - message
+        - X-Request-Id
+    ErrorWithData:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            data:
+              type: string
+          required:
+            - data
+    Company:
+      title: Company
+      type: object
+      properties:
+        pk:
+          type: string
+          description: Company ID
+        sk:
+          type: string
+        companyName:
+          type: string
+        sort_field:
+          type: string
+        relatedPortal:
+          type: string
+          description: Related Portal ID
+      required:
+        - pk
+        - companyName
+        - sort_field
+  securitySchemes:
+    DP_AUTH_ID_TOKEN:
+      type: oauth2

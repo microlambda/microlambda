@@ -1,16 +1,17 @@
-import { getTsConfig, Service } from "@microlambda/core";
+import { Workspace } from "@microlambda/core";
 import { watch } from "chokidar";
-import { ILogger } from "../../types";
 import { transpile } from "./compile";
+import { IBaseLogger } from '@microlambda/types';
+import { getTsConfig } from '@microlambda/utils';
 
-export const watchFiles = (service: Service, logger?: ILogger): void => {
+export const watchFiles = (service: Workspace, logger?: IBaseLogger): void => {
   const files: string[] = [];
   if (!service) {
     logger?.error(`Cannot watch: service not resolved`);
     return;
   }
-  for (const dep of new Set([...service.getDependencies(), service])) {
-    const tscConfig = getTsConfig(dep.getLocation());
+  for (const dep of new Set([...service.dependencies(), service])) {
+    const tscConfig = getTsConfig(dep.root);
     files.push(...tscConfig.fileNames);
   }
   files.forEach((f) => logger?.debug(`Watching ${f}`));

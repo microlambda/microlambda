@@ -1,0 +1,20 @@
+{
+  "name": "@microlambda/remote-state",
+  "version": "1.0.0-alpha.22",
+  "description": "Utilities to manage Microlambda remote state",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+  },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "dependencies": {
+    "@microlambda/aws": "workspace:*",
+    "@microlambda/config": "workspace:*",
+    "@microlambda/logger": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
+    "aws-sdk": "^2.1231.0",
+    "dynamodels": "^1.6.2"
+  }
+}

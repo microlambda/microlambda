@@ -1,8 +1,6 @@
 import { IConfig } from './config/config';
-import { Logger } from './logger';
-import { Workspace } from '@yarnpkg/core';
-import { getName } from './yarn/project';
-import { Socket } from 'net';
+import { EventsLog } from '@microlambda/logger';
+import { Workspace } from '@microlambda/runner-core';
 
 export interface IServicePortsConfig {
   lambda: number;
@@ -26,13 +24,13 @@ export type PortMap = {
 export const resolvePorts = (
   services: Workspace[],
   config: IConfig,
-  logger?: Logger,
+  logger?: EventsLog,
   defaultPorts = { lambda: 2001, http: 3001, websocket: 6001 },
 ): PortMap => {
-  logger?.log('port').debug('Resolving port from config', config);
+  logger?.scope('port').debug('Resolving port from config', config);
   const result: PortMap = {};
   services.forEach((service) => {
-    const name = getName(service);
+    const name = service.name;
     const inConfig = config.ports[name] != null;
     let fromConfig: Partial<IServicePortsConfig> = {};
     if (inConfig) {
@@ -47,29 +45,6 @@ export const resolvePorts = (
     defaultPorts.lambda++;
     defaultPorts.websocket++;
   });
-  logger?.log('port').debug('Ports resolved', result);
+  logger?.scope('port').debug('Ports resolved', result);
   return result;
-};
-
-export const isPortAvailable = async (port: number, host = '127.0.0.1', timeout = 400): Promise<boolean> => {
-  return new Promise((resolve) => {
-    const socket = new Socket();
-    let status: 'open' | 'closed';
-    socket.on('connect', () => {
-      status = 'open';
-      socket.destroy();
-    });
-    socket.setTimeout(timeout);
-    socket.on('timeout', () => {
-      status = 'closed';
-      socket.destroy();
-    });
-    socket.on('error', () => {
-      status = 'closed';
-    });
-    socket.on('close', () => {
-      resolve(status === 'open');
-    });
-    socket.connect(port, host);
-  });
 };

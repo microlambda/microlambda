@@ -1,0 +1,20 @@
+.idea/
+.vscode/
+
+cli/src/app.js
+
+# Yarn (no zero-installs https://stackoverflow.com/questions/58550439/am-i-meant-to-commit-yarns-pnp-js-file)
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.pnp.*
+**/node_modules/
+
+**/lib/
+**/coverage/
+**/dist
+**/.caches/
+
+.DS_Store
+**/.DS_Store
+**/.scannerwork

@@ -1,0 +1,35 @@
+{
+  "name": "@dataportal/companies",
+  "version": "1.0.0",
+  "description": "Data Portal Companies Micro-Service",
+  "author": "Data Portal Development Team",
+  "private": true,
+  "scripts": {
+    "start": "../../../node_modules/.bin/sls offline start --host localhost --port 3011",
+    "stop": "../../../node_modules/.bin/kill-port --port 3011",
+    "clear": "yarn run clear:modules && yarn run clear:lib && yarn run clear:package",
+    "clear:modules": "rm -rf ./node_modules",
+    "clear:lib": "rm -rf ./lib",
+    "clear:package": "rm -rf ./.package",
+    "test": "yarn run test:unit && yarn run test:functional",
+    "test:unit": "../../../node_modules/.bin/dotenv -e ../../../.env.tests-ci -- ../../../node_modules/.bin/jest --config jest.config.unit.json --colors --runInBand --forceExit",
+    "test:functional": "../../../node_modules/.bin/dotenv -e ../../../.env.tests-ci-functional -- ../../../node_modules/.bin/jest --config jest.config.functional.json --colors --runInBand --forceExit",
+    "build": "../../../node_modules/.bin/tsc",
+    "print": "cat serverless.yml",
+    "prune": "../../../node_modules/.bin/sls prune -n 3",
+    "create-domain": "../../../node_modules/.bin/sls create_domain",
+    "deploy": "../../../node_modules/.bin/sls deploy"
+  },
+  "dependencies": {
+    "@dataportal/middleware": "workspace:*",
+    "@dataportal/models": "workspace:*",
+    "@dataportal/permissions-utils": "workspace:*",
+    "@dataportal/shared": "workspace:*",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "@dataportal/test-helpers": "workspace:*",
+    "@dataportal/types": "workspace:*",
+    "@types/uuid": "^3.4.7"
+  }
+}
