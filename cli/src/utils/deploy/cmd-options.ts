@@ -5,4 +5,5 @@ export interface IDeployCmd extends IPackageCmd {
   prompt: boolean;
   onlyPrompt: boolean;
   forceDeploy: boolean;
+  skipLock: boolean;
 }
