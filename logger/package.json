@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/logger",
-  "version": "1.0.0-alpha.24",
+  "version": "1.0.0-alpha.25",
   "description": "µlambda framework logger",
   "author": "Mario Arnautou",
   "repository": {
