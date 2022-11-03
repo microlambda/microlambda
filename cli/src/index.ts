@@ -242,6 +242,7 @@ program
   .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
   .option('-s <service>, --service <service>', 'the services you want to deploy (coma-seperated list)')
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
   .action(

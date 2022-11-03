@@ -37,32 +37,40 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
   await printAccountInfos();
   const currentRevision = currentSha1();
-  const lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
-  if (await lock.isLocked()) {
-    logger.lf();
-    logger.info('🔒 Environment is locked. Waiting for the lock to be released');
-    await lock.waitLockToBeReleased();
+
+  let lock: LockManager | undefined;
+  if (!cmd.skipLock) {
+    lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
+    if (await lock.isLocked()) {
+      logger.lf();
+      logger.info('🔒 Environment is locked. Waiting for the lock to be released');
+      await lock.waitLockToBeReleased();
+    }
+    await lock.lock();
   }
-  await lock.lock();
-  const releaseLock = async (): Promise<void> => {
-    logger.lf();
-    const lockRelease = ora('🔒 Releasing lock...');
-    await lock.releaseLock();
-    lockRelease.succeed('🔒 Lock released !');
+
+  const releaseLock = async (msg?: string): Promise<void> => {
+    if (lock) {
+      try {
+        logger.lf();
+        const lockRelease = ora(msg || '🔒 Releasing lock...');
+        await lock?.releaseLock();
+        lockRelease.succeed('🔒 Lock released !');
+      } catch (e) {
+        logger.error('Error releasing lock, you probably would have to do it yourself !', e);
+        throw e;
+      }
+    }
   }
   process.on('SIGINT', async () => {
     eventsLog.scope('process').warn('SIGINT signal received');
-    logger.lf();
-    const lockRelease = ora('🔒 SIGINT received, releasing lock...');
     try {
-      await lock.releaseLock();
-
+      await releaseLock('🔒 SIGINT received, releasing lock...');
+      process.exit(0);
     } catch (e) {
       logger.error('Error releasing lock, you probably would have to do it yourself !');
       process.exit(2);
     }
-    lockRelease.succeed('🔒 Lock released !');
-    process.exit(0);
   });
   try {
     const operations = await resolveDeltas(env, project, cmd, state, config, eventsLog);
