@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/generators",
-  "version": "1.0.0-alpha.25",
+  "version": "1.0.0-alpha.26",
   "description": "Generates services, packages, handlers and serverless components",
   "authors": [
     {
