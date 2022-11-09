@@ -9,6 +9,9 @@
       "url": "https://github.com/MarioArnt"
     }
   ],
+  "scripts": {
+    "test": "../node_modules/.bin/jest"
+  },
   "main": "lib/index.js",
   "keywords": [
     "node",
