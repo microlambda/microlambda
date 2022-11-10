@@ -31,7 +31,7 @@ export class Project extends Workspace {
   async loadWorkspaces(logger?: EventsLog): Promise<void> {
     // Load workspaces
     if (this.pkg.workspaces && this.pkg.workspaces.length > 0) {
-      const patterns = this.pkg.workspaces.map(wks => glob(join(this.root, wks, 'package.json'))).reduce((acc, val) => acc = acc.concat(val), []);
+      const patterns = this.pkg.workspaces.map(wks => glob(join(this.root, wks, 'package.json').replaceAll('\\', '/'))).reduce((acc, val) => acc = acc.concat(val), []);
       for await (let root of patterns) {
         root = root.replace(/[\\/]package\.json$/, '');
         try {
