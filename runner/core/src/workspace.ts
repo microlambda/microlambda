@@ -148,7 +148,7 @@ export class Workspace {
     }
 
     const rel = relative(git.root, this.root);
-    const files = patterns.map((pattern) => glob(join(rel, pattern))).reduce((acc, val) => acc = acc.concat(val), []);
+    const files = patterns.map((pattern) => glob(join(rel, pattern).replaceAll('\\', '/'))).reduce((acc, val) => acc = acc.concat(val), []);
     return diffs.some((diff) => files.includes(diff));
   }
 

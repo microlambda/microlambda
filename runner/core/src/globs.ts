@@ -76,7 +76,7 @@ export class GlobsHelpers {
   }
 
   private _resolveGlobs(globs: string[], relativeTo: string): string[] {
-    return globs.map((s) => glob(join(relativeTo, s))).reduce((acc, val) => {
+    return globs.map((s) => glob(join(relativeTo, s).replaceAll('\\', '/'))).reduce((acc, val) => {
       acc = acc.concat(val);
       return acc;
     }, []);
