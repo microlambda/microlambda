@@ -1,8 +1,9 @@
 import {LocalCache, Workspace, Checksums} from "../src";
-import { stub } from "sinon";
+import { spy, stub } from 'sinon';
 import { promises as nodeFs } from 'fs';
 import { F_OK } from 'constants';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
+import { EventsLog, EventsLogger } from '@microlambda/logger';
 
 describe('[class] Cache manager', () => {
   describe('[method] read()', () => {
@@ -519,7 +520,7 @@ describe('[class] Cache manager', () => {
       expect(unlink.calledWith('/tmp/fake/location/.caches/foo/output.json'))
       expect(unlink.calledWith('/tmp/fake/location/.caches/foo/checksums.json'))
     });
-    it('should throw a fatal error and warn user if cache existence cannot be determined', async () => {
+    it('should warn user if cache existence cannot be determined', async () => {
       const access = stub(nodeFs, 'access');
       const unlink = stub(nodeFs, 'unlink');
       access.rejects('Unknown error')
@@ -533,20 +534,22 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new LocalCache(workspace as Workspace, 'foo');
-      try {
-        await cache.invalidate();
-        access.restore();
-        unlink.restore();
-        fail('should throw');
-      } catch (e) {
-        access.restore();
-        unlink.restore();
-        expect(e instanceof MilaError).toBe(true);
-        expect((e as MilaError).code).toBe(MilaErrorCode.INVALIDATING_CACHE_FAILED);
+      const loggerWarn = spy();
+      const logger: Partial<EventsLog> = {
+        scope: () => ({
+          debug: () => {},
+          info: () => {},
+          error: () => {},
+          warn: loggerWarn,
+        } as unknown as  EventsLogger)
       }
+      const cache = new LocalCache(workspace as Workspace, 'foo', undefined, undefined, logger as EventsLog);
+      await cache.invalidate();
+      access.restore();
+      unlink.restore();
+      expect(loggerWarn.getCalls().some((call) => call.args[0].includes('Error invalidating cache'))).toBe(true);
     });
-    it('should throw a fatal error and warn user if caches exist but cannot be removed', async () => {
+    it('should warn user if caches exist but cannot be removed', async () => {
       const access = stub(nodeFs, 'access');
       const unlink = stub(nodeFs, 'unlink');
       access.resolves()
@@ -561,18 +564,20 @@ describe('[class] Cache manager', () => {
           }
         }
       }
-      const cache = new LocalCache(workspace as Workspace, 'foo');
-      try {
-        await cache.invalidate();
-        access.restore();
-        unlink.restore();
-        fail('should throw');
-      } catch (e) {
-        access.restore();
-        unlink.restore();
-        expect(e instanceof MilaError).toBe(true);
-        expect((e as MilaError).code).toBe(MilaErrorCode.INVALIDATING_CACHE_FAILED);
+      const loggerWarn = spy();
+      const logger: Partial<EventsLog> = {
+        scope: () => ({
+          debug: () => {},
+          info: () => {},
+          error: () => {},
+          warn: loggerWarn,
+        } as unknown as  EventsLogger)
       }
+      const cache = new LocalCache(workspace as Workspace, 'foo', undefined, undefined, logger as EventsLog);
+      await cache.invalidate();
+      access.restore();
+      unlink.restore();
+      expect(loggerWarn.getCalls().some((call) => call.args[0].includes('Error invalidating cache'))).toBe(true);
     });
   });
 });
