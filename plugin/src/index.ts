@@ -224,8 +224,9 @@ class ServerlessMicrolambdaPlugin {
       process.exit(1);
     }
     if (!this._service) {
-      this._log.debug(`cwd: ${process.cwd()}`);
-      this._service = Array.from(this._graph.services.values()).find((s) => s.root === process.cwd());
+      const normalizedCwd = process.cwd().replaceAll('\\', '/');
+      this._log.debug(`cwd: ${normalizedCwd}`);
+      this._service = Array.from(this._graph.services.values()).find((s) => s.root === normalizedCwd);
       if (!this._service) {
         this._log.error(`Error: cannot resolve microlambda service`);
         process.exit(1);
