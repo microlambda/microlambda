@@ -75,6 +75,7 @@ export class Packager {
           throw new Error('Assertion failed: package path should have been resolved');
         }
         writeJSONSync(join(this._packagePath, 'bundle-metadata.json'), { megabytes, took: Date.now() - started });
+        // TODO: remove transientProject / tmp folder
       };
       pkg()
         .then(() => obs.complete())
