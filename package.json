@@ -106,7 +106,7 @@
       "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/server"
     ],
     "state/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/state"
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/remote-state"
     ],
     "testing/**/*.{ts,tsx,json,yml}": [
       "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/testing"
