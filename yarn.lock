@@ -2552,7 +2552,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@microlambda/aws@1.0.0-alpha.29, @microlambda/aws@workspace:*, @microlambda/aws@workspace:aws":
+"@microlambda/aws@1.0.0-alpha.30, @microlambda/aws@workspace:*, @microlambda/aws@workspace:aws":
   version: 0.0.0-use.local
   resolution: "@microlambda/aws@workspace:aws"
   dependencies:
@@ -2643,7 +2643,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/core@1.0.0-alpha.29, @microlambda/core@workspace:*, @microlambda/core@workspace:core":
+"@microlambda/core@1.0.0-alpha.30, @microlambda/core@workspace:*, @microlambda/core@workspace:core":
   version: 0.0.0-use.local
   resolution: "@microlambda/core@workspace:core"
   dependencies:
@@ -2721,7 +2721,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/layers@1.0.0-alpha.29, @microlambda/layers@workspace:layers":
+"@microlambda/layers@1.0.0-alpha.30, @microlambda/layers@workspace:layers":
   version: 0.0.0-use.local
   resolution: "@microlambda/layers@workspace:layers"
   dependencies:
@@ -2774,7 +2774,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/runner-core@1.0.0-alpha.29, @microlambda/runner-core@workspace:*, @microlambda/runner-core@workspace:runner/core":
+"@microlambda/runner-core@1.0.0-alpha.30, @microlambda/runner-core@workspace:*, @microlambda/runner-core@workspace:runner/core":
   version: 0.0.0-use.local
   resolution: "@microlambda/runner-core@workspace:runner/core"
   dependencies:
@@ -2832,7 +2832,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/types@1.0.0-alpha.29, @microlambda/types@workspace:*, @microlambda/types@workspace:types":
+"@microlambda/types@1.0.0-alpha.30, @microlambda/types@workspace:*, @microlambda/types@workspace:types":
   version: 0.0.0-use.local
   resolution: "@microlambda/types@workspace:types"
   languageName: unknown
@@ -11932,11 +11932,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "serverless-microlambda@workspace:plugin"
   dependencies:
-    "@microlambda/aws": 1.0.0-alpha.29
-    "@microlambda/core": 1.0.0-alpha.29
-    "@microlambda/layers": 1.0.0-alpha.29
-    "@microlambda/runner-core": 1.0.0-alpha.29
-    "@microlambda/types": 1.0.0-alpha.29
+    "@microlambda/aws": 1.0.0-alpha.30
+    "@microlambda/core": 1.0.0-alpha.30
+    "@microlambda/layers": 1.0.0-alpha.30
+    "@microlambda/runner-core": 1.0.0-alpha.30
+    "@microlambda/types": 1.0.0-alpha.30
     chokidar: ^3.5.2
     hasha: ^5.2.2
     joi: ^17.4.2
