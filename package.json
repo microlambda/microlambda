@@ -34,6 +34,7 @@
     "docs/website",
     "logger",
     "generators",
+    "environments",
     "errors",
     "utils",
     "layers",
@@ -116,6 +117,9 @@
     ],
     "utils/**/*.{ts,tsx,json,yml}": [
       "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/utils"
+    ],
+    "environments/**/*.{ts,tsx,json,yml}": [
+      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/environments"
     ]
   }
 }

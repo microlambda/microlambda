@@ -1,0 +1,11 @@
+coverage/
+src/
+.caches
+**/*.map
+outdated
+.eslintignore
+.eslintrc
+.prettierrc
+jest.config.json
+mila.json
+tsconfig.eslint.json
