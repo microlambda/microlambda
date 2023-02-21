@@ -30,5 +30,6 @@ export const createEnv = async (name: string): Promise<void> => {
     }
   }]);
   await state.createEnvironment(name, answers.regions.split(','));
+  // TODO: Prompt replicate secrets/params from
   logger.success('Environment successfully initialized. Perform your first deploy using yarn mila deploy');
 }

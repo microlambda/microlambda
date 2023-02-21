@@ -34,6 +34,7 @@ export const createReplicate = async (env: string, region: string): Promise<void
   }
   await lock.lock();
   await state.createReplicate(env, region);
+  // TODO: replicate all related secrets/params
   await lock.releaseLock();
   logger.success('Replicate order created. On next deploy, environment resources will be replicated in', region);
   logger.success(`Run yarn mila deploy -e ${env} to create new resources on AWS Cloud`);

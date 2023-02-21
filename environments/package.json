@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@microlambda/aws": "workspace:*",
+    "@microlambda/config": "workspace:*",
     "@microlambda/errors": "workspace:*",
     "@microlambda/logger": "workspace:*",
+    "@microlambda/remote-state": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "@microlambda/utils": "workspace:*",
     "dotenv": "^16.0.3"

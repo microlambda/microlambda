@@ -34,6 +34,7 @@ export const destroyReplicate = async (env: string, region: string): Promise<voi
   }
   await lock.lock();
   await state.removeReplicate(env, region);
+  // TODO: delete all related secrets/params
   await lock.releaseLock();
   logger.success('Replicate destruction order created. On next deploy, environment resources will be destroyed from', region);
   logger.success(`Run yarn mila deploy -e ${env} to remove resources from AWS Cloud`);
