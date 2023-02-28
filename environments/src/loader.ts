@@ -20,7 +20,8 @@ export class EnvironmentLoader {
 
   constructor(readonly project: Project, private readonly _logger?: IBaseLogger) {
     const config = new ConfigReader(this.project.root);
-    this.region = config.rootConfig.defaultRegion;
+    this.region = process.env.AWS_REGION || config.rootConfig.defaultRegion;
+    this._logger?.info('[env] Resolving SSM parameters in', this.region, 'region');
   }
 
   async loadGlobal(env: string): Promise<ILoadedEnv> {

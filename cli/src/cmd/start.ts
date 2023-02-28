@@ -21,6 +21,7 @@ export const start = async (
   options: IStartOptions,
 ): Promise<void> => {
   logger.info(showOff());
+  // TODO: Very AWS token
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-start-${Date.now()}`)]);
   const { project } = await init(projectRoot, eventsLog);

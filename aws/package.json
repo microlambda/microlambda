@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/aws",
-  "version": "1.0.0-alpha.29",
+  "version": "1.1.0-alpha.0",
   "description": "Low-level package for AWS SDK interactions",
   "author": "Mario Arnautou",
   "repository": {

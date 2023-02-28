@@ -15,10 +15,10 @@
     { name: 'Dependencies graph', component: DependenciesGraph },
     { name: 'Service logs', component: ServiceLogs },
     { name: 'Compilation Logs', component: BuildLogs },
+    { name: 'Environments Variables', component: BuildLogs },
   ];
 
   let node: INodeSummary;
-
   let height = 0;
   let width = 0;
 </script>

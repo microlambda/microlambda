@@ -3,10 +3,9 @@ import { maxAttempts } from "../max-attempts";
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 
 /**
- * Get a parameter value
+ * Get a SSM parameter value
  * @param region - the region where the parameter is located
  * @param name - the parameter's name
- * @param version
  * @param logger - A logger instance to print logs
  */
 export const getParameterValue = async (

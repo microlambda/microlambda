@@ -104,7 +104,7 @@ export class Scheduler {
       to: [...this._targets],
       watch: true,
     });
-    const build$ = this._runners.transpile.runCommand({
+    const build$ = this._runners.build.runCommand({
       cmd: 'build',
       mode: 'topological',
       force: false,
