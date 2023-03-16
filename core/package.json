@@ -19,6 +19,7 @@
   ],
   "dependencies": {
     "@hapi/joi": "^17.1.1",
+    "@microlambda/environments": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "@microlambda/types": "workspace:*",

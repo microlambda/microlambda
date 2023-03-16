@@ -7,9 +7,15 @@ import { DotenvManager } from './dotenv-manager';
 
 interface ILoadedEnvironmentVariable {
   key: string;
-  value: string;
+  value: string | undefined;
   from: string;
   ssm?: string;
+}
+
+export enum SSMResolverMode {
+  ERROR,
+  WARN,
+  IGNORE,
 }
 
 type ILoadedEnv = Array<ILoadedEnvironmentVariable>;
@@ -24,12 +30,26 @@ export class EnvironmentLoader {
     this._logger?.info('[env] Resolving SSM parameters in', this.region, 'region');
   }
 
-  async loadGlobal(env: string): Promise<ILoadedEnv> {
+  async injectEnvironmentVariables(
+      env: string, service: string | Workspace,
+      overwrite = true,
+      ssmMode = SSMResolverMode.ERROR,
+    ): Promise<void> {
+    const global = await this.loadGlobal(env, ssmMode);
+    const serviceScoped = await this.loadServiceScoped(env, service);
+    for (const variable of [...global, ...serviceScoped]) {
+      if (overwrite || !process.env[variable.key] && variable.value) {
+        process.env[variable.key] = variable.value;
+      }
+    }
+  }
+
+  async loadGlobal(env: string, ssmMode = SSMResolverMode.ERROR): Promise<ILoadedEnv> {
     this._logger?.info('Loading root .env');
-    const sharedEnv = await this._loadAndInterpolateSecrets();
+    const sharedEnv = await this._loadAndInterpolateSecrets(undefined, undefined, ssmMode);
     sharedEnv.forEach((v) => this._printVariable(v));
     this._logger?.info(`Loading root .env.${env}`);
-    const specificEnv = await this._loadAndInterpolateSecrets(env);
+    const specificEnv = await this._loadAndInterpolateSecrets(env, undefined, ssmMode);
     specificEnv.forEach((v) => this._printVariable(v));
     return [ ...sharedEnv, ...specificEnv ];
   }
@@ -38,17 +58,25 @@ export class EnvironmentLoader {
     this._logger?.info(`  - ${v.key}=${v.value}`)
   }
 
-  async loadServiceScoped(env: string, service: string | Workspace): Promise<ILoadedEnv> {
+  async loadServiceScoped(
+      env: string,
+      service: string | Workspace,
+      ssmMode = SSMResolverMode.ERROR,
+    ): Promise<ILoadedEnv> {
     this._logger?.info('Loading service .env');
-    const sharedEnv = await this._loadAndInterpolateSecrets(undefined, service);
+    const sharedEnv = await this._loadAndInterpolateSecrets(undefined, service, ssmMode);
     sharedEnv.forEach((v) => this._printVariable(v));
     this._logger?.info(`Loading service .env.${env}`);
-    const specificEnv = await this._loadAndInterpolateSecrets(env, service);
+    const specificEnv = await this._loadAndInterpolateSecrets(env, service, ssmMode);
     specificEnv.forEach((v) => this._printVariable(v));
     return [ ...sharedEnv, ...specificEnv ];
   }
 
-  private async _loadAndInterpolateSecrets(env?: string, service?: string | Workspace): Promise<ILoadedEnv> {
+  private async _loadAndInterpolateSecrets(
+      env?: string,
+      service?: string | Workspace,
+      ssmMode = SSMResolverMode.ERROR,
+  ): Promise<ILoadedEnv> {
     const dotenvManager = new DotenvManager(this.project, { env, service });
     const envVars = await dotenvManager.load();
     const resolvedEnv: ILoadedEnv = [];
@@ -58,11 +86,21 @@ export class EnvironmentLoader {
         try {
           const name = isSsmParameter[1];
           const parameterValue = await aws.ssm.getParameterValue(this.region, name, this._logger);
-          resolvedEnv.push({ key, value: parameterValue ?? '', from: dotenvManager.path, ssm: value });
+          resolvedEnv.push({ key, value: parameterValue, from: dotenvManager.path, ssm: value });
         } catch (e) {
-          this._logger?.error('Error interpolating SSM parameter', value);
-          this._logger?.error(e);
-          throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_SECRET_VALUE, `Error interpolating SSM parameter ${value} (from ${dotenvManager.path})`, e);
+          switch (ssmMode) {
+            case SSMResolverMode.ERROR:
+              this._logger?.error('Error interpolating SSM parameter', value);
+              this._logger?.error(e);
+              throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_SECRET_VALUE, `Error interpolating SSM parameter ${value} (from ${dotenvManager.path})`, e);
+            case SSMResolverMode.WARN:
+              this._logger?.warn('Error interpolating SSM parameter', value);
+              resolvedEnv.push({ key, value: undefined, from: dotenvManager.path, ssm: value });
+              break;
+            case SSMResolverMode.IGNORE:
+              resolvedEnv.push({ key, value: undefined, from: dotenvManager.path, ssm: value });
+              break;
+          }
         }
       } else {
         resolvedEnv.push({ key, value, from: dotenvManager.path });

@@ -40,7 +40,7 @@ export class DotenvManager {
     }
     if (await fs.exists(this.path)) {
       this._exists = true;
-      this._parsed = dotenv.parse(this.path);
+      this._parsed = dotenv.parse((await promises.readFile(this.path)).toString());
     } else {
       this._logger?.info('Dotenv file not found, skipping', this.path);
       this._exists = false;

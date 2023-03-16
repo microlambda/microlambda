@@ -1,11 +1,12 @@
-import { assign } from "../../utils";
-import { relative } from "path";
-import { watchFiles } from "./watch";
-import { Workspace } from "@microlambda/core";
-import { transpile } from "./compile";
-import { IBaseLogger, ServerlessInstance } from "@microlambda/types";
-import { resolveOutDir } from "./resolve-out-dir";
-import { injectLocalEnvironmentVariables } from '../environments/before-start';
+import {assign} from "../../utils";
+import {relative} from "path";
+import {watchFiles} from "./watch";
+import {Workspace} from "@microlambda/core";
+import {transpile} from "./compile";
+import {IBaseLogger, ServerlessInstance} from "@microlambda/types";
+import {resolveOutDir} from "./resolve-out-dir";
+import {injectLambdasEnvironmentVariables} from "../environments/before-deploy";
+import {SSMResolverMode} from "@microlambda/environments";
 
 export const beforeOffline = async (
   serverless: ServerlessInstance,
@@ -15,7 +16,7 @@ export const beforeOffline = async (
   if (!service) {
     throw new Error("Assertion failed: service not resolved");
   }
-  await injectLocalEnvironmentVariables(service, logger);
+  await injectLambdasEnvironmentVariables(serverless, service, SSMResolverMode.WARN, logger);
   await transpile(service, logger);
   assign(
     serverless,

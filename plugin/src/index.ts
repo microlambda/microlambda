@@ -1,14 +1,9 @@
 "use strict";
 
-import { IBaseLogger, ServerlessInstance, IPluginConfig } from "@microlambda/types";
-import { validateConfig } from "./config";
-import {
-  ConfigReader,
-  IConfig,
-  Project,
-  Workspace,
-} from "@microlambda/core";
-import { PluginLogger } from "@microlambda/logger";
+import {IBaseLogger, IPluginConfig, ServerlessInstance} from "@microlambda/types";
+import {validateConfig} from "./config";
+import {ConfigReader, IConfig, Project, Workspace,} from "@microlambda/core";
+import {PluginLogger} from "@microlambda/logger";
 import {
   afterDeploy,
   afterRemove,
@@ -20,10 +15,11 @@ import {
   packageService,
   replaceAuthorizer,
 } from "./features";
-import { applyConditions } from "./features/conditions/apply-conditions";
-import { resolveProjectRoot } from '@microlambda/utils';
-import { removeDotServerless } from './features/package/remove-dot-serverless';
-import { injectLambdasEnvironmentVariables } from './features/environments/before-deploy';
+import {applyConditions} from "./features/conditions/apply-conditions";
+import {resolveProjectRoot} from '@microlambda/utils';
+import {removeDotServerless} from './features/package/remove-dot-serverless';
+import {injectLambdasEnvironmentVariables} from './features/environments/before-deploy';
+import {SSMResolverMode} from "@microlambda/environments";
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -66,7 +62,7 @@ class ServerlessMicrolambdaPlugin {
           "Hook triggered",
           "before:package:createDeploymentArtifacts"
         );
-        await injectLambdasEnvironmentVariables(this.serverless, this._service, this._log);
+        await injectLambdasEnvironmentVariables(this.serverless, this._service, SSMResolverMode.ERROR, this._log);
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         applyConditions(
           this.serverless,
@@ -92,7 +88,7 @@ class ServerlessMicrolambdaPlugin {
           "Hook triggered",
           "before:deploy:function:packageFunction"
         );
-        await injectLambdasEnvironmentVariables(this.serverless, this._service, this._log);
+        await injectLambdasEnvironmentVariables(this.serverless, this._service, SSMResolverMode.ERROR, this._log);
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         applyConditions(
           this.serverless,

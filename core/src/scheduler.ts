@@ -5,6 +5,8 @@ import { Workspace } from "./graph/workspace";
 import { Project } from "./graph/project";
 import { RunCommandEvent, RunCommandEventEnum, Runner } from "@microlambda/runner-core";
 import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
+import * as process from "process";
+import {EnvironmentLoader, SSMResolverMode} from "@microlambda/environments";
 
 export interface StopServiceEvent { service: Workspace, type: 'stopping' | 'stopped' }
 
@@ -188,20 +190,22 @@ export class Scheduler {
         this._logger.warn('Service not registered as running ', w.name);
       }
     })).then(() => {
-      jobs.toStart.forEach((w) => {
+      jobs.toStart.forEach(async (w) => {
         this._logger.info('Starting', w.name);
         if (!this._runners.start.has(w.name)) {
           const runner = new Runner(this.project, this._concurrency, this._logger.logger);
           this._runners.start.set(w.name, runner);
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STARTING);
+          const envLoader = new EnvironmentLoader(this.project, this._logger);
+          await envLoader.injectEnvironmentVariables('local', w, true, SSMResolverMode.IGNORE);
           const daemon$ = runner.runCommand({
             cmd: 'start',
             mode: 'parallel',
             workspaces: [w],
             force: true,
             args: [
-              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
-            ]
+              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'} --reloadHandler`,
+            ],
           });
           const subscription = daemon$.subscribe({
             next: (evt) => {
