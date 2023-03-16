@@ -47,13 +47,17 @@ describe('[class] workspace', () => {
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.resolves();
-      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
-        expect(result.overall).toBeGreaterThan(0);
-        expect(result.fromCache).toBe(false);
-        expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
-      }, (e) => {
-        expect(e).toBeFalsy();
-      }, () => done());
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe({
+        next: (result) => {
+          expect(result.overall).toBeGreaterThan(200);
+          expect(result.fromCache).toBe(false);
+          expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
+        },
+        error: (e) => {
+          expect(e).toBeFalsy();
+        },
+        complete: () => done(),
+      });
     });
     it('should run a given target and emit process result - from cache', (done) => {
       const workspace = new Workspace({} as any, '', {
@@ -65,13 +69,16 @@ describe('[class] workspace', () => {
       });
       stubs.cacheRead.resolves([{ stdout: 'Hello world' }]);
       stubs.cacheWrite.resolves();
-      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
-        expect(result.overall).toBeGreaterThan(0);
-        expect(result.fromCache).toBe(true);
-        expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
-      }, (e) => {
-        expect(e).toBeFalsy();
-      }, () => done());
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe({
+        next: (result) => {
+          expect(result.fromCache).toBe(true);
+          expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
+        },
+        error: (e) => {
+          expect(e).toBeFalsy();
+        },
+        complete: () => done()
+      });
     });
     it('should run a given target and emit process result - cache read fails', (done) => {
       const workspace = new Workspace({} as any, '', {
@@ -83,13 +90,17 @@ describe('[class] workspace', () => {
       });
       stubs.cacheRead.rejects();
       stubs.cacheWrite.resolves();
-      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
-        expect(result.overall).toBeGreaterThanOrEqual(0);
-        expect(result.fromCache).toBe(false);
-        expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
-      }, (e) => {
-        expect(e).toBeFalsy();
-      }, () => done());
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe({
+        next: (result) => {
+          expect(result.overall).toBeGreaterThan(200);
+          expect(result.fromCache).toBe(false);
+          expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
+        },
+        error: (e) => {
+          expect(e).toBeFalsy();
+        },
+        complete: () => done()
+      });
     });
     it('should run a given target and emit process result - cache write fails', (done) => {
       const workspace = new Workspace({} as any, '', {
@@ -101,13 +112,17 @@ describe('[class] workspace', () => {
       });
       stubs.cacheRead.resolves(null);
       stubs.cacheWrite.rejects();
-      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe((result) => {
-        expect(result.overall).toBeGreaterThan(0);
-        expect(result.fromCache).toBe(false);
-        expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
-      }, (e) => {
-        expect(e).toBeFalsy();
-      }, () => done());
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe({
+        next: (result) => {
+          expect(result.overall).toBeGreaterThan(200);
+          expect(result.fromCache).toBe(false);
+          expect((result.commands[0] as ICommandResult).stdout).toBe('Hello world')
+        },
+        error: (e) => {
+          expect(e).toBeFalsy();
+        },
+        complete: () => done()
+      });
     });
     it('should run a given target and emit error', (done) => {
       const workspace = new Workspace({} as any, '', {
