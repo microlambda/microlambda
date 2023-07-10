@@ -9,6 +9,9 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "keywords": [
     "serverless",
     "typescript",
