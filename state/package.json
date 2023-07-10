@@ -9,6 +9,9 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "dependencies": {
     "@microlambda/aws": "workspace:*",
     "@microlambda/config": "workspace:*",
