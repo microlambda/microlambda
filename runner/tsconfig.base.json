@@ -17,7 +17,6 @@
     "target": "es2020",
     "declaration": true,
     "importHelpers": true,
-    "isolatedModules": false,
     "skipLibCheck": true
   }
 }

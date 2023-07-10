@@ -17,7 +17,7 @@
     "@microlambda/config": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
-    "aws-sdk": "^2.1231.0",
+    "aws-sdk": "^2.1413.0",
     "dynamodels": "^1.6.2"
   }
 }
