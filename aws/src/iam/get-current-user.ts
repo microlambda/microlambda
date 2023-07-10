@@ -1,4 +1,4 @@
-import { GetUserCommand, IAMClient } from '@aws-sdk/client-iam';
+import { STS, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 
 export interface ICurrentUserIAM {
   arn: string;
@@ -13,9 +13,9 @@ export interface IAmazonError {
 
 const getUserArn = async (region: string): Promise<string | undefined> => {
   try {
-    const iam = new IAMClient({ region });
-    const currentUser = await iam.send(new GetUserCommand({}));
-    return currentUser.User?.Arn;
+    const iam = new STS({ region });
+    const currentUser = await iam.send(new GetCallerIdentityCommand({}));
+    return currentUser.Arn
   } catch (e) {
     const err = e as IAmazonError;
     const matches = err.message.match(/User: (.+) is not authorized to perform/);
