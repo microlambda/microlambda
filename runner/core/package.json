@@ -23,7 +23,7 @@
     "hasha": "5.2.2",
     "lodash.isequal": "4.5.0",
     "ps-tree": "^1.2.0",
-    "rxjs": "^7.4.0",
+    "rxjs": "^7.8.1",
     "semver": "^7.3.5",
     "simple-git": "^2.38.0",
     "tar-stream": "^2.2.0"
