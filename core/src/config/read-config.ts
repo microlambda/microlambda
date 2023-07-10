@@ -1,4 +1,4 @@
-import Joi, { ObjectSchema } from '@hapi/joi';
+import Joi, { ObjectSchema } from 'joi';
 import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
