@@ -1,6 +1,7 @@
 import joi from 'joi';
 import { regions } from '../regions';
 import { targetsConfigSchema } from './target-config';
+import {namingConventions} from "./naming-conventions";
 
 export const rootConfigSchema = joi.object().keys({
   defaultRegion: joi.string().valid(...regions).required(),
@@ -14,4 +15,5 @@ export const rootConfigSchema = joi.object().keys({
     env: joi.string().optional(),
   }).optional(),
   targets: targetsConfigSchema.optional(),
+  namingConventions,
 });

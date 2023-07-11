@@ -12,4 +12,10 @@ export interface IRootConfig {
     "env"?: string;
   },
   "targets"?: ITargetsConfig;
+  "namingConventions"?: {
+    "stack"?: string;
+    "api"?: string;
+    "handlers"?: string;
+    "iam"?: string;
+  }
 }
