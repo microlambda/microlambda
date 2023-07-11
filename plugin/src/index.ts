@@ -3,8 +3,6 @@
 import { IBaseLogger, ServerlessInstance, IPluginConfig } from "@microlambda/types";
 import { validateConfig } from "./config";
 import {
-  ConfigReader,
-  IConfig,
   Project,
   Workspace,
 } from "@microlambda/core";
@@ -23,6 +21,8 @@ import {
 import { applyConditions } from "./features/conditions/apply-conditions";
 import { resolveProjectRoot } from '@microlambda/utils';
 import { removeDotServerless } from './features/package/remove-dot-serverless';
+import {ConfigReader, IRootConfig} from "@microlambda/config";
+import {updateDeploymentRole} from "./features/transforms/deployment-role";
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -32,7 +32,7 @@ class ServerlessMicrolambdaPlugin {
 
   private _pluginConfig: IPluginConfig | undefined;
   private _graph: Project | undefined;
-  private _config: IConfig | undefined;
+  private _rootConfig: IRootConfig | undefined;
   private _service: Workspace | undefined;
   private readonly _log: IBaseLogger;
 
@@ -65,6 +65,7 @@ class ServerlessMicrolambdaPlugin {
           "Hook triggered",
           "before:package:createDeploymentArtifacts"
         );
+        updateDeploymentRole(this.serverless, this._rootConfig);
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         applyConditions(
           this.serverless,
@@ -90,6 +91,7 @@ class ServerlessMicrolambdaPlugin {
           "Hook triggered",
           "before:deploy:function:packageFunction"
         );
+        updateDeploymentRole(this.serverless, this._rootConfig);
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         applyConditions(
           this.serverless,
@@ -103,6 +105,7 @@ class ServerlessMicrolambdaPlugin {
       "before:deploy:deploy": this._plugHook(
         async (): Promise<void> => {
           const { region } = this._resolveBasicInformation();
+          updateDeploymentRole(this.serverless, this._rootConfig);
           this._log.debug("Hook triggered", "before:deploy:deploy");
           await createUpdateSecrets(
             region,
@@ -204,7 +207,7 @@ class ServerlessMicrolambdaPlugin {
     if (!this._graph) {
       const projectRoot = resolveProjectRoot();
       this._log.info(`Project root resolved ${projectRoot}`);
-      this._config = new ConfigReader().readConfig();
+      this._rootConfig = new ConfigReader(projectRoot).rootConfig;
       this._graph = await Project.loadProject(projectRoot);
       this._log.info(
         `Dependencies graph resolved: ${this._graph.workspaces.size} nodes`

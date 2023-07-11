@@ -12,4 +12,5 @@ export interface IRootConfig {
     "env"?: string;
   },
   "targets"?: ITargetsConfig;
+  deploymentRole?: string;
 }

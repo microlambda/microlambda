@@ -18,6 +18,13 @@ export interface ServerlessInstance {
       architecture: 'x86_64' | 'arm64';
       runtime: LambdaRuntimes;
       environment: { [key:string]: string};
+      iam: {
+        deploymentRole?: string;
+        role?: {
+          name: string;
+          statements?: Array<{Effect: 'Allow' | 'Deny', Action: string[], Resource: string[]}>
+        }
+      }
     };
     custom: {
       [key: string]: unknown;

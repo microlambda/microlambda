@@ -14,4 +14,5 @@ export const rootConfigSchema = joi.object().keys({
     env: joi.string().optional(),
   }).optional(),
   targets: targetsConfigSchema.optional(),
+  deploymentRole: joi.string().optional(),
 });
