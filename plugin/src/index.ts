@@ -18,8 +18,7 @@ import {
 import {applyConditions} from "./features/conditions/apply-conditions";
 import {resolveProjectRoot} from '@microlambda/utils';
 import {removeDotServerless} from './features/package/remove-dot-serverless';
-import {injectLambdasEnvironmentVariables} from './features/environments/before-deploy';
-import {SSMResolverMode} from "@microlambda/environments";
+import {injectLambdasEnvironmentVariables} from './features/environments';
 
 class ServerlessMicrolambdaPlugin {
   private static _pluginName = "Serverless Microlambda";
@@ -62,7 +61,7 @@ class ServerlessMicrolambdaPlugin {
           "Hook triggered",
           "before:package:createDeploymentArtifacts"
         );
-        await injectLambdasEnvironmentVariables(this.serverless, this._service, SSMResolverMode.ERROR, this._log);
+        await injectLambdasEnvironmentVariables('before-deploy', this.serverless, this._service, this._log);
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         applyConditions(
           this.serverless,
@@ -88,7 +87,7 @@ class ServerlessMicrolambdaPlugin {
           "Hook triggered",
           "before:deploy:function:packageFunction"
         );
-        await injectLambdasEnvironmentVariables(this.serverless, this._service, SSMResolverMode.ERROR, this._log);
+        await injectLambdasEnvironmentVariables('before-deploy', this.serverless, this._service, this._log);
         replaceAuthorizer(this.serverless, this._pluginConfig, this._log);
         applyConditions(
           this.serverless,

@@ -5,8 +5,6 @@ import { Workspace } from "./graph/workspace";
 import { Project } from "./graph/project";
 import { RunCommandEvent, RunCommandEventEnum, Runner } from "@microlambda/runner-core";
 import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
-import * as process from "process";
-import {EnvironmentLoader, SSMResolverMode} from "@microlambda/environments";
 
 export interface StopServiceEvent { service: Workspace, type: 'stopping' | 'stopped' }
 
@@ -196,8 +194,6 @@ export class Scheduler {
           const runner = new Runner(this.project, this._concurrency, this._logger.logger);
           this._runners.start.set(w.name, runner);
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STARTING);
-          const envLoader = new EnvironmentLoader(this.project, this._logger);
-          await envLoader.injectEnvironmentVariables('local', w, true, SSMResolverMode.IGNORE);
           const daemon$ = runner.runCommand({
             cmd: 'start',
             mode: 'parallel',

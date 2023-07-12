@@ -57,14 +57,20 @@ export class DotenvManager {
     if (!this._parsed) {
       await this.load();
     }
-    return this._parsed![key];
+    if (!this._parsed) {
+      throw Error('Assertion failed: environment should have been loaded');
+    }
+    return this._parsed[key];
   }
 
   async addKey(key: string, value: string): Promise<void> {
     if (!this._parsed) {
       await this.load();
     }
-    this._parsed![key] = value;
+    if (!this._parsed) {
+      throw Error('Assertion failed: environment should have been loaded');
+    }
+    this._parsed[key] = value;
     await this._dump();
   }
 
@@ -72,7 +78,10 @@ export class DotenvManager {
     if (!this._parsed) {
       await this.load();
     }
-    delete this._parsed![key];
+    if (!this._parsed) {
+      throw Error('Assertion failed: environment should have been loaded');
+    }
+    delete this._parsed[key];
     await this._dump();
   }
 
