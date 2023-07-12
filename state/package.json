@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/remote-state",
-  "version": "1.0.0-alpha.29",
+  "version": "1.0.0-alpha.31",
   "description": "Utilities to manage Microlambda remote state",
   "author": "Mario Arnautou",
   "repository": {
@@ -9,6 +9,9 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "dependencies": {
     "@microlambda/aws": "workspace:*",
     "@microlambda/config": "workspace:*",

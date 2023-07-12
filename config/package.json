@@ -1,13 +1,13 @@
 {
   "name": "@microlambda/config",
-  "version": "1.0.0-alpha.29",
+  "version": "1.0.0-alpha.31",
   "description": "Manage microlambda configuration files",
   "author": "Mario Arnautou",
   "repository": {
     "url": "https://bitbucket.org/MarioArnt/microlambda/aws"
   },
   "scripts": {
-    "pre:build": "../node_modules/.bin/tsc -p tsconfig.json"
+    "build-runner": "npx tsc"
   },
   "license": "MIT",
   "main": "lib/index.js",

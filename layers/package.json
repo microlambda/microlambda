@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/layers",
-  "version": "1.0.0-alpha.29",
+  "version": "1.0.0-alpha.31",
   "description": "Manage project lambda layers. Check if a republish is necessary and performs it if required",
   "author": "Mario Arnautou",
   "repository": {
@@ -9,6 +9,9 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "keywords": [
     "serverless",
     "typescript",
