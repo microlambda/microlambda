@@ -52,7 +52,6 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
 
     const spinnies = new MilaSpinnies(cmd.verbose);
 
-
     const failures: Set<DeployEvent> = new Set();
     const actions: Set<DeployEvent> = new Set();
 

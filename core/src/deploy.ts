@@ -25,6 +25,7 @@ export class Deployer {
     readonly options: IDeployOptions,
     readonly mode: 'deploy' | 'remove' = 'deploy',
     readonly logger?: EventsLog,
+    readonly env: Record<string, string> = {},
   ) {
     this._reader = new ConfigReader(logger);
     this._reader.validate(options.project);
@@ -42,7 +43,7 @@ export class Deployer {
       mode: 'parallel',
       force: this.options.force,
       args: [],
-      env: { AWS_REGION: region }
+      env: { AWS_REGION: region, ...this.env }
     }).pipe(map((evt) => ({...evt, region})));
   }
 
