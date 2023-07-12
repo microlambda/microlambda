@@ -6,7 +6,8 @@ export interface ServerlessInstance {
     service: string;
     provider: {
       stage: string;
-      stackName: string;
+      stackName?: string;
+      apiName?: string;
       compiledCloudFormationTemplate: {
         Outputs: unknown;
       };
@@ -18,6 +19,11 @@ export interface ServerlessInstance {
       architecture: 'x86_64' | 'arm64';
       runtime: LambdaRuntimes;
       environment: { [key:string]: string};
+      iam: {
+        role: {
+          name?: string;
+        }
+      }
     };
     custom: {
       [key: string]: unknown;
@@ -25,10 +31,11 @@ export interface ServerlessInstance {
     getAllFunctions: () => string[];
     functions: {
       [key: string]: {
-        name: string;
-        architecture: 'x86_64' | 'arm64';
-        runtime: LambdaRuntimes;
-        events: Array<{
+        name?: string;
+        architecture?: 'x86_64' | 'arm64';
+        runtime?: LambdaRuntimes;
+        handler: string;
+        events?: Array<{
           http?: { authorizer?: Partial<IAuthorizerConfig> };
           websocket?: { authorizer?: Partial<IAuthorizerConfig> };
         }>;

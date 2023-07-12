@@ -45,4 +45,10 @@ export interface IPackageConfig {
     [cmd: string]: ITargetConfig;
   }
   extends?: string;
+  namingConventions?: {
+    "stack"?: string;
+    "api"?: string;
+    "handlers"?: string;
+    "iam"?: string;
+  }
 }
