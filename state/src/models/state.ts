@@ -1,12 +1,24 @@
-import Model, { beginsWith } from 'dynamodels';
+import Model, {beginsWith, IUpdateActions} from 'dynamodels';
 import { DynamoDB } from 'aws-sdk';
 import { IRootConfig } from '@microlambda/config';
+import {currentSha1} from "@microlambda/runner-core";
 
 export interface IEnvironment {
   k1: string; // $name
   k2: string; // 'env'
   name: string;
   regions: string[];
+  useCanary?: boolean;
+  currentVersion?: number;
+}
+
+export interface ICanaryVersion {
+  k1: string; // $n
+  k2: string; // versions|$env
+  version: number; // $n
+  active: boolean;
+  createdAt: string;
+  lastDeploymentSha1: string;
 }
 
 export interface IServiceInstanceRequest {
@@ -144,5 +156,46 @@ export class State extends Model<unknown> {
       k2: `executions|${request.service}|${request.cmd}`,
       ...request,
     });
+  }
+
+  async listVersions(env: string): Promise<Array<ICanaryVersion>> {
+    const versions = await this.query('GS1').keys({ k2: `versions|${env}` }).execAll();
+    return versions as ICanaryVersion[];
+  }
+
+  async incrementVersion(env: IEnvironment): Promise<void> {
+    const incrementedVersion = env.useCanary && env.currentVersion ? env.currentVersion + 1 : 2;
+    const actions: IUpdateActions = {
+      currentVersion: {
+        action: 'PUT',
+        value: incrementedVersion,
+      }
+    };
+    if (!env.useCanary) {
+      actions.useCanary = {
+        action: 'PUT',
+        value: true,
+      }
+    }
+    const updateEnv$ = this.update(env.k1, env.k2, actions);
+    const createVersion$ = this.save({
+      k1: incrementedVersion,
+      k2: `versions|${env.name}`,
+      version: incrementedVersion,
+      active: true,
+      createdAt: new Date().toISOString(),
+    });
+    await Promise.all([updateEnv$, createVersion$])
+  }
+
+  async updateLastDeploymentSha1(env: IEnvironment): Promise<void> {
+    if (env.currentVersion) {
+      await this.update(env.currentVersion, `versions|${env.name}`, {
+        lastDeploymentSha1: {
+          action: 'PUT',
+          value: currentSha1(),
+        }
+      });
+    }
   }
 }

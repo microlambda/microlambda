@@ -48,7 +48,7 @@ export const resolveDeltas = async (
         serviceOperations.set(targetRegion, 'first_deploy');
       } else {
         try {
-          if (cmd.force || cmd.forcePackage || cmd.forceDeploy) {
+          if (cmd.force || cmd.forcePackage || cmd.forceDeploy || cmd.canary) {
             serviceOperations.set(targetRegion, 'redeploy');
             continue;
           }

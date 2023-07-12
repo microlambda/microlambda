@@ -19,6 +19,7 @@ import { destroyEnv } from './cmd/envs/destroy';
 import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
 import { runTests } from './cmd/run-tests';
+import {cleanCanaryVersion, printCanaryVersions} from "./cmd/canary";
 
 const program = new Command();
 
@@ -244,6 +245,7 @@ program
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
   .option('--only-prompt', 'only display deployment information and return', false)
+  .option('--canary', 'create a new canary release.', false)
   .description('deploy services to AWS')
   .action(
     async (cmd) =>
@@ -251,6 +253,23 @@ program
         await deploy(cmd);
       }, true),
   );
+
+program.command('canary')
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for canary release actions')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await printCanaryVersions(cmd);
+      }),
+  )
+  .command('destroy')
+  .requiredOption('-v <version>, --version <version>', 'the version to clean')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await cleanCanaryVersion(cmd);
+      }),
+  )
 
 // FIXME
 program

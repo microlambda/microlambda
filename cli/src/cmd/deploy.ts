@@ -78,6 +78,23 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       await releaseLock();
       process.exit(0);
     }
+
+    if (cmd.canary) {
+      logger.lf();
+      logger.info(chalk.bold(`Info: you are preparing a canary release for ${cmd.e} environment.`));
+      logger.info('All resources will be cloned and previous versions will be kept.');
+      logger.info(`When you are ready to destroy resources for previous version use ${chalk.cyan(`yarn mila canary -e ${cmd.e} destroy`)}`)
+      logger.lf();
+    }
+
+    const versions = await state.listVersions(cmd.e);
+    const deprecatedVersions = versions.filter((v) => v.version !== env.currentVersion && v.active);
+    if (deprecatedVersions.length) {
+      logger.warn(chalk.bold(`Warning: some previous versions of environment ${cmd.e} have been found.`));
+      logger.warn('Use the following command to clean AWS resources when you do not need them anymore');
+      deprecatedVersions.forEach((v) => logger.warn(`yarn mila canary -e ${cmd.e} destroy -v ${v.version}`));
+    }
+
     if (cmd.prompt) {
       const answers = await prompt([
         {
@@ -90,6 +107,10 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         await releaseLock();
         process.exit(2);
       }
+    }
+
+    if (cmd.canary) {
+      await state.incrementVersion(env);
     }
 
     const toDeploy = new Set<Workspace>();
@@ -231,7 +252,8 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
           process.exit(1);
         }
         await releaseLock();
-        logger.success(`Successfully deploy ${cmd.e} 🚀`);
+        await state.updateLastDeploymentSha1(env);
+        logger.success(`Successfully deployed ${cmd.e} 🚀`);
         process.exit(0);
       },
     })
