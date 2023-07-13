@@ -166,8 +166,14 @@ export class EnvironmentLoader {
     ssmMode: SSMResolverMode,
   ): Promise<{ key: string, value?: string, from: string, raw: string }> {
     try {
-      const name = isSecret[1];
-      const parameterValue = await aws.secretsManager.getSecretValue(this.region, name, undefined, this._logger);
+      let version: string | undefined;
+      let name = isSecret[1];
+      const hasVersion = isSecret[1].match(/^(.+):(.+)$/);
+      if (hasVersion) {
+        name = hasVersion[1];
+        version = hasVersion[2];
+      }
+      const parameterValue = await aws.secretsManager.getSecretValue(this.region, name, version, this._logger);
       return { key, value: parameterValue, from: from, raw: value };
     } catch (e) {
       switch (ssmMode) {

@@ -10,6 +10,7 @@ export interface IUpdateSecretOptions {
   service?: string | Workspace;
   key: string;
   value: string;
+  versioned?: boolean;
 }
 
 export const checkIsSecret = async (project: Project, options: IDeleteSecretOptions): Promise<string> => {
@@ -22,7 +23,7 @@ export const checkIsSecret = async (project: Project, options: IDeleteSecretOpti
   return isSecret[1];
 }
 
-export const createSecret = async (project: Project, config: IRootConfig, options: IUpdateSecretOptions): Promise<void> => {
+export const updateSecret = async (project: Project, config: IRootConfig, options: IUpdateSecretOptions): Promise<void> => {
   const secretName = await checkIsSecret(project, options);
   await writeSecrets(config, secretName, options);
 }

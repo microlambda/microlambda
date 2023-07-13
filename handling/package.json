@@ -35,6 +35,7 @@
     "@types/aws-lambda": "^8.10.85",
     "@types/hapi__joi": "^17.1.7",
     "@types/node": "^16.11.10",
+    "aws-sdk-client-mock": "^3.0.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2"
   }
