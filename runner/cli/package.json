@@ -11,7 +11,7 @@
     "mila-runner": "dist/index.js"
   },
   "scripts": {
-    "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
+    "pre:build": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
     "@microlambda/runner-core": "workspace:*",

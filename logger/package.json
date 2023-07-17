@@ -6,12 +6,12 @@
   "repository": {
     "url": "https://bitbucket.org/MarioArnt/microlambda/logger"
   },
-  "license": "MIT",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "scripts": {
     "build-runner": "npx tsc"
   },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "keywords": [
     "serverless",
     "typescript",

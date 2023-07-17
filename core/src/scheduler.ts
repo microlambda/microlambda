@@ -104,7 +104,7 @@ export class Scheduler {
       to: [...this._targets],
       watch: true,
     });
-    const build$ = this._runners.transpile.runCommand({
+    const build$ = this._runners.build.runCommand({
       cmd: 'build',
       mode: 'topological',
       force: false,
@@ -188,7 +188,7 @@ export class Scheduler {
         this._logger.warn('Service not registered as running ', w.name);
       }
     })).then(() => {
-      jobs.toStart.forEach((w) => {
+      jobs.toStart.forEach(async (w) => {
         this._logger.info('Starting', w.name);
         if (!this._runners.start.has(w.name)) {
           const runner = new Runner(this.project, this._concurrency, this._logger.logger);
@@ -200,8 +200,8 @@ export class Scheduler {
             workspaces: [w],
             force: true,
             args: [
-              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
-            ]
+              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'} --reloadHandler`,
+            ],
           });
           const subscription = daemon$.subscribe({
             next: (evt) => {

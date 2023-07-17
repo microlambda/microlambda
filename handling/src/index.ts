@@ -12,3 +12,4 @@ export { handle, DefaultHandler } from './handling';
 export { before, after, handleError } from './handling/middleware';
 
 export * from './handling/api/types';
+export * from './secrets/inject-secrets-middleware';

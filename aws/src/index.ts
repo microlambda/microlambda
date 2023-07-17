@@ -7,6 +7,7 @@ import {route53} from './route53';
 import {s3} from './s3';
 import {secretsManager} from './secrets-manager';
 import {dynamodb} from './dynamodb';
+import {ssm} from './ssm';
 
 export const aws = {
   apiGateway,
@@ -18,4 +19,5 @@ export const aws = {
   route53,
   s3,
   secretsManager,
+  ssm,
 }
