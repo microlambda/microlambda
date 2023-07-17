@@ -1,7 +1,0 @@
-{
-  "displayName": {
-    "name": "Shared package - Unit tests",
-    "color": "white"
-  },
-  "preset": "../../../jest-unit-packages-preset.json"
-}

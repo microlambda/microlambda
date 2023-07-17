@@ -21,6 +21,7 @@
     "monorepo"
   ],
   "dependencies": {
+    "@microlambda/environments": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "@microlambda/types": "workspace:*",

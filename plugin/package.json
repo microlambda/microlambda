@@ -30,11 +30,12 @@
     ]
   },
   "dependencies": {
-    "@microlambda/aws": "1.0.0-alpha.31",
-    "@microlambda/core": "1.0.0-alpha.31",
-    "@microlambda/layers": "1.0.0-alpha.31",
-    "@microlambda/runner-core": "1.0.0-alpha.31",
-    "chokidar": "^3.5.3",
+    "@microlambda/aws": "workspace:*",
+    "@microlambda/core": "workspace:*",
+    "@microlambda/environments": "workspace:*",
+    "@microlambda/layers": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
+    "chokidar": "^3.5.2",
     "hasha": "^5.2.2",
     "joi": "^17.9.2"
   },

@@ -7,7 +7,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
+    "pre:build": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
     "@microlambda/aws": "workspace:*",

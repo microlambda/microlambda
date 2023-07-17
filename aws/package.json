@@ -6,6 +6,9 @@
   "repository": {
     "url": "https://bitbucket.org/MarioArnt/microlambda/aws"
   },
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -17,9 +20,6 @@
     "aws",
     "monorepo"
   ],
-  "scripts": {
-    "build-runner": "npx tsc"
-  },
   "dependencies": {
     "@aws-sdk/client-acm": "^3.363.0",
     "@aws-sdk/client-apigatewayv2": "^3.363.0",
@@ -30,6 +30,7 @@
     "@aws-sdk/client-route-53": "^3.363.0",
     "@aws-sdk/client-s3": "^3.367.0",
     "@aws-sdk/client-secrets-manager": "^3.363.0",
+    "@aws-sdk/client-ssm": "^3.370.0",
     "@aws-sdk/lib-storage": "^3.367.0"
   },
   "devDependencies": {
