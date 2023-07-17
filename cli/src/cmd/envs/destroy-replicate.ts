@@ -5,10 +5,14 @@ import { regions } from '@microlambda/config';
 import { LockManager, State } from '@microlambda/remote-state';
 import { getDependenciesGraph } from '../../utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
+import {init} from "../../utils/init";
+import {EnvironmentLoader} from "@microlambda/environments";
 
 export const destroyReplicate = async (env: string, region: string): Promise<void> => {
   logger.info('Removing regional replicate for', env);
   logger.lf();
+  const projectRoot = resolveProjectRoot();
+  const { project } = await init(projectRoot);
   const config = await printAccountInfos();
   await verifyState(config);
   if (!regions.includes(region)) {
@@ -34,7 +38,12 @@ export const destroyReplicate = async (env: string, region: string): Promise<voi
   }
   await lock.lock();
   await state.removeReplicate(env, region);
-  // TODO: delete all related secrets/params
+  const loader = new EnvironmentLoader(project);
+  const { failures } = await loader.destroyRegionalReplicate(env, region);
+  failures.forEach((err, envVar) => {
+    logger.warn(`Failed to destroy secret/ssm parameter ${envVar.raw} in region ${region}`);
+    logger.warn('Original error:', err);
+  });
   await lock.releaseLock();
   logger.success('Replicate destruction order created. On next deploy, environment resources will be destroyed from', region);
   logger.success(`Run yarn mila deploy -e ${env} to remove resources from AWS Cloud`);

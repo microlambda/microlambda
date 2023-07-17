@@ -25,6 +25,8 @@ type ILoadedEnv = Array<ILoadedEnvironmentVariable>;
 export class EnvironmentLoader {
 
   readonly region: string;
+  static readonly ssmParameterPattern = /^\$\{ssm:(.+)}$/;
+  static readonly secretPattern = /^\$\{secret:(.+)}$/;
 
   constructor(readonly project: Project, private readonly _logger?: IBaseLogger) {
     const config = new ConfigReader(this.project.root);
@@ -91,6 +93,69 @@ export class EnvironmentLoader {
     return result;
   }
 
+  async createRegionalReplicate(env: string, targetRegion: string): Promise<{
+    success: Set<ILoadedEnvironmentVariable>,
+    failures: Map<ILoadedEnvironmentVariable, unknown>,
+  }> {
+    return this._manageRegionalReplicate(env, targetRegion, 'create');
+  }
+
+  async destroyRegionalReplicate(env: string, targetRegion: string): Promise<{
+    success: Set<ILoadedEnvironmentVariable>,
+    failures: Map<ILoadedEnvironmentVariable, unknown>,
+  }> {
+    return this._manageRegionalReplicate(env, targetRegion, 'create');
+  }
+
+  private async _manageRegionalReplicate(env: string, targetRegion: string, mode: 'create' | 'destroy'): Promise<{
+    success: Set<ILoadedEnvironmentVariable>,
+    failures: Map<ILoadedEnvironmentVariable, unknown>,
+  }> {
+    const success = new Set<ILoadedEnvironmentVariable>();
+    const failures = new Map<ILoadedEnvironmentVariable, unknown>();
+    const resolveOperationsFromFile = async (env: string, service?: Workspace): Promise<Array<Promise<void>>> => {
+      const operations$: Array<Promise<void>> = [];
+      const loadedEnv = await this._loadFile({ service, env, shouldInterpolate: true });
+      for (const envVar of loadedEnv) {
+        const isParameter = envVar.raw?.match(EnvironmentLoader.ssmParameterPattern);
+        const isSecret = envVar.raw?.match(EnvironmentLoader.secretPattern);
+        let operation$: Promise<unknown> | undefined;
+        if (isParameter && envVar.value) {
+          if (mode === 'create') {
+            operation$ = aws.ssm.putParameter(targetRegion, isParameter[1], envVar.value);
+          } else {
+            operation$ = aws.ssm.deleteParameter(targetRegion, isParameter[1]);
+          }
+        } else if (isSecret && envVar.value) {
+          const { name } = this._resolveSecretNameAndVersion(isSecret);
+          if (mode === 'create') {
+            operation$ = aws.secretsManager.putSecret(targetRegion, name, envVar.value);
+          } else {
+            operation$ = aws.secretsManager.deleteSecret(targetRegion, name);
+          }
+        }
+        if (operation$) {
+          operations$.push(operation$
+            .then(() => {
+              success.add(envVar);
+            })
+            .catch((err) => {
+              failures.set(envVar, err);
+            }));
+        }
+      }
+      return operations$;
+    }
+    const analyzeFiles$: Array<Promise<Array<Promise<void>>>> = [];
+    analyzeFiles$.push(resolveOperationsFromFile(env));
+    for (const service of this.project.workspaces.values()) {
+      analyzeFiles$.push(resolveOperationsFromFile(env, service));
+    }
+    const allOperations$ = (await Promise.all(analyzeFiles$)).reduce((acc, val) => acc.concat(val), []);
+    await Promise.all(allOperations$);
+    return { success, failures };
+  }
+
   private _printVariable(v: ILoadedEnvironmentVariable): void {
     this._logger?.info(`  - ${v.key}=${v.value}${v.overwritten ? chalk.magenta(' [overwitten]') : ''}`)
   }
@@ -121,8 +186,8 @@ export class EnvironmentLoader {
     from: string,
     ssmMode: SSMResolverMode
   ): Promise<{ key: string, value?: string, from: string, raw?: string }> {
-    const isSsmParameter = value.match(/^\$\{ssm:(.+)}$/);
-    const isSecret = value.match(/^\$\{secret:(.+)}$/);
+    const isSsmParameter = value.match(EnvironmentLoader.ssmParameterPattern);
+    const isSecret = value.match(EnvironmentLoader.secretPattern);
     if (isSsmParameter) {
       return this._interpolateSsm(key, value, from, isSsmParameter, ssmMode);
     } else if (isSecret) {
@@ -166,13 +231,7 @@ export class EnvironmentLoader {
     ssmMode: SSMResolverMode,
   ): Promise<{ key: string, value?: string, from: string, raw: string }> {
     try {
-      let version: string | undefined;
-      let name = isSecret[1];
-      const hasVersion = isSecret[1].match(/^(.+):(.+)$/);
-      if (hasVersion) {
-        name = hasVersion[1];
-        version = hasVersion[2];
-      }
+      const { name, version } = this._resolveSecretNameAndVersion(isSecret);
       const parameterValue = await aws.secretsManager.getSecretValue(this.region, name, version, this._logger);
       return { key, value: parameterValue, from: from, raw: value };
     } catch (e) {
@@ -188,5 +247,16 @@ export class EnvironmentLoader {
           return { key, value: undefined, from: from, raw: value };
       }
     }
+  }
+
+  private _resolveSecretNameAndVersion(isSecret: RegExpMatchArray): { name: string, version?: string } {
+    let version: string | undefined;
+    let name = isSecret[1];
+    const hasVersion = isSecret[1].match(/^(.+):(.+)$/);
+    if (hasVersion) {
+      name = hasVersion[1];
+      version = hasVersion[2];
+    }
+    return { name, version };
   }
 }

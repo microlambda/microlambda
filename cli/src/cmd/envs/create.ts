@@ -4,10 +4,17 @@ import { printAccountInfos } from './list';
 import { regions } from '@microlambda/config';
 import { prompt } from 'inquirer';
 import { verifyState } from '../../utils/verify-state';
+import { promises as fs } from 'fs';
+import { resolveProjectRoot } from "@microlambda/utils";
+import { join } from 'path';
+import { init } from "../../utils/init";
 
 export const createEnv = async (name: string): Promise<void> => {
   logger.info('Creating environment');
   logger.lf();
+  const projectRoot = resolveProjectRoot();
+  const { project } = await init(projectRoot);
+
   const config = await printAccountInfos();
   await verifyState(config);
   const state = new State(config);
@@ -30,6 +37,20 @@ export const createEnv = async (name: string): Promise<void> => {
     }
   }]);
   await state.createEnvironment(name, answers.regions.split(','));
-  // TODO: Prompt replicate secrets/params from
-  logger.success('Environment successfully initialized. Perform your first deploy using yarn mila deploy');
+  logger.success('Environment successfully initialized.');
+  const dotenv = [
+    join(projectRoot, `.env.${name}`),
+  ];
+  for (const service of project.services.values()) {
+    dotenv.push(join(service.root, `.env.${name}`));
+  }
+  await Promise.all(dotenv.map((path) => fs.open(path).then(() => {
+    logger.debug('Created', path);
+  }).catch((err) => {
+    logger.warn('Error creating environment file @', path);
+    logger.warn(err);
+  })));
+  logger.info()
+  logger.info('Perform your first deploy using yarn mila deploy');
+
 }
