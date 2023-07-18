@@ -1,4 +1,4 @@
-import { logger } from "./logger"
+import { logger } from './logger';
 import { aws } from '@microlambda/aws';
 import { verifyStateKeysSchema } from '@microlambda/remote-state';
 import { IRootConfig } from '@microlambda/config';
@@ -7,9 +7,9 @@ export const verifyState = async (config: IRootConfig): Promise<void> => {
   const printError = (): void => {
     logger.error('State verification failed. Please double-check config.state');
     logger.error('Have you initialized the state using yarn mila init ?');
-  }
+  };
   try {
-    const [ checksumsBucketExists, stateTableValid ] = await Promise.all([
+    const [checksumsBucketExists, stateTableValid] = await Promise.all([
       await aws.s3.bucketExists(config.defaultRegion, config.state.checksums),
       await verifyStateKeysSchema(config),
     ]);
@@ -22,4 +22,4 @@ export const verifyState = async (config: IRootConfig): Promise<void> => {
     logger.error(e);
     process.exit(1);
   }
-}
+};

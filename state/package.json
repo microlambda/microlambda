@@ -9,12 +9,16 @@
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.370.0",
+    "@aws-sdk/lib-dynamodb": "^3.370.0",
     "@microlambda/aws": "workspace:*",
     "@microlambda/config": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
-    "aws-sdk": "^2.1231.0",
-    "dynamodels": "^1.6.2"
+    "dynamodels": "^2.0.1"
   }
 }

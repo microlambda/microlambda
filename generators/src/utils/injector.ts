@@ -5,7 +5,7 @@ export const injector = async (path: string, token: string, content: string): Pr
   const lines = file.toString().split('\n');
   const injectAt = lines.indexOf(lines.find((l) => l.includes(`\${blueprint:${token}`)));
   if (injectAt === -1) {
-    throw new Error(`Injection needle not found for token ${token}`)
+    throw new Error(`Injection needle not found for token ${token}`);
   }
   const updatedLines = [...lines.slice(0, injectAt), ...content.split('/n'), ...lines.slice(injectAt)];
   await fs.writeFile(path, updatedLines.join('\n'));

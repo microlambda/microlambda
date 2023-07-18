@@ -1,5 +1,5 @@
 import { runInitializers } from '../init';
-import {apiHandler, HandlingError} from './api';
+import { apiHandler, HandlingError } from './api';
 import { handle } from './index';
 import Mock = jest.Mock;
 

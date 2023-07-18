@@ -6,6 +6,9 @@
   "repository": {
     "url": "https://bitbucket.org/MarioArnt/microlambda/aws"
   },
+  "scripts": {
+    "build-runner": "npx tsc"
+  },
   "license": "MIT",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -18,14 +21,14 @@
     "monorepo"
   ],
   "dependencies": {
-    "fs-extra": "^10.1.0",
-    "joi": "^17.6.0"
+    "fs-extra": "^11.1.1",
+    "joi": "^17.9.2"
   },
   "devDependencies": {
     "@microlambda/errors": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/types": "workspace:*",
-    "jest": "^27.5.1",
-    "typescript": "^4.5.2"
+    "jest": "^29.6.1",
+    "typescript": "^5.0.4"
   }
 }

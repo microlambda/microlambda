@@ -5,7 +5,7 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "lib": ["es2020", "esnext", "esnext.asynciterable"],
+    "lib": ["es2022", "esnext", "esnext.asynciterable"],
     "noImplicitAny": true,
     "module": "CommonJS",
     "moduleResolution": "node",
@@ -14,10 +14,9 @@
     "baseUrl": ".",
     "noImplicitReturns": true,
     "strict": true,
-    "target": "es2020",
+    "target": "ES2022",
     "declaration": true,
     "importHelpers": true,
-    "isolatedModules": false,
     "skipLibCheck": true
   }
 }

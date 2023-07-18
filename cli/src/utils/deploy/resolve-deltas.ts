@@ -19,7 +19,6 @@ export const resolveDeltas = async (
   config: IRootConfig,
   eventsLog: EventsLog,
 ): Promise<Map<string, Map<string, ActionType>>> => {
-
   const log = eventsLog.scope('resolve-deltas');
   logger.lf();
   logger.info(chalk.underline(chalk.bold('▼ Resolving deltas')));
@@ -27,9 +26,7 @@ export const resolveDeltas = async (
 
   // Resolve and print operations to perform
   const graphServices = [...project.services.values()];
-  const targets = cmd.s
-    ? graphServices.filter((s) => cmd.s?.split(',').includes(s.name))
-    : graphServices;
+  const targets = cmd.s ? graphServices.filter((s) => cmd.s?.split(',').includes(s.name)) : graphServices;
   const operations = new Map<string, Map<string, ActionType>>();
   const defaultRegions = env.regions;
   log.debug('Resolving deltas');
@@ -55,16 +52,24 @@ export const resolveDeltas = async (
           const rawStoredChecksums = await aws.s3.downloadBuffer(
             deployedRegionalServiceInstance.checksums_buckets,
             deployedRegionalServiceInstance.checksums_key,
-            config.defaultRegion)
+            config.defaultRegion,
+          );
           const storedChecksums = rawStoredChecksums ? JSON.parse(rawStoredChecksums?.toString('utf-8')) : {};
-          const currentChecksums = await new Checksums(localService, 'deploy', [], { AWS_REGION: targetRegion }).calculate();
+          const currentChecksums = await new Checksums(localService, 'deploy', [], {
+            AWS_REGION: targetRegion,
+          }).calculate();
           if (Checksums.compare(currentChecksums, storedChecksums)) {
             serviceOperations.set(targetRegion, 'no_changes');
           } else {
             serviceOperations.set(targetRegion, 'redeploy');
           }
         } catch (e) {
-          logger.warn('Error reading currently deployed checksums for service', localService.name, 'in region', targetRegion);
+          logger.warn(
+            'Error reading currently deployed checksums for service',
+            localService.name,
+            'in region',
+            targetRegion,
+          );
           logger.warn('This service will be thus redeployed even if it is sources could have not been changed.');
           serviceOperations.set(targetRegion, 'redeploy');
         }
@@ -94,7 +99,7 @@ export const resolveDeltas = async (
   }
 
   const printType = (type: ActionType): string => {
-    switch(type) {
+    switch (type) {
       case 'redeploy':
       case 'first_deploy':
         return chalk.green(type);
@@ -105,7 +110,7 @@ export const resolveDeltas = async (
       case 'destroy':
         return chalk.red(type);
     }
-  }
+  };
 
   const allRegions = new Set<string>();
   env.regions.forEach((r) => allRegions.add(r));
@@ -114,8 +119,8 @@ export const resolveDeltas = async (
   const table = new Table({
     head: ['Service', ...allRegions],
     style: {
-      head: ['cyan']
-    }
+      head: ['cyan'],
+    },
   });
 
   for (const [serviceName, serviceOperations] of operations.entries()) {
@@ -130,4 +135,4 @@ export const resolveDeltas = async (
   console.log(table.toString());
   logger.lf();
   return operations;
-}
+};

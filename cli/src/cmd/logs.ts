@@ -1,8 +1,8 @@
 import { EventsLog } from '@microlambda/logger';
-import chalk from "chalk";
+import chalk from 'chalk';
 import { join } from 'path';
-import { existsSync } from "fs";
-import { readJSONSync } from "fs-extra";
+import { existsSync } from 'fs';
+import { readJSONSync } from 'fs-extra';
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler } from '@microlambda/logger';
@@ -24,7 +24,7 @@ export const logs = async (serviceName: string, cmd: string): Promise<void> => {
       logger.info(result.command);
       logger.info(result.stdout);
       logger.error(result.stderr);
-      logger.info('Process exited with status', result.exitCode)
+      logger.info('Process exited with status', result.exitCode);
     }
   } else {
     logger.warn(chalk.yellow('No logs found for command', cmd || 'start', 'on service', serviceName));

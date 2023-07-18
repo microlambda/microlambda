@@ -5,10 +5,14 @@ import { regions } from '@microlambda/config';
 import { LockManager, State } from '@microlambda/remote-state';
 import { getDependenciesGraph } from '../../utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
+import { EnvironmentLoader } from '@microlambda/environments';
+import { init } from '../../utils/init';
 
 export const createReplicate = async (env: string, region: string): Promise<void> => {
   logger.info('Creating regional replicate for', env);
   logger.lf();
+  const projectRoot = resolveProjectRoot();
+  const { project } = await init(projectRoot);
   const config = await printAccountInfos();
   await verifyState(config);
   if (!regions.includes(region)) {
@@ -34,8 +38,14 @@ export const createReplicate = async (env: string, region: string): Promise<void
   }
   await lock.lock();
   await state.createReplicate(env, region);
+  const loader = new EnvironmentLoader(project);
+  const { failures } = await loader.createRegionalReplicate(env, region);
+  failures.forEach((err, envVar) => {
+    logger.warn(`Failed to replicate secret/ssm parameter ${envVar.raw} in region ${region}`);
+    logger.warn('Original error:', err);
+  });
   await lock.releaseLock();
   logger.success('Replicate order created. On next deploy, environment resources will be replicated in', region);
   logger.success(`Run yarn mila deploy -e ${env} to create new resources on AWS Cloud`);
   process.exit(0);
-}
+};

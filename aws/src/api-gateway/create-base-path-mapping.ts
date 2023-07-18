@@ -3,8 +3,8 @@ import {
   CreateApiMappingCommand,
   CreateApiMappingCommandOutput,
   CreateApiMappingRequest,
-} from "@aws-sdk/client-apigatewayv2";
-import { serviceName } from "./service-name";
+} from '@aws-sdk/client-apigatewayv2';
+import { serviceName } from './service-name';
 import { IBaseLogger } from '@microlambda/types';
 import { maxAttempts } from '../max-attempts';
 
@@ -14,7 +14,7 @@ export const createBasePathMapping = async (
   apiId: string,
   stage: string,
   basePath?: string,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<CreateApiMappingCommandOutput> => {
   const client = new ApiGatewayV2Client({ region, maxAttempts: maxAttempts() });
   const params: CreateApiMappingRequest = {
@@ -24,10 +24,10 @@ export const createBasePathMapping = async (
     Stage: stage,
   };
   try {
-    logger?.debug(serviceName, "CreateBasePathMappingCommand", params);
+    logger?.debug(serviceName, 'CreateBasePathMappingCommand', params);
     return await client.send(new CreateApiMappingCommand(params));
   } catch (e) {
-    logger?.error(serviceName, "CreateBasePathMappingCommand failed");
+    logger?.error(serviceName, 'CreateBasePathMappingCommand failed');
     logger?.error(e);
     throw e;
   }

@@ -8,8 +8,8 @@ import { deploy } from './cmd/deploy';
 import { getDefaultThreads } from '@microlambda/utils';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
-import {info} from "./cmd/info";
-import { logs } from "./cmd/logs";
+import { info } from './cmd/info';
+import { logs } from './cmd/logs';
 import { init } from './cmd/init';
 import { commandWrapper } from './utils/command-wapper';
 import { listEnvs } from './cmd/envs/list';
@@ -31,12 +31,10 @@ program
   .action(async (cmd) => {
     await commandWrapper(async () => {
       await init(cmd);
-    })
+    });
   });
 
-const envs = program
-  .command('envs')
-  .description('Manage deployed environments.');
+const envs = program.command('envs').description('Manage deployed environments.');
 
 envs
   .command('list')
@@ -44,7 +42,7 @@ envs
   .action(async () => {
     await commandWrapper(async () => {
       await listEnvs();
-    })
+    });
   });
 
 envs
@@ -53,7 +51,7 @@ envs
   .action(async (cmd) => {
     await commandWrapper(async () => {
       await createEnv(cmd);
-    })
+    });
   });
 
 envs
@@ -62,34 +60,40 @@ envs
   .action(async (cmd) => {
     await commandWrapper(async () => {
       await describeEnv(cmd);
-    })
+    });
   });
 
 envs
   .command('destroy <name>')
-  .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
+  .description(
+    'Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.',
+  )
   .action(async (cmd) => {
     await commandWrapper(async () => {
       await destroyEnv(cmd);
-    })
+    });
   });
 
 envs
   .command('create-replicate <name> <region>')
-  .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
+  .description(
+    'Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.',
+  )
   .action(async (name, region) => {
     await commandWrapper(async () => {
-     await createReplicate(name, region);
-    })
+      await createReplicate(name, region);
+    });
   });
 
 envs
   .command('destroy-replicate <name> <region>')
-  .description('Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.')
+  .description(
+    'Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.',
+  )
   .action(async (name, region) => {
     await commandWrapper(async () => {
       await destroyReplicate(name, region);
-    })
+    });
   });
 
 // FIXME
@@ -203,7 +207,10 @@ program
   .option('-s <service>, --service <service>', 'the services to test (coma-seperated list)')
   .option('--force', 'ignore test command checksums and re-run tests', false)
   .option('--remote-cache', 'use remote caching to skip tests execution if sources did not change', false)
-  .option('--affected-since <sha1>', 'specify a revision as reference when using remote caching. This is optional, if not specified, last execution on current branch will be used')
+  .option(
+    '--affected-since <sha1>',
+    'specify a revision as reference when using remote caching. This is optional, if not specified, last execution on current branch will be used',
+  )
   .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being tested')
   .action(
     async (cmd) =>
@@ -219,7 +226,11 @@ program
   .option('--no-recompile', 'skip workspaces recompilation', false)
   .option('--force-package', 'ignore package command checksums and re-package', false)
   .option('--force', 'skip bootstrapping dependencies', false)
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
+  .option(
+    '-c, --concurrency',
+    'defines how much threads can be used for parallel tasks',
+    getDefaultThreads().toString(),
+  )
   .option('-s <service>, --service <service>', 'the services you want to package (coma-seperated list)', false)
   .description('package services source code')
   .action(
@@ -239,7 +250,11 @@ program
   .option('--force-deploy', 'ignore deploy command checksums and re-deploy', false)
   .option('--force-package', 'ignore package and deploy commands checksums and re-deploy', false)
   .option('--force', 'ignore build, package and deploy checksums and re-deploy', false)
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
+  .option(
+    '-c, --concurrency',
+    'defines how much threads can be used for parallel tasks',
+    getDefaultThreads().toString(),
+  )
   .option('-s <service>, --service <service>', 'the services you want to deploy (coma-seperated list)')
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
@@ -260,7 +275,11 @@ program
     '-s <service>, --service <service>',
     'the service you want to remove. If no specified all services will be removed.',
   )
-  .option('-c, --concurrency', 'defines how much threads can be used for parallel tasks', getDefaultThreads().toString())
+  .option(
+    '-c, --concurrency',
+    'defines how much threads can be used for parallel tasks',
+    getDefaultThreads().toString(),
+  )
   .option('--no-prompt', 'skip asking user confirmation before deploying', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)

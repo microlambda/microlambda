@@ -1,4 +1,4 @@
-import joi from "joi";
+import joi from 'joi';
 
 const removeWhen = joi.object().keys({
   keep: joi.string().required(),
@@ -23,6 +23,6 @@ export const conditionsSchema = joi.array().items(
     }),
     keepWhen.keys({
       neq: joi.string().required(),
-    })
-  )
+    }),
+  ),
 );

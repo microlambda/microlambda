@@ -1,18 +1,22 @@
-import { Subject, Subscription } from "rxjs";
-import { EventsLog, EventsLogger } from "@microlambda/logger";
-import { getDefaultThreads } from "@microlambda/utils";
-import { Workspace } from "./graph/workspace";
-import { Project } from "./graph/project";
-import { RunCommandEvent, RunCommandEventEnum, Runner } from "@microlambda/runner-core";
-import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
+import { Subject, Subscription } from 'rxjs';
+import { EventsLog, EventsLogger } from '@microlambda/logger';
+import { getDefaultThreads } from '@microlambda/utils';
+import { Workspace } from './graph/workspace';
+import { Project } from './graph/project';
+import { RunCommandEvent, RunCommandEventEnum, Runner } from '@microlambda/runner-core';
+import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
 
-export interface StopServiceEvent { service: Workspace, type: 'stopping' | 'stopped' }
+export interface StopServiceEvent {
+  service: Workspace;
+  type: 'stopping' | 'stopped';
+}
 
 export type RunCommandSchedulerEvent = RunCommandEvent & { cmd: 'start' | 'transpile' | 'build' };
 
 export type SchedulerEvent = RunCommandSchedulerEvent | StopServiceEvent;
 
-export const isStopServiceEvent = (evt: SchedulerEvent): evt is StopServiceEvent => ['stopping', 'stopped'].includes(String(evt.type));
+export const isStopServiceEvent = (evt: SchedulerEvent): evt is StopServiceEvent =>
+  ['stopping', 'stopped'].includes(String(evt.type));
 
 export class Scheduler {
   private readonly _logger: EventsLogger;
@@ -23,14 +27,14 @@ export class Scheduler {
 
   private _targets = new Set<Workspace>();
   private readonly _runners: {
-    transpile: Runner,
-    build: Runner,
-    start: Map<string, Runner>,
+    transpile: Runner;
+    build: Runner;
+    start: Map<string, Runner>;
   };
   private _subscriptions: {
-    transpile?: Subscription,
-    build?: Subscription,
-    start: Map<string, Subscription>,
+    transpile?: Subscription;
+    build?: Subscription;
+    start: Map<string, Subscription>;
   } = {
     start: new Map(),
   };
@@ -43,7 +47,7 @@ export class Scheduler {
       transpile: new Runner(this.project, this._concurrency, logger),
       build: new Runner(this.project, this._concurrency, logger),
       start: new Map(),
-    }
+    };
   }
 
   public startOne(service: Workspace): void {
@@ -83,10 +87,13 @@ export class Scheduler {
   }
 
   public restartAll(recompile = true): void {
-    return this._exec({ toStart: new Set([...this.project.services.values()]), toStop: new Set([...this.project.services.values()]) });
+    return this._exec({
+      toStart: new Set([...this.project.services.values()]),
+      toStop: new Set([...this.project.services.values()]),
+    });
   }
 
-  private _exec(jobs: {toStart: Set<Workspace>, toStop: Set<Workspace>}): void {
+  private _exec(jobs: { toStart: Set<Workspace>; toStop: Set<Workspace> }): void {
     this._logger.info('Executing tasks');
     // Abort previous transpile and build and rerun in watch mode
     this._logger.info('Aborting previous build processes');
@@ -96,7 +103,10 @@ export class Scheduler {
     this._subscriptions.build?.unsubscribe();
     this._runners.transpile = new Runner(this.project, this._concurrency, this._logger?.logger);
     this._runners.build = new Runner(this.project, this._concurrency, this._logger?.logger);
-    this._logger.info('Building targets and their dependencies', [...this._targets].map((t) => t.name));
+    this._logger.info(
+      'Building targets and their dependencies',
+      [...this._targets].map((t) => t.name),
+    );
     const transpile$ = this._runners.transpile.runCommand({
       cmd: 'transpile',
       mode: 'topological',
@@ -104,7 +114,7 @@ export class Scheduler {
       to: [...this._targets],
       watch: true,
     });
-    const build$ = this._runners.transpile.runCommand({
+    const build$ = this._runners.build.runCommand({
       cmd: 'build',
       mode: 'topological',
       force: false,
@@ -113,7 +123,7 @@ export class Scheduler {
     });
     this._subscriptions.transpile = transpile$.subscribe({
       next: (evt) => {
-        switch(evt.type) {
+        switch (evt.type) {
           case RunCommandEventEnum.NODE_STARTED:
             this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.TRANSPILING);
             break;
@@ -123,16 +133,19 @@ export class Scheduler {
               finishedAt: new Date().toISOString(),
               took: evt.result.overall,
               fromCache: evt.result.fromCache,
-            })
+            });
             break;
           case RunCommandEventEnum.NODE_ERRORED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.ERROR_TRANSPILING);
+            this.project
+              .getWorkspace(evt.workspace.name)
+              ?.updateStatus()
+              .transpiled(TranspilingStatus.ERROR_TRANSPILING);
             break;
           case RunCommandEventEnum.NODE_INTERRUPTED:
             this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.NOT_TRANSPILED);
             break;
         }
-        this._events$.next({ ...evt, cmd: "transpile" });
+        this._events$.next({ ...evt, cmd: 'transpile' });
       },
       error: (error) => {
         this._logger.error(error);
@@ -143,7 +156,7 @@ export class Scheduler {
     });
     this._subscriptions.build = build$.subscribe({
       next: (evt) => {
-        switch(evt.type) {
+        switch (evt.type) {
           case RunCommandEventEnum.NODE_STARTED:
             this.project.getWorkspace(evt.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.CHECKING);
             break;
@@ -162,7 +175,7 @@ export class Scheduler {
             this.project.getWorkspace(evt.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.NOT_CHECKED);
             break;
         }
-        this._events$.next({ ...evt, cmd: "build" });
+        this._events$.next({ ...evt, cmd: 'build' });
       },
       error: (error) => {
         this._logger.error(error);
@@ -173,22 +186,27 @@ export class Scheduler {
     });
 
     // Stop services, then start services
-    Promise.all([...jobs.toStop].map( async (w) => {
-      this._logger.info('Stopping', w.name);
-      if (this._runners.start.has(w.name)) {
-        this._events$.next({ service: w, type: 'stopping' });
-        this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPING);
-        await w.kill('start', [w.ports?.http, w.ports?.lambda, w.ports?.websocket].filter((p) => p != null) as number[]);
-        this._logger.info('Serverless offline process killed', w.name);
-        this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPED);
-        this._events$.next({ service: w, type: 'stopped' });
-        this._subscriptions.start.get(w.name)?.unsubscribe();
-        this._runners.start.delete(w.name);
-      } else {
-        this._logger.warn('Service not registered as running ', w.name);
-      }
-    })).then(() => {
-      jobs.toStart.forEach((w) => {
+    Promise.all(
+      [...jobs.toStop].map(async (w) => {
+        this._logger.info('Stopping', w.name);
+        if (this._runners.start.has(w.name)) {
+          this._events$.next({ service: w, type: 'stopping' });
+          this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPING);
+          await w.kill(
+            'start',
+            [w.ports?.http, w.ports?.lambda, w.ports?.websocket].filter((p) => p != null) as number[],
+          );
+          this._logger.info('Serverless offline process killed', w.name);
+          this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPED);
+          this._events$.next({ service: w, type: 'stopped' });
+          this._subscriptions.start.get(w.name)?.unsubscribe();
+          this._runners.start.delete(w.name);
+        } else {
+          this._logger.warn('Service not registered as running ', w.name);
+        }
+      }),
+    ).then(() => {
+      jobs.toStart.forEach(async (w) => {
         this._logger.info('Starting', w.name);
         if (!this._runners.start.has(w.name)) {
           const runner = new Runner(this.project, this._concurrency, this._logger.logger);
@@ -200,13 +218,15 @@ export class Scheduler {
             workspaces: [w],
             force: true,
             args: [
-              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
-            ]
+              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${
+                w.ports?.lambda.toString() || '4000'
+              } --websocketPort ${w.ports?.websocket.toString() || '6000'} --reloadHandler`,
+            ],
           });
           const subscription = daemon$.subscribe({
             next: (evt) => {
-              this._logger.debug({ evt: evt.type, workspace: w.name});
-              this._events$.next({ ...evt, cmd: "start" });
+              this._logger.debug({ evt: evt.type, workspace: w.name });
+              this._events$.next({ ...evt, cmd: 'start' });
               if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
                 this._logger.warn('Error starting', w.name);
                 this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.CRASHED);

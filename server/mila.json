@@ -2,23 +2,12 @@
   "extends": "../mila.shared.json",
   "targets": {
     "build": {
-      "cmd": [
-        "../node_modules/.bin/tsc --build",
-        "cp -r ../client/dist/. ./dist/static"
-      ],
+      "cmd": ["../node_modules/.bin/tsc --build", "cp -r ../client/dist/. ./dist/static"],
       "src": {
-        "internals": [
-          "src/**/*.ts",
-          "tsconfig.json"
-        ],
-        "root": [
-          "tsconfig.json"
-        ]
+        "internals": ["src/**/*.ts", "tsconfig.json"],
+        "root": ["tsconfig.json"]
       },
-      "artifacts": [
-        "dist/**/*.js",
-        "dist/**/*.d.ts"
-      ]
+      "artifacts": ["dist/**/*.js", "dist/**/*.d.ts"]
     }
   }
 }

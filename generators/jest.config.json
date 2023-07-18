@@ -13,8 +13,6 @@
   "verbose": true,
   "collectCoverage": true,
   "coverageDirectory": "./coverage",
-  "collectCoverageFrom": [
-    "<rootDir>/src/**/*.ts"
-  ],
+  "collectCoverageFrom": ["<rootDir>/src/**/*.ts"],
   "coverageReporters": ["json", "html", "lcov"]
 }

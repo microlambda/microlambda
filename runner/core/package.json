@@ -7,7 +7,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build-runner": "../../node_modules/.bin/tsc -p tsconfig.json"
+    "pre:build": "../../node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
     "@microlambda/aws": "workspace:*",
@@ -16,24 +16,24 @@
     "@microlambda/logger": "workspace:*",
     "@microlambda/utils": "workspace:*",
     "chokidar": "^3.5.3",
-    "conventional-commits-parser": "^3.2.1",
-    "debug": "^4.3.3",
-    "execa": "^5.0.0",
-    "fast-glob": "^3.2.5",
+    "conventional-commits-parser": "^3.2.4",
+    "debug": "^4.3.4",
+    "execa": "^5.1.1",
+    "fast-glob": "^3.3.0",
     "hasha": "5.2.2",
     "lodash.isequal": "4.5.0",
     "ps-tree": "^1.2.0",
-    "rxjs": "^7.4.0",
-    "semver": "^7.3.5",
-    "simple-git": "^2.38.0",
+    "rxjs": "^7.8.1",
+    "semver": "^7.5.4",
+    "simple-git": "^3.19.1",
     "tar-stream": "^2.2.0"
   },
   "devDependencies": {
-    "@types/conventional-commits-parser": "^3.0.1",
-    "@types/debug": "^4.1.7",
-    "@types/lodash": "4.14.168",
-    "@types/semver": "^7.3.5",
+    "@types/conventional-commits-parser": "^3.0.3",
+    "@types/debug": "^4.1.8",
+    "@types/lodash": "4.14.195",
+    "@types/semver": "^7.5.0",
     "@types/tar-stream": "^2.2.2",
-    "typescript": "^4.2.4"
+    "typescript": "^5.0.4"
   }
 }

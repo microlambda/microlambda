@@ -1,16 +1,16 @@
-import { aws } from "@microlambda/aws";
-import { IDomainConfig, IBaseLogger } from "@microlambda/types";
+import { aws } from '@microlambda/aws';
+import { IDomainConfig, IBaseLogger } from '@microlambda/types';
 
 export const afterDeploy = async (
   region: string,
   stackName: string,
   stage: string,
   domain?: IDomainConfig,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<void> => {
   // create/update base path mapping
   if (!domain || domain?.domainName === 'null') {
-    logger?.info("No custom domain configured");
+    logger?.info('No custom domain configured');
     return;
   }
   // TODO: Use objects, a lot of params are not easy to handle
@@ -18,17 +18,21 @@ export const afterDeploy = async (
     region,
     domain.domainName,
     domain.basePath,
-    logger
+    logger,
   );
   if (!mapping) {
-    const apiId = await aws.cloudformation.getApiId(region, stackName, domain.type);
+    const apiId = await aws.cloudformation.getApiId(
+      region,
+      stackName,
+      domain.type,
+    );
     await aws.apiGateway.createBasePathMapping(
       region,
       domain.domainName,
       apiId,
       stage,
       domain.basePath,
-      logger
+      logger,
     );
   }
 };

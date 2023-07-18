@@ -1,6 +1,6 @@
-# µlambda
+# Microlambda
 
-Is an opinionated framework that simplifies development of typescript serverless microservices
+Is an opinionated framework that simplifies development of typescript AWS serverless microservices
 architectures.
 
 The project is maintained as a monorepo (using yarn workspaces) and contains the following packages:
@@ -15,9 +15,11 @@ The project is maintained as a monorepo (using yarn workspaces) and contains the
 * `@microlambda/plugin` Serverless framework plugin that enable custom domain creation and multi-regions deployments. 
 * `@microlambda/docs` Project documentation website. Powered by docusaurus.
 
-## Getting started
+## Contribute
 
-1. Clone this repo
+### Project first build
+
+1. Clone this repository
 2. Install dependencies with `yarn`
 3. Mila is designed to build itself, to do so, build mila-runner using ``yarn build:runner``
 4. Once the runner is built, use it to build the entire project ``yarn build``

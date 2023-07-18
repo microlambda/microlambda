@@ -1,3 +1,3 @@
-import chalk from "chalk";
+import chalk from 'chalk';
 
-export const serviceName = chalk.bgBlue("route53");
+export const serviceName = chalk.bgBlue('route53');

@@ -4,7 +4,6 @@ import { LogFilesHandler, Workspace } from '@microlambda/runner-core';
 import { resolveProjectRoot } from '@microlambda/utils';
 
 export class LogsFileHandler extends LogFilesHandler {
-
   readonly projectRoot: string;
   readonly logsRoot: string;
 

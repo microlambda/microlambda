@@ -1,11 +1,11 @@
-import Joi, { ObjectSchema } from '@hapi/joi';
+import Joi, { ObjectSchema } from 'joi';
 import { IConfig, RegionConfig } from './config';
 import rc from 'rc';
 import fallback from './default.json';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { sync } from 'glob';
 import { join } from 'path';
-import {Project} from "../graph/project";
+import { Project } from '../graph/project';
 
 type Step = Map<Region, Set<Microservice>>;
 type Region = string;
@@ -144,10 +144,7 @@ export class ConfigReader {
       return step;
     };
     if (!steps) {
-      this._logger?.debug(
-        'No specific config for steps. Using default',
-        schedule(this._services),
-      );
+      this._logger?.debug('No specific config for steps. Using default', schedule(this._services));
       const step = schedule(this._services);
       return [step];
     }
@@ -156,8 +153,9 @@ export class ConfigReader {
       this._logger?.debug('Scheduling', step);
       let toSchedule: string[];
       if (step === '*') {
-        toSchedule = this._services
-          .filter((s) => !steps.filter((step) => Array.isArray(step)).some((step) => step.includes(s)));
+        toSchedule = this._services.filter(
+          (s) => !steps.filter((step) => Array.isArray(step)).some((step) => step.includes(s)),
+        );
         this._logger?.debug('Is wildcard. Resolving all other services', toSchedule);
       } else {
         toSchedule = step;

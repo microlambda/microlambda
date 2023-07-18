@@ -29,38 +29,18 @@ export type Condition =
   | IConditionRemoveNotEquals;
 
 // Type guards
-export const isRemoveEqCondition = (
-  condition: Condition
-): condition is IConditionRemoveEquals => {
-  return (
-    !!(condition as IConditionRemoveEquals).remove &&
-    !!(condition as IConditionRemoveEquals).eq
-  );
+export const isRemoveEqCondition = (condition: Condition): condition is IConditionRemoveEquals => {
+  return !!(condition as IConditionRemoveEquals).remove && !!(condition as IConditionRemoveEquals).eq;
 };
 
-export const isRemoveNeqCondition = (
-  condition: Condition
-): condition is IConditionRemoveNotEquals => {
-  return (
-    !!(condition as IConditionRemoveNotEquals).remove &&
-    !!(condition as IConditionRemoveNotEquals).neq
-  );
+export const isRemoveNeqCondition = (condition: Condition): condition is IConditionRemoveNotEquals => {
+  return !!(condition as IConditionRemoveNotEquals).remove && !!(condition as IConditionRemoveNotEquals).neq;
 };
 
-export const isKeepEqCondition = (
-  condition: Condition
-): condition is IConditionKeepEquals => {
-  return (
-    !!(condition as IConditionKeepEquals).keep &&
-    !!(condition as IConditionKeepEquals).eq
-  );
+export const isKeepEqCondition = (condition: Condition): condition is IConditionKeepEquals => {
+  return !!(condition as IConditionKeepEquals).keep && !!(condition as IConditionKeepEquals).eq;
 };
 
-export const isKeepNeqCondition = (
-  condition: Condition
-): condition is IConditionKeepNotEquals => {
-  return (
-    !!(condition as IConditionKeepNotEquals).keep &&
-    !!(condition as IConditionKeepNotEquals).neq
-  );
+export const isKeepNeqCondition = (condition: Condition): condition is IConditionKeepNotEquals => {
+  return !!(condition as IConditionKeepNotEquals).keep && !!(condition as IConditionKeepNotEquals).neq;
 };

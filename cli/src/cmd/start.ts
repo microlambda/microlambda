@@ -1,15 +1,15 @@
-import { IOSocketManager, startServer } from "@microlambda/server";
+import { IOSocketManager, startServer } from '@microlambda/server';
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
-import {
-  recreateLogDirectory,
-} from '@microlambda/core';
-import { Scheduler } from "@microlambda/core";
-import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
-import { WebsocketLogsHandler } from "../log-handlers/websocket";
+import { recreateLogDirectory } from '@microlambda/core';
+import { Scheduler } from '@microlambda/core';
+import { EventsLog, EventLogsFileHandler } from '@microlambda/logger';
+import { WebsocketLogsHandler } from '../log-handlers/websocket';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { logger } from '../utils/logger';
 import { init } from '../utils/init';
+import { aws } from '@microlambda/aws';
+import chalk from 'chalk';
 
 interface IStartOptions {
   interactive: boolean;
@@ -17,13 +17,11 @@ interface IStartOptions {
   port: number;
 }
 
-export const start = async (
-  options: IStartOptions,
-): Promise<void> => {
+export const start = async (options: IStartOptions): Promise<void> => {
   logger.info(showOff());
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-start-${Date.now()}`)]);
-  const { project } = await init(projectRoot, eventsLog);
+  const { project, config } = await init(projectRoot, eventsLog);
 
   // await yarnInstall(graph, logger);
   const DEFAULT_PORT = 4545;
@@ -34,6 +32,14 @@ export const start = async (
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
   starting.succeed();
+
+  try {
+    const awsUser = await aws.iam.getCurrentUser(config.defaultRegion);
+    logger.lf();
+    logger.info('Connected as', chalk.white.bold(awsUser.arn));
+  } catch (e) {
+    logger.warn('Not connected to AWS, live environments infos will be not available.');
+  }
 
   const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project);
   for (const workspace of project.workspaces.values()) {

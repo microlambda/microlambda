@@ -1,4 +1,4 @@
-import { EventsLog } from "@microlambda/logger";
+import { EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler } from '@microlambda/logger/lib';
 import { logger } from '../utils/logger';

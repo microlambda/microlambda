@@ -70,5 +70,13 @@
         </li>
       {/each}
     </ul>{/if}
+    {#if $services.length}<h3 class="mt0">Environments</h3>
+    <ul>
+      {#each $services as node}
+        <li on:click={selectService(node, true)}>
+          <span>{node.name}</span>
+        </li>
+      {/each}
+    </ul>{/if}
   </div>
 </aside>

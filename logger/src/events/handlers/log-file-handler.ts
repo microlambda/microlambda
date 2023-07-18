@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { createWriteStream, existsSync, mkdirSync, WriteStream } from "fs";
+import { createWriteStream, existsSync, mkdirSync, WriteStream } from 'fs';
 import { IEventsLogEntry } from '../events-log-entry';
 import { IEventsLogHandler } from './events-log-handler';
 import { inspect } from 'util';
@@ -17,17 +17,23 @@ export class EventLogsFileHandler implements IEventsLogHandler {
   }
 
   write(entry: IEventsLogEntry): void {
-    this._stream.write(`\n[${entry.level}] (${entry.scope || 'unscoped'}) (${entry.date}) ${entry.args.map(EventLogsFileHandler._toString).join(' ')}`);
-  };
+    this._stream.write(
+      `\n[${entry.level}] (${entry.scope || 'unscoped'}) (${entry.date}) ${entry.args
+        .map(EventLogsFileHandler._toString)
+        .join(' ')}`,
+    );
+  }
 
   private static _toString(arg: unknown): string {
     return typeof arg === 'string'
       ? arg
       : inspect(
-        arg,
-        false,
-        Number.isInteger(Number(process.env.MILA_INSPECT_DEPTH)) ? Number(process.env.MILA_INSPECT_DEPTH) : DEFAULT_INSPECT_DEPTH,
-        false,
-      );
+          arg,
+          false,
+          Number.isInteger(Number(process.env.MILA_INSPECT_DEPTH))
+            ? Number(process.env.MILA_INSPECT_DEPTH)
+            : DEFAULT_INSPECT_DEPTH,
+          false,
+        );
   }
 }

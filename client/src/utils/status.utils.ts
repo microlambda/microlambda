@@ -2,110 +2,110 @@ import type {
   TranspilingStatus,
   TypeCheckStatus,
   ServiceStatus,
-} from "@microlambda/types";
+} from '@microlambda/types';
 
 export const getTranspiled = (status: TranspilingStatus): string => {
   switch (status) {
     case 2:
-      return "Transpiled";
+      return 'Transpiled';
     case 1:
-      return "Transpiling";
+      return 'Transpiling';
     case 3:
-      return "Error transpiling";
+      return 'Error transpiling';
     case 0:
-      return "Not transpiled";
+      return 'Not transpiled';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
 };
 
 export const getTypeChecked = (status: TypeCheckStatus): string => {
   switch (status) {
     case 1:
-      return "Typechecking";
+      return 'Typechecking';
     case 0:
-      return "Not type-checked";
+      return 'Not type-checked';
     case 3:
-      return "Type errors";
+      return 'Type errors';
     case 2:
-      return "Type checked";
+      return 'Type checked';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
 };
 
 export const getTranspiledClass = (status: TranspilingStatus): string => {
   switch (status) {
     case 2:
-      return "green";
+      return 'green';
     case 1:
-      return "blue";
+      return 'blue';
     case 3:
-      return "bright-red";
+      return 'bright-red';
     case 0:
-      return "grey";
+      return 'grey';
     default:
-      return "";
+      return '';
   }
 };
 
 export const getTypeCheckClass = (status: TypeCheckStatus): string => {
   switch (status) {
     case 1:
-      return "blue";
+      return 'blue';
     case 0:
-      return "grey";
+      return 'grey';
     case 3:
-      return "bright-red";
+      return 'bright-red';
     case 2:
-      return "green";
+      return 'green';
     default:
-      return "";
+      return '';
   }
 };
 
 export const getServiceStatus = (
   status: ServiceStatus,
-  enabled: boolean
+  enabled: boolean,
 ): string => {
   if (!enabled) {
-    return "Disabled";
+    return 'Disabled';
   }
   switch (status) {
     case 4:
-      return "Crashed";
+      return 'Crashed';
     case 1:
-      return "Running";
+      return 'Running';
     case 0:
-      return "Starting";
+      return 'Starting';
     case 3:
-      return "Stopped";
+      return 'Stopped';
     case 2:
-      return "Stopping";
+      return 'Stopping';
     default:
-      return "Unknown";
+      return 'Unknown';
   }
 };
 
 export const getServiceStatusClass = (
   status: ServiceStatus,
-  enabled: boolean
+  enabled: boolean,
 ): string => {
   if (!enabled) {
-    return "grey";
+    return 'grey';
   }
   switch (status) {
     case 4:
-      return "bright-red";
+      return 'bright-red';
     case 1:
-      return "green";
+      return 'green';
     case 0:
-      return "blue";
+      return 'blue';
     case 3:
-      return "red";
+      return 'red';
     case 2:
-      return "blue";
+      return 'blue';
     default:
-      return "";
+      return '';
   }
 };

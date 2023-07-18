@@ -4,8 +4,8 @@ const inputs = {
   foo: 'foo',
   bar: {
     baz: 42,
-  }
-}
+  },
+};
 
 describe('The interpolator method', () => {
   it('should interpolate correctly ${input.foo}', () => {
@@ -19,7 +19,7 @@ describe('The interpolator method', () => {
       expect(interpolate('Hello from ${input.baz.foobar} !', inputs)).toBe('Hello from foo !');
       fail('should fail');
     } catch (e) {
-      expect((e as Error).message).toBe('Incorrect JSON path: baz.foobar does not exist')
+      expect((e as Error).message).toBe('Incorrect JSON path: baz.foobar does not exist');
     }
   });
   it('should throw if JSON path is incorrect - not a primitive ${input.bar}', () => {

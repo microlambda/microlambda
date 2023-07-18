@@ -1,33 +1,40 @@
-import { derived, readable, Writable, writable } from "svelte/store";
+import { derived, readable, Writable, writable } from 'svelte/store';
 import {
   fetchCompilationLogs,
   fetchEventLogs,
   fetchGraph,
   fetchSchedulerStatus,
-  fetchServiceLogs, healthCheck, IGraph, ILogsResponse
-} from "./api";
+  fetchServiceLogs,
+  healthCheck,
+  IGraph,
+  ILogsResponse,
+} from './api';
 import type {
   IEventLog,
   INodeSummary,
   SchedulerStatus,
-} from "@microlambda/types";
-import { logger } from "./logger";
+} from '@microlambda/types';
+import { logger } from './logger';
 
 const DEFAULT_POLLING_RATE = 500;
-const log = logger.scope("(store)");
+const log = logger.scope('(store)');
 
 const isConnected = false;
 export const connected = readable(false, (set) => {
   setInterval(() => {
-    healthCheck().then((connected) => {
-      if (connected != isConnected) {
-        set(connected);
-      }
-    }).catch(() => set(false))
+    healthCheck()
+      .then((connected) => {
+        if (connected != isConnected) {
+          set(connected);
+        }
+      })
+      .catch(() => set(false));
   }, DEFAULT_POLLING_RATE);
 });
 
-export const selected = writable<INodeSummary & { isService: boolean } | null>(null);
+export const selected = writable<
+  (INodeSummary & { isService: boolean }) | null
+>(null);
 export const tabMounted = writable<boolean>(false);
 
 interface ICreateWritable<T, A = void> extends Writable<T> {
@@ -37,54 +44,67 @@ interface ICreateWritable<T, A = void> extends Writable<T> {
 export const serviceLogs = createServiceLogs();
 export const schedulerStatus = createSchedulerStatus();
 export const compilationLogs = createCompilationLogs();
-export const tscLogs = derived(compilationLogs, ($logs) => $logs.data.map((log, idx) => ({ id: idx, text: log})));
-export const offlineLogs = derived(serviceLogs, ($logs) => $logs.data.map((log, idx) => ({ id: idx, text: log})));
+export const tscLogs = derived(compilationLogs, ($logs) =>
+  $logs.data.map((log, idx) => ({ id: idx, text: log })),
+);
+export const offlineLogs = derived(serviceLogs, ($logs) =>
+  $logs.data.map((log, idx) => ({ id: idx, text: log })),
+);
 export const eventsLog = createEventsLog();
 export const graph = createGraph();
-export const services = derived(graph, ($graph) =>
-  $graph.services
-);
-export const packages = derived(graph, ($graph) =>
-  $graph.packages
-);
+export const services = derived(graph, ($graph) => $graph.services);
+export const packages = derived(graph, ($graph) => $graph.packages);
 
 const areGraphEquals = (g1: IGraph, g2: IGraph): boolean => {
-  if(g1.services.length === g2.services.length && g1.packages.length === g2.packages.length) {
-    return g1.services.every((s1) => {
-      const service = g2.services.find((s2) => s1.name === s2.name);
-      if (service) {
-        return service.status === s1.status && service.transpiled === s1.transpiled && service.typeChecked === s1.typeChecked;
-      }
-      return false;
-    }) && g1.packages.every((p1) => {
-      const pkg = g2.packages.find((p2) => p1.name === p2.name);
-      if (pkg) {
-        return pkg.transpiled === p1.transpiled && pkg.typeChecked === p1.typeChecked;
-      }
-      return false;
-    });
+  if (
+    g1.services.length === g2.services.length &&
+    g1.packages.length === g2.packages.length
+  ) {
+    return (
+      g1.services.every((s1) => {
+        const service = g2.services.find((s2) => s1.name === s2.name);
+        if (service) {
+          return (
+            service.status === s1.status &&
+            service.transpiled === s1.transpiled &&
+            service.typeChecked === s1.typeChecked
+          );
+        }
+        return false;
+      }) &&
+      g1.packages.every((p1) => {
+        const pkg = g2.packages.find((p2) => p1.name === p2.name);
+        if (pkg) {
+          return (
+            pkg.transpiled === p1.transpiled &&
+            pkg.typeChecked === p1.typeChecked
+          );
+        }
+        return false;
+      })
+    );
   }
   return false;
-}
+};
 
 type Slice = [number, number?];
 
 const currentSlices: {
-  eventsLog?: Slice,
-  buildLogs?: Slice,
-  offlineLogs?: Slice,
+  eventsLog?: Slice;
+  buildLogs?: Slice;
+  offlineLogs?: Slice;
 } = {
   eventsLog: [0],
   buildLogs: [0],
   offlineLogs: [0],
-}
+};
 
 const pollers: {
-  eventsLog?: NodeJS.Timer,
-  buildLogs?: NodeJS.Timer,
-  offlineLogs?: NodeJS.Timer,
-  graph?: NodeJS.Timer,
-} = {}
+  eventsLog?: NodeJS.Timer;
+  buildLogs?: NodeJS.Timer;
+  offlineLogs?: NodeJS.Timer;
+  graph?: NodeJS.Timer;
+} = {};
 
 const handleLogsResponse = (
   response: ILogsResponse<string | IEventLog>,
@@ -100,22 +120,22 @@ const handleLogsResponse = (
       metadata: {
         count: response.metadata.count,
         slice: [currentSlices[type][0], response.metadata.slice[1]],
-      }
+      },
     }));
   }
-}
+};
 
 let currentGraph: IGraph;
 
 connected.subscribe(async (connected) => {
   if (!connected) {
-    log.warn('Disconnected !')
+    log.warn('Disconnected !');
     clearInterval(pollers.graph);
     clearInterval(pollers.eventsLog);
     clearInterval(pollers.offlineLogs);
     clearInterval(pollers.buildLogs);
   } else {
-    log.info('Connected !')
+    log.info('Connected !');
     pollers.graph = setInterval(async () => {
       const response = await fetchGraph();
       if (currentGraph && !areGraphEquals(currentGraph, response)) {
@@ -138,9 +158,9 @@ graph.subscribe((graph) => {
     const pkg = graph.packages.find((node) => node.name === _selected);
     const service = graph.services.find((node) => node.name === _selected);
     if (pkg) {
-      selected.set({...pkg, isService: false});
+      selected.set({ ...pkg, isService: false });
     } else if (service) {
-      selected.set({...service, isService: true});
+      selected.set({ ...service, isService: true });
     }
   }
 });
@@ -148,8 +168,8 @@ graph.subscribe((graph) => {
 selected.subscribe(async (workspace) => {
   const hasChanged = _selected !== workspace?.name;
   if (hasChanged) {
-    serviceLogs.set({ data: [], metadata: {count: 0, slice: [0, 0]}});
-    compilationLogs.set({ data: [], metadata: {count: 0, slice: [0, 0]}});
+    serviceLogs.set({ data: [], metadata: { count: 0, slice: [0, 0] } });
+    compilationLogs.set({ data: [], metadata: { count: 0, slice: [0, 0] } });
   }
   _selected = workspace?.name || null;
   clearInterval(pollers.offlineLogs);
@@ -158,30 +178,34 @@ selected.subscribe(async (workspace) => {
   if (workspace) {
     await compilationLogs.fetch(workspace.name);
     pollers.buildLogs = setInterval(async () => {
-      const response = await fetchCompilationLogs(workspace.name, [currentSlices.buildLogs[1] || 0]);
+      const response = await fetchCompilationLogs(workspace.name, [
+        currentSlices.buildLogs[1] || 0,
+      ]);
       handleLogsResponse(response, 'buildLogs', compilationLogs);
     }, DEFAULT_POLLING_RATE);
   }
   if (workspace && !workspace.isService) {
     clearInterval(pollers.offlineLogs);
-    serviceLogs.set({ data: [], metadata: {count: 0, slice: [0, 0]}});
+    serviceLogs.set({ data: [], metadata: { count: 0, slice: [0, 0] } });
   }
   if (workspace && workspace.isService) {
     await serviceLogs.fetch(workspace.name);
     pollers.offlineLogs = setInterval(async () => {
-      const response = await fetchServiceLogs(workspace.name, [currentSlices.offlineLogs[1] || 0]);
+      const response = await fetchServiceLogs(workspace.name, [
+        currentSlices.offlineLogs[1] || 0,
+      ]);
       handleLogsResponse(response, 'offlineLogs', serviceLogs);
     }, DEFAULT_POLLING_RATE);
   }
 });
 
 function createGraph(): ICreateWritable<{
-  packages: INodeSummary[],
-  services: INodeSummary[],
+  packages: INodeSummary[];
+  services: INodeSummary[];
 }> {
   const { subscribe, set, update } = writable<{
-    packages: INodeSummary[],
-    services: INodeSummary[],
+    packages: INodeSummary[];
+    services: INodeSummary[];
   }>({
     services: [],
     packages: [],
@@ -199,7 +223,10 @@ function createGraph(): ICreateWritable<{
 }
 
 function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
-  const { subscribe, update, set } = writable<ILogsResponse<IEventLog>>({ data: [], metadata: { count: 0, slice: [0, 0] }});
+  const { subscribe, update, set } = writable<ILogsResponse<IEventLog>>({
+    data: [],
+    metadata: { count: 0, slice: [0, 0] },
+  });
   return {
     subscribe,
     set,
@@ -213,7 +240,10 @@ function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
 }
 
 function createServiceLogs(): ICreateWritable<ILogsResponse, string> {
-  const { subscribe, set, update } = writable<ILogsResponse>({ data: [], metadata: { count: 0, slice: [0, 0] }});
+  const { subscribe, set, update } = writable<ILogsResponse>({
+    data: [],
+    metadata: { count: 0, slice: [0, 0] },
+  });
   return {
     subscribe,
     set,
@@ -227,7 +257,10 @@ function createServiceLogs(): ICreateWritable<ILogsResponse, string> {
 }
 
 function createCompilationLogs(): ICreateWritable<ILogsResponse, string> {
-  const { subscribe, set, update } = writable<ILogsResponse>({ data: [], metadata: { count: 0, slice: [0, 0] }});
+  const { subscribe, set, update } = writable<ILogsResponse>({
+    data: [],
+    metadata: { count: 0, slice: [0, 0] },
+  });
   return {
     subscribe,
     set,
@@ -247,7 +280,7 @@ function createSchedulerStatus(): ICreateWritable<SchedulerStatus | null> {
       /*socket.on("scheduler.status.changed", (status: SchedulerStatus) => {
         set(status);
       });*/
-    }
+    },
   );
   return {
     subscribe,
@@ -258,9 +291,6 @@ function createSchedulerStatus(): ICreateWritable<SchedulerStatus | null> {
     },
   };
 }
-
-
-
 
 /*
 let previousService: string;
