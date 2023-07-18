@@ -15,16 +15,21 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
           logger.error(chalk.red('No workspace found for target build. Please add a build script in mila.json'));
         }
       } else if (evt.type === RunCommandEventEnum.NODE_SKIPPED && !evt.affected) {
-        logger.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'))
+        logger.info(chalk.bold.yellow('-'), 'Skipped', evt.workspace.name, chalk.grey('(unaffected)'));
       } else if (evt.type === RunCommandEventEnum.NODE_STARTED) {
         spinnies.add(evt.workspace.name, `Compiling ${evt.workspace.name}`);
         inProgress.add(evt.workspace.name);
       } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
         inProgress.delete(evt.workspace.name);
-        spinnies.succeed(evt.workspace.name,  `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${evt.result.fromCache ? chalk.grey(' (from cache)') : ''}`)
+        spinnies.succeed(
+          evt.workspace.name,
+          `${evt.workspace.name} compiled ${chalk.cyan(evt.result.overall + 'ms')}${
+            evt.result.fromCache ? chalk.grey(' (from cache)') : ''
+          }`,
+        );
       } else if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
         inProgress.delete(evt.workspace.name);
-        spinnies.fail(evt.workspace.name, `Error compiling ${evt.workspace.name}`)
+        spinnies.fail(evt.workspace.name, `Error compiling ${evt.workspace.name}`);
         inProgress.forEach((w) => spinnies.update(w, `${chalk.bold.yellow('-')} Compilation aborted ${w}`));
         spinnies.stopAll();
         logger.error(`\n${chalk.bold.red('> Error details:')}\n`);
@@ -38,19 +43,21 @@ export const typeCheck = async (options: IBuildOptions): Promise<void> => {
       });
       spinnies.stopAll();
       logger.error(`\n${chalk.bold.red('> Error details:')}\n`);
-      printError(err, spinnies)
+      printError(err, spinnies);
       return reject();
     };
     const onComplete = (): void => {
       return resolve();
     };
     const runner = new Runner(options.project, options.concurrency);
-    runner.runCommand({
-      cmd: 'build',
-      to: options.workspaces,
-      mode: 'topological',
-      force: options.force,
-      stdio: spinnies.stdio,
-    }).subscribe({ next: onNext, error: onError, complete: onComplete });
+    runner
+      .runCommand({
+        cmd: 'build',
+        to: options.workspaces,
+        mode: 'topological',
+        force: options.force,
+        stdio: spinnies.stdio,
+      })
+      .subscribe({ next: onNext, error: onError, complete: onComplete });
   });
 };

@@ -17,7 +17,7 @@ export const putParameter = async (
   name: string,
   value: string,
   options?: { description?: string; kmsKeyId?: string },
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<PutParameterCommandOutput> => {
   const ssm = new SSMClient({
     region,

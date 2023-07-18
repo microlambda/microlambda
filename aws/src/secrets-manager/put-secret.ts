@@ -1,11 +1,7 @@
-import {
-  CreateSecretCommand,
-  SecretsManagerClient,
-  UpdateSecretCommand,
-} from "@aws-sdk/client-secrets-manager";
-import { checkSecretExists } from "./check-secret-exists";
-import { IBaseLogger } from "@microlambda/types";
-import { maxAttempts } from "../max-attempts";
+import { CreateSecretCommand, SecretsManagerClient, UpdateSecretCommand } from '@aws-sdk/client-secrets-manager';
+import { checkSecretExists } from './check-secret-exists';
+import { IBaseLogger } from '@microlambda/types';
+import { maxAttempts } from '../max-attempts';
 
 /**
  * Create/update a secret in a specific region.
@@ -22,7 +18,7 @@ export const putSecret = async (
   name: string,
   value: string,
   options?: { description?: string; kmsKeyId?: string },
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<string | undefined> => {
   const secretManager = new SecretsManagerClient({
     region,
@@ -36,13 +32,11 @@ export const putSecret = async (
       KmsKeyId: options?.kmsKeyId,
       SecretString: value,
     };
-    logger?.debug("Secret does not exist, creating it", {
+    logger?.debug('Secret does not exist, creating it', {
       region,
       ...createParams,
     });
-    const response = await secretManager.send(
-      new CreateSecretCommand(createParams)
-    );
+    const response = await secretManager.send(new CreateSecretCommand(createParams));
     return response.ARN;
   } else {
     const updateParams = {
@@ -51,13 +45,11 @@ export const putSecret = async (
       KmsKeyId: options?.kmsKeyId,
       SecretString: value,
     };
-    logger?.debug("Secret already exists, updating it", {
+    logger?.debug('Secret already exists, updating it', {
       region,
       ...updateParams,
     });
-    const response = await secretManager.send(
-      new UpdateSecretCommand(updateParams)
-    );
+    const response = await secretManager.send(new UpdateSecretCommand(updateParams));
     return response.ARN;
   }
 };

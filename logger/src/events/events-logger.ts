@@ -26,9 +26,9 @@ export class EventsLogger implements IBaseLogger {
     }
     const scopes = process.env.MILA_DEBUG.split(',');
     const wildcardMatch = (scope: string, rule: string): boolean => {
-      const escapeRegex = (str: string): string => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-      return new RegExp("^" + rule.split("*").map(escapeRegex).join(".*") + "$").test(scope);
-    }
+      const escapeRegex = (str: string): string => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
+      return new RegExp('^' + rule.split('*').map(escapeRegex).join('.*') + '$').test(scope);
+    };
     return scopes.some((scope) => wildcardMatch(this.scope!, scope));
   }
 
@@ -48,7 +48,7 @@ export class EventsLogger implements IBaseLogger {
     this._handleLogEntry('debug', args);
   }
 
-  info (...args: unknown[]): void {
+  info(...args: unknown[]): void {
     if (['silly', 'debug', 'info'].includes(this.level) && this.inScope) {
       // eslint-disable-next-line no-console
       console.info(this.options.prefix.info, bold(this.scope), ...args.map(this._toString.bind(this)));
@@ -56,7 +56,7 @@ export class EventsLogger implements IBaseLogger {
     this._handleLogEntry('info', args);
   }
 
-  warn (...args: unknown[]): void {
+  warn(...args: unknown[]): void {
     if (['silly', 'debug', 'info', 'warn'].includes(this.level) && this.inScope) {
       // eslint-disable-next-line no-console
       console.warn(this.options.prefix.warn, bold(this.scope), ...args.map(this._toString.bind(this)));
@@ -87,10 +87,12 @@ export class EventsLogger implements IBaseLogger {
       date: new Date().toISOString(),
       scope: this.scope,
       args: args,
-    }
+    };
   }
 
   private _toString(arg: unknown): string {
-    return typeof arg === 'string' ? arg : inspect(arg, false, this.options?.inspectDepth || DEFAULT_INSPECT_DEPTH, true);
+    return typeof arg === 'string'
+      ? arg
+      : inspect(arg, false, this.options?.inspectDepth || DEFAULT_INSPECT_DEPTH, true);
   }
 }

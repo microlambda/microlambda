@@ -32,10 +32,20 @@ export const printReport = async (
     const region = (evt as DeployEvent).region;
     if (region && evt.type !== RunCommandEventEnum.TARGETS_RESOLVED) {
       logger.error(
-        chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as { workspace?: { name: string }}).workspace?.name} in ${region} region\n`)),
+        chalk.bold(
+          chalk.red(
+            `#${i} - Failed to ${action} ${
+              (evt as { workspace?: { name: string } }).workspace?.name
+            } in ${region} region\n`,
+          ),
+        ),
       );
     } else {
-      logger.error(chalk.bold(chalk.red(`#${i} - Failed to ${action} ${(evt as { workspace?: { name: string }}).workspace?.name}\n`)));
+      logger.error(
+        chalk.bold(
+          chalk.red(`#${i} - Failed to ${action} ${(evt as { workspace?: { name: string } }).workspace?.name}\n`),
+        ),
+      );
     }
 
     if ((evt as { error: unknown }).error) {
@@ -49,12 +59,23 @@ export const printReport = async (
     let i = 0;
     i++;
     for (const action of actions) {
-      if ((action as DeployEvent).region && action.type !== RunCommandEventEnum.TARGETS_RESOLVED && action.type !== RunCommandEventEnum.SOURCES_CHANGED) {
+      if (
+        (action as DeployEvent).region &&
+        action.type !== RunCommandEventEnum.TARGETS_RESOLVED &&
+        action.type !== RunCommandEventEnum.SOURCES_CHANGED
+      ) {
         logger.info(
-          chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name} in ${(action as DeployEvent).region} region\n`),
+          chalk.bold(
+            `#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name} in ${
+              (action as DeployEvent).region
+            } region\n`,
+          ),
         );
-      } else if (action.type !== RunCommandEventEnum.TARGETS_RESOLVED && action.type !== RunCommandEventEnum.SOURCES_CHANGED) {
-        logger.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${(action).workspace.name}\n`));
+      } else if (
+        action.type !== RunCommandEventEnum.TARGETS_RESOLVED &&
+        action.type !== RunCommandEventEnum.SOURCES_CHANGED
+      ) {
+        logger.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name}\n`));
       }
       if (isNodeSucceededEvent(action)) {
         action.result.commands.forEach((result) => {

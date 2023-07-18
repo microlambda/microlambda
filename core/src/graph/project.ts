@@ -1,9 +1,9 @@
 import { Project as CentipodProject } from '@microlambda/runner-core';
 import { Workspace } from './workspace';
-import { resolvePorts } from "../resolve-ports";
-import { IConfig } from "../config/config";
-import { ConfigReader } from "../config/read-config";
-import { EventsLog, EventsLogger} from "@microlambda/logger";
+import { resolvePorts } from '../resolve-ports';
+import { IConfig } from '../config/config';
+import { ConfigReader } from '../config/read-config';
+import { EventsLog, EventsLogger } from '@microlambda/logger';
 
 export class Project extends CentipodProject {
   private _services = new Map<string, Workspace>();
@@ -15,7 +15,9 @@ export class Project extends CentipodProject {
 
   static scope = 'core/project';
 
-  get log(): EventsLogger | undefined { return this.logger }
+  get log(): EventsLogger | undefined {
+    return this.logger;
+  }
 
   static async loadProject(root: string, logger?: EventsLog): Promise<Project> {
     const log = logger?.scope(Project.scope);
@@ -38,7 +40,7 @@ export class Project extends CentipodProject {
     log?.info('Found', prj.packages.size, 'packages');
     log?.info('Found', prj.services.size, 'services');
     log?.info('Resolving ports');
-    const ports = resolvePorts([...prj.workspaces.values()], config)
+    const ports = resolvePorts([...prj.workspaces.values()], config);
     prj.services.forEach((s) => {
       log?.info('Service', s.name, 'is assigned port', ports[s.name]?.http);
       s.assignPorts(ports[s.name]);

@@ -7,21 +7,21 @@ import { IBaseLogger } from '@microlambda/types';
 import { promises } from 'fs';
 
 export class DotenvManager {
-
   private _parsed: Record<string, string> | undefined;
   private _exists = false;
 
   constructor(
     readonly project: Project,
-    readonly scope?: { env?: string, service?: Workspace | string },
+    readonly scope?: { env?: string; service?: Workspace | string },
     private readonly _logger?: IBaseLogger,
   ) {}
 
   get workspace(): Workspace | undefined {
     if (this.scope?.service) {
-      const workspace = typeof this.scope?.service === 'string'
-        ? this.project.workspaces.get(this.scope?.service)
-        : this.scope?.service;
+      const workspace =
+        typeof this.scope?.service === 'string'
+          ? this.project.workspaces.get(this.scope?.service)
+          : this.scope?.service;
       if (!workspace) {
         throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_WORKSPACE, `Workspace not found: ${this.scope?.service}`);
       }
@@ -50,7 +50,7 @@ export class DotenvManager {
   }
 
   async hasKey(key: string): Promise<boolean> {
-    return (await this.getKey(key))!= null;
+    return (await this.getKey(key)) != null;
   }
 
   async getKey(key: string): Promise<string | undefined> {
@@ -89,7 +89,9 @@ export class DotenvManager {
     if (this._parsed) {
       await promises.writeFile(
         this.path,
-        Object.entries(this._parsed).map(([key, value]) => `${key}=${value}`).join('\n'),
+        Object.entries(this._parsed)
+          .map(([key, value]) => `${key}=${value}`)
+          .join('\n'),
       );
     }
   }

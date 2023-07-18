@@ -1,20 +1,17 @@
-"use strict";
+'use strict';
 
-const request = require("request-promise-native");
-const aws = require("aws-sdk");
-const dns = require("dns");
-const shell = require("shelljs");
+const request = require('request-promise-native');
+const aws = require('aws-sdk');
+const dns = require('dns');
+const shell = require('shelljs');
 
 const AWS_PROFILE = process.env.AWS_PROFILE;
 const apiGateway = new aws.APIGateway({
-  region: "us-west-2",
-  credentials: new aws.SharedIniFileCredentials(
-    { profile: AWS_PROFILE },
-  ),
+  region: 'us-west-2',
+  credentials: new aws.SharedIniFileCredentials({ profile: AWS_PROFILE }),
 });
 
 class CreationError extends Error {}
-
 
 /**
  * Stops event thread execution for given number of seconds.
@@ -48,7 +45,9 @@ async function exec(cmd) {
  */
 async function createTempDir(tempDir, folderName) {
   await exec(`rm -rf ${tempDir}`);
-  await exec(`mkdir -p ${tempDir} && cp -R test/integration-tests/${folderName}/. ${tempDir}`);
+  await exec(
+    `mkdir -p ${tempDir} && cp -R test/integration-tests/${folderName}/. ${tempDir}`,
+  );
   await exec(`mkdir -p ${tempDir}/node_modules/serverless-domain-manager`);
   await exec(`cp -R . ${tempDir}/node_modules/serverless-domain-manager`);
 }
@@ -59,12 +58,16 @@ async function createTempDir(tempDir, folderName) {
  */
 async function linkPackages() {
   return new Promise((resolve) => {
-    shell.exec("npm link serverless-domain-manager", { silent: true }, (err, stdout, stderr) => {
-      if (err || stderr) {
-        return resolve(false);
-      }
-      return resolve(true);
-    });
+    shell.exec(
+      'npm link serverless-domain-manager',
+      { silent: true },
+      (err, stdout, stderr) => {
+        if (err || stderr) {
+          return resolve(false);
+        }
+        return resolve(true);
+      },
+    );
   });
 }
 
@@ -75,13 +78,15 @@ async function linkPackages() {
  */
 async function curlUrl(url) {
   let response = null;
-  response = await request.get({
-    url,
-    resolveWithFullResponse: true,
-  })
-  .catch((err) => { // eslint-disable-line no-unused-vars
-    response = null;
-  });
+  response = await request
+    .get({
+      url,
+      resolveWithFullResponse: true,
+    })
+    .catch((err) => {
+      // eslint-disable-line no-unused-vars
+      response = null;
+    });
   if (response === undefined || response === null) {
     return null;
   }
@@ -162,7 +167,7 @@ function dnsLookup(url) {
  * @returns {Promise<boolean>} Resolves true if records found, else false.
  */
 async function verifyDnsPropogation(url, enabled) {
-  console.debug("\tWaiting for DNS to Propogate..."); // eslint-disable-line no-console
+  console.debug('\tWaiting for DNS to Propogate...'); // eslint-disable-line no-console
   if (!enabled) {
     return true;
   }
@@ -185,7 +190,9 @@ async function verifyDnsPropogation(url, enabled) {
  * @return {Object} Contains restApiId and resourceId
  */
 async function setupApiGatewayResources(randString) {
-  const restApiInfo = await apiGateway.createRestApi({ name: `rest-api-${randString}` }).promise();
+  const restApiInfo = await apiGateway
+    .createRestApi({ name: `rest-api-${randString}` })
+    .promise();
   const restApiId = restApiInfo.id;
   const resourceInfo = await apiGateway.getResources({ restApiId }).promise();
   const resourceId = resourceInfo.items[0].id;
@@ -211,12 +218,16 @@ async function deleteApiGatewayResources(restApiId) {
  */
 function slsCreateDomain(tempDir, domainIdentifier) {
   return new Promise((resolve) => {
-    shell.exec(`cd ${tempDir} && sls create_domain --RANDOM_STRING ${domainIdentifier}`, { silent: true }, (err, stdout, stderr) => {
-      if (err || stderr) {
-        return resolve(false);
-      }
-      return resolve(true);
-    });
+    shell.exec(
+      `cd ${tempDir} && sls create_domain --RANDOM_STRING ${domainIdentifier}`,
+      { silent: true },
+      (err, stdout, stderr) => {
+        if (err || stderr) {
+          return resolve(false);
+        }
+        return resolve(true);
+      },
+    );
   });
 }
 
@@ -228,12 +239,16 @@ function slsCreateDomain(tempDir, domainIdentifier) {
  */
 function slsDeploy(tempDir, domainIdentifier) {
   return new Promise((resolve) => {
-    shell.exec(`cd ${tempDir} && sls deploy --RANDOM_STRING ${domainIdentifier}`, { silent: true }, (err, stdout, stderr) => {
-      if (err || stderr) {
-        return resolve(false);
-      }
-      return resolve(true);
-    });
+    shell.exec(
+      `cd ${tempDir} && sls deploy --RANDOM_STRING ${domainIdentifier}`,
+      { silent: true },
+      (err, stdout, stderr) => {
+        if (err || stderr) {
+          return resolve(false);
+        }
+        return resolve(true);
+      },
+    );
   });
 }
 
@@ -245,12 +260,16 @@ function slsDeploy(tempDir, domainIdentifier) {
  */
 function slsDeleteDomain(tempDir, domainIdentifier) {
   return new Promise((resolve) => {
-    shell.exec(`cd ${tempDir} && sls delete_domain --RANDOM_STRING ${domainIdentifier}`, { silent: true }, (err, stdout, stderr) => {
-      if (err || stderr) {
-        return resolve(false);
-      }
-      return resolve(true);
-    });
+    shell.exec(
+      `cd ${tempDir} && sls delete_domain --RANDOM_STRING ${domainIdentifier}`,
+      { silent: true },
+      (err, stdout, stderr) => {
+        if (err || stderr) {
+          return resolve(false);
+        }
+        return resolve(true);
+      },
+    );
   });
 }
 
@@ -262,12 +281,16 @@ function slsDeleteDomain(tempDir, domainIdentifier) {
  */
 function slsRemove(tempDir, domainIdentifier) {
   return new Promise((resolve) => {
-    shell.exec(`cd ${tempDir} && sls remove --RANDOM_STRING ${domainIdentifier}`, { silent: true }, (err, stdout, stderr) => {
-      if (err || stderr) {
-        return resolve(false);
-      }
-      return resolve(true);
-    });
+    shell.exec(
+      `cd ${tempDir} && sls remove --RANDOM_STRING ${domainIdentifier}`,
+      { silent: true },
+      (err, stdout, stderr) => {
+        if (err || stderr) {
+          return resolve(false);
+        }
+        return resolve(true);
+      },
+    );
   });
 }
 
@@ -313,9 +336,9 @@ async function createResources(folderName, url, domainIdentifier, enabled) {
     dnsVerified = await verifyDnsPropogation(url, enabled);
   }
   if (created && dnsVerified) {
-    console.debug("\tResources Created"); // eslint-disable-line no-console
+    console.debug('\tResources Created'); // eslint-disable-line no-console
   } else {
-    console.debug("\tResources Failed to Create"); // eslint-disable-line no-console
+    console.debug('\tResources Failed to Create'); // eslint-disable-line no-console
   }
   return created && dnsVerified;
 }
@@ -332,9 +355,9 @@ async function destroyResources(url, domainIdentifier) {
   const removed = await removeLambdas(tempDir, domainIdentifier);
   await exec(`rm -rf ${tempDir}`);
   if (removed) {
-    console.debug("\tResources Cleaned Up"); // eslint-disable-line no-console
+    console.debug('\tResources Cleaned Up'); // eslint-disable-line no-console
   } else {
-    console.debug("\tFailed to Clean Up Resources"); // eslint-disable-line no-console
+    console.debug('\tFailed to Clean Up Resources'); // eslint-disable-line no-console
   }
   return removed;
 }

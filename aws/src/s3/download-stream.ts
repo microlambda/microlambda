@@ -1,5 +1,5 @@
-import {GetObjectCommand, S3Client} from "@aws-sdk/client-s3";
-import {maxAttempts} from "../max-attempts";
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { maxAttempts } from '../max-attempts';
 import { Readable } from 'stream';
 
 export const downloadBuffer = async (bucket: string, key: string, region: string): Promise<Buffer | null> => {
@@ -11,22 +11,26 @@ export const downloadBuffer = async (bucket: string, key: string, region: string
       stream.on('error', reject);
       stream.on('end', () => resolve());
     });
-  const { Body } =  await client.send(new GetObjectCommand({
-    Bucket: bucket,
-    Key: key,
-  }));
+  const { Body } = await client.send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }),
+  );
   if (!Body) {
     return null;
   }
   await handleDownloadStream(Body as Readable);
-  return Buffer.concat(chunks)
+  return Buffer.concat(chunks);
 };
 
 export const downloadStream = async (bucket: string, key: string, region: string): Promise<Readable> => {
   const client = new S3Client({ region, maxAttempts: maxAttempts() });
-  const { Body } =  await client.send(new GetObjectCommand({
-    Bucket: bucket,
-    Key: key,
-  }));
+  const { Body } = await client.send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }),
+  );
   return Body as Readable;
 };

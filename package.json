@@ -55,8 +55,6 @@
     "@typescript-eslint/eslint-plugin": "^5.61.0",
     "@typescript-eslint/parser": "^5.61.0",
     "eslint": "^8.44.0",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-prettier": "^4.2.1",
     "husky": "^8.0.3",
     "jest": "^29.6.1",
     "lint-staged": "^13.2.3",
@@ -67,59 +65,9 @@
     "typescript": "^5.0.4"
   },
   "lint-staged": {
-    "aws/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/aws"
-    ],
-    "cli/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/cli"
-    ],
-    "client/**/*.{ts,tsx,json,yml,svelte}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/client"
-    ],
-    "core/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/core"
-    ],
-    "errors/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/errors"
-    ],
-    "generators/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/generators"
-    ],
-    "handling/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/handling"
-    ],
-    "layers/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/layers"
-    ],
-    "logger/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/logger"
-    ],
-    "plugin/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces serverless-microlambda"
-    ],
-    "runner/cli/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/runner-cli"
-    ],
-    "runner/core/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/runner-core"
-    ],
-    "server/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/server"
-    ],
-    "state/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/state"
-    ],
-    "testing/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/testing"
-    ],
-    "types/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/types"
-    ],
-    "utils/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/utils"
-    ],
-    "environments/**/*.{ts,tsx,json,yml}": [
-      "node ./runner/cli/dist/index.js run -p lint --workspaces @microlambda/environments"
+    "**/*.{ts,tsx,json,yml,html,md}": [
+      "node ./runner/cli/dist/index.js run -p prettier",
+      "node ./runner/cli/dist/index.js run -p lint:fix || true"
     ]
   },
   "packageManager": "yarn@3.6.1"

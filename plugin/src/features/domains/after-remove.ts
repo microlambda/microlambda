@@ -1,18 +1,22 @@
-import { aws } from "@microlambda/aws";
-import { IBaseLogger } from "@microlambda/types";
+import { aws } from '@microlambda/aws';
+import { IBaseLogger } from '@microlambda/types';
 
 export const afterRemove = async (
   region: string,
   domain: string | undefined,
-  logger: IBaseLogger
+  logger: IBaseLogger,
 ): Promise<void> => {
   if (!domain || domain === 'null') {
-    logger?.info("No custom domain configured");
+    logger?.info('No custom domain configured');
     return;
   }
-  const domainExists = await aws.apiGateway.getCustomDomain(region, domain, logger);
+  const domainExists = await aws.apiGateway.getCustomDomain(
+    region,
+    domain,
+    logger,
+  );
   if (!domainExists) {
-    logger?.info("No related domain found. Skipping...");
+    logger?.info('No related domain found. Skipping...');
     return;
   }
   // delete DNS records

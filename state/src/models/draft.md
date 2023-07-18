@@ -67,4 +67,4 @@ describeServices($service) => GS3 => ak=services
 describeServices($env, $service) => GS3 => sk=services|$env
 listDeployments($service) => GS4 => service=$service/sk=deployments
 listDeployments($env, $service) => GS4 => service=$service/sk=deployments
-describeDeployment($env, $service, $region) => 
+describeDeployment($env, $service, $region) =>

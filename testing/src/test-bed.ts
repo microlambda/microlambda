@@ -36,7 +36,7 @@ interface IHandlerResponse<TResponse = unknown> {
 export class TestBed<
   TRequest = unknown,
   TResponse = unknown,
-  TAuthorizerContext extends APIGatewayEventDefaultAuthorizerContext = APIGatewayEventDefaultAuthorizerContext
+  TAuthorizerContext extends APIGatewayEventDefaultAuthorizerContext = APIGatewayEventDefaultAuthorizerContext,
 > {
   private readonly _handler: Handler;
 
@@ -182,7 +182,7 @@ export class TestBed<
     };
     return this;
   }
-//
+  //
   public authorize(authorizerContext: TAuthorizerContext): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.requestContext.authorizer = authorizerContext;
     return this;

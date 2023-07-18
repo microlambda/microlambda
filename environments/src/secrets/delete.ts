@@ -11,7 +11,11 @@ export interface IDeleteSecretOptions {
   key: string;
 }
 
-export const removeSecret = async (project: Project, config: IRootConfig, options: IDeleteSecretOptions): Promise<void> => {
+export const removeSecret = async (
+  project: Project,
+  config: IRootConfig,
+  options: IDeleteSecretOptions,
+): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });
   const secretName = await checkIsSecret(project, options);
   const targetRegions = await resolveTargetsRegions(config, options.env);
@@ -21,4 +25,4 @@ export const removeSecret = async (project: Project, config: IRootConfig, option
   }
   await Promise.all(secretsDeletion$);
   await dotenvManager.removeKey(options.key);
-}
+};

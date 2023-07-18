@@ -4,16 +4,8 @@
     "publish": {
       "cmd": "npm publish",
       "src": {
-        "internals": [
-          "lib/**/*.js",
-          "dist/**/*.js",
-          "package.json"
-        ],
-        "deps": [
-          "lib/**/*.js",
-          "dist/**/*.js",
-          "package.json"
-        ]
+        "internals": ["lib/**/*.js", "dist/**/*.js", "package.json"],
+        "deps": ["lib/**/*.js", "dist/**/*.js", "package.json"]
       }
     }
   }

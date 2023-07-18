@@ -23,7 +23,6 @@ export enum SSMResolverMode {
 type ILoadedEnv = Array<ILoadedEnvironmentVariable>;
 
 export class EnvironmentLoader {
-
   readonly region: string;
   static readonly ssmParameterPattern = /^\$\{ssm:(.+)}$/;
   static readonly secretPattern = /^\$\{secret:(.+)}$/;
@@ -35,26 +34,29 @@ export class EnvironmentLoader {
   }
 
   async loadAll(options: {
-    env: string,
-    service: string | Workspace,
-    shouldInterpolate: boolean,
-    overwrite: boolean,
-    ssmMode?: SSMResolverMode,
-    inject: boolean,
+    env: string;
+    service: string | Workspace;
+    shouldInterpolate: boolean;
+    overwrite: boolean;
+    ssmMode?: SSMResolverMode;
+    inject: boolean;
   }): Promise<Array<ILoadedEnvironmentVariable>> {
     const { env, shouldInterpolate, ssmMode, service } = options;
-    const rootEnv = await this._loadFile({ssmMode, shouldInterpolate});
-    const stageEnv = await this._loadFile({env, ssmMode, shouldInterpolate});
-    const serviceEnv = await this._loadFile({service, ssmMode, shouldInterpolate});
-    const serviceStageEnv = await this._loadFile({env, ssmMode, shouldInterpolate});
-    const markAsOverwritten = (vars: ILoadedEnvironmentVariable[], overwrittenBy: ILoadedEnvironmentVariable[]): void => {
+    const rootEnv = await this._loadFile({ ssmMode, shouldInterpolate });
+    const stageEnv = await this._loadFile({ env, ssmMode, shouldInterpolate });
+    const serviceEnv = await this._loadFile({ service, ssmMode, shouldInterpolate });
+    const serviceStageEnv = await this._loadFile({ env, ssmMode, shouldInterpolate });
+    const markAsOverwritten = (
+      vars: ILoadedEnvironmentVariable[],
+      overwrittenBy: ILoadedEnvironmentVariable[],
+    ): void => {
       const nameThatTakePrecedence = new Set([...overwrittenBy.map((v) => v.key)]);
       for (const variable of vars) {
         if (nameThatTakePrecedence.has(variable.key)) {
           variable.overwritten = true;
         }
       }
-    }
+    };
 
     markAsOverwritten(rootEnv, [...stageEnv, ...serviceEnv, ...serviceStageEnv]);
     markAsOverwritten(stageEnv, [...serviceEnv, ...serviceStageEnv]);
@@ -78,12 +80,12 @@ export class EnvironmentLoader {
       }
       const isAlreadyExisting = !!process.env[variable.key];
       return !!variable.value && !isAlreadyExisting;
-    }
+    };
 
     const result: ILoadedEnvironmentVariable[] = [];
 
     for (const variable of [...rootEnv, ...stageEnv, ...serviceEnv, ...serviceStageEnv]) {
-      if (shouldInject(variable) && variable.value){
+      if (shouldInject(variable) && variable.value) {
         result.push(variable);
         if (options.inject) {
           process.env[variable.key] = variable.value;
@@ -93,23 +95,33 @@ export class EnvironmentLoader {
     return result;
   }
 
-  async createRegionalReplicate(env: string, targetRegion: string): Promise<{
-    success: Set<ILoadedEnvironmentVariable>,
-    failures: Map<ILoadedEnvironmentVariable, unknown>,
+  async createRegionalReplicate(
+    env: string,
+    targetRegion: string,
+  ): Promise<{
+    success: Set<ILoadedEnvironmentVariable>;
+    failures: Map<ILoadedEnvironmentVariable, unknown>;
   }> {
     return this._manageRegionalReplicate(env, targetRegion, 'create');
   }
 
-  async destroyRegionalReplicate(env: string, targetRegion: string): Promise<{
-    success: Set<ILoadedEnvironmentVariable>,
-    failures: Map<ILoadedEnvironmentVariable, unknown>,
+  async destroyRegionalReplicate(
+    env: string,
+    targetRegion: string,
+  ): Promise<{
+    success: Set<ILoadedEnvironmentVariable>;
+    failures: Map<ILoadedEnvironmentVariable, unknown>;
   }> {
     return this._manageRegionalReplicate(env, targetRegion, 'create');
   }
 
-  private async _manageRegionalReplicate(env: string, targetRegion: string, mode: 'create' | 'destroy'): Promise<{
-    success: Set<ILoadedEnvironmentVariable>,
-    failures: Map<ILoadedEnvironmentVariable, unknown>,
+  private async _manageRegionalReplicate(
+    env: string,
+    targetRegion: string,
+    mode: 'create' | 'destroy',
+  ): Promise<{
+    success: Set<ILoadedEnvironmentVariable>;
+    failures: Map<ILoadedEnvironmentVariable, unknown>;
   }> {
     const success = new Set<ILoadedEnvironmentVariable>();
     const failures = new Map<ILoadedEnvironmentVariable, unknown>();
@@ -135,17 +147,19 @@ export class EnvironmentLoader {
           }
         }
         if (operation$) {
-          operations$.push(operation$
-            .then(() => {
-              success.add(envVar);
-            })
-            .catch((err) => {
-              failures.set(envVar, err);
-            }));
+          operations$.push(
+            operation$
+              .then(() => {
+                success.add(envVar);
+              })
+              .catch((err) => {
+                failures.set(envVar, err);
+              }),
+          );
         }
       }
       return operations$;
-    }
+    };
     const analyzeFiles$: Array<Promise<Array<Promise<void>>>> = [];
     analyzeFiles$.push(resolveOperationsFromFile(env));
     for (const service of this.project.workspaces.values()) {
@@ -157,20 +171,20 @@ export class EnvironmentLoader {
   }
 
   private _printVariable(v: ILoadedEnvironmentVariable): void {
-    this._logger?.info(`  - ${v.key}=${v.value}${v.overwritten ? chalk.magenta(' [overwitten]') : ''}`)
+    this._logger?.info(`  - ${v.key}=${v.value}${v.overwritten ? chalk.magenta(' [overwitten]') : ''}`);
   }
 
   private async _loadFile(options: {
-    env?: string,
-    service?: string | Workspace,
-    shouldInterpolate?: boolean,
-    ssmMode?: SSMResolverMode,
+    env?: string;
+    service?: string | Workspace;
+    shouldInterpolate?: boolean;
+    ssmMode?: SSMResolverMode;
   }): Promise<ILoadedEnv> {
-    const { env, service, shouldInterpolate, ssmMode} = options;
+    const { env, service, shouldInterpolate, ssmMode } = options;
     const dotenvManager = new DotenvManager(this.project, { env, service });
     const envVars = await dotenvManager.load();
     const resolvedEnv: ILoadedEnv = [];
-    for(const [key, value] of Object.entries(envVars)) {
+    for (const [key, value] of Object.entries(envVars)) {
       if (!shouldInterpolate) {
         resolvedEnv.push({ key, value, from: dotenvManager.path });
       } else {
@@ -184,8 +198,8 @@ export class EnvironmentLoader {
     key: string,
     value: string,
     from: string,
-    ssmMode: SSMResolverMode
-  ): Promise<{ key: string, value?: string, from: string, raw?: string }> {
+    ssmMode: SSMResolverMode,
+  ): Promise<{ key: string; value?: string; from: string; raw?: string }> {
     const isSsmParameter = value.match(EnvironmentLoader.ssmParameterPattern);
     const isSecret = value.match(EnvironmentLoader.secretPattern);
     if (isSsmParameter) {
@@ -199,21 +213,25 @@ export class EnvironmentLoader {
 
   private async _interpolateSsm(
     key: string,
-    value:string,
+    value: string,
     from: string,
     isSsmParameter: RegExpMatchArray,
     ssmMode: SSMResolverMode,
-  ): Promise<{ key: string, value?: string, from: string, raw: string }> {
+  ): Promise<{ key: string; value?: string; from: string; raw: string }> {
     try {
       const name = isSsmParameter[1];
       const parameterValue = await aws.ssm.getParameterValue(this.region, name, this._logger);
-       return { key, value: parameterValue, from: from, raw: value };
+      return { key, value: parameterValue, from: from, raw: value };
     } catch (e) {
       switch (ssmMode) {
         case SSMResolverMode.ERROR:
           this._logger?.error('Error interpolating SSM parameter', value);
           this._logger?.error(e);
-          throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_SECRET_VALUE, `Error interpolating SSM parameter ${value} (from ${from})`, e);
+          throw new MilaError(
+            MilaErrorCode.UNABLE_TO_LOAD_SECRET_VALUE,
+            `Error interpolating SSM parameter ${value} (from ${from})`,
+            e,
+          );
         case SSMResolverMode.WARN:
           this._logger?.warn('Error interpolating SSM parameter', value);
           return { key, value: undefined, from: from, raw: value };
@@ -225,11 +243,11 @@ export class EnvironmentLoader {
 
   private async _interpolateSecret(
     key: string,
-    value:string,
+    value: string,
     from: string,
     isSecret: RegExpMatchArray,
     ssmMode: SSMResolverMode,
-  ): Promise<{ key: string, value?: string, from: string, raw: string }> {
+  ): Promise<{ key: string; value?: string; from: string; raw: string }> {
     try {
       const { name, version } = this._resolveSecretNameAndVersion(isSecret);
       const parameterValue = await aws.secretsManager.getSecretValue(this.region, name, version, this._logger);
@@ -239,7 +257,11 @@ export class EnvironmentLoader {
         case SSMResolverMode.ERROR:
           this._logger?.error('Error interpolating secret', value);
           this._logger?.error(e);
-          throw new MilaError(MilaErrorCode.UNABLE_TO_LOAD_SECRET_VALUE, `Error interpolating secret ${value} (from ${from})`, e);
+          throw new MilaError(
+            MilaErrorCode.UNABLE_TO_LOAD_SECRET_VALUE,
+            `Error interpolating secret ${value} (from ${from})`,
+            e,
+          );
         case SSMResolverMode.WARN:
           this._logger?.warn('Error interpolating secret', value);
           return { key, value: undefined, from: from, raw: value };
@@ -249,7 +271,7 @@ export class EnvironmentLoader {
     }
   }
 
-  private _resolveSecretNameAndVersion(isSecret: RegExpMatchArray): { name: string, version?: string } {
+  private _resolveSecretNameAndVersion(isSecret: RegExpMatchArray): { name: string; version?: string } {
     let version: string | undefined;
     let name = isSecret[1];
     const hasVersion = isSecret[1].match(/^(.+):(.+)$/);

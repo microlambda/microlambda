@@ -1,1 +1,1 @@
-export * from "./replace-authorizer";
+export * from './replace-authorizer';

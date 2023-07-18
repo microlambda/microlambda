@@ -31,9 +31,11 @@ describe('handling', () => {
 
     it('parses request body correctly', async () => {
       const body = { email: 'foo@example.com' };
-      (apiHandler(async (event: APIGatewayProxyEvent) => {
-        expect(event.body).toEqual(body as any);
-      }) as TestingHandler)({ body: JSON.stringify(body) });
+      (
+        apiHandler(async (event: APIGatewayProxyEvent) => {
+          expect(event.body).toEqual(body as any);
+        }) as TestingHandler
+      )({ body: JSON.stringify(body) });
     });
 
     it('throws a 400 Bad Request when request body is incorrect', async () => {
@@ -50,11 +52,11 @@ describe('handling', () => {
     it('returns a correct ApiGatewayProxyResponse', async () => {
       const body = { email: 'foo@example.com' };
 
-      const response = await (apiHandler(
-        async (): Promise<{ email: string }> => {
+      const response = await (
+        apiHandler(async (): Promise<{ email: string }> => {
           return body;
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 200,
@@ -87,11 +89,11 @@ describe('handling', () => {
     });
 
     it('returns a 204 when response body is empty', async () => {
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           // empty
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 204,
@@ -148,9 +150,9 @@ describe('handling', () => {
     it('strips response body of configured blacklist', async () => {
       mock.mockReturnValue({ api: { blacklist: ['password'] } });
 
-      const response = await (apiHandler(
-        async (): Promise<{ password: string }> => ({ password: 'password' }),
-      ) as TestingHandler)({});
+      const response = await (
+        apiHandler(async (): Promise<{ password: string }> => ({ password: 'password' })) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 200,
@@ -164,12 +166,12 @@ describe('handling', () => {
       mock.mockReturnValue({ api: { cors: true } });
 
       const headers = { 'origin': 'localhost', 'x-foo': 'foo', 'x-bar': 'bar' };
-      const response = await (apiHandler(
-        async (_, response): Promise<null> => {
+      const response = await (
+        apiHandler(async (_, response): Promise<null> => {
           response.headers['x-baz'] = 'baz';
           return null;
-        },
-      ) as TestingHandler)({ headers });
+        }) as TestingHandler
+      )({ headers });
 
       expect(response).toEqual({
         statusCode: 204,
@@ -189,14 +191,14 @@ describe('handling', () => {
     it('formats validation errors', async () => {
       const errorDetails = [{}];
 
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw {
             name: 'ValidationError',
             details: errorDetails,
           };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 422,
@@ -207,13 +209,13 @@ describe('handling', () => {
     });
 
     it('formats forbidden errors', async () => {
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw {
             name: 'ForbiddenError',
           };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 403,
@@ -225,14 +227,14 @@ describe('handling', () => {
 
     it('formats forbidden errors with additional details if provided', async () => {
       const errorDetails = { reason: 'You are not allowed to do this. Only Chuck Norris can.' };
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw {
             name: 'ForbiddenError',
             details: errorDetails,
           };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 403,
@@ -243,13 +245,13 @@ describe('handling', () => {
     });
 
     it('formats bad request errors', async () => {
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw {
             name: 'BadRequestError',
           };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 400,
@@ -261,14 +263,14 @@ describe('handling', () => {
 
     it('formats bad request errors with additional details if provided', async () => {
       const errorDetails = "You can't turn a Smurf red. Smurf are BLUE.";
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw {
             name: 'BadRequestError',
             details: errorDetails,
           };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 400,
@@ -279,11 +281,11 @@ describe('handling', () => {
     });
 
     it('throws a 500 when an error happens', async () => {
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw 'error';
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 500,
@@ -294,11 +296,11 @@ describe('handling', () => {
     });
 
     it('returns the correct status code for an error', async () => {
-      const response = await (apiHandler(
-        async (): Promise<void> => {
+      const response = await (
+        apiHandler(async (): Promise<void> => {
           throw { body: 'error', statusCode: 400 };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 400,
@@ -310,21 +312,21 @@ describe('handling', () => {
 
     it('calls error handlers when an error happens', async () => {
       const callErrorHandlers = stub(middleware, 'callErrorHandlers');
-      await (apiHandler(
-        async (): Promise<void> => {
+      await (
+        apiHandler(async (): Promise<void> => {
           throw 'error';
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
       expect(callErrorHandlers.callCount).toBe(1);
       callErrorHandlers.restore();
     });
 
     it('does not return the content directly anymore, even with statusCode', async () => {
-      const response = await (apiHandler(
-        async (): Promise<{ statusCode: number; body: string }> => {
+      const response = await (
+        apiHandler(async (): Promise<{ statusCode: number; body: string }> => {
           return { statusCode: 200, body: JSON.stringify('foo') };
-        },
-      ) as TestingHandler)({});
+        }) as TestingHandler
+      )({});
 
       expect(response).toEqual({
         statusCode: 200,

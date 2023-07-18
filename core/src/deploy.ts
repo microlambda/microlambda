@@ -1,9 +1,9 @@
-import {RunCommandEvent, Runner, Workspace} from "@microlambda/runner-core";
-import {Project} from "./graph/project";
-import {ConfigReader} from "./config/read-config";
-import {from, mergeAll, Observable} from "rxjs";
-import {map} from "rxjs/operators";
-import {getDefaultThreads} from "@microlambda/utils";
+import { RunCommandEvent, Runner, Workspace } from '@microlambda/runner-core';
+import { Project } from './graph/project';
+import { ConfigReader } from './config/read-config';
+import { from, mergeAll, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { getDefaultThreads } from '@microlambda/utils';
 import { EventsLog } from '@microlambda/logger';
 
 export type DeployEvent = RunCommandEvent & { region: string };
@@ -13,7 +13,7 @@ export interface IDeployOptions {
   concurrency?: number;
   verbose: boolean;
   targets?: Workspace[];
-  affected?: { rev1: string, rev2: string };
+  affected?: { rev1: string; rev2: string };
   force: boolean;
   environment: string;
 }
@@ -36,14 +36,16 @@ export class Deployer {
 
   private _run(region: string, services: Workspace[]): Observable<DeployEvent> {
     const runner = new Runner(this.options.project, this.concurrency);
-    return runner.runCommand({
-      cmd: this.mode,
-      workspaces: services,
-      mode: 'parallel',
-      force: this.options.force,
-      args: [],
-      env: { AWS_REGION: region }
-    }).pipe(map((evt) => ({...evt, region})));
+    return runner
+      .runCommand({
+        cmd: this.mode,
+        workspaces: services,
+        mode: 'parallel',
+        force: this.options.force,
+        args: [],
+        env: { AWS_REGION: region },
+      })
+      .pipe(map((evt) => ({ ...evt, region })));
   }
 
   private _deployOne(target: Workspace): Observable<DeployEvent> {
@@ -54,9 +56,9 @@ export class Deployer {
   private _deployAll(): Observable<DeployEvent> {
     const rawSteps = this._reader.scheduleDeployments(this.options.environment);
     const steps = this.mode === 'deploy' ? rawSteps : rawSteps.reverse();
-    const runs: Array<Observable<DeployEvent>> = []
+    const runs: Array<Observable<DeployEvent>> = [];
     for (const step of steps) {
-      const regionalRuns: Array<Observable<DeployEvent>> = []
+      const regionalRuns: Array<Observable<DeployEvent>> = [];
       for (const [region, servicesNames] of step.entries()) {
         const services = Array.from(servicesNames).map((name) => this.options.project.services.get(name)!);
         regionalRuns.push(this._run(region, services));
@@ -70,7 +72,7 @@ export class Deployer {
     if (service) {
       return this._deployOne(service);
     } else {
-      return this._deployAll()
+      return this._deployAll();
     }
   }
 }

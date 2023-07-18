@@ -1,6 +1,6 @@
 import joi from 'joi';
 import { validate } from './validate';
-import {HandlingError} from "../handling/api";
+import { HandlingError } from '../handling/api';
 
 describe('validation', () => {
   describe('validate', () => {

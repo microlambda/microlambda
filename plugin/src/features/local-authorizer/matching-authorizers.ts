@@ -1,8 +1,8 @@
-import { IAuthorizerConfig } from "@microlambda/types";
+import { IAuthorizerConfig } from '@microlambda/types';
 
 export const areAuthorizersMatching = (
   auth1: Partial<IAuthorizerConfig> | undefined,
-  auth2: Partial<IAuthorizerConfig> | undefined
+  auth2: Partial<IAuthorizerConfig> | undefined,
 ): boolean => {
   if (!auth1 || !auth2) {
     return false;
