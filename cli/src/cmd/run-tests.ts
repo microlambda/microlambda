@@ -5,11 +5,15 @@ import { beforeBuild } from '../utils/build/pre-requisites';
 import { ITestOptions } from '../utils/test/options';
 import { getConcurrency } from '../utils/get-concurrency';
 import {
-  checkWorkingDirectoryClean, IRemoteCacheRunOptions,
-  IRunCommandErrorEvent, isNotDaemon,
+  checkWorkingDirectoryClean,
+  IRemoteCacheRunOptions,
+  IRunCommandErrorEvent,
+  isNotDaemon,
   RunCommandEvent,
   RunCommandEventEnum,
-  Runner, RunOptions, currentSha1,
+  Runner,
+  RunOptions,
+  currentSha1,
 } from '@microlambda/runner-core';
 import { MilaSpinnies } from '../utils/spinnies';
 import { logger } from '../utils/logger';
@@ -26,7 +30,6 @@ import { typeCheck } from '../utils/build/type-check';
 
 export const runTests = async (cmd: ITestCommand): Promise<void> => {
   try {
-
     logger.info('Running tests ✅');
     logger.lf();
 
@@ -50,7 +53,9 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
         try {
           currentBranch = execSync('git branch --show-current').toString().split('\n')[0];
           if (!currentBranch) {
-            logger.error('Cannot determine current branch, you are probably in detached HEAD state. You cannot use remote caching on detached HEAD state without giving a value for option --affectedSince');
+            logger.error(
+              'Cannot determine current branch, you are probably in detached HEAD state. You cannot use remote caching on detached HEAD state without giving a value for option --affectedSince',
+            );
             process.exit(1);
           }
           logger.info('Current branch:', chalk.cyan.bold(currentBranch));
@@ -73,9 +78,12 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
       const failures: Set<IRunCommandErrorEvent> = new Set();
       const spinnies = new MilaSpinnies(options.verbose);
       const saveExecutions$: Array<Promise<void>> = [];
-      const onNext = (next: { evt: RunCommandEvent, runOptions: RunOptions }): void => {
+      const onNext = (next: { evt: RunCommandEvent; runOptions: RunOptions }): void => {
         let affectedInfos = '';
-        if ((next.runOptions as IRemoteCacheRunOptions).remoteCache && (next.runOptions as IRemoteCacheRunOptions).affected) {
+        if (
+          (next.runOptions as IRemoteCacheRunOptions).remoteCache &&
+          (next.runOptions as IRemoteCacheRunOptions).affected
+        ) {
           affectedInfos += ' affected since ';
           affectedInfos += (next.runOptions as IRemoteCacheRunOptions).affected;
           if (currentBranch) {
@@ -114,12 +122,15 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
             if (cmd.verbose) {
               logger.lf();
             }
-            if (cmd.remoteCache && next.evt.result.commands.every((cmdResult) => {
-              if (isNotDaemon(cmdResult)) {
-                return cmdResult.exitCode === 0;
-              }
-              return false;
-            })) {
+            if (
+              cmd.remoteCache &&
+              next.evt.result.commands.every((cmdResult) => {
+                if (isNotDaemon(cmdResult)) {
+                  return cmdResult.exitCode === 0;
+                }
+                return false;
+              })
+            ) {
               logger.info('☁️  Caching results for next executions');
               try {
                 let _currentBranch = currentBranch;
@@ -129,16 +140,22 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
                 const sha1 = currentSha1();
                 logger.info('Current sha1:', chalk.cyan.bold(sha1));
                 if (currentBranch && sha1) {
-                  saveExecutions$.push(state.saveExecution({
-                    service: next.evt.workspace.name,
-                    branch: currentBranch,
-                    cmd: 'test',
-                    current_sha1: sha1,
-                    region: config.defaultRegion,
-                  }));
+                  saveExecutions$.push(
+                    state.saveExecution({
+                      service: next.evt.workspace.name,
+                      branch: currentBranch,
+                      cmd: 'test',
+                      current_sha1: sha1,
+                      region: config.defaultRegion,
+                    }),
+                  );
                 }
               } catch (e) {
-                logger.warn(next.evt.workspace.name, ':' ,'Failed to cache results for next execution. Tests will be re-run next time.')
+                logger.warn(
+                  next.evt.workspace.name,
+                  ':',
+                  'Failed to cache results for next execution. Tests will be re-run next time.',
+                );
               }
               logger.lf();
             }
@@ -170,49 +187,63 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
         }
         Promise.all(saveExecutions$).then(() => {
           return resolve({ failures, success });
-        })
+        });
       };
 
       const runner = new Runner(options.project, options.concurrency, eventsLog);
 
-      const process$: Array<Observable<{ evt: RunCommandEvent, runOptions: RunOptions }>> = await Promise.all(options.workspaces.map(async (workspace) => {
-        let remoteCache: { bucket: string, region: string } | undefined = undefined;
-        let affected: string | undefined = undefined;
-        if (options.remoteCache) {
-          remoteCache = { bucket: config.state.checksums, region: config.defaultRegion };
-          const lastTestExecution = await state.getExecution(options.affectedSince || currentBranch, 'test', workspace.name);
-          if (lastTestExecution) {
-            if (options.affectedSince) {
-              logger.info('Running command if sources affected since', chalk.magenta(options.affectedSince));
-              try {
-                const lastCommitOnTargetBranch = execSync(`git log -n 1 --pretty=format:"%H" ${options.affectedSince}`).toString();
-                logger.info('Last commit on branch', options.affectedSince, ':', lastCommitOnTargetBranch);
-                if (lastCommitOnTargetBranch === lastTestExecution.current_sha1) {
-                  affected = lastTestExecution.current_sha1;
-                } else {
-                  logger.info('Last cached execution (', lastTestExecution.current_sha1, ') is not up-to-date. Command will be re-run.')
+      const process$: Array<Observable<{ evt: RunCommandEvent; runOptions: RunOptions }>> = await Promise.all(
+        options.workspaces.map(async (workspace) => {
+          let remoteCache: { bucket: string; region: string } | undefined = undefined;
+          let affected: string | undefined = undefined;
+          if (options.remoteCache) {
+            remoteCache = { bucket: config.state.checksums, region: config.defaultRegion };
+            const lastTestExecution = await state.getExecution(
+              options.affectedSince || currentBranch,
+              'test',
+              workspace.name,
+            );
+            if (lastTestExecution) {
+              if (options.affectedSince) {
+                logger.info('Running command if sources affected since', chalk.magenta(options.affectedSince));
+                try {
+                  const lastCommitOnTargetBranch = execSync(
+                    `git log -n 1 --pretty=format:"%H" ${options.affectedSince}`,
+                  ).toString();
+                  logger.info('Last commit on branch', options.affectedSince, ':', lastCommitOnTargetBranch);
+                  if (lastCommitOnTargetBranch === lastTestExecution.current_sha1) {
+                    affected = lastTestExecution.current_sha1;
+                  } else {
+                    logger.info(
+                      'Last cached execution (',
+                      lastTestExecution.current_sha1,
+                      ') is not up-to-date. Command will be re-run.',
+                    );
+                  }
+                } catch (e) {
+                  logger.warn('Unable to find last commit of target branch, remote caching will be ignored', e);
                 }
-              } catch (e) {
-                logger.warn('Unable to find last commit of target branch, remote caching will be ignored', e);
+              } else {
+                affected = lastTestExecution.current_sha1;
               }
-            } else {
-              affected = lastTestExecution.current_sha1;
             }
           }
-        }
-        const runOptions: RunOptions = {
-          cmd: 'test',
-          workspaces: [workspace],
-          mode: 'parallel',
-          force: options.force,
-          stdio: spinnies.stdio,
-          remoteCache,
-          affected,
-        };
-        return runner.runCommand(runOptions).pipe(map((evt) => ({ evt, runOptions })))
-      }));
+          const runOptions: RunOptions = {
+            cmd: 'test',
+            workspaces: [workspace],
+            mode: 'parallel',
+            force: options.force,
+            stdio: spinnies.stdio,
+            remoteCache,
+            affected,
+          };
+          return runner.runCommand(runOptions).pipe(map((evt) => ({ evt, runOptions })));
+        }),
+      );
 
-      from(process$).pipe(mergeAll(options.concurrency)).subscribe({ next: onNext, error: onError, complete: onComplete });
+      from(process$)
+        .pipe(mergeAll(options.concurrency))
+        .subscribe({ next: onNext, error: onError, complete: onComplete });
     });
     if (failures.size) {
       await printReport(success, failures, options.workspaces.length, 'test', options.verbose);
@@ -223,4 +254,4 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
     logger.error(e);
     process.exit(1);
   }
-}
+};

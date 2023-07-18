@@ -15,8 +15,7 @@ const testBed = new TestBed(handler);
 
 const result = await testBed.pathParameters({ id: 176 }).get();
 
-expect(result).toEqual({ title: '1984', author: 'George Orwell', /* ... */ });
-
+expect(result).toEqual({ title: '1984', author: 'George Orwell' /* ... */ });
 ```
 
 ### Using custom authorizer

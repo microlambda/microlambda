@@ -19,12 +19,17 @@ export const checkIsParameter = async (project: Project, options: IDeleteParamet
   if (!isParameter) {
     throw new MilaError(
       MilaErrorCode.NOT_A_SSM_PARAMETER,
-      `The key ${options.key} @ ${dotenvManager.path} does not exist or is not a SSM parameter`);
+      `The key ${options.key} @ ${dotenvManager.path} does not exist or is not a SSM parameter`,
+    );
   }
   return isParameter[1];
-}
+};
 
-export const createParameter = async (project: Project, config: IRootConfig, options: IUpdateParameterOptions): Promise<void> => {
+export const createParameter = async (
+  project: Project,
+  config: IRootConfig,
+  options: IUpdateParameterOptions,
+): Promise<void> => {
   const parameterName = await checkIsParameter(project, options);
   await writeParameters(config, parameterName, options);
-}
+};

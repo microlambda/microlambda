@@ -7,6 +7,6 @@ export const calculateLayerChecksums = async (service: Workspace): Promise<ISour
       internals: ['package.json'],
       deps: ['package.json'],
       root: ['package.json', 'yarn.lock'],
-    }
+    },
   }).calculate();
 };

@@ -1,6 +1,6 @@
-import { Workspace } from "@microlambda/core";
-import { watch } from "chokidar";
-import { transpile } from "./compile";
+import { Workspace } from '@microlambda/core';
+import { watch } from 'chokidar';
+import { transpile } from './compile';
 import { IBaseLogger } from '@microlambda/types';
 import { getTsConfig } from '@microlambda/utils';
 
@@ -16,8 +16,8 @@ export const watchFiles = (service: Workspace, logger?: IBaseLogger): void => {
   }
   files.forEach((f) => logger?.debug(`Watching ${f}`));
   const ignoreFistAdd = new Set();
-  watch(files).on("all", async (event, path) => {
-    if (event === "add" && !ignoreFistAdd.has(path)) {
+  watch(files).on('all', async (event, path) => {
+    if (event === 'add' && !ignoreFistAdd.has(path)) {
       ignoreFistAdd.add(path);
       return;
     }

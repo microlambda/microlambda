@@ -10,7 +10,10 @@ import { IDeployCmd } from './cmd-options';
 import { Project } from '@microlambda/core';
 import { IRootConfig } from '@microlambda/config';
 
-export const beforeDeploy = async (cmd: IDeployCmd, eventsLog: EventsLog): Promise<{ state: State, project: Project, env: IEnvironment, config: IRootConfig }> => {
+export const beforeDeploy = async (
+  cmd: IDeployCmd,
+  eventsLog: EventsLog,
+): Promise<{ state: State; project: Project; env: IEnvironment; config: IRootConfig }> => {
   const log = eventsLog.scope('before-deploy');
   if (!cmd.e) {
     logger.error(chalk.red('You must specify a target environment using the -e option'));
@@ -35,18 +38,22 @@ export const beforeDeploy = async (cmd: IDeployCmd, eventsLog: EventsLog): Promi
   const env = await state.findEnv(cmd.e);
   if (!env) {
     log.error('Target environment not found');
-    logger.error(chalk.red('Target environment not found in remote state. You must initialize environments using yarn mila env create <name>'));
+    logger.error(
+      chalk.red(
+        'Target environment not found in remote state. You must initialize environments using yarn mila env create <name>',
+      ),
+    );
     process.exit(1);
   }
   log.debug('Target environment valid', env);
 
   // Validate targets
   log.debug('Verifying target services', cmd.s?.split(','));
-  if(cmd.s && cmd.s.split(',').some((s) => !project.services.has(s))) {
+  if (cmd.s && cmd.s.split(',').some((s) => !project.services.has(s))) {
     const missing = cmd.s.split(',').find((s) => !project.services.has(s));
     logger.error(chalk.red(`Unknown service ${missing}`));
     process.exit(1);
   }
 
   return { env, state, project, config };
-}
+};

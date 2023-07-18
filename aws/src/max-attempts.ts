@@ -21,10 +21,7 @@ const DEFAULT_CONCURRENCY = 100;
  * @param logger - a logger instance to print debug logs
  * and the number of actions to perform concurrently
  */
-export const maxAttempts = (
-  options?: { apiRateLimit: number; nbActions?: number },
-  logger?: IBaseLogger
-): number => {
+export const maxAttempts = (options?: { apiRateLimit: number; nbActions?: number }, logger?: IBaseLogger): number => {
   if (!options) {
     return DEFAULT_ATTEMPTS;
   }
@@ -36,7 +33,7 @@ export const maxAttempts = (
   const iterationsRequired = 10 + secondsRequired / 20;
   const result = Math.floor(1.2 * iterationsRequired);
   logger?.debug(
-    `Should be able to perform ${nbActions} with an API limit rate of ${options.apiRateLimit}req/s. Max attempts has been set to ${result}`
+    `Should be able to perform ${nbActions} with an API limit rate of ${options.apiRateLimit}req/s. Max attempts has been set to ${result}`,
   );
   return result;
 };

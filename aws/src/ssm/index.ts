@@ -6,4 +6,4 @@ export const ssm = {
   getParameterValue,
   deleteParameter,
   putParameter,
-}
+};

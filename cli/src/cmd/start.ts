@@ -1,17 +1,15 @@
-import { IOSocketManager, startServer } from "@microlambda/server";
+import { IOSocketManager, startServer } from '@microlambda/server';
 import { showOff } from '../utils/ascii';
 import ora from 'ora';
-import {
-  recreateLogDirectory,
-} from '@microlambda/core';
-import { Scheduler } from "@microlambda/core";
-import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
-import { WebsocketLogsHandler } from "../log-handlers/websocket";
+import { recreateLogDirectory } from '@microlambda/core';
+import { Scheduler } from '@microlambda/core';
+import { EventsLog, EventLogsFileHandler } from '@microlambda/logger';
+import { WebsocketLogsHandler } from '../log-handlers/websocket';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { logger } from '../utils/logger';
 import { init } from '../utils/init';
-import {aws} from "@microlambda/aws";
-import chalk from "chalk";
+import { aws } from '@microlambda/aws';
+import chalk from 'chalk';
 
 interface IStartOptions {
   interactive: boolean;
@@ -19,9 +17,7 @@ interface IStartOptions {
   port: number;
 }
 
-export const start = async (
-  options: IStartOptions,
-): Promise<void> => {
+export const start = async (options: IStartOptions): Promise<void> => {
   logger.info(showOff());
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-start-${Date.now()}`)]);

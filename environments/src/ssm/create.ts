@@ -14,20 +14,31 @@ export interface ICreateParameterOptions {
   value: string;
 }
 
-export const writeParameters = async (config: IRootConfig, parameterName: string, options: IUpdateParameterOptions): Promise<void> => {
+export const writeParameters = async (
+  config: IRootConfig,
+  parameterName: string,
+  options: IUpdateParameterOptions,
+): Promise<void> => {
   const targetRegions = await resolveTargetsRegions(config, options.env);
   const parametersCreation$: Array<Promise<unknown>> = [];
   for (const region of targetRegions) {
     parametersCreation$.push(aws.ssm.putParameter(region, parameterName, options.value));
   }
   await Promise.all(parametersCreation$);
-}
+};
 
-export const createParameter = async (project: Project, config: IRootConfig, options: ICreateParameterOptions): Promise<void> => {
+export const createParameter = async (
+  project: Project,
+  config: IRootConfig,
+  options: ICreateParameterOptions,
+): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });
   if (await dotenvManager.hasKey(options.key)) {
-    throw new MilaError(MilaErrorCode.SSM_PARAMETER_ALREADY_EXISTS, `Key ${options.key} is already taken @ ${dotenvManager.path}`);
+    throw new MilaError(
+      MilaErrorCode.SSM_PARAMETER_ALREADY_EXISTS,
+      `Key ${options.key} is already taken @ ${dotenvManager.path}`,
+    );
   }
   await writeParameters(config, options.parameterName, options);
   await dotenvManager.addKey(options.key, `\${ssm:${options.parameterName}`);
-}
+};

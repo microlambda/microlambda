@@ -1,5 +1,5 @@
-import type { IAuthorizerConfig } from "./authorizer-config";
-import {LambdaRuntimes} from "./packagr";
+import type { IAuthorizerConfig } from './authorizer-config';
+import { LambdaRuntimes } from './packagr';
 
 export interface ServerlessInstance {
   service: {
@@ -17,7 +17,7 @@ export interface ServerlessInstance {
       deploymentPrefix: string | undefined;
       architecture: 'x86_64' | 'arm64';
       runtime: LambdaRuntimes;
-      environment: { [key:string]: string};
+      environment: { [key: string]: string };
     };
     custom: {
       [key: string]: unknown;

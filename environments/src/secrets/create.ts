@@ -14,20 +14,31 @@ export interface ICreateSecretOptions {
   value: string;
 }
 
-export const writeSecrets = async (config: IRootConfig, secretName: string, options: IUpdateSecretOptions): Promise<void> => {
+export const writeSecrets = async (
+  config: IRootConfig,
+  secretName: string,
+  options: IUpdateSecretOptions,
+): Promise<void> => {
   const targetRegions = await resolveTargetsRegions(config, options.env);
   const secretsCreations$: Array<Promise<unknown>> = [];
   for (const region of targetRegions) {
     secretsCreations$.push(aws.secretsManager.putSecret(region, secretName, options.value));
   }
   await Promise.all(secretsCreations$);
-}
+};
 
-export const createSecret = async (project: Project, config: IRootConfig, options: ICreateSecretOptions): Promise<void> => {
+export const createSecret = async (
+  project: Project,
+  config: IRootConfig,
+  options: ICreateSecretOptions,
+): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });
   if (await dotenvManager.hasKey(options.key)) {
-    throw new MilaError(MilaErrorCode.SECRET_ALREADY_EXISTS, `Key ${options.key} is already taken @ ${dotenvManager.path}`);
+    throw new MilaError(
+      MilaErrorCode.SECRET_ALREADY_EXISTS,
+      `Key ${options.key} is already taken @ ${dotenvManager.path}`,
+    );
   }
   await writeSecrets(config, options.secretName, options);
   await dotenvManager.addKey(options.key, `\${secrets:${options.secretName}`);
-}
+};

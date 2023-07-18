@@ -5,4 +5,4 @@ export const getConcurrency = (requested: string | undefined): number => {
     return getDefaultThreads();
   }
   return getThreads(Number(requested));
-}
+};

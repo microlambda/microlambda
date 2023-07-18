@@ -1,1 +1,1 @@
-export * from "./before-offline";
+export * from './before-offline';

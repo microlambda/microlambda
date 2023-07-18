@@ -7,7 +7,10 @@ import { printError } from '../print-process-error';
 import { EventsLog } from '@microlambda/logger';
 import { MilaSpinnies } from '../spinnies';
 
-export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog): Promise<{ failures: Set<RunCommandEvent>, success: Set<RunCommandEvent> }> => {
+export const packageServices = (
+  options: IPackageOptions,
+  eventsLog?: EventsLog,
+): Promise<{ failures: Set<RunCommandEvent>; success: Set<RunCommandEvent> }> => {
   return new Promise((resolve, reject) => {
     logger.lf();
     logger.info('▼ Packaging services');
@@ -31,9 +34,12 @@ export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog)
           const usesLayer = metadata.megabytes?.layer;
           const codeSize = metadata.megabytes?.code || metadata.megabytes;
           log?.debug(spinnies);
-          spinnies.succeed(evt.workspace.name, `${evt.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
-            usesLayer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
-          } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`);
+          spinnies.succeed(
+            evt.workspace.name,
+            `${evt.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
+              usesLayer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
+            } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`,
+          );
           break;
         }
         case RunCommandEventEnum.NODE_ERRORED: {
@@ -62,12 +68,14 @@ export const packageServices = (options: IPackageOptions, eventsLog?: EventsLog)
       return resolve({ failures, success });
     };
     const runner = new Runner(options.project, options.concurrency, eventsLog);
-    runner.runCommand({
-      cmd: 'package',
-      workspaces: options.workspaces,
-      mode: 'parallel',
-      force: options.force || options.forcePackage,
-      stdio: spinnies.stdio,
-    }).subscribe({ next: onNext, error: onError, complete: onComplete });
+    runner
+      .runCommand({
+        cmd: 'package',
+        workspaces: options.workspaces,
+        mode: 'parallel',
+        force: options.force || options.forcePackage,
+        stdio: spinnies.stdio,
+      })
+      .subscribe({ next: onNext, error: onError, complete: onComplete });
   });
 };

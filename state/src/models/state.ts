@@ -87,7 +87,9 @@ export class State extends Model<unknown> {
   }
 
   async listServices(env: string): Promise<Array<IServiceInstance>> {
-    const services = await this.query('GS2').keys({ k3: `service|${env}` }).execAll();
+    const services = await this.query('GS2')
+      .keys({ k3: `service|${env}` })
+      .execAll();
     return services as IServiceInstance[];
   }
 
@@ -104,10 +106,12 @@ export class State extends Model<unknown> {
   }
 
   async listServiceInstances(env: string, serviceName: string): Promise<Array<IServiceInstance>> {
-    const services = await this.query().keys({
-      k1: serviceName,
-      k2: beginsWith( `service|${env}`),
-    }).execAll();
+    const services = await this.query()
+      .keys({
+        k1: serviceName,
+        k2: beginsWith(`service|${env}`),
+      })
+      .execAll();
     return services as IServiceInstance[];
   }
 
@@ -117,7 +121,7 @@ export class State extends Model<unknown> {
       k2: `service|${req.env}|${req.region}`,
       k3: `service|${req.env}`,
       ...req,
-    })
+    });
   }
 
   async getLastLayerChecksums(service: string, env: string): Promise<ILayerChecksums> {
@@ -130,7 +134,7 @@ export class State extends Model<unknown> {
       k1: req.service,
       k2: `layer|${req.env}`,
       ...req,
-    })
+    });
   }
 
   async getExecution(branch: string, command: string, service: string): Promise<ICmdExecution> {

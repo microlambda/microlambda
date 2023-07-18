@@ -5,8 +5,8 @@ import { regions } from '@microlambda/config';
 import { LockManager, State } from '@microlambda/remote-state';
 import { getDependenciesGraph } from '../../utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
-import {EnvironmentLoader } from "@microlambda/environments";
-import {init} from "../../utils/init";
+import { EnvironmentLoader } from '@microlambda/environments';
+import { init } from '../../utils/init';
 
 export const createReplicate = async (env: string, region: string): Promise<void> => {
   logger.info('Creating regional replicate for', env);
@@ -48,4 +48,4 @@ export const createReplicate = async (env: string, region: string): Promise<void
   logger.success('Replicate order created. On next deploy, environment resources will be replicated in', region);
   logger.success(`Run yarn mila deploy -e ${env} to create new resources on AWS Cloud`);
   process.exit(0);
-}
+};

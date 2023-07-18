@@ -1,4 +1,4 @@
-import { config } from "dotenv";
+import { config } from 'dotenv';
 import { join } from 'path';
 import { existsSync } from 'fs';
 

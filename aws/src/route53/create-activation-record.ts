@@ -3,16 +3,16 @@ import {
   ChangeResourceRecordSetsRequest,
   HostedZone,
   Route53Client,
-} from "@aws-sdk/client-route-53";
-import { ResourceRecord } from "@aws-sdk/client-acm";
-import { serviceName } from "../certificate-manager/service-name";
-import { IBaseLogger } from "@microlambda/types";
-import { maxAttempts } from "../max-attempts";
+} from '@aws-sdk/client-route-53';
+import { ResourceRecord } from '@aws-sdk/client-acm';
+import { serviceName } from '../certificate-manager/service-name';
+import { IBaseLogger } from '@microlambda/types';
+import { maxAttempts } from '../max-attempts';
 
 export const createActivationRecord = async (
   hostedZone: HostedZone,
   record: ResourceRecord,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<void> => {
   const route53 = new Route53Client({
     maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
@@ -22,7 +22,7 @@ export const createActivationRecord = async (
     ChangeBatch: {
       Changes: [
         {
-          Action: "UPSERT",
+          Action: 'UPSERT',
           ResourceRecordSet: {
             Name: record.Name,
             Type: record.Type,
@@ -33,15 +33,11 @@ export const createActivationRecord = async (
       ],
     },
   };
-  logger?.debug(
-    serviceName,
-    "Sending ChangeResourceRecordSetsCommand",
-    request
-  );
+  logger?.debug(serviceName, 'Sending ChangeResourceRecordSetsCommand', request);
   try {
     await route53.send(new ChangeResourceRecordSetsCommand(request));
   } catch (e) {
-    logger?.error(serviceName, "ChangeResourceRecordSetsCommand failed");
+    logger?.error(serviceName, 'ChangeResourceRecordSetsCommand failed');
     logger?.error(e);
     throw e;
   }

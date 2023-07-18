@@ -1,5 +1,5 @@
-import { IBaseLogger } from "@microlambda/types";
-import { maxAttempts } from "../max-attempts";
+import { IBaseLogger } from '@microlambda/types';
+import { maxAttempts } from '../max-attempts';
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 
 /**
@@ -11,7 +11,7 @@ import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 export const getParameterValue = async (
   region: string,
   name: string,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<string | undefined> => {
   const ssm = new SSMClient({
     region,

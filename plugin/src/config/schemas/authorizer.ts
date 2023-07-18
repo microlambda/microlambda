@@ -1,5 +1,5 @@
-import joi from "joi";
-import { authorizerConfigCommon } from "./authorizer-common";
+import joi from 'joi';
+import { authorizerConfigCommon } from './authorizer-common';
 
 export const authorizerConfig = joi.alternatives(
   authorizerConfigCommon.keys({
@@ -7,5 +7,5 @@ export const authorizerConfig = joi.alternatives(
   }),
   authorizerConfigCommon.keys({
     arn: joi.string().required(),
-  })
+  }),
 );

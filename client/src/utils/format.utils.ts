@@ -1,6 +1,6 @@
 export function numberWithThousandsSeparator(
   x: number,
-  separator = " "
+  separator = ' ',
 ): string {
-  return x ? x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator) : "";
+  return x ? x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separator) : '';
 }
