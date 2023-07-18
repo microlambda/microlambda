@@ -1,5 +1,6 @@
 import Model, { beginsWith } from 'dynamodels';
-import { DynamoDB } from 'aws-sdk';
+import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
+import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { IRootConfig } from '@microlambda/config';
 
 export interface IEnvironment {
@@ -35,19 +36,40 @@ export interface ICmdExecutionRequest {
 }
 
 export interface ICmdExecution extends ICmdExecutionRequest {
-  k1: string; // $branch
-  k2: string; // executions|$service|$cmd
+  /**
+   * $branch
+   */
+  k1: string;
+  /**
+   * executions|$service|$cmd
+   */
+  k2: string;
 }
 
 export interface ILayerChecksums extends ILayerChecksumsRequest {
-  k1: string; // $serviceName
-  k2: string; // layer|$env
+  /**
+   * $serviceName
+   */
+  k1: string;
+  /**
+   * layer|$env
+   */
+  k2: string;
 }
 
 export interface IServiceInstance extends IServiceInstanceRequest {
+  /**
+   * $name
+   */
   k1: string; // $name
-  k2: string; // service|$env|$region
-  k3: string; // service|$env
+  /**
+   * service|$env|$region
+   */
+  k2: string;
+  /**
+   * service|$env
+   */
+  k3: string;
 }
 
 export class State extends Model<unknown> {
@@ -56,7 +78,7 @@ export class State extends Model<unknown> {
     this.tableName = config.state.table;
     this.pk = 'k1';
     this.sk = 'k2';
-    this.documentClient = new DynamoDB.DocumentClient({ region: config.defaultRegion });
+    this.documentClient = DynamoDBDocument.from(new DynamoDB({ region: config.defaultRegion }));
   }
 
   async environmentExists(name: string): Promise<boolean> {
