@@ -1,5 +1,17 @@
 {
   "targets": {
+    "prettier": {
+      "cmd": "../node_modules/.bin/prettier . --write",
+      "src": {
+        "internals": [
+          "{src,test}/**/*.{ts,tsx,json,yml}",
+          "eslintrc"
+        ],
+        "root": [
+          "eslintrc"
+        ]
+      }
+    },
     "lint": {
       "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
       "src": {

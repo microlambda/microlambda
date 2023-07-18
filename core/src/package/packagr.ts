@@ -6,7 +6,7 @@ import { sync as glob } from 'glob';
 import { Observable } from 'rxjs';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { command } from 'execa';
-import { Workspace as CentipodWorkspace} from "@microlambda/runner-core";
+import { Workspace as CentipodWorkspace } from '@microlambda/runner-core';
 import { Workspace } from '../graph/workspace';
 import { Project } from '../graph/project';
 import { resolveProjectRoot, getTsConfig } from '@microlambda/utils';
@@ -41,10 +41,7 @@ export class Packager {
         this._logger.debug('Analysing yarn workspaces...');
         const originalProject = await Project.loadProject(this._projectRoot);
         this._logger.debug('Found', originalProject.workspaces.size, 'workspaces');
-        this._logger.debug(
-          'Workspaces:',
-          Array.from(originalProject.services.keys()),
-        );
+        this._logger.debug('Workspaces:', Array.from(originalProject.services.keys()));
         const toPackageOriginal = originalProject.services.get(service);
         if (!toPackageOriginal) {
           throw new Error(
@@ -122,10 +119,7 @@ export class Packager {
     // Get transient yarn project
     this._logger.debug('Verifying transient project...');
     const transientProject = await Project.loadProject(this._tmpPath);
-    this._logger.debug(
-      'Transient project workspaces',
-      transientProject.workspaces.keys(),
-    );
+    this._logger.debug('Transient project workspaces', transientProject.workspaces.keys());
     return transientProject;
   }
 
@@ -159,12 +153,7 @@ export class Packager {
     this._logger.debug('Patching manifests');
     for (const workspace of transientProject.workspaces.values()) {
       if (isRequired(workspace)) {
-        this._logger.debug(
-          workspace.name,
-          'is dependency of',
-          toPackageTransient.name,
-          'removing only devDeps',
-        );
+        this._logger.debug(workspace.name, 'is dependency of', toPackageTransient.name, 'removing only devDeps');
         const manifest = readJSONSync(join(workspace.root, 'package.json'));
         delete manifest.devDependencies;
         writeJSONSync(join(workspace.root, 'package.json'), manifest, { spaces: 2 });

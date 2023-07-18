@@ -15,20 +15,26 @@ export const init = async (cmd: { prompt: boolean }): Promise<void> => {
   try {
     const user = await aws.iam.getCurrentUser(config.defaultRegion);
     logger.info('The remote state will be initialized in AWS account', chalk.cyan.bold(user.projectId));
-    logger.info('Actions will be be performed as IAM user', chalk.cyan.bold(user.username), chalk.gray(`(${user.arn})`));
+    logger.info(
+      'Actions will be be performed as IAM user',
+      chalk.cyan.bold(user.username),
+      chalk.gray(`(${user.arn})`),
+    );
   } catch (e) {
     logger.error('Cannot determine current IAM user:', (e as Error).message);
-    logger.error('Make sure you are logged in AWS')
+    logger.error('Make sure you are logged in AWS');
     process.exit(1);
   }
 
   if (cmd.prompt) {
-    const confirm = await prompt([{
-      type: 'confirm',
-      name: 'proceed',
-      message: 'Do you want to proceed',
-      default: false,
-    }]);
+    const confirm = await prompt([
+      {
+        type: 'confirm',
+        name: 'proceed',
+        message: 'Do you want to proceed',
+        default: false,
+      },
+    ]);
 
     if (!confirm.proceed) {
       logger.lf();
@@ -61,10 +67,10 @@ export const init = async (cmd: { prompt: boolean }): Promise<void> => {
     logger.lf();
     logger.error(e);
     process.exit(1);
-  }
+  };
   const onSuccess = (): void => {
     logger.lf();
-    logger.success('Remote state successfully initialized !')
+    logger.success('Remote state successfully initialized !');
     process.exit(0);
   };
   try {
@@ -72,7 +78,9 @@ export const init = async (cmd: { prompt: boolean }): Promise<void> => {
       creatingStateTable.succeed('Remote state already exists');
       onSuccess();
     } else {
-      onError(`A table named ${config.state.table} already exists. Please choose another name in mila.json or remove the existing table.`)
+      onError(
+        `A table named ${config.state.table} already exists. Please choose another name in mila.json or remove the existing table.`,
+      );
     }
   } catch (e) {
     if ((e as Error).message?.toLowerCase().includes('not found')) {

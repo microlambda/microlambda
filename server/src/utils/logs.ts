@@ -1,5 +1,5 @@
 // TODO : Factorize in types
-import { IEventLog } from "@microlambda/types";
+import { IEventLog } from '@microlambda/types';
 import { inspect } from 'util';
 
 export interface ILogsResponse<T = string> {
@@ -7,22 +7,19 @@ export interface ILogsResponse<T = string> {
   metadata: {
     count: number;
     slice: [number, number];
-  }
+  };
 }
 
 const TEN_MEGABYTES = 10 * 1000 * 1000;
 
-const getSlice = <T = unknown>(
-  logs: T[],
-  slice?: [number, number?],
-): ILogsResponse<T> => {
+const getSlice = <T = unknown>(logs: T[], slice?: [number, number?]): ILogsResponse<T> => {
   if (slice?.length === 1 && slice[0]) {
-    return { data: logs.slice(slice[0]), metadata: { count: logs.length, slice: [slice[0], logs.length] }}
+    return { data: logs.slice(slice[0]), metadata: { count: logs.length, slice: [slice[0], logs.length] } };
   }
   if (slice?.length === 2 && slice[0] && slice[1]) {
-    return { data: logs.slice(slice[0], slice[1]), metadata: { count: logs.length, slice: [slice[0], slice[1]] }}
+    return { data: logs.slice(slice[0], slice[1]), metadata: { count: logs.length, slice: [slice[0], slice[1]] } };
   }
-  return { data: logs, metadata: { count: logs.length, slice: [0, logs.length ]}}
+  return { data: logs, metadata: { count: logs.length, slice: [0, logs.length] } };
 };
 
 const countMethod = (entry: IEventLog | unknown): number => {
@@ -30,7 +27,7 @@ const countMethod = (entry: IEventLog | unknown): number => {
     return (entry as IEventLog).args.map((arg) => inspect(arg)).join('').length;
   }
   return inspect(entry).length;
-}
+};
 
 export const getTrimmedSlice = (
   logs: IEventLog[] | unknown[],
@@ -49,8 +46,8 @@ export const getTrimmedSlice = (
           count: currentSlice.metadata.count,
           slice: [currentSlice.metadata.slice[0] + i + 1, currentSlice.metadata.slice[1]],
         },
-      }
+      };
     }
   }
   return currentSlice;
-}
+};

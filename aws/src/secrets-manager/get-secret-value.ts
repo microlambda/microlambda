@@ -1,9 +1,6 @@
-import {
-  SecretsManagerClient,
-  GetSecretValueCommand,
-} from '@aws-sdk/client-secrets-manager';
-import { IBaseLogger } from "@microlambda/types";
-import { maxAttempts } from "../max-attempts";
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { IBaseLogger } from '@microlambda/types';
+import { maxAttempts } from '../max-attempts';
 
 /**
  * Get a secret value
@@ -16,7 +13,7 @@ export const getSecretValue = async (
   region: string,
   name: string,
   version?: string,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<string | undefined> => {
   const secretManager = new SecretsManagerClient({
     region,

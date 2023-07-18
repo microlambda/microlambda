@@ -15,4 +15,4 @@ export const readConfig = (projectRoot: string, eventsLog?: EventsLog): IRootCon
     throw e;
   }
   return config;
-}
+};

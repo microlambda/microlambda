@@ -1,9 +1,9 @@
-import { Workspace } from "@microlambda/core";
-import { IBaseLogger } from "@microlambda/types";
+import { Workspace } from '@microlambda/core';
+import { IBaseLogger } from '@microlambda/types';
 
 export const transpile = async (
   service: Workspace,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<void> => {
   const now = Date.now();
   await service.transpile();

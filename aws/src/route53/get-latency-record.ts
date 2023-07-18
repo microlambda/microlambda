@@ -1,19 +1,19 @@
-import { IBaseLogger } from "@microlambda/types";
+import { IBaseLogger } from '@microlambda/types';
 import {
   Route53Client,
   ResourceRecordSet,
   ListResourceRecordSetsRequest,
   ListResourceRecordSetsCommand,
-} from "@aws-sdk/client-route-53";
-import { serviceName } from "./service-name";
-import { maxAttempts } from "../max-attempts";
+} from '@aws-sdk/client-route-53';
+import { serviceName } from './service-name';
+import { maxAttempts } from '../max-attempts';
 
 export const getLatencyRecord = async (
   hostedZoneId: string,
   domain: string,
   apiGatewayUrl: string,
   region: string,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<ResourceRecordSet | undefined> => {
   const route53 = new Route53Client({
     maxAttempts: maxAttempts({ apiRateLimit: 5 }, logger),
@@ -23,10 +23,10 @@ export const getLatencyRecord = async (
   let isTruncated: boolean | undefined;
   let i = 0;
   let found: ResourceRecordSet | undefined;
-  logger?.debug("Fetching resource records");
+  logger?.debug('Fetching resource records');
   do {
     i++;
-    logger?.debug("Listing records", {
+    logger?.debug('Listing records', {
       page: i,
       isTruncated,
       nextRecordType,
@@ -38,17 +38,15 @@ export const getLatencyRecord = async (
       StartRecordName: nextRecordName,
       StartRecordType: nextRecordType,
     };
-    logger?.debug(serviceName, "Sending ListResourceRecordSetsCommand", params);
-    const result = await route53.send(
-      new ListResourceRecordSetsCommand(params)
-    );
+    logger?.debug(serviceName, 'Sending ListResourceRecordSetsCommand', params);
+    const result = await route53.send(new ListResourceRecordSetsCommand(params));
     found = result.ResourceRecordSets?.find(
       (r) =>
-        r.Type === "CNAME" &&
-        r.Name === (domain.endsWith(".") ? domain : domain) + "." &&
+        r.Type === 'CNAME' &&
+        r.Name === (domain.endsWith('.') ? domain : domain) + '.' &&
         r.Region === region &&
         r.ResourceRecords &&
-        r.ResourceRecords.some((rr) => rr.Value === apiGatewayUrl)
+        r.ResourceRecords.some((rr) => rr.Value === apiGatewayUrl),
     );
     logger?.debug(`Updating next token`, result.NextRecordIdentifier);
     isTruncated = result.IsTruncated;

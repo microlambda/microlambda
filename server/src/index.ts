@@ -1,11 +1,11 @@
 import express, { Request } from 'express';
 import { createServer, Server } from 'http';
-import { Project, Scheduler, Workspace } from "@microlambda/core";
+import { Project, Scheduler, Workspace } from '@microlambda/core';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
-import { EventsLog } from "@microlambda/logger";
-import { getTrimmedSlice } from "./utils/logs";
+import { EventsLog } from '@microlambda/logger';
+import { getTrimmedSlice } from './utils/logs';
 
 export * from './socket';
 
@@ -29,7 +29,7 @@ export const startServer = (
   app.use('/', express.static(__dirname + '/static'));
 
   app.get('/api/ping', (req, res) => {
-    res.status(200).send('Pong')
+    res.status(200).send('Pong');
   });
 
   app.get('/api/graph', async (req, res) => {
@@ -37,17 +37,17 @@ export const startServer = (
       name: n.name,
       version: n.version || '',
       type: n.isService ? 'service' : 'package',
-      port: n.isService ? (n.ports?.http || null) : null,
+      port: n.isService ? n.ports?.http || null : null,
       enabled: n.hasCommand('start'),
       transpiled: n.transpiled,
       typeChecked: n.typechecked,
       status: n.started,
       children: Array.from(n.descendants.values()).map((n) => n.name),
       metrics: n.metrics,
-    })
+    });
     const response: {
-      packages: INodeSummary[],
-      services: INodeSummary[],
+      packages: INodeSummary[];
+      services: INodeSummary[];
     } = {
       packages: [...project.packages.values()].map(summaryMapper),
       services: [...project.services.values()].map(summaryMapper),
@@ -65,18 +65,17 @@ export const startServer = (
       return [0];
     }
     return rawSlice[1] ? [Number(rawSlice[0]), Number(rawSlice[1])] : [Number(rawSlice[0])];
-  }
+  };
 
   app.get('/api/logs', (req, res) => {
     if (project.logger) {
-      let logs =  project.logger.buffer
-        .filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level));
+      let logs = project.logger.buffer.filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level));
       if (req.query.scope && typeof req.query.scope === 'string') {
         logs = logs.filter((entry) => entry.scope?.includes(req.query.scope!.toString()));
       }
       return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
     } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
     }
   });
 
@@ -138,7 +137,7 @@ export const startServer = (
     if (logs) {
       return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
     } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
     }
   });
 
@@ -153,7 +152,7 @@ export const startServer = (
     if (logs) {
       return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
     } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
     }
   });
 

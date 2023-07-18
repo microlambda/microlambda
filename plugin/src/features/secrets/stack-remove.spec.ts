@@ -1,3 +1,3 @@
-describe("[function] stackRemove", () => {
-  it.todo("should be tested");
+describe('[function] stackRemove', () => {
+  it.todo('should be tested');
 });

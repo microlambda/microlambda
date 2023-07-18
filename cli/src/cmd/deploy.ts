@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import {prompt} from 'inquirer';
+import { prompt } from 'inquirer';
 import { tap, catchError, mergeAll, map, concatAll } from 'rxjs/operators';
 import { logger } from '../utils/logger';
 import { LockManager } from '@microlambda/remote-state';
@@ -9,12 +9,7 @@ import { IDeployCmd } from '../utils/deploy/cmd-options';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { packageServices } from '../utils/package/do-package';
-import {
-  currentSha1, ICommandResult,
-  RunCommandEventEnum,
-  Runner,
-  Workspace,
-} from '@microlambda/runner-core';
+import { currentSha1, ICommandResult, RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
 import { printAccountInfos } from './envs/list';
 import ora from 'ora';
 import { beforePackage } from '../utils/package/before-package';
@@ -61,7 +56,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         throw e;
       }
     }
-  }
+  };
   process.on('SIGINT', async () => {
     eventsLog.scope('process').warn('SIGINT signal received');
     try {
@@ -95,18 +90,22 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
     const toDeploy = new Set<Workspace>();
     for (const [serviceName, serviceOps] of operations.entries()) {
       const service = project.services.get(serviceName);
-      const isDeployedInAtLeastOneRegion = [...serviceOps.values()].some((action) => ['redeploy', 'first_deploy'].includes(action));
+      const isDeployedInAtLeastOneRegion = [...serviceOps.values()].some((action) =>
+        ['redeploy', 'first_deploy'].includes(action),
+      );
       if (service && isDeployedInAtLeastOneRegion) {
-        toDeploy.add(service)
+        toDeploy.add(service);
       }
     }
 
     const toDestroy = new Set<Workspace>();
     for (const [serviceName, serviceOps] of operations.entries()) {
       const service = project.services.get(serviceName);
-      const shouldBeDestroyedFromAtLeastOneRegion = [...serviceOps.values()].some((action) => ['destroy'].includes(action));
+      const shouldBeDestroyedFromAtLeastOneRegion = [...serviceOps.values()].some((action) =>
+        ['destroy'].includes(action),
+      );
       if (service && shouldBeDestroyedFromAtLeastOneRegion) {
-        toDestroy.add(service)
+        toDestroy.add(service);
       }
     }
 
@@ -117,11 +116,15 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       process.exit(0);
     }
 
-    const options = await beforePackage(project, {
-      ...cmd,
-      s: [...toDeploy].map((s) => s.name).join(','),
-    }, eventsLog);
-    await packageServices(options, eventsLog)
+    const options = await beforePackage(
+      project,
+      {
+        ...cmd,
+        s: [...toDeploy].map((s) => s.name).join(','),
+      },
+      eventsLog,
+    );
+    await packageServices(options, eventsLog);
 
     logger.lf();
     logger.info('▼ Deploying services');
@@ -159,62 +162,62 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
             },
             cachePrefix,
           });
-          const deploy$ = runner.runCommand({
-            mode: 'parallel',
-            workspaces: [service],
-            cmd: 'deploy',
-            env: {
-              AWS_REGION: region,
-            },
-            stdio: options.verbose ? 'inherit' : 'pipe',
-            remoteCache: {
-              region: config.defaultRegion,
-              bucket: config.state.checksums,
-            },
-            cachePrefix,
-          }).pipe(
-            map((evt) => ({
-              ...evt,
-              region,
-            })),
-            tap(async (evt) => {
-              if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-                if (evt.result.commands.every((cmd) => (cmd as ICommandResult).exitCode === 0)) {
-                  try {
-                    await state.createServiceInstance({
-                      name: service.name,
-                      region,
-                      env: env.name,
-                      sha1: currentRevision,
-                      checksums_buckets: config.state.checksums,
-                      checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
-                    });
-                  } catch (err) {
-                    logger.warn('Error updating state for service', service.name);
-                    eventsLog.scope('deploy').error('Error updating state for service', service.name, err);
+          const deploy$ = runner
+            .runCommand({
+              mode: 'parallel',
+              workspaces: [service],
+              cmd: 'deploy',
+              env: {
+                AWS_REGION: region,
+              },
+              stdio: options.verbose ? 'inherit' : 'pipe',
+              remoteCache: {
+                region: config.defaultRegion,
+                bucket: config.state.checksums,
+              },
+              cachePrefix,
+            })
+            .pipe(
+              map((evt) => ({
+                ...evt,
+                region,
+              })),
+              tap(async (evt) => {
+                if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+                  if (evt.result.commands.every((cmd) => (cmd as ICommandResult).exitCode === 0)) {
+                    try {
+                      await state.createServiceInstance({
+                        name: service.name,
+                        region,
+                        env: env.name,
+                        sha1: currentRevision,
+                        checksums_buckets: config.state.checksums,
+                        checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
+                      });
+                    } catch (err) {
+                      logger.warn('Error updating state for service', service.name);
+                      eventsLog.scope('deploy').error('Error updating state for service', service.name, err);
+                    }
                   }
                 }
-              }
-            }),
-            catchError((err) => {
-              const evt = {
-                type: RunCommandEventEnum.NODE_ERRORED,
-                error: err,
-                workspace: service,
-                region,
-              } as DeployEvent
-              return of(evt);
-            }),
-          );
+              }),
+              catchError((err) => {
+                const evt = {
+                  type: RunCommandEventEnum.NODE_ERRORED,
+                  error: err,
+                  workspace: service,
+                  region,
+                } as DeployEvent;
+                return of(evt);
+              }),
+            );
           deployServiceInAllRegions$.push(deploy$);
         }
       }
-      deployCommands$.push(from(deployServiceInAllRegions$).pipe(concatAll()))
+      deployCommands$.push(from(deployServiceInAllRegions$).pipe(concatAll()));
     }
     const spinnies = new MilaSpinnies(options.verbose);
-    const deployProcess$ = from(deployCommands$).pipe(
-      mergeAll(options.concurrency),
-    );
+    const deployProcess$ = from(deployCommands$).pipe(mergeAll(options.concurrency));
     deployProcess$.subscribe({
       next: (evt) => {
         handleNext(evt, spinnies, failures, actions, options.verbose, 'deploy');
@@ -234,7 +237,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         logger.success(`Successfully deploy ${cmd.e} 🚀`);
         process.exit(0);
       },
-    })
+    });
   } catch (e) {
     logger.error('Deployment failed', e);
     await releaseLock();

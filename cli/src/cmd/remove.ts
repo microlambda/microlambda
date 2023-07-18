@@ -1,7 +1,7 @@
 import inquirer from 'inquirer';
-import {Deployer, DeployEvent} from '@microlambda/core';
+import { Deployer, DeployEvent } from '@microlambda/core';
 import chalk from 'chalk';
-import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
+import { EventsLog, EventLogsFileHandler } from '@microlambda/logger';
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { init } from '../utils/init';
@@ -52,17 +52,19 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
 
     const spinnies = new MilaSpinnies(cmd.verbose);
 
-
     const failures: Set<DeployEvent> = new Set();
     const actions: Set<DeployEvent> = new Set();
 
-    const remover = new Deployer({
-      project,
-      targets,
-      force: true,
-      verbose: cmd.verbose || false,
-      environment: cmd.e,
-    }, 'remove');
+    const remover = new Deployer(
+      {
+        project,
+        targets,
+        force: true,
+        verbose: cmd.verbose || false,
+        environment: cmd.e,
+      },
+      'remove',
+    );
     remover.deploy().subscribe({
       next: (evt) => {
         handleNext(evt, spinnies, failures, actions, cmd.verbose, 'remove');

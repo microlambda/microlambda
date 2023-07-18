@@ -16,7 +16,7 @@ export const printAccountInfos = async (): Promise<IRootConfig> => {
   logger.info('IAM user', chalk.white.bold(currentUser.arn));
   logger.lf();
   return config;
-}
+};
 
 export const listEnvs = async (): Promise<void> => {
   logger.info('Listing deployed environments');
@@ -32,4 +32,4 @@ export const listEnvs = async (): Promise<void> => {
       logger.info(`${chalk.white.bold(e.name)} (${chalk.grey(e.regions.join(', '))})`);
     }
   }
-}
+};

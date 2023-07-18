@@ -12,35 +12,34 @@ export const createStateTable = async (config: IRootConfig): Promise<void> => {
       { AttributeName: 'k4', AttributeType: 'S' },
     ],
     KeySchema: [
-      { KeyType: 'HASH', AttributeName: 'k1'},
-      { KeyType: 'RANGE', AttributeName: 'k2'},
+      { KeyType: 'HASH', AttributeName: 'k1' },
+      { KeyType: 'RANGE', AttributeName: 'k2' },
     ],
     GlobalSecondaryIndexes: [
       {
         IndexName: 'GS1',
         KeySchema: [
-          { KeyType: 'HASH', AttributeName: 'k2'},
-          { KeyType: 'RANGE', AttributeName: 'k1'},
+          { KeyType: 'HASH', AttributeName: 'k2' },
+          { KeyType: 'RANGE', AttributeName: 'k1' },
         ],
         Projection: { ProjectionType: 'ALL' },
       },
       {
         IndexName: 'GS2',
         KeySchema: [
-          { KeyType: 'HASH', AttributeName: 'k3'},
-          { KeyType: 'RANGE', AttributeName: 'k2'},
+          { KeyType: 'HASH', AttributeName: 'k3' },
+          { KeyType: 'RANGE', AttributeName: 'k2' },
         ],
         Projection: { ProjectionType: 'ALL' },
       },
       {
         IndexName: 'GS3',
         KeySchema: [
-          { KeyType: 'HASH', AttributeName: 'k4'},
-          { KeyType: 'RANGE', AttributeName: 'k2'},
+          { KeyType: 'HASH', AttributeName: 'k4' },
+          { KeyType: 'RANGE', AttributeName: 'k2' },
         ],
         Projection: { ProjectionType: 'ALL' },
-      }
+      },
     ],
-
-  })
-}
+  });
+};

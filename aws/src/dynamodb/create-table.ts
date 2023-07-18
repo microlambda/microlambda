@@ -3,4 +3,4 @@ import { DynamoDBClient, CreateTableCommand, CreateTableOutput, CreateTableInput
 export const createTable = async (region: string, options: CreateTableInput): Promise<CreateTableOutput> => {
   const client = new DynamoDBClient({ region });
   return client.send(new CreateTableCommand(options));
-}
+};

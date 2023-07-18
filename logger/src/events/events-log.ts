@@ -11,11 +11,14 @@ import { IEventsLogHandler } from './handlers';
  * All logs are scoped : each class should declared a unique prefix so logs can be easily filtered.
  */
 export class EventsLog {
-  constructor(readonly options: IEventLogOptions = {
-    prefix: DEFAULT_PREFIXES,
-    bufferSize: DEFAULT_BUFFER_SIZE,
-    inspectDepth: DEFAULT_INSPECT_DEPTH,
-  }, private readonly _handlers: IEventsLogHandler[] = []) {}
+  constructor(
+    readonly options: IEventLogOptions = {
+      prefix: DEFAULT_PREFIXES,
+      bufferSize: DEFAULT_BUFFER_SIZE,
+      inspectDepth: DEFAULT_INSPECT_DEPTH,
+    },
+    private readonly _handlers: IEventsLogHandler[] = [],
+  ) {}
 
   private _buffer: IEventsLogEntry[] = [];
 
@@ -28,11 +31,9 @@ export class EventsLog {
   }
 
   get level(): LogLevel | 'silent' {
-    return ['silly', 'debug', 'info', 'warn', 'error'].includes(
-      String(process.env.MILA_LOG_LEVEL),
-    )
-      ? String(process.env.MILA_LOG_LEVEL) as LogLevel
-      : 'silent' as const;
+    return ['silly', 'debug', 'info', 'warn', 'error'].includes(String(process.env.MILA_LOG_LEVEL))
+      ? (String(process.env.MILA_LOG_LEVEL) as LogLevel)
+      : ('silent' as const);
   }
 
   scope(scope?: string): EventsLogger {

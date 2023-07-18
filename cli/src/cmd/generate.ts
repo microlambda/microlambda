@@ -11,7 +11,7 @@ import {
   resolveInputs,
 } from '@microlambda/generators';
 import chalk from 'chalk';
-import {resolveProjectRoot} from "@microlambda/utils";
+import { resolveProjectRoot } from '@microlambda/utils';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { logger } from '../utils/logger';
 

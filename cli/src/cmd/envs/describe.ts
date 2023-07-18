@@ -27,4 +27,4 @@ export const describeEnv = async (name: string): Promise<void> => {
     logger.info(s.region);
     logger.info(s.sha1);
   });
-}
+};

@@ -1,4 +1,4 @@
-import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
+import { EventsLog, EventLogsFileHandler } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { logger } from '../utils/logger';
 import { IBuildCmd } from '../utils/build/cmd-options';

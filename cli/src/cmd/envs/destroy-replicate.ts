@@ -5,8 +5,8 @@ import { regions } from '@microlambda/config';
 import { LockManager, State } from '@microlambda/remote-state';
 import { getDependenciesGraph } from '../../utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
-import {init} from "../../utils/init";
-import {EnvironmentLoader} from "@microlambda/environments";
+import { init } from '../../utils/init';
+import { EnvironmentLoader } from '@microlambda/environments';
 
 export const destroyReplicate = async (env: string, region: string): Promise<void> => {
   logger.info('Removing regional replicate for', env);
@@ -45,7 +45,10 @@ export const destroyReplicate = async (env: string, region: string): Promise<voi
     logger.warn('Original error:', err);
   });
   await lock.releaseLock();
-  logger.success('Replicate destruction order created. On next deploy, environment resources will be destroyed from', region);
+  logger.success(
+    'Replicate destruction order created. On next deploy, environment resources will be destroyed from',
+    region,
+  );
   logger.success(`Run yarn mila deploy -e ${env} to remove resources from AWS Cloud`);
   process.exit(0);
-}
+};

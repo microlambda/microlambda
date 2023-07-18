@@ -11,7 +11,11 @@ export interface IDeleteParameterOptions {
   key: string;
 }
 
-export const removeParameter = async (project: Project, config: IRootConfig, options: IDeleteParameterOptions): Promise<void> => {
+export const removeParameter = async (
+  project: Project,
+  config: IRootConfig,
+  options: IDeleteParameterOptions,
+): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });
   const parameterName = await checkIsParameter(project, options);
   const targetRegions = await resolveTargetsRegions(config, options.env);
@@ -21,4 +25,4 @@ export const removeParameter = async (project: Project, config: IRootConfig, opt
   }
   await Promise.all(parametersDeletion$);
   await dotenvManager.removeKey(options.key);
-}
+};
