@@ -594,6 +594,51 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/client-secrets-manager@npm:^3.370.0":
+  version: 3.370.0
+  resolution: "@aws-sdk/client-secrets-manager@npm:3.370.0"
+  dependencies:
+    "@aws-crypto/sha256-browser": 3.0.0
+    "@aws-crypto/sha256-js": 3.0.0
+    "@aws-sdk/client-sts": 3.370.0
+    "@aws-sdk/credential-provider-node": 3.370.0
+    "@aws-sdk/middleware-host-header": 3.370.0
+    "@aws-sdk/middleware-logger": 3.370.0
+    "@aws-sdk/middleware-recursion-detection": 3.370.0
+    "@aws-sdk/middleware-signing": 3.370.0
+    "@aws-sdk/middleware-user-agent": 3.370.0
+    "@aws-sdk/types": 3.370.0
+    "@aws-sdk/util-endpoints": 3.370.0
+    "@aws-sdk/util-user-agent-browser": 3.370.0
+    "@aws-sdk/util-user-agent-node": 3.370.0
+    "@smithy/config-resolver": ^1.0.1
+    "@smithy/fetch-http-handler": ^1.0.1
+    "@smithy/hash-node": ^1.0.1
+    "@smithy/invalid-dependency": ^1.0.1
+    "@smithy/middleware-content-length": ^1.0.1
+    "@smithy/middleware-endpoint": ^1.0.2
+    "@smithy/middleware-retry": ^1.0.3
+    "@smithy/middleware-serde": ^1.0.1
+    "@smithy/middleware-stack": ^1.0.1
+    "@smithy/node-config-provider": ^1.0.1
+    "@smithy/node-http-handler": ^1.0.2
+    "@smithy/protocol-http": ^1.1.0
+    "@smithy/smithy-client": ^1.0.3
+    "@smithy/types": ^1.1.0
+    "@smithy/url-parser": ^1.0.1
+    "@smithy/util-base64": ^1.0.1
+    "@smithy/util-body-length-browser": ^1.0.1
+    "@smithy/util-body-length-node": ^1.0.1
+    "@smithy/util-defaults-mode-browser": ^1.0.1
+    "@smithy/util-defaults-mode-node": ^1.0.1
+    "@smithy/util-retry": ^1.0.3
+    "@smithy/util-utf8": ^1.0.1
+    tslib: ^2.5.0
+    uuid: ^8.3.2
+  checksum: d9bc0776bf390e008edcbf11d233e3755ad0ca2325b6b639b5db2eefd720c7104de3bd59ef24e0e77e91aa3ccc772dbd4e48a0a19e8de3768a9e2fb54aca5e99
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/client-ssm@npm:^3.370.0":
   version: 3.370.0
   resolution: "@aws-sdk/client-ssm@npm:3.370.0"
@@ -3514,7 +3559,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/handling@workspace:handling"
   dependencies:
-    "@smithy/types": 1.1.0
+    "@aws-sdk/client-secrets-manager": ^3.370.0
+    "@aws-sdk/client-ssm": ^3.370.0
+    "@smithy/types": ^1.1.1
     "@types/aws-lambda": ^8.10.119
     "@types/node": ^16.18.38
     aws-sdk-client-mock: ^3.0.0
@@ -4142,15 +4189,6 @@ __metadata:
     "@smithy/util-stream": ^1.0.2
     tslib: ^2.5.0
   checksum: 468aa2f28b6addb82861a543a2c1639dcfd40e49d3344237bd56c2d061af5e2bc88972297a2b86de7bf31d7ee49589a4e5a577518ef747e2c7458ae20f7c3322
-  languageName: node
-  linkType: hard
-
-"@smithy/types@npm:1.1.0":
-  version: 1.1.0
-  resolution: "@smithy/types@npm:1.1.0"
-  dependencies:
-    tslib: ^2.5.0
-  checksum: 8c0589fa973e5c71cf776c28c43aba04ee07139578fd0174aac0d74c3688e3ffa7075cecd65b223b2a155ad711808b1e4ad58a084ba9f24fcb49679272018387
   languageName: node
   linkType: hard
 
