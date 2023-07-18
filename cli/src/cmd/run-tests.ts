@@ -71,8 +71,7 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
     const state = new State(config);
 
     await typeCheck(options);
-
-    const { failures, success } = await new Promise(async (resolve, reject) => {
+    const { failures, success } = await (new Promise(async (resolve, reject) => {
       const log = eventsLog.scope('run-tests');
       const success: Set<RunCommandEvent> = new Set();
       const failures: Set<IRunCommandErrorEvent> = new Set();
@@ -244,7 +243,7 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
       from(process$)
         .pipe(mergeAll(options.concurrency))
         .subscribe({ next: onNext, error: onError, complete: onComplete });
-    });
+    }) as Promise<{ failures: Set<IRunCommandErrorEvent>; success: Set<RunCommandEvent> }>);
     if (failures.size) {
       await printReport(success, failures, options.workspaces.length, 'test', options.verbose);
       process.exit(1);
