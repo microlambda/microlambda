@@ -17,6 +17,13 @@ import { from, Observable, of } from 'rxjs';
 import { DeployEvent, printReport } from '../utils/deploy/print-report';
 import { handleNext } from '../utils/deploy/handle-next';
 import { MilaSpinnies } from '../utils/spinnies';
+import {
+  deploySharedInfrastructure,
+  ISharedInfraFailedDeployEvent,
+  SharedInfraDeployEventType,
+} from '@microlambda/core';
+import { getConcurrency } from '../utils/get-concurrency';
+import { relative } from 'path';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -124,6 +131,67 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       },
       eventsLog,
     );
+    logger.lf();
+    logger.info(chalk.underline(chalk.bold('▼ Updating shared infrastructure')));
+    logger.lf();
+    await new Promise<void>((resolve) => {
+      const spinnies = new MilaSpinnies(options.verbose);
+      const failures = new Set<ISharedInfraFailedDeployEvent>();
+      deploySharedInfrastructure(projectRoot, config, env, getConcurrency(cmd.c)).subscribe({
+        next: (evt) => {
+          switch (evt.type) {
+            case SharedInfraDeployEventType.STACKS_RESOLVED:
+              if (!evt.stacks.length) {
+                logger.success('Nothing to do 👌');
+              }
+              break;
+            case SharedInfraDeployEventType.STARTED:
+              spinnies.add(
+                `${evt.stack}-${evt.region}`,
+                `Deploying ${relative(projectRoot, evt.stack)} (${evt.region})`,
+              );
+              break;
+            case SharedInfraDeployEventType.SUCCEEDED:
+              spinnies.succeed(
+                `${evt.stack}-${evt.region}`,
+                `Successfully deployed ${relative(projectRoot, evt.stack)} (${evt.region})`,
+              );
+              break;
+            case SharedInfraDeployEventType.FAILED:
+              spinnies.fail(
+                `${evt.stack}-${evt.region}`,
+                `Failed to deploy ${relative(projectRoot, evt.stack)} (${evt.region})`,
+              );
+              failures.add(evt as ISharedInfraFailedDeployEvent);
+              break;
+          }
+        },
+        error: (err) => {
+          logger.error('Error happened updating shared infrastructure');
+          logger.error(err);
+          process.exit(1);
+        },
+        complete: () => {
+          if (failures.size) {
+            logger.error('Error happened updating shared infrastructure');
+            for (const failure of failures) {
+              logger.error(
+                `Error happened deploying ${relative(projectRoot, failure.stack)} in region ${failure.region}`,
+              );
+              const isExecaError = (err: unknown): err is { all: string } => !!(failure.err as { all: string }).all;
+              if (isExecaError(failure.err)) {
+                logger.error(failure.err.all);
+              } else {
+                logger.error(failure.err);
+              }
+            }
+            process.exit(1);
+          }
+          return resolve();
+        },
+      });
+    });
+
     await packageServices(options, eventsLog);
 
     logger.lf();

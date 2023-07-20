@@ -8,3 +8,5 @@ export * from './graph/project';
 export * from './deploy';
 export * from './scheduler';
 export * from './log-handlers/file';
+export * from './shared-infra';
+export * from './shared-infra/types';
