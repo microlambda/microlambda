@@ -638,9 +638,7 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
-    it.skip('should handle correctly add node event - [parallel]', async () => {
-      expect(true).toBe(false);
-    });
+
     it.skip('should restart daemon process on changes - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
@@ -683,6 +681,13 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     })
+    it.todo('should restart daemon when flagged as failed - [parallel]');
+    it.todo('should restart daemon when flagged as succeed - [parallel]');
+    it.todo('should restart daemon when starting and file change - [parallel]');
+    it.todo('should handle correctly add node event - [parallel]');
+    it.todo('should start watching sources of added node - [parallel]');
+    it.todo('should handle correctly remove node event - [parallel]');
+    it.todo('should stop watching sources of removed node - [parallel]');
     it('should handle correctly interruption in previous step - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
@@ -969,5 +974,9 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
+    it.todo('should handle correctly add node event - [topological]');
+    it.todo('should start watching sources of added node - [topological]');
+    it.todo('should handle correctly remove node event - [topological]');
+    it.todo('should stop watching sources of removed node - [topological]');
   });
 });
