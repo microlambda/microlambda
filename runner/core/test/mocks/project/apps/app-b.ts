@@ -20,6 +20,26 @@ export const pkg = {
 
 export const centipod = {
   "targets": {
+    "start": {
+      "script": "start",
+      "daemon": {
+        "type": "success" as const,
+        "stdio": "all" as const,
+        "matcher": "contains" as const,
+        "value": "Server ready"
+      },
+      "src": {
+        "internals": [
+          ".env",
+          ".env.local",
+          "serverless.yml"
+        ],
+        "root": [
+          ".env",
+          ".env.local"
+        ]
+      }
+    },
     "lint": {
       "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
       "src": {

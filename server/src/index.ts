@@ -1,20 +1,26 @@
-import express, { Request } from 'express';
-import { createServer, Server } from 'http';
-import { Project, Scheduler, Workspace } from '@microlambda/core';
+import express, {Request} from 'express';
+import {createServer, Server} from 'http';
+import {Project, Scheduler, Workspace} from '@microlambda/core';
 import cors from 'cors';
-import { json } from 'body-parser';
-import { INodeSummary } from '@microlambda/types';
-import { EventsLog } from '@microlambda/logger';
-import { getTrimmedSlice } from './utils/logs';
+import {json} from 'body-parser';
+import {INodeSummary} from '@microlambda/types';
+import {EventsLog} from '@microlambda/logger';
+import {getTrimmedSlice} from './utils/logs';
+import {EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable} from "@microlambda/environments";
+import {State} from "@microlambda/remote-state";
+import {IRootConfig} from "@microlambda/config";
+import {aws} from "@microlambda/aws";
 
 export * from './socket';
 
-export const startServer = (
-  port = 4545,
+export const startServer = (options: {
+  port: number,
   project: Project,
   logger: EventsLog,
   scheduler: Scheduler,
-): Promise<Server> => {
+  config: IRootConfig,
+}): Promise<Server> => {
+  const { port, project, logger, scheduler } = options;
   const log = logger.scope('api');
   const app = express();
 
@@ -154,6 +160,37 @@ export const startServer = (
     } else {
       return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
     }
+  });
+
+  app.get('/api/aws/account', async (req, res) => {
+    const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
+    res.json(account);
+  });
+
+  app.get('/api/environments', async (req, res) => {
+    const state = new State(options.config);
+    const envs = await state.listEnvironments();
+    return res.json(envs);
+  });
+
+  app.get('/api/services/:service/environment', async (req, res) => {
+    const serviceName = req.params.service;
+    const loader = new EnvironmentLoader(project);
+    const state = new State(options.config);
+    const envs = await state.listEnvironments();
+    const vars: Record<string, Array<ILoadedEnvironmentVariable>> = {}
+    const loadEnvironments$ = envs.map((env) => loader.loadAll({
+      env: env.name,
+      service: serviceName,
+      inject: false,
+      shouldInterpolate: true,
+      ssmMode: SSMResolverMode.IGNORE,
+      overwrite: false,
+    }).then((loaded) => {
+      vars[env.name] = loaded;
+    }));
+    await Promise.all(loadEnvironments$);
+    return res.json(vars);
   });
 
   const http = createServer(app);

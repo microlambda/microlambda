@@ -1,4 +1,4 @@
-import { derived, readable, Writable, writable } from 'svelte/store';
+import { derived, readable, writable } from 'svelte/store';
 import {
   fetchCompilationLogs,
   fetchEventLogs,
@@ -6,15 +6,16 @@ import {
   fetchSchedulerStatus,
   fetchServiceLogs,
   healthCheck,
-  IGraph,
-  ILogsResponse,
 } from './api';
 import type {
   IEventLog,
   INodeSummary,
   SchedulerStatus,
 } from '@microlambda/types';
+import type { IGraph } from './types/graph';
+
 import { logger } from './logger';
+import type { ILogsResponse } from './types/logs-response';
 
 const DEFAULT_POLLING_RATE = 500;
 const log = logger.scope('(store)');

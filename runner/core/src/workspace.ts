@@ -156,8 +156,8 @@ export class Workspace {
     tested.add(this);
 
     // Test if is affected
-    const affected = await this._testAffected(rev1, rev2, patterns);
-    if (affected) return true;
+    const isAffected = await this._testAffected(rev1, rev2, patterns);
+    if (isAffected) return true;
 
     // Test dependencies if are affected
     for (const dep of this.dependencies()) {
@@ -165,8 +165,8 @@ export class Workspace {
       if (tested.has(dep)) continue;
 
       // Test
-      const affected = await dep._testDepsAffected(tested, rev1, rev2, patterns);
-      if (affected) return true;
+      const isAffected = await dep._testDepsAffected(tested, rev1, rev2, patterns);
+      if (isAffected) return true;
     }
 
     return false;
@@ -221,12 +221,12 @@ export class Workspace {
   ): Promise<IDaemonCommandResult> {
     this._logger?.debug('Handling daemon for process', cmdProcess);
     const logsConditions = Array.isArray(daemonConfig) ? daemonConfig : [daemonConfig];
-    let killed = false;
+    let isKilled = false;
     const crashed$ = new Observable<IDaemonCommandResult>((obs) => {
       this._logger?.debug('Watching for daemon crash');
       cmdProcess.catch((crashed) => {
         this._logger?.error(crashed);
-        if (!killed) {
+        if (!isKilled) {
           this._handleLogs('append', target,'Daemon crashed');
           this._handleLogs('append', target, crashed.message);
           this._logger?.warn('Daemon crashed', { target: this.name });
@@ -265,7 +265,7 @@ export class Workspace {
     const race$ = race(...logsConditionsMet$, crashed$).pipe(
       catchError((e) => {
         this._logger?.error('Error happened, killing process', { target: this.name });
-        killed = true;
+        isKilled = true;
         cmdProcess.kill();
         this._logger?.debug('Rethrow', { target: this.name }, e);
         return throwError(e);
@@ -324,20 +324,20 @@ export class Workspace {
     return new Promise<void>((resolve) => {
       const watchKilled = (): void => {
         if (childProcess) {
-          let killed = false;
+          let isKilled = false;
           childProcess.on('close', () => {
             // On close, we are sure that every process in process tree has exited, so we can complete observable
             // This is the most common scenario, where sls offline gracefully shutdown underlying hapi server and
             // close properly with status 0
-            killed = true;
+            isKilled = true;
             return resolve();
           });
           // This is a security to make child process release given ports, we give 500ms to process to gracefully
-          // exit. Other wise we send SIGKILL to the whole process tree to free the port (#Rampage)
+          // exit. Otherwise, we send SIGKILL to the whole process tree to free the port (#Rampage)
           if (releasePorts) {
             setTimeout(async () => {
               const areAvailable = await Promise.all(releasePorts.map((port) => isPortAvailable(port)));
-              if (areAvailable.some((a) => !a) && !killed) {
+              if (areAvailable.some((a) => !a) && !isKilled) {
                 this._killProcessTree(childProcess, 'SIGKILL');
               }
               return resolve();
@@ -437,7 +437,8 @@ export class Workspace {
     return [reformatCommandConfig(config.cmd)];
   }
 
-  private static isDaemon(config: ITargetConfig): boolean {
+  isDaemon(target: string): boolean {
+    const config = this.config[target];
     if (isScriptTarget(config)) {
       return !!config.daemon;
     }
@@ -455,7 +456,7 @@ export class Workspace {
   ): Promise<Array<CommandResult>> {
     const results: Array<CommandResult> = [];
     const config = this.config[target];
-    const commands = await this._resolveCommands(config);
+    const commands = this._resolveCommands(config);
     const _args = Array.isArray(args) ? args : [args];
     let idx = 0;
     this._handleLogs('open', target);
@@ -465,7 +466,7 @@ export class Workspace {
       results.push(await this._runCommand(target, _cmd, _args[idx], env, stdio));
       idx++;
     }
-    if (!Workspace.isDaemon(config)) {
+    if (!this.isDaemon(target)) {
       this._handleLogs('close', target);
     }
     this._logger?.info('All commands run', { cmd: target, target: this.name }, results);
@@ -583,7 +584,7 @@ export class Workspace {
     }
   }
 
-  run(options: RunOptions): Observable<IProcessResult> {
+  run(options: RunOptions, _workspaceName?: string): Observable<IProcessResult> {
     this._logger?.info('Preparing command', { cmd: options.cmd, workspace: this.name });
     return new Observable<IProcessResult>((obs) => {
       if (isUsingRemoteCache(options) && options.remoteCache) {

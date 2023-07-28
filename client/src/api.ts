@@ -3,20 +3,12 @@
  */
 
 import { env } from './env/dev.env';
-import type {
-  IEventLog,
-  INodeSummary,
-  LogLevel,
-  SchedulerStatus,
-} from '@microlambda/types';
+import type { IEventLog, LogLevel, SchedulerStatus } from '@microlambda/types';
 import { logger } from './logger';
+import type { IGraph } from './types/graph';
+import type { ILogsResponse } from './types/logs-response';
 
 const log = logger.scope('(api)');
-
-export interface IGraph {
-  packages: INodeSummary[];
-  services: INodeSummary[];
-}
 
 export async function fetchGraph(): Promise<IGraph> {
   const response = await fetch(`${env.apiUrl}/api/graph`);
@@ -91,14 +83,6 @@ export async function healthCheck(): Promise<boolean> {
     connected = false;
     return false;
   }
-}
-
-export interface ILogsResponse<T = string> {
-  data: T[];
-  metadata: {
-    count: number;
-    slice: [number, number];
-  };
 }
 
 export async function fetchServiceLogs(
