@@ -27,7 +27,13 @@ export const start = async (options: IStartOptions): Promise<void> => {
   const DEFAULT_PORT = 4545;
   const scheduler = new Scheduler(project, eventsLog);
   const startingServer = ora('Starting server').start();
-  const server = await startServer({port: options.port || DEFAULT_PORT, project, logger: eventsLog, scheduler, config });
+  const server = await startServer({
+    port: options.port || DEFAULT_PORT,
+    project,
+    logger: eventsLog,
+    scheduler,
+    config,
+  });
   startingServer.text = 'Mila server started on http://localhost:4545 ✨';
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();

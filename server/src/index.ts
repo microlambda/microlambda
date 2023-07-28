@@ -1,24 +1,24 @@
-import express, {Request} from 'express';
-import {createServer, Server} from 'http';
-import {Project, Scheduler, Workspace} from '@microlambda/core';
+import express, { Request } from 'express';
+import { createServer, Server } from 'http';
+import { Project, Scheduler, Workspace } from '@microlambda/core';
 import cors from 'cors';
-import {json} from 'body-parser';
-import {INodeSummary} from '@microlambda/types';
-import {EventsLog} from '@microlambda/logger';
-import {getTrimmedSlice} from './utils/logs';
-import {EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable} from "@microlambda/environments";
-import {State} from "@microlambda/remote-state";
-import {IRootConfig} from "@microlambda/config";
-import {aws} from "@microlambda/aws";
+import { json } from 'body-parser';
+import { INodeSummary } from '@microlambda/types';
+import { EventsLog } from '@microlambda/logger';
+import { getTrimmedSlice } from './utils/logs';
+import { EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable } from '@microlambda/environments';
+import { State } from '@microlambda/remote-state';
+import { IRootConfig } from '@microlambda/config';
+import { aws } from '@microlambda/aws';
 
 export * from './socket';
 
 export const startServer = (options: {
-  port: number,
-  project: Project,
-  logger: EventsLog,
-  scheduler: Scheduler,
-  config: IRootConfig,
+  port: number;
+  project: Project;
+  logger: EventsLog;
+  scheduler: Scheduler;
+  config: IRootConfig;
 }): Promise<Server> => {
   const { port, project, logger, scheduler } = options;
   const log = logger.scope('api');
@@ -178,17 +178,21 @@ export const startServer = (options: {
     const loader = new EnvironmentLoader(project);
     const state = new State(options.config);
     const envs = await state.listEnvironments();
-    const vars: Record<string, Array<ILoadedEnvironmentVariable>> = {}
-    const loadEnvironments$ = envs.map((env) => loader.loadAll({
-      env: env.name,
-      service: serviceName,
-      inject: false,
-      shouldInterpolate: true,
-      ssmMode: SSMResolverMode.IGNORE,
-      overwrite: false,
-    }).then((loaded) => {
-      vars[env.name] = loaded;
-    }));
+    const vars: Record<string, Array<ILoadedEnvironmentVariable>> = {};
+    const loadEnvironments$ = envs.map((env) =>
+      loader
+        .loadAll({
+          env: env.name,
+          service: serviceName,
+          inject: false,
+          shouldInterpolate: true,
+          ssmMode: SSMResolverMode.IGNORE,
+          overwrite: false,
+        })
+        .then((loaded) => {
+          vars[env.name] = loaded;
+        }),
+    );
     await Promise.all(loadEnvironments$);
     return res.json(vars);
   });
