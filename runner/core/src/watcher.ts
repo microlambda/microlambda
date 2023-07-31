@@ -42,7 +42,7 @@ export class Watcher {
       patterns?.forEach((glob) => {
         this._logger?.info('Watching', join(target.workspace.root, glob));
         this._watcher = watch(join(target.workspace.root, glob)).on('all', (event, path) => {
-          if (event === 'change') {
+          if (event === 'change' || event === 'add' || event === 'unlink') {
             if (filesChanges.has(target)) {
               filesChanges.get(target)?.push({ event, path });
             } else {

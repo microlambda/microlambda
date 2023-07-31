@@ -353,10 +353,11 @@ export class Workspace {
 
   }
 
-  async kill(cmd: string, releasePorts: number[] = [], timeout = 500): Promise<void> {
+  async kill(options: { cmd: string, releasePorts?: number[], timeout?: number, _workspace?: string }): Promise<void> {
+    const { cmd, releasePorts, timeout } = options;
     const processes = this._processes.get(cmd);
     if (processes) {
-      await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts, timeout)));
+      await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500)));
     }
   }
 

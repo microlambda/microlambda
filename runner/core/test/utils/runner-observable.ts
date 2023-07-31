@@ -9,7 +9,7 @@ type ReceivedEvent = {type: RunCommandEventEnum | 'X', workspace?: string};
 type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string};
 
 const logger = (...args: unknown[]): void => {
-  if (process.env.DEBUG_MILA_TEST) {
+  if (true) {
     console.debug(args);
   }
 }
@@ -336,6 +336,39 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
         delay(call.delay || 0),
         switchMap(() => throwError(call.error))
       )
+    });
+  }
+}
+
+interface IKillStub {
+  cmd: string;
+  delay: number;
+}
+
+export const stubKill = (stub: SinonStub | undefined, calls: Map<string, Array<IKillStub>>) => {
+  if (stub) {
+    stub.callsFake((...args) => {
+      const [options] = args;
+      const workspace = options._workspace;
+      if (!workspace) {
+        throw new Error('Test fixture not used');
+      }
+      if (!calls.has(workspace)) {
+        throw new Error(`No stubs provided for workspace ${workspace}`);
+      }
+      const call = calls.get(workspace)?.shift();
+      if (!call) {
+        throw new Error(`No more stubs provided for workspace ${workspace}`);
+      }
+      if (call.cmd && JSON.stringify(options) !== JSON.stringify({ cmd: call.cmd, _workspace: workspace })) {
+        throw new Error(`Stubbed methods called with incorrect options for workspace ${workspace}.
+        Expected:
+        ${JSON.stringify({ cmd: call.cmd, _workspace: workspace }, null, 2)}
+        Received:
+        ${JSON.stringify(options, null, 2)
+        }`);
+      }
+      return new Promise<void>((resolve) => setTimeout(() => resolve(), call.delay ?? 0));
     });
   }
 }

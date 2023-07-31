@@ -1,7 +1,15 @@
 import {getProject} from './mocks/utils';
 import {SinonStub, stub} from 'sinon';
 import {Project, RunCommandEventEnum, Runner, RunOptions, TargetsResolver, Workspace} from '../src';
-import {expectObservable, expectObservableV2, ObservableEvent, resolveAfter, stubRun, stubRunV2} from './utils/runner-observable';
+import {
+  expectObservable,
+  expectObservableV2,
+  ObservableEvent,
+  resolveAfter,
+  stubKill,
+  stubRun,
+  stubRunV2
+} from './utils/runner-observable';
 import {delay, from, mergeAll, Observable, of} from "rxjs";
 import {Watcher, WatchEvent} from "../src/watcher";
 
@@ -15,12 +23,15 @@ describe('[class] Runner', () => {
     watch?: SinonStub,
     loadPackage?: SinonStub,
     loadConfig?: SinonStub,
+    kill?: SinonStub,
     glob?: SinonStub,
   } = {};
   beforeEach(async() => {
     project = await getProject(stubs);
     stubs.invalidate = stub(Workspace.prototype, 'invalidateLocalCache');
     stubs.isDaemon = stub(Workspace.prototype, 'isDaemon');
+    stubs.kill = stub(Workspace.prototype, 'kill');
+    stubs.kill.rejects();
     stubs.isDaemon.returns(false);
     stubs.isDaemon.withArgs('start').returns(true);
     stubs.invalidate.resolves();
@@ -638,7 +649,6 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
-
     it.skip('should restart daemon process on changes - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
@@ -682,7 +692,89 @@ describe('[class] Runner', () => {
       }
     })
     it.todo('should restart daemon when flagged as failed - [parallel]');
-    it.todo('should restart daemon when flagged as succeed - [parallel]');
+    it('should restart daemon when flagged as succeed - [parallel]', async () => {
+      stubs.targets?.returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+        ]
+      ], 14));
+
+      stubKill(stubs.kill, new Map([
+        ['@org/app-a', [{cmd: 'start', delay: 1} ]],
+        ['@org/api', [{cmd: 'start', delay: 2} ]],
+      ]))
+
+      stubRunV2(stubs.run, new Map([
+        ['@org/app-a', [
+          { resolve: true, delay: 42 },
+          { resolve: false, delay: 54, error: new Error('Boom!') },
+        ]],
+        ['@org/app-b', [
+          { resolve: true, delay: 50 },
+        ]],
+        ['@org/api', [
+          { resolve: true, delay: 32 },
+          { resolve: true, delay: 120 },
+        ]],
+      ]));
+
+      stubs.watch?.returns(mockSourcesChange([
+        { workspaceNames: ['@org/app-a'], delay: 110},
+        { workspaceNames: ['@org/api'], delay: 110},
+      ]));
+
+      const options: RunOptions = {
+        cmd: 'start',
+        mode: 'parallel',
+        watch: true,
+        debounce: 50,
+      };
+
+      try {
+        const runner = new Runner(project, 8);
+        const execution$ = runner.runCommand(options);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-c' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ]
+        ], 250)
+      } catch (e) {
+        expect(e).toBeFalsy();
+      }
+    });
     it.todo('should restart daemon when starting and file change - [parallel]');
     it.todo('should handle correctly add node event - [parallel]');
     it.todo('should start watching sources of added node - [parallel]');
