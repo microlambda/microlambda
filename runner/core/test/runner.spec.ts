@@ -403,7 +403,10 @@ describe('[class] Runner', () => {
           { resolve: true, delay: 110 },
         ]]
       ]));
-
+      stubKill(stubs.kill, new Map([
+        ['@org/app-a', [{cmd: 'lint', delay: 1} ]],
+        ['@org/api', [{cmd: 'lint', delay: 2} ]],
+      ]))
       try {
         const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
@@ -561,6 +564,15 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/app-b'], delay: 650},
 
       ]));
+
+      stubKill(stubs.kill, new Map([
+        ['@org/workspace-a', [{cmd: 'lint', delay: 1}, {cmd: 'lint', delay: 1}]],
+        ['@org/workspace-c', [{cmd: 'lint', delay: 1}, {cmd: 'lint', delay: 1}]],
+        ['@org/app-a', [{cmd: 'lint', delay: 1}]],
+        ['@org/app-b', [{cmd: 'lint', delay: 1}]],
+        ['@org/api', [{cmd: 'lint', delay: 1}, {cmd: 'lint', delay: 1}]],
+      ]));
+
       const options: RunOptions = {
         cmd: 'lint',
         mode: 'parallel',
@@ -802,6 +814,12 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/workspace-a'], delay: 840},
         { workspaceNames: ['@org/app-a'], delay: 1200},
       ]));
+      stubKill(stubs.kill, new Map([
+        ['@org/workspace-a', [{cmd: 'build', delay: 1}, {cmd: 'build', delay: 1}]],
+        ['@org/workspace-c', [{cmd: 'build', delay: 1}]],
+        ['@org/app-a', [{cmd: 'build', delay: 1}]],
+        ['@org/app-b', [{cmd: 'build', delay: 1}]],
+      ]));
       const options: RunOptions = {
         cmd: 'build',
         mode: 'topological',
@@ -909,6 +927,10 @@ describe('[class] Runner', () => {
       ], 12));
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/workspace-b'], delay: 150},
+      ]));
+
+      stubKill(stubs.kill, new Map([
+        ['@org/workspace-b', [{cmd: 'build', delay: 1}]],
       ]));
       const options: RunOptions = {
         cmd: 'build',
