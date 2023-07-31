@@ -724,8 +724,7 @@ describe('[class] Runner', () => {
       ]));
 
       stubs.watch?.returns(mockSourcesChange([
-        { workspaceNames: ['@org/app-a'], delay: 110},
-        { workspaceNames: ['@org/api'], delay: 110},
+        { workspaceNames: ['@org/app-a', '@org/api'], delay: 110},
       ]));
 
       const options: RunOptions = {
