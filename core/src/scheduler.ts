@@ -192,10 +192,12 @@ export class Scheduler {
         if (this._runners.start.has(w.name)) {
           this._events$.next({ service: w, type: 'stopping' });
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPING);
-          await w.kill(
-            'start',
-            [w.ports?.http, w.ports?.lambda, w.ports?.websocket].filter((p) => p != null) as number[],
-          );
+          await w.kill({
+            cmd: 'start',
+            releasePorts: [w.ports?.http, w.ports?.lambda, w.ports?.websocket
+        ].
+          filter((p) => p != null) as number[],
+        } );
           this._logger.info('Serverless offline process killed', w.name);
           this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPED);
           this._events$.next({ service: w, type: 'stopped' });

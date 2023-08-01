@@ -9,7 +9,7 @@ type ReceivedEvent = {type: RunCommandEventEnum | 'X', workspace?: string};
 type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string};
 
 const logger = (...args: unknown[]): void => {
-  if (true) {
+  if (process.env.MILA_DEBUG_TESTS) {
     console.debug(args);
   }
 }
