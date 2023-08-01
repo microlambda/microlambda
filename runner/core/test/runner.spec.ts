@@ -754,7 +754,7 @@ describe('[class] Runner', () => {
       }
     })
     it.todo('should restart daemon when flagged as failed - [parallel]');
-    it.skip('should restart daemon when flagged as succeed - [parallel]', async () => {
+    it('should restart daemon when flagged as succeed - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
           { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },

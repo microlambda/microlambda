@@ -206,6 +206,8 @@ export class Runner {
     const impactedTargets = new Set<Workspace>();
     const killing$ = new Map<Workspace, Promise<void>>();
     const killed = new Set<Workspace>();
+    let mostEarlyStepImpacted: Step | undefined;
+    let mostEarlyStepImpactedIndex: number | undefined;
 
     const executeCurrentTasks = (): void => {
       // Clear all re-scheduled workspaces but not others
@@ -254,12 +256,14 @@ export class Runner {
             } else {
               obs.next(evt);
             }
-          } else if (shouldLetFinishStepAndAbort && currentStep) {
+          } else if (shouldLetFinishStepAndAbort) {
             // If step finished, and should abort/reschedule after completion, do it
             shouldLetFinishStepAndAbort = false;
-            shouldAbort$.next();
             // should reschedule, after having killed processed
-            shouldReschedule$.next(currentStep!);
+            if (!mostEarlyStepImpacted) {
+              throw new Error('Assertion failed: most early impacted step not resolved');
+            }
+            shouldReschedule$.next(mostEarlyStepImpacted);
           }
         },
         error: (err) => {
@@ -271,10 +275,8 @@ export class Runner {
         },
       });
     }
+
     shouldReschedule$.subscribe((fromStep) => {
-      if (!currentStep) {
-        throw Error('Assertion failed: current step not resolved in interruption !')
-      }
       shouldAbort$.next();
       this._logger?.debug('Interruption has been received in previous step, re-scheduling ');
       Promise.all(killing$.values()).then(() => {
@@ -299,20 +301,20 @@ export class Runner {
           });
           killing$.set(workspace, kill$);
         }
-        if (areAllProcessed && shouldLetFinishStepAndAbort && currentStep) {
-          this._logger?.debug('All node processed and interruption received, rescheduling immediately');
-          shouldReschedule$.next(currentStep);
+      }
+      if (!shouldLetFinishStepAndAbort || areAllProcessed) {
+        console.debug('Impacted step is not current step, or all node are already processed: rescheduling immediately');
+        this._logger?.debug('Impacted step is not current step, or all node are already processed: rescheduling immediately');
+        if (!mostEarlyStepImpacted) {
+          throw new Error('Assertion failed: most early impacted step not resolved');
         }
+        shouldReschedule$.next(mostEarlyStepImpacted);
       }
     });
 
     sourcesChange$.subscribe((changes) => {
-
       console.debug('Sources changed', changes.map((c) => c.target.workspace.name));
       const toKill = new Set<Workspace>();
-      let mostEarlyStepImpacted: Step | undefined;
-      let mostEarlyStepImpactedIndex: number | undefined;
-
       const impactedTargetsByStep = new Map<number, Array<Workspace>>();
 
       for (const change of changes) {
@@ -362,38 +364,7 @@ export class Runner {
         impactedTargetsByStep.get(mostEarlyStepImpactedIndex)?.forEach((w) => impactedTargets.add(w));
         console.debug('to kill', [...toKill].map(w => w.name));
         shouldKill$.next([...toKill]);
-        if (!shouldLetFinishStepAndAbort || areAllProcessed) {
-          console.debug('Impacted step is not current step, rescheduling immediately');
-          shouldReschedule$.next(mostEarlyStepImpacted);
-        }
       }
-
-      /*for (const change of changes) {
-        this._logger?.debug('Source changed', options.cmd, change.target.workspace.name);
-        const impactedTarget = change.target;
-        obs.next({ type: RunCommandEventEnum.SOURCES_CHANGED, ...change })
-        this._logger?.debug('Impacted target', change.target.workspace.name);
-        const impactedStep = targets.find((step) => step.some((t) => t.workspace.name === impactedTarget.workspace.name));
-        if (impactedStep) {
-          this._logger?.debug('Impacted step updated', targets.indexOf(impactedStep));
-        }
-        const isProcessed = workspaceProcessed.has(change.target.workspace);
-        const isProcessing = _workspaceWithRunningProcesses.has(change.target.workspace);
-        this._logger?.debug({ isBefore: isBeforeCurrentStep(impactedStep), isEqual: isEqualsCurrentStep(impactedStep), isProcessed, isProcessing })
-        if (isEqualsCurrentStep(impactedStep) && (isProcessing || isProcessed)) {
-          impactedTargets.add(change.target.workspace);
-          this._logger?.debug(options.cmd, 'Impacted step is same than current step. Should abort after current step execution');
-          shouldLetFinishStepAndAbort = true;
-          shouldKill$.next(change.target.workspace);
-        } else if (isBeforeCurrentStep(impactedStep)) {
-          this._logger?.debug(options.cmd, 'Impacted step before current step. Should abort immediately');
-          shouldAbort$.next();
-          impactedTargets.add(change.target.workspace);
-          shouldLetFinishStepAndAbort = false;
-          shouldKill$.next(currentStep!);
-          shouldReschedule$.next(impactedStep!);
-        }
-      }*/
     });
     executeCurrentTasks();
   }
