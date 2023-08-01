@@ -711,49 +711,104 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
-    it.skip('should restart daemon process on changes - [parallel]', async () => {
+    it('should restart daemon when flagged as failed - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
           { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
           { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
         ]
-      ], 10));
-      stubs.watch?.returns(mockSourcesChange([
-        { workspaceNames: ['@org/workspace-a'], delay: 80},
-        { workspaceNames: ['@org/app-a'], delay: 100},
-        { workspaceNames: ['@org/app-a'], delay: 110},
-        { workspaceNames: ['@org/app-b'], delay: 120},
-        { workspaceNames: ['@org/app-b'], delay: 300},
+      ], 14));
+
+      stubKill(stubs.kill, new Map([
+        ['@org/app-a', [{cmd: 'start', delay: 11} ]],
+        ['@org/api', [{cmd: 'start', delay: 8}, {cmd: 'start', delay: 23} ]],
+      ]))
+
+      stubRunV2(stubs.run, new Map([
+        ['@org/app-a', [
+          { resolve: true, delay: 42 },
+          { resolve: false, delay: 54, error: new Error('Boom!') },
+        ]],
+        ['@org/app-b', [
+          { resolve: true, delay: 50 },
+        ]],
+        ['@org/api', [
+          { resolve: false, error: new Error('Bim!') },
+          { resolve: false, error: new Error('Bam!') },
+          { resolve: true, delay: 42 },
+        ]],
       ]));
+
+      stubs.watch?.returns(mockSourcesChange([
+        { workspaceNames: ['@org/app-a', '@org/api'], delay: 110},
+        { workspaceNames: ['@org/workspace-a', '@org/workspace-c', '@org/api'], delay: 210},
+      ]));
+
       const options: RunOptions = {
         cmd: 'start',
         mode: 'parallel',
-        force: true,
         watch: true,
         debounce: 50,
       };
 
-      stubRun(stubs.run, [
-        // Initial
-        { resolve: true, options, delay: 40 }, // +0ms app-a
-        { resolve: true, options, delay: 60 }, // +0ms app-b
-        { resolve: true, options, delay: 30 }, // +150ms app-a
-        { resolve: true, options, delay: 70 }, // +150ms app-b
-      ]);
-
       try {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
-        await expectObservable(Date.now(), execution$, '0-334444-11-7777-88-33-11-7-8-3-1', {}, undefined, 500);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-c' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ]
+        ], 250)
       } catch (e) {
         expect(e).toBeFalsy();
       }
-    })
-    it.todo('should restart daemon when flagged as failed - [parallel]');
+    });
     it('should restart daemon when flagged as succeed - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [

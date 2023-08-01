@@ -356,8 +356,8 @@ export class Runner {
           const isDaemon = target.workspace.isDaemon(options.cmd);
           const isRunning = isProcessing || isDaemon;
           const isImpacted = changes.some((c) => c.target.workspace.name === target.workspace.name);
-
-          if (isRunning && (isImpacted || isBeforeCurrentSTep)) {
+          const isTarget = targets.some((step) => step.filter((t) => t.affected && t.hasCommand).some((t) => t.workspace.name === target.workspace.name));
+          if (isRunning && (isImpacted || isBeforeCurrentSTep) && isTarget) {
             toKill.add(target.workspace);
           }
         }
