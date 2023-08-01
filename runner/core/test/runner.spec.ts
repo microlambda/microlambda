@@ -711,6 +711,111 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
+    it('should handle multiple file changes within a step execution - [parallel]', async () => {
+      stubs.targets?.returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, affected: false, hasCommand: true },
+        ]
+      ], 12));
+      stubs.watch?.returns(mockSourcesChange([
+        { workspaceNames: ['@org/workspace-a'], delay: 70},
+        { workspaceNames: ['@org/app-a'], delay: 100},
+        { workspaceNames: ['@org/app-a', '@org/workspace-b'], delay: 150},
+      ]));
+      stubRunV2(stubs.run, new Map([
+        ['@org/workspace-a', [
+          { resolve: true, delay: 30 },
+          { resolve: true, delay: 50 },
+        ]],
+        ['@org/workspace-b', [
+          { resolve: true, delay: 250 },
+          { resolve: true, delay: 110 },
+        ]],
+        ['@org/workspace-c', [
+          { resolve: true, delay: 220 },
+        ]],
+        ['@org/app-a', [
+          { resolve: true, delay: 130 },
+          { resolve: true, delay: 150 },
+        ]],
+      ]));
+
+      stubKill(stubs.kill, new Map([
+        ['@org/workspace-b', [
+          { cmd: 'lint', delay: 25 },
+        ]],
+        ['@org/app-a', [
+          { cmd: 'lint', delay: 20 },
+        ]],
+      ]));
+
+      const options: RunOptions = {
+        cmd: 'lint',
+        mode: 'parallel',
+        force: false,
+        args: [],
+        env: {},
+        watch: true,
+        debounce: 8,
+      };
+
+      try {
+        const runner = new Runner(project, 8);
+        const execution$ = runner.runCommand(options);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a'},
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a'},
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a'},
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a'},
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a'},
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-b'},
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/workspace-b'},
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c'},
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+          ],
+        ], 500);
+      } catch (e) {
+        expect(e).toBeFalsy();
+      }
+    });
     it('should restart daemon when flagged as failed - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
@@ -891,7 +996,86 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
-    it.todo('should restart daemon when starting and file change - [parallel]');
+    it('should restart daemon when starting and file change - [parallel]', async () => {
+      stubs.targets?.returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+        ]
+      ], 14));
+
+      stubKill(stubs.kill, new Map([
+        ['@org/app-a', [{cmd: 'start', delay: 150} ]],
+        ['@org/api', [{cmd: 'start', delay: 200} ]],
+      ]))
+
+      stubRunV2(stubs.run, new Map([
+        ['@org/app-a', [
+          { resolve: true, delay: 200 },
+          { resolve: false, delay: 250, error: new Error('Boom!') },
+        ]],
+        ['@org/app-b', [
+          { resolve: true, delay: 220 },
+        ]],
+        ['@org/api', [
+          { resolve: true, delay: 210 },
+          { resolve: true, delay: 180 },
+        ]],
+      ]));
+
+      stubs.watch?.returns(mockSourcesChange([
+        { workspaceNames: ['@org/app-a', '@org/api'], delay: 110},
+      ]));
+
+      const options: RunOptions = {
+        cmd: 'start',
+        mode: 'parallel',
+        watch: true,
+        debounce: 50,
+      };
+
+      try {
+        const runner = new Runner(project, 8);
+        const execution$ = runner.runCommand(options);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-c' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ]
+        ], 250)
+      } catch (e) {
+        expect(e).toBeFalsy();
+      }
+    });
     it.todo('should handle correctly add node event - [parallel]');
     it.todo('should start watching sources of added node - [parallel]');
     it.todo('should handle correctly remove node event - [parallel]');

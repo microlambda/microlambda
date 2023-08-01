@@ -296,6 +296,8 @@ export class Runner {
           this._logger?.info('Kill impacted processes', workspace.name);
           const kill$ = workspace.kill({ cmd: options.cmd, _workspace: workspace.name }).then(() => {
             console.debug('Killed', workspace.name);
+            _workspaceWithRunningProcesses.delete(workspace);
+            workspaceProcessed.delete(workspace);
             killed.add(workspace);
             obs.next({ type: RunCommandEventEnum.NODE_INTERRUPTED, workspace });
           });
