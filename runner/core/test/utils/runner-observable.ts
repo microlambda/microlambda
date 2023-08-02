@@ -1,5 +1,5 @@
 import {RunCommandEvent, RunCommandEventEnum, RunOptions} from '../../src';
-import {delay, Observable, of, switchMap, throwError} from 'rxjs';
+import {delay, Observable, of, switchMap, tap, throwError} from 'rxjs';
 import {SinonStub} from "sinon";
 
 const equals = (arr1: Array<boolean | number | string>, arr2: Array<boolean | number | string>) => JSON.stringify(arr1) === JSON.stringify(arr2);
@@ -331,7 +331,7 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
           commands:[],
           overall: call.delay || 0,
           fromCache: call.fromCache || false,
-        }).pipe(delay(call.delay || 0))
+        }).pipe(delay(call.delay || 0), tap(() => console.debug(call.delay + 'ms')))
       }
       return of('').pipe(
         delay(call.delay || 0),
