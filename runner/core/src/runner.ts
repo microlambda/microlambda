@@ -1,4 +1,4 @@
-import {BehaviorSubject, concat, from, Observable, of, skip, Subject, Subscriber} from "rxjs";
+import {BehaviorSubject, concat, from, mergeWith, Observable, of, skip, Subject, Subscriber} from "rxjs";
 import { catchError, concatAll, concatMap, map, mergeAll, takeUntil } from "rxjs/operators";
 import {
   IErrorInvalidatingCacheEvent,
@@ -337,14 +337,31 @@ export class Runner {
 
     scopeChanged$.subscribe((newScope) => {
       const targetsResolver = new TargetsResolver(this._project, this._logger?.logger);
-      targetsResolver.resolve(options.cmd, options).then((newTargets) => {
-        obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: newTargets.flat() });
-        // kill all running processes if not already in killing state
+      const newOptions = { ...options };
+      if (isTopological(newOptions)) {
+        newOptions.to = [...newScope];
+      } else {
+        newOptions.workspaces = [...newScope];
+      }
 
-        Promise.all(killing$.values()).then(() => {
-          currentTasks$ = this._scheduleTasks(options, newTargets);
+      targetsResolver.resolve(newOptions.cmd, newOptions).then((_newTargets) => {
+        const previousTargets = targets.flat();
+        const newTargets = _newTargets.flat();
+
+        obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: newTargets });
+
+        const includesWorkspace = (targets: IResolvedTarget[], workspace: Workspace): boolean => {
+          return targets.some((t) => t.workspace.name === workspace.name);
+        }
+        const toAdd = newTargets.filter((nt) => !includesWorkspace(previousTargets, nt.workspace));
+        const toRemove = previousTargets.filter((pt) => !includesWorkspace(newTargets, pt.workspace));
+        if (areAllProcessed) {
+          currentTasks$ = this._scheduleTasks(options, [toAdd]);
           executeCurrentTasks();
-        });
+        } else {
+          const newTasks$ = this._scheduleTasks(options, [toAdd]);
+          currentTasks$ = currentTasks$.pipe(mergeWith(newTasks$));
+        }
       });
     });
 
@@ -439,6 +456,7 @@ export class Runner {
         shouldKill$.next([...toKill]);
       }
     });
+
     executeCurrentTasks();
   }
 

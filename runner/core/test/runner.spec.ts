@@ -1076,51 +1076,47 @@ describe('[class] Runner', () => {
         expect(e).toBeFalsy();
       }
     });
-    it('should handle correctly add node event - [parallel]', async () => {
-      stubs.targets?.returns(resolveAfter([
-        [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
-        ]
-      ], 14));
-
-      stubKill(stubs.kill, new Map([
-        ['@org/app-a', [{cmd: 'start', delay: 150} ]],
-        ['@org/api', [{cmd: 'start', delay: 200} ]],
-      ]))
-
-      stubRunV2(stubs.run, new Map([
-        ['@org/app-a', [
-          { resolve: true, delay: 200 },
-          { resolve: false, delay: 250, error: new Error('Boom!') },
-        ]],
-        ['@org/app-b', [
-          { resolve: true, delay: 220 },
-        ]],
-        ['@org/api', [
-          { resolve: true, delay: 210 },
-          { resolve: true, delay: 180 },
-        ]],
-      ]));
-
-      stubs.watch?.returns(mockSourcesChange([
-        { workspaceNames: ['@org/app-a', '@org/api'], delay: 110},
-      ]));
-
+    it('should do nothing on add node event if already a target - [parallel]', async () => {
+      const firstScope = [
+        project.workspaces.get('@org/app-a')!,
+        project.workspaces.get('@org/app-b')!,
+        project.workspaces.get('@org/api')!,
+      ]
       const options: RunOptions = {
         cmd: 'start',
         mode: 'parallel',
         watch: true,
         debounce: 50,
+        workspaces: firstScope,
       };
 
+      stubs.targets?.withArgs('start', options).returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+        ]
+      ], 20));
+
+      stubs.watch?.returns(mockSourcesChange([]));
+
+      stubRunV2(stubs.run, new Map([
+        ['@org/app-a', [
+          { resolve: true, delay: 200 },
+        ]],
+        ['@org/app-b', [
+          { resolve: true, delay: 200 },
+        ]],
+        ['@org/api', [
+          { resolve: true, delay: 200 },
+        ]],
+      ]));
       try {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
+        setTimeout(() => {
+          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+        }, 100);
         await expectObservableV2(Date.now(), execution$, [
           [
             { type: RunCommandEventEnum.TARGETS_RESOLVED },
@@ -1129,33 +1125,168 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
-            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-b' },
-            { type: RunCommandEventEnum.NODE_SKIPPED, workspace: '@org/workspace-c' },
           ],
           [
-            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
-          ],
-          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
-          ],
-          [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
-          ],
-          [
-            { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
-          ]
+          ],
         ], 250)
       } catch (e) {
         expect(e).toBeFalsy();
       }
     });
+    it('should handle correctly add node event when other node are processed - [parallel]', async () => {
+      const firstScope = [
+        project.workspaces.get('@org/app-a')!,
+        project.workspaces.get('@org/app-b')!,
+      ]
+      const secondScope = [
+        project.workspaces.get('@org/app-a')!,
+        project.workspaces.get('@org/app-b')!,
+        project.workspaces.get('@org/api')!,
+      ];
+      const options: RunOptions = {
+        cmd: 'start',
+        mode: 'parallel',
+        watch: true,
+        debounce: 50,
+        workspaces: firstScope,
+      };
+      stubs.targets?.withArgs('start', options).returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+        ]
+      ], 20));
+      stubs.targets?.withArgs('start', { ...options, workspaces: secondScope }).returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+        ]
+      ], 20));
+
+      stubs.watch?.returns(mockSourcesChange([]));
+
+      stubRunV2(stubs.run, new Map([
+        ['@org/app-a', [
+          { resolve: true, delay: 50 },
+        ]],
+        ['@org/app-b', [
+          { resolve: true, delay: 50 },
+        ]],
+        ['@org/api', [
+          { resolve: true, delay: 50 },
+        ]],
+      ]));
+      try {
+        const runner = new Runner(project, 8);
+        const execution$ = runner.runCommand(options);
+        setTimeout(() => {
+          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+        }, 100);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+          ],
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ],
+        ], 250)
+      } catch (e) {
+        expect(e).toBeFalsy();
+      }
+    });
+    it('should handle correctly add node event when other node are running - [parallel]', async () => {
+      const firstScope = [
+        project.workspaces.get('@org/app-a')!,
+        project.workspaces.get('@org/app-b')!,
+      ]
+      const secondScope = [
+        project.workspaces.get('@org/app-a')!,
+        project.workspaces.get('@org/app-b')!,
+        project.workspaces.get('@org/api')!,
+      ];
+      const options: RunOptions = {
+        cmd: 'start',
+        mode: 'parallel',
+        watch: true,
+        debounce: 50,
+        workspaces: firstScope,
+      };
+      stubs.targets?.withArgs('start', options).returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+        ]
+      ], 20));
+      stubs.targets?.withArgs('start', { ...options, workspaces: secondScope }).returns(resolveAfter([
+        [
+          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+        ]
+      ], 20));
+
+      stubs.watch?.returns(mockSourcesChange([]));
+
+      stubRunV2(stubs.run, new Map([
+        ['@org/app-a', [
+          { resolve: true, delay: 200 },
+        ]],
+        ['@org/app-b', [
+          { resolve: true, delay: 200 },
+        ]],
+        ['@org/api', [
+          { resolve: true, delay: 200 },
+        ]],
+      ]));
+      try {
+        const runner = new Runner(project, 8);
+        const execution$ = runner.runCommand(options);
+        setTimeout(() => {
+          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+        }, 100);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+          ],
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ],
+        ], 250)
+      } catch (e) {
+        expect(e).toBeFalsy();
+      }
+    });
+
     it.todo('should start watching sources of added node - [parallel]');
     it.todo('should handle correctly remove node event - [parallel]');
     it.todo('should stop watching sources of removed node - [parallel]');

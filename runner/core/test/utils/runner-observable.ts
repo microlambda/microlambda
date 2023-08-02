@@ -255,6 +255,7 @@ export const expectObservableV2 = async (
         timedOut();
       },
       error: (err) => {
+        console.error(err);
         logger('+', Date.now() - startedAt, 'ms', 'ERRORED', err);
         verifyAssertionsV2(expectedTimeframe, expectedCompletion, receivedEvents, ObservableEvent.ERROR);
         resolve();
