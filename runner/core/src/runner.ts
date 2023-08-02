@@ -11,7 +11,7 @@ import {
 import { Project } from "./project";
 import { Workspace } from "./workspace";
 import { OrderedTargets, TargetsResolver } from "./targets";
-import { Watcher } from "./watcher";
+import {Watcher, WatchEvent} from "./watcher";
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { checkWorkingDirectoryClean } from './remote-cache-utils';
 import { getDefaultThreads } from '@microlambda/utils';
@@ -234,14 +234,15 @@ export class Runner {
     }
   }
 
-  private _runAndWatch(options: IParallelRunOptions | ITopologicalRunOptions, targets: OrderedTargets, obs: Subscriber<RunCommandEvent>): void {
+  private _runAndWatch(options: IParallelRunOptions | ITopologicalRunOptions, _targets: OrderedTargets, obs: Subscriber<RunCommandEvent>): void {
+    let targets = _targets;
     this._logger?.info('Running target', options.cmd, 'in watch mode');
     let currentTasks$ = this._scheduleTasks(options, targets);
-    const watcher = new Watcher(targets, options.cmd, options.debounce, this._logger?.logger);
+    let watcher = new Watcher(targets, options.cmd, options.debounce, this._logger?.logger);
     const shouldAbort$ = new Subject<void>();
     const shouldReschedule$ = new Subject<Step>();
     const shouldKill$ = new Subject<Array<Workspace>>();
-    const sourcesChange$ = watcher.watch();
+    let sourcesChange$ = watcher.watch();
     const scopeChanged$ = this.currentExecution.currentScope$.pipe(skip(1));
     this._watchers.set(options.cmd, { watcher, abort: shouldAbort$ });
     this._logger?.debug('Watching sources');
@@ -267,142 +268,65 @@ export class Runner {
     const killed = new Set<Workspace>();
     let mostEarlyStepImpacted: Step | undefined;
     let mostEarlyStepImpactedIndex: number | undefined;
+    let history = 0;
+    const stopWatching$ = new Subject<void>();
 
-    const executeCurrentTasks = (): void => {
-      // Clear all re-scheduled workspaces but not others
-      areAllProcessed = false;
-      shouldLetFinishStepAndAbort = false;
-      impactedTargets.forEach((w) => {
-        workspaceProcessed.delete(w)
-      });
-      impactedTargets.clear();
-      killed.clear();
-      killing$.clear();
-      this._logger?.debug('New current tasks execution');
-      this._logger?.debug('Reset impacted targets');
-      this._logger?.debug('Reset killed targets');
-      this._logger?.debug('Removing impacted targets from processed ', {
-        processed: Array.from(workspaceProcessed).map((w) => w.name)
-      });
-      this._logger?.debug('Executing current task');
-      currentTasks$.pipe(takeUntil(shouldAbort$)).subscribe({
-        next: (evt) => {
-          switch (evt.type) {
-            case RunCommandEventEnum.NODE_STARTED:
-              currentStep = targets.find((step) => step.some((target) => target.workspace.name === evt.workspace.name));
-              if (currentStep) {
-                this._logger?.debug('Current step updated', targets.indexOf(currentStep));
-              }
-              workspaceWithRunningProcesses.add(evt.workspace);
-              this._logger?.debug('Setting node as processing', evt.workspace.name);
-              this._logger?.debug({ processing: Array.from(workspaceWithRunningProcesses).map((w) => w.name)});
-              break;
-            case RunCommandEventEnum.NODE_PROCESSED:
-            case RunCommandEventEnum.NODE_ERRORED:
-              workspaceWithRunningProcesses.delete(evt.workspace);
-              workspaceProcessed.add(evt.workspace);
-              this._logger?.debug('Setting node as processed', evt.workspace.name);
-              this._logger?.debug({
-                processing: Array.from(workspaceWithRunningProcesses).map((w) => w.name),
-                processed: Array.from(workspaceProcessed).map((w) => w.name)
-              });
-              break;
-          }
-          if (!isStepCompletedEvent(evt)) {
-            // If step not finished, forward event (expect killed processes)
-            if (evt.type === RunCommandEventEnum.NODE_PROCESSED && killing$.has(evt.workspace)) {
-              this._logger?.debug('Node killed not forwarding processed event', evt.workspace.name);
-            } else {
-              obs.next(evt);
+    stopWatching$.subscribe(() => {
+      watcher.unwatch();
+    });
+
+    const onCurrentTasksEventsReceived: { next: (evt: RunCommandEvent | IStepCompletedEvent) => void; error: (err: unknown) => void; complete: () => void; } = {
+      next: (evt: RunCommandEvent | IStepCompletedEvent): void => {
+        history++;
+        switch (evt.type) {
+          case RunCommandEventEnum.NODE_STARTED:
+            currentStep = targets.find((step) => step.some((target) => target.workspace.name === evt.workspace.name));
+            if (currentStep) {
+              console.debug('Current step updated', targets.indexOf(currentStep));
             }
-          } else if (shouldLetFinishStepAndAbort) {
-            // If step finished, and should abort/reschedule after completion, do it
-            shouldLetFinishStepAndAbort = false;
-            // should reschedule, after having killed processed
-            if (!mostEarlyStepImpacted) {
-              throw new Error('Assertion failed: most early impacted step not resolved');
-            }
-            shouldReschedule$.next(mostEarlyStepImpacted);
+            workspaceWithRunningProcesses.add(evt.workspace);
+            this._logger?.debug('Setting node as processing', evt.workspace.name);
+            this._logger?.debug({ processing: Array.from(workspaceWithRunningProcesses).map((w) => w.name)});
+            break;
+          case RunCommandEventEnum.NODE_PROCESSED:
+          case RunCommandEventEnum.NODE_ERRORED:
+            workspaceWithRunningProcesses.delete(evt.workspace);
+            workspaceProcessed.add(evt.workspace);
+            this._logger?.debug('Setting node as processed', evt.workspace.name);
+            this._logger?.debug({
+              processing: Array.from(workspaceWithRunningProcesses).map((w) => w.name),
+              processed: Array.from(workspaceProcessed).map((w) => w.name)
+            });
+            break;
+        }
+        if (!isStepCompletedEvent(evt)) {
+          // If step not finished, forward event (expect killed processes)
+          if (evt.type === RunCommandEventEnum.NODE_PROCESSED && killing$.has(evt.workspace)) {
+            this._logger?.debug('Node killed not forwarding processed event', evt.workspace.name);
+          } else {
+            obs.next(evt);
           }
-        },
-        error: (err) => {
-          obs.error(err);
-        },
-        complete: () => {
-          this._logger?.debug('Current tasks executed watching for changes');
-          areAllProcessed = true;
-        },
-      });
-    }
-
-    scopeChanged$.subscribe((newScope) => {
-      const targetsResolver = new TargetsResolver(this._project, this._logger?.logger);
-      const newOptions = { ...options };
-      if (isTopological(newOptions)) {
-        newOptions.to = [...newScope];
-      } else {
-        newOptions.workspaces = [...newScope];
-      }
-
-      targetsResolver.resolve(newOptions.cmd, newOptions).then((_newTargets) => {
-        const previousTargets = targets.flat();
-        const newTargets = _newTargets.flat();
-
-        obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: newTargets });
-
-        const includesWorkspace = (targets: IResolvedTarget[], workspace: Workspace): boolean => {
-          return targets.some((t) => t.workspace.name === workspace.name);
+        } else if (shouldLetFinishStepAndAbort) {
+          // If step finished, and should abort/reschedule after completion, do it
+          shouldLetFinishStepAndAbort = false;
+          // should reschedule, after having killed processed
+          if (!mostEarlyStepImpacted) {
+            throw new Error('Assertion failed: most early impacted step not resolved');
+          }
+          shouldReschedule$.next(mostEarlyStepImpacted);
         }
-        const toAdd = newTargets.filter((nt) => !includesWorkspace(previousTargets, nt.workspace));
-        const toRemove = previousTargets.filter((pt) => !includesWorkspace(newTargets, pt.workspace));
-        if (areAllProcessed) {
-          currentTasks$ = this._scheduleTasks(options, [toAdd]);
-          executeCurrentTasks();
-        } else {
-          const newTasks$ = this._scheduleTasks(options, [toAdd]);
-          currentTasks$ = currentTasks$.pipe(mergeWith(newTasks$));
-        }
-      });
-    });
+      },
+      error: (err: unknown): void => {
+        obs.error(err);
+      },
+      complete: (): void => {
+        this._logger?.debug('Current tasks executed watching for changes');
+        history = 0;
+        areAllProcessed = true;
+      },
+    };
 
-    shouldReschedule$.pipe(takeUntil(scopeChanged$)).subscribe((fromStep) => {
-      shouldAbort$.next();
-      this._logger?.debug('Interruption has been received in previous step, re-scheduling ');
-      Promise.all(killing$.values()).then(() => {
-        currentTasks$ = this._rescheduleTasks(options, fromStep, impactedTargets, targets);
-        this._logger?.debug('Current tasks updated');
-        this._logger?.debug('All process killed rescheduling')
-        executeCurrentTasks();
-      });
-    });
-
-    shouldKill$.pipe(takeUntil(scopeChanged$)).subscribe((workspaces) => {
-      for (const workspace of workspaces) {
-        this._logger?.info('Kill impacted processes if running', workspace.name);
-        const isDaemon = workspace.isDaemon(options.cmd);
-        if (workspaceWithRunningProcesses.has(workspace) || isDaemon) {
-          this._logger?.debug('Asked to kill', workspace.name);
-          this._logger?.info('Kill impacted processes', workspace.name);
-          const kill$ = workspace.kill({ cmd: options.cmd, _workspace: workspace.name }).then(() => {
-            this._logger?.debug('Killed', workspace.name);
-            workspaceWithRunningProcesses.delete(workspace);
-            workspaceProcessed.delete(workspace);
-            killed.add(workspace);
-            obs.next({ type: RunCommandEventEnum.NODE_INTERRUPTED, workspace });
-          });
-          killing$.set(workspace, kill$);
-        }
-      }
-      if (!shouldLetFinishStepAndAbort || areAllProcessed) {
-        this._logger?.debug('Impacted step is not current step, or all node are already processed: rescheduling immediately');
-        if (!mostEarlyStepImpacted) {
-          throw new Error('Assertion failed: most early impacted step not resolved');
-        }
-        shouldReschedule$.next(mostEarlyStepImpacted);
-      }
-    });
-
-    sourcesChange$.pipe(takeUntil(scopeChanged$)).subscribe((changes) => {
+    const onSourcesChanged = (changes: Array<WatchEvent>): void => {
       this._logger?.debug('Sources changed', changes.map((c) => c.target.workspace.name));
       const toKill = new Set<Workspace>();
       const impactedTargetsByStep = new Map<number, Array<Workspace>>();
@@ -434,10 +358,14 @@ export class Runner {
       }
 
       const isInCurrentStep = isEqualsCurrentStep(mostEarlyStepImpacted);
-      const isBeforeCurrentSTep = isBeforeCurrentStep(mostEarlyStepImpacted);
-      const isAfterCurrentStep = !isInCurrentStep && !isBeforeCurrentSTep;
-      this._logger?.debug({mostEarlyStepImpactedIndex, isInCurrentStep, isBeforeCurrentStep })
-
+      const isStrictlyBeforeCurrentStep = isBeforeCurrentStep(mostEarlyStepImpacted);
+      const isAfterCurrentStep = !isInCurrentStep && !isStrictlyBeforeCurrentStep;
+      console.debug({
+        currentStep: currentStep ? targets.indexOf(currentStep) : null,
+        mostEarlyStepImpactedIndex, isInCurrentStep,
+        isStrictlyBeforeCurrentStep, isAfterCurrentStep,
+        shouldReprocess: mostEarlyStepImpactedIndex != null && mostEarlyStepImpacted && !isAfterCurrentStep,
+      });
       if (mostEarlyStepImpactedIndex != null && mostEarlyStepImpacted && !isAfterCurrentStep) {
         this._logger?.debug(options.cmd, 'Impacted step is same than current step. Should abort after current step execution');
         shouldLetFinishStepAndAbort = isEqualsCurrentStep(mostEarlyStepImpacted);
@@ -447,7 +375,7 @@ export class Runner {
           const isRunning = isProcessing || isDaemon;
           const isImpacted = changes.some((c) => c.target.workspace.name === target.workspace.name);
           const isTarget = targets.some((step) => step.filter((t) => t.affected && t.hasCommand).some((t) => t.workspace.name === target.workspace.name));
-          if (isRunning && (isImpacted || isBeforeCurrentSTep) && isTarget) {
+          if (isRunning && (isImpacted || isStrictlyBeforeCurrentStep) && isTarget) {
             toKill.add(target.workspace);
           }
         }
@@ -455,7 +383,106 @@ export class Runner {
         this._logger?.debug('to kill', [...toKill].map(w => w.name));
         shouldKill$.next([...toKill]);
       }
+    }
+
+    const executeCurrentTasks = (): void => {
+      // Clear all re-scheduled workspaces but not others
+      areAllProcessed = false;
+      shouldLetFinishStepAndAbort = false;
+      impactedTargets.forEach((w) => {
+        workspaceProcessed.delete(w)
+      });
+      impactedTargets.clear();
+      killed.clear();
+      killing$.clear();
+      this._logger?.debug('New current tasks execution');
+      this._logger?.debug('Reset impacted targets');
+      this._logger?.debug('Reset killed targets');
+      this._logger?.debug('Removing impacted targets from processed ', {
+        processed: Array.from(workspaceProcessed).map((w) => w.name)
+      });
+      this._logger?.debug('Executing current task');
+      currentTasks$.pipe(takeUntil(shouldAbort$)).subscribe(onCurrentTasksEventsReceived);
+    }
+
+    scopeChanged$.subscribe((newScope) => {
+      const targetsResolver = new TargetsResolver(this._project, this._logger?.logger);
+      const newOptions = { ...options };
+      if (isTopological(newOptions)) {
+        newOptions.to = [...newScope];
+      } else {
+        newOptions.workspaces = [...newScope];
+      }
+
+      targetsResolver.resolve(newOptions.cmd, newOptions).then((_newTargets) => {
+        const previousTargets = targets.flat();
+        const newTargets = _newTargets.flat();
+
+        obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: newTargets });
+
+        const includesWorkspace = (targets: IResolvedTarget[], workspace: Workspace): boolean => {
+          return targets.some((t) => t.workspace.name === workspace.name);
+        }
+        const toAdd = newTargets.filter((nt) => !includesWorkspace(previousTargets, nt.workspace));
+        const toRemove = previousTargets.filter((pt) => !includesWorkspace(newTargets, pt.workspace));
+
+        targets = _newTargets;
+
+        stopWatching$.next();
+        watcher = new Watcher(_newTargets, options.cmd, options.debounce, this._logger?.logger);
+        sourcesChange$ = watcher.watch();
+        sourcesChange$.pipe(takeUntil(stopWatching$)).subscribe(onSourcesChanged.bind(this));
+
+        if (areAllProcessed) {
+          currentTasks$ = this._scheduleTasks(options, [toAdd]);
+          executeCurrentTasks();
+        } else {
+          const newTasks$ = this._scheduleTasks(options, [toAdd]);
+          currentTasks$ = currentTasks$.pipe(skip(history), mergeWith(newTasks$));
+          shouldAbort$.next();
+          currentTasks$.pipe(takeUntil(shouldAbort$)).subscribe(onCurrentTasksEventsReceived);
+        }
+      });
     });
+
+    shouldReschedule$.subscribe((fromStep) => {
+      shouldAbort$.next();
+      this._logger?.debug('Interruption has been received in previous step, re-scheduling ');
+      Promise.all(killing$.values()).then(() => {
+        currentTasks$ = this._rescheduleTasks(options, fromStep, impactedTargets, targets);
+        this._logger?.debug('Current tasks updated');
+        this._logger?.debug('All process killed rescheduling')
+        executeCurrentTasks();
+      });
+    });
+
+    shouldKill$.subscribe((workspaces) => {
+      for (const workspace of workspaces) {
+        this._logger?.info('Kill impacted processes if running', workspace.name);
+        const isDaemon = workspace.isDaemon(options.cmd);
+        if (workspaceWithRunningProcesses.has(workspace) || isDaemon) {
+          this._logger?.debug('Asked to kill', workspace.name);
+          this._logger?.info('Kill impacted processes', workspace.name);
+          const kill$ = workspace.kill({ cmd: options.cmd, _workspace: workspace.name }).then(() => {
+            this._logger?.debug('Killed', workspace.name);
+            workspaceWithRunningProcesses.delete(workspace);
+            workspaceProcessed.delete(workspace);
+            killed.add(workspace);
+            obs.next({ type: RunCommandEventEnum.NODE_INTERRUPTED, workspace });
+          });
+          killing$.set(workspace, kill$);
+        }
+      }
+      if (!shouldLetFinishStepAndAbort || areAllProcessed) {
+        this._logger?.debug('Impacted step is not current step, or all node are already processed: rescheduling immediately');
+        if (!mostEarlyStepImpacted) {
+          throw new Error('Assertion failed: most early impacted step not resolved');
+        }
+        shouldReschedule$.next(mostEarlyStepImpacted);
+      }
+    });
+
+    sourcesChange$.pipe(takeUntil(stopWatching$)).subscribe(onSourcesChanged.bind(this));
 
     executeCurrentTasks();
   }
