@@ -8,7 +8,7 @@ import { sync as glob } from 'fast-glob';
 import { command, ExecaChildProcess, ExecaError, ExecaReturnValue } from 'execa';
 import { CommandResult, ICommandResult, IDaemonCommandResult, IProcessResult, isDaemon } from './process';
 import { Publish, PublishActions, PublishEvent } from './publish';
-import { Observable, race, throwError } from 'rxjs';
+import {first, Observable, race, Subject, throwError} from 'rxjs';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import semver from 'semver';
 import { catchError, finalize } from 'rxjs/operators';
@@ -304,6 +304,8 @@ export class Workspace {
   }
 
   private _processes = new Map<string, Map<string, ExecaChildProcess>>();
+  private _runs = new Map<string, Observable<IProcessResult>>();
+  private _killed$ = new Map<string, Subject<void>>();
 
   get processes(): Map<string, Map<string, ExecaChildProcess<string>>> {
     return this._processes;
@@ -356,6 +358,7 @@ export class Workspace {
   async kill(options: { cmd: string, releasePorts?: number[], timeout?: number, _workspace?: string }): Promise<void> {
     const { cmd, releasePorts, timeout } = options;
     const processes = this._processes.get(cmd);
+    this._killed$.get(cmd)?.next();
     if (processes) {
       await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500)));
     }
@@ -587,16 +590,26 @@ export class Workspace {
 
   run(options: RunOptions, _workspaceName?: string): Observable<IProcessResult> {
     this._logger?.info('Preparing command', { cmd: options.cmd, workspace: this.name });
-    return new Observable<IProcessResult>((obs) => {
+    const alreadyRunningProcess = this._runs.get(options.cmd);
+    if (alreadyRunningProcess) {
+      this._logger?.debug('Already running cmd', options.cmd)
+      return alreadyRunningProcess;
+    }
+    const killed$ = new Subject<void>();
+    this._killed$.set(options.cmd, killed$);
+    const process =  new Observable<IProcessResult>((obs) => {
       if (isUsingRemoteCache(options) && options.remoteCache) {
         checkWorkingDirectoryClean(this.project?.root);
       }
+      killed$.pipe(first()).subscribe(() => {
+        obs.complete();
+      });
       this._logger?.info('Running cmd', { cmd: options.cmd, target: this.name });
       this._logger?.debug('Running cmd', options.cmd)
       this._run(options)
         .then((result) => {
           this._logger?.info('Success', { cmd: options.cmd, target: this.name }, result);
-          obs.next(result)
+          obs.next(result);
         })
         .catch((error) => {
           this._logger?.warn('Errored', { cmd: options.cmd, target: this.name }, error);
@@ -606,6 +619,8 @@ export class Workspace {
           obs.complete();
       });
     });
+    this._runs.set(options.cmd, process);
+    return process;
   }
 
   async invalidateLocalCache(

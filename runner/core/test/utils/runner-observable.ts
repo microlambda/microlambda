@@ -1,15 +1,16 @@
 import {RunCommandEvent, RunCommandEventEnum, RunOptions} from '../../src';
-import {delay, Observable, of, switchMap, tap, throwError} from 'rxjs';
+import {delay, Observable, of, switchMap, throwError} from 'rxjs';
 import {SinonStub} from "sinon";
+import {IProcessResult} from "../../lib";
 
 const equals = (arr1: Array<boolean | number | string>, arr2: Array<boolean | number | string>) => JSON.stringify(arr1) === JSON.stringify(arr2);
 const areEquivalent = (arr1: Array<boolean | number | string>, arr2: Array<boolean | number | string>) => equals(arr1.sort(), arr2.sort());
 
 type ReceivedEvent = {type: RunCommandEventEnum | 'X', workspace?: string};
-type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string};
+type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string, delay?: number};
 
 const logger = (...args: unknown[]): void => {
-  if (process.env.MILA_DEBUG_TESTS) {
+  if (true) {
     console.debug(args);
   }
 }
@@ -113,6 +114,7 @@ export const expectObservable = async (
       //logger('+', Date.now() - startedAt, 'ms', evt);
       switch (evt.type) {
         case RunCommandEventEnum.TARGETS_RESOLVED:
+          logger('+', Date.now() - startedAt, 'ms', 'targets changed', evt.targets.map((t) => t.workspace.name));
           receivedEvents.push({ type: evt.type });
           break;
         case RunCommandEventEnum.NODE_STARTED:
@@ -191,7 +193,11 @@ const verifyAssertionsV2 = (
       }
       return e2.type - e1.type;
     };
-    return JSON.stringify(arr1.sort(predicate)) === JSON.stringify(arr2.sort(predicate));
+    const _arr1: ReceivedEventV2[] = JSON.parse(JSON.stringify(arr1));
+    const _arr2: ReceivedEventV2[] = JSON.parse(JSON.stringify(arr2));
+    _arr1.forEach((e) => delete e.delay);
+    _arr2.forEach((e) => delete e.delay);
+    return JSON.stringify(_arr1.sort(predicate)) === JSON.stringify(_arr2.sort(predicate));
   }
 
   for (const expectedSlice of expectedTimeframe) {
@@ -228,24 +234,26 @@ export const expectObservableV2 = async (
     }
     runCommand$.subscribe({
       next: (evt) => {
-      //logger('+', Date.now() - startedAt, 'ms', evt);
         switch (evt.type) {
           case RunCommandEventEnum.TARGETS_RESOLVED:
-            receivedEvents.push({type: evt.type});
+            receivedEvents.push({type: evt.type, delay: Date.now() - startedAt});
             break;
           case RunCommandEventEnum.NODE_STARTED:
           case RunCommandEventEnum.NODE_ERRORED:
           case RunCommandEventEnum.NODE_PROCESSED:
+            if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+              console.debug(evt.result)
+            }
           case RunCommandEventEnum.NODE_SKIPPED:
           case RunCommandEventEnum.ERROR_INVALIDATING_CACHE:
           case RunCommandEventEnum.CACHE_INVALIDATED:
           case RunCommandEventEnum.NODE_INTERRUPTED:
             logger('+', Date.now() - startedAt, 'ms', {type: evt.type, workspace: evt.workspace?.name});
-            receivedEvents.push({type: evt.type, workspace: evt.workspace?.name});
+            receivedEvents.push({type: evt.type, workspace: evt.workspace?.name, delay: Date.now() - startedAt});
             break;
           case RunCommandEventEnum.SOURCES_CHANGED:
             logger('+', Date.now() - startedAt, 'ms', {type: evt.type, workspace: evt.target.workspace?.name});
-            receivedEvents.push({type: evt.type, workspace: evt.target.workspace?.name});
+            receivedEvents.push({type: evt.type, workspace: evt.target.workspace?.name, delay: Date.now() - startedAt});
             break;
           default:
             logger('+', Date.now() - startedAt, 'ms', 'Unexpected event type', evt);
@@ -279,6 +287,7 @@ export const rejectAfter = <E>(error: E, ms: number): Promise<never> => new Prom
 
 interface IRunStub {
   resolve: boolean;
+  killed?: number;
   options?: RunOptions;
   fromCache?: boolean;
   delay?: number;
@@ -326,17 +335,25 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
         ${JSON.stringify(options, null, 2)
         }`);
       }
-      if (call.resolve) {
-        return of({
-          commands:[],
-          overall: call.delay || 0,
-          fromCache: call.fromCache || false,
-        }).pipe(delay(call.delay || 0), tap(() => console.debug(call.delay + 'ms')))
-      }
-      return of('').pipe(
-        delay(call.delay || 0),
-        switchMap(() => throwError(call.error))
-      )
+      return new Observable<IProcessResult>((obs) => {
+        if (call.killed) {
+          setTimeout(() => obs.complete(), call.killed ?? 0);
+        }
+        if (call.resolve) {
+          setTimeout(() => {
+            obs.next({
+              commands:[],
+              overall: call.delay || 0,
+              fromCache: call.fromCache || false,
+            });
+            obs.complete();
+          }, call.delay ?? 0);
+        } else {
+          setTimeout(() => {
+            obs.error(call.error ?? new Error('Fake error'));
+          }, call.delay ?? 0);
+        }
+      });
     });
   }
 }
