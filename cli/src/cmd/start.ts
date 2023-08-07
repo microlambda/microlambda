@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { init } from '../utils/init';
 import { aws } from '@microlambda/aws';
 import chalk from 'chalk';
+import { debounceTime } from 'rxjs/operators';
 
 interface IStartOptions {
   interactive: boolean;
@@ -46,6 +47,9 @@ export const start = async (options: IStartOptions): Promise<void> => {
     const ioHandler = new WebsocketLogsHandler(workspace, io);
     workspace.addLogsHandler(ioHandler);
   }
+
+  eventsLog.logs$.pipe(debounceTime(200)).subscribe(() => io.eventLogAdded());
+
   // logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   /*project.services.forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));

@@ -5,7 +5,6 @@ import {
   fetchGraph,
   fetchSchedulerStatus,
   fetchServiceLogs,
-  healthCheck,
   IGraph,
   ILogsResponse,
 } from './api';
@@ -15,21 +14,25 @@ import type {
   SchedulerStatus,
 } from '@microlambda/types';
 import { logger } from './logger';
+import { io } from 'socket.io-client';
+import { env } from './env/dev.env';
 
-const DEFAULT_POLLING_RATE = 500;
 const log = logger.scope('(store)');
+
+log.info('Connecting websocket on', env.apiUrl);
+const socket = io(env.apiUrl);
+socket.emit('connection');
 
 const isConnected = false;
 export const connected = readable(false, (set) => {
-  setInterval(() => {
-    healthCheck()
-      .then((connected) => {
-        if (connected != isConnected) {
-          set(connected);
-        }
-      })
-      .catch(() => set(false));
-  }, DEFAULT_POLLING_RATE);
+  socket.on('connect', () => {
+    if (!isConnected) {
+      set(connected);
+    }
+  });
+  socket.on('disconnect', () => {
+    set(false);
+  });
 });
 
 export const selected = writable<
@@ -99,13 +102,6 @@ const currentSlices: {
   offlineLogs: [0],
 };
 
-const pollers: {
-  eventsLog?: NodeJS.Timer;
-  buildLogs?: NodeJS.Timer;
-  offlineLogs?: NodeJS.Timer;
-  graph?: NodeJS.Timer;
-} = {};
-
 const handleLogsResponse = (
   response: ILogsResponse<string | IEventLog>,
   type: 'eventsLog' | 'buildLogs' | 'offlineLogs',
@@ -130,24 +126,20 @@ let currentGraph: IGraph;
 connected.subscribe(async (connected) => {
   if (!connected) {
     log.warn('Disconnected !');
-    clearInterval(pollers.graph);
-    clearInterval(pollers.eventsLog);
-    clearInterval(pollers.offlineLogs);
-    clearInterval(pollers.buildLogs);
   } else {
     log.info('Connected !');
-    pollers.graph = setInterval(async () => {
+    socket.on('graph.updated', async () => {
       const response = await fetchGraph();
       if (currentGraph && !areGraphEquals(currentGraph, response)) {
         currentGraph = response;
         log.info('Graph updated', currentGraph);
         graph.set(response);
       }
-    }, DEFAULT_POLLING_RATE);
-    pollers.eventsLog = setInterval(async () => {
+    });
+    socket.on('event.log.added', async () => {
       const response = await fetchEventLogs([currentSlices.eventsLog[1] || 0]);
       handleLogsResponse(response, 'eventsLog', eventsLog);
-    }, DEFAULT_POLLING_RATE);
+    });
   }
 });
 
@@ -172,30 +164,28 @@ selected.subscribe(async (workspace) => {
     compilationLogs.set({ data: [], metadata: { count: 0, slice: [0, 0] } });
   }
   _selected = workspace?.name || null;
-  clearInterval(pollers.offlineLogs);
-  clearInterval(pollers.buildLogs);
   log.info('Workspace selected', workspace?.name, workspace?.isService);
   if (workspace) {
     await compilationLogs.fetch(workspace.name);
-    pollers.buildLogs = setInterval(async () => {
+    socket.on('tsc.log.emitted', async () => {
       const response = await fetchCompilationLogs(workspace.name, [
         currentSlices.buildLogs[1] || 0,
       ]);
       handleLogsResponse(response, 'buildLogs', compilationLogs);
-    }, DEFAULT_POLLING_RATE);
+    });
   }
   if (workspace && !workspace.isService) {
-    clearInterval(pollers.offlineLogs);
     serviceLogs.set({ data: [], metadata: { count: 0, slice: [0, 0] } });
   }
   if (workspace && workspace.isService) {
+    socket.emit('send.service.logs', workspace.name);
     await serviceLogs.fetch(workspace.name);
-    pollers.offlineLogs = setInterval(async () => {
+    socket.on(workspace.name + '.log.added', async () => {
       const response = await fetchServiceLogs(workspace.name, [
         currentSlices.offlineLogs[1] || 0,
       ]);
       handleLogsResponse(response, 'offlineLogs', serviceLogs);
-    }, DEFAULT_POLLING_RATE);
+    });
   }
 });
 

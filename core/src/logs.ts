@@ -26,8 +26,8 @@ export const recreateLogDirectory = (projectRoot: string, logger: EventsLog): vo
     logger.scope('logs').error(`${logsDirectory} is not a directory`);
     process.exit(1);
   }
-  rimraf.sync(logsDirectory);
-  mkdirSync(logsDirectory);
+  // rimraf.sync(logsDirectory);
+  // mkdirSync(logsDirectory);
 };
 
 export const createLogFile = (projectRoot: string, service: string, type: ServerlessAction, region?: string): void => {

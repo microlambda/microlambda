@@ -5,10 +5,10 @@ import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheck
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { RunCommandEventEnum, Workspace } from '@microlambda/runner-core';
-import { EventsLog } from '@microlambda/logger';
+import { EventsLog, IEventsLogEntry } from '@microlambda/logger';
 
 export class IOSocketManager {
-  private _io: WebSocketServer;
+  private _io;
   private _serviceToListen = '';
   private _scheduler: Scheduler;
   //private _logger: ILogger;
@@ -18,18 +18,8 @@ export class IOSocketManager {
   constructor(port: number, server: Server, scheduler: Scheduler, logger: EventsLog, graph: Project) {
     this._scheduler = scheduler;
     const log = logger.scope('@microlambda/server/io');
-    log.info('Attaching Websocket', {
-      cors: {
-        origin: ['http://localhost:4200', 'http://localhost:' + port],
-        credentials: true,
-      },
-    });
-    this._io = new WebSocketServer(server, {
-      cors: {
-        origin: ['http://localhost:4200', 'http://localhost:' + port],
-        credentials: true,
-      },
-    });
+    log.info('Attaching Websocket');
+    this._io = new WebSocketServer(server);
     this._io.on('connect_error', (err) => {
       log.error(`connect_error due to ${err.message}`);
     });
@@ -168,8 +158,8 @@ export class IOSocketManager {
     });
   }
 
-  eventLogAdded(log: IEventLog): void {
-    this._io.emit('event.log.added', log);
+  eventLogAdded(): void {
+    this._io.emit('event.log.added');
   }
 
   handleServiceLog(service: string, data: string): void {

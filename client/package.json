@@ -12,7 +12,8 @@
     "dagre-d3": "^0.6.4",
     "socket.io-client": "^4.7.1",
     "svelte": "^3.59.2",
-    "timeago.js": "^4.0.2"
+    "timeago.js": "^4.0.2",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@microlambda/types": "workspace:*",
