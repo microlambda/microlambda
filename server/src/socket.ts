@@ -1,14 +1,14 @@
 import { Server as WebSocketServer } from 'socket.io';
 import { Server } from 'http';
 import { isStopServiceEvent, Project, RunCommandSchedulerEvent, Scheduler } from '@microlambda/core';
-import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
+import { SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { RunCommandEventEnum, Workspace } from '@microlambda/runner-core';
-import { EventsLog, IEventsLogEntry } from '@microlambda/logger';
+import { EventsLog } from '@microlambda/logger';
 
 export class IOSocketManager {
-  private _io;
+  private _io: WebSocketServer;
   private _serviceToListen = '';
   private _scheduler: Scheduler;
   //private _logger: ILogger;
