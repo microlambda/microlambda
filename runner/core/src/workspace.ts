@@ -33,6 +33,7 @@ import { RemoteArtifacts } from './artifacts/remote-artifacts';
 import { isUsingRemoteCache, RunOptions } from './runner';
 import { checkWorkingDirectoryClean } from './remote-cache-utils';
 import Timer = NodeJS.Timer;
+import {IBaseLogger} from "@microlambda/types";
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -311,18 +312,24 @@ export class Workspace {
     return this._processes;
   }
 
-  private static _killProcessTree(childProcess: ExecaChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
+  private static _killProcessTree(childProcess: ExecaChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM', logger?: IBaseLogger): void {
     if (childProcess.pid) {
       processTree(childProcess.pid, (err, children) => {
+        logger?.debug('Sending', signal, 'to', childProcess.pid);
+        childProcess.kill(signal);
         if (err) {
-          childProcess.kill(signal);
+          logger?.error('Error getting process tree', err);
+        } else {
+          children?.forEach((child) => {
+            logger?.debug('Sending', signal, 'to', child.PID);
+            process.kill(Number(child.PID), signal);
+          });
         }
-        children.forEach((child) => process.kill(Number(child.PID), signal));
       });
     }
   }
 
-  private static async _killProcess(childProcess: ExecaChildProcess, releasePorts: number[] = [], timeout = 500): Promise<void> {
+  private static async _killProcess(childProcess: ExecaChildProcess, releasePorts: number[] = [], timeout = 500, logger?: IBaseLogger): Promise<void> {
     return new Promise<void>((resolve) => {
       const watchKilled = (): void => {
         if (childProcess) {
@@ -340,7 +347,7 @@ export class Workspace {
             setTimeout(async () => {
               const areAvailable = await Promise.all(releasePorts.map((port) => isPortAvailable(port)));
               if (areAvailable.some((a) => !a) && !isKilled) {
-                this._killProcessTree(childProcess, 'SIGKILL');
+                this._killProcessTree(childProcess, 'SIGKILL', logger);
               }
               return resolve();
             }, timeout);
@@ -349,7 +356,7 @@ export class Workspace {
       };
       if (childProcess) {
         watchKilled();
-        this._killProcessTree(childProcess);
+        this._killProcessTree(childProcess, undefined, logger);
       }
     })
 
@@ -357,11 +364,15 @@ export class Workspace {
 
   async kill(options: { cmd: string, releasePorts?: number[], timeout?: number, _workspace?: string }): Promise<void> {
     const { cmd, releasePorts, timeout } = options;
-    const processes = this._processes.get(cmd);
+    this._logger?.debug('Get processes for', cmd);
+    const processes = this.processes.get(cmd);
     this._killed$.get(cmd)?.next();
+    this._runs.delete(cmd);
+    this._logger?.debug('Found', processes?.size ?? 0, 'running processes');
     if (processes) {
-      await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500)));
+      await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500, this._logger)));
     }
+    this._logger?.debug('All processes killed');
   }
 
   private async _runCommand(
@@ -383,6 +394,8 @@ export class Workspace {
       shell: process.platform === 'win32',
       stdio,
     });
+    this._logger?.debug('Process launched', _process.pid);
+    this._logger?.debug('Registering process for', target)
     if (this._processes.has(target)) {
       this._processes.get(target)?.set(cmdId, _process);
     } else {
@@ -616,7 +629,9 @@ export class Workspace {
           obs.error(error);
         }).finally(() => {
           this._logger?.debug('Completed', { cmd: options.cmd, target: this.name });
-          obs.complete();
+          this._runs.delete(options.cmd);
+          this._killed$.delete(options.cmd);
+        obs.complete();
       });
     });
     this._runs.set(options.cmd, process);

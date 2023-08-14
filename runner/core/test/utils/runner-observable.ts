@@ -10,7 +10,7 @@ type ReceivedEvent = {type: RunCommandEventEnum | 'X', workspace?: string};
 type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string, delay?: number};
 
 const logger = (...args: unknown[]): void => {
-  if (true) {
+  if (false) {
     console.debug(args);
   }
 }
@@ -242,7 +242,7 @@ export const expectObservableV2 = async (
           case RunCommandEventEnum.NODE_ERRORED:
           case RunCommandEventEnum.NODE_PROCESSED:
             if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-              console.debug(evt.result)
+              logger(evt.result)
             }
           case RunCommandEventEnum.NODE_SKIPPED:
           case RunCommandEventEnum.ERROR_INVALIDATING_CACHE:
@@ -336,11 +336,13 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
         }`);
       }
       return new Observable<IProcessResult>((obs) => {
+        logger('(mock) Running command', workspace);
         if (call.killed) {
           setTimeout(() => obs.complete(), call.killed ?? 0);
         }
         if (call.resolve) {
           setTimeout(() => {
+            logger('(mock) Success Running command', workspace);
             obs.next({
               commands:[],
               overall: call.delay || 0,
@@ -350,6 +352,7 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
           }, call.delay ?? 0);
         } else {
           setTimeout(() => {
+            logger('(mock) Failed Running command', workspace);
             obs.error(call.error ?? new Error('Fake error'));
           }, call.delay ?? 0);
         }
