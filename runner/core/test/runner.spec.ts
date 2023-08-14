@@ -28,13 +28,13 @@ describe('[class] Runner', () => {
   } = {};
   beforeEach(async() => {
     project = await getProject(stubs);
-    stubs.invalidate = stub(Workspace.prototype, 'invalidateLocalCache');
+    stubs.invalidate = stub(Workspace.prototype, 'invalidateCache');
     stubs.isDaemon = stub(Workspace.prototype, 'isDaemon');
     stubs.kill = stub(Workspace.prototype, 'kill');
     stubs.kill.rejects();
     stubs.isDaemon.returns(false);
     stubs.isDaemon.withArgs('start').returns(true);
-    stubs.invalidate.resolves();
+    stubs.invalidate.returns(resolveAfter(null, 15));
     stubs.run = stub(Workspace.prototype, 'run');
     stubs.targets = stub(TargetsResolver.prototype, 'resolve');
     stubs.watch = stub(Watcher.prototype, 'watch');
@@ -152,28 +152,54 @@ describe('[class] Runner', () => {
         mode: 'topological',
         force: false,
       };
-      stubRun(stubs.run, [
-        { resolve: true, options, delay: 14 },
-        { resolve: true, options, delay: 7 },
-        { resolve: true, options, delay: 13 },
-        { resolve: true, options, delay: 23 },
-        { resolve: true, options, delay: 12 },
-        { resolve: true, options, delay: 4 },
-      ])
+      stubRunV2(stubs.run, new Map([
+        ['@org/workspace-a', [ { resolve: true, options, delay: 14 } ]],
+        ['@org/workspace-b', [ { resolve: true, options, delay: 13 } ]],
+        ['@org/workspace-c', [ { resolve: true, options, delay: 7 } ]],
+        ['@org/app-a', [ { resolve: true, options, delay: 23 } ]],
+        ['@org/app-b', [ { resolve: true, options, delay: 12 } ]],
+        ['@org/api', [ { resolve: true, options, delay: 4 } ]],
+      ]));
       try {
         const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
-        await expectObservable(Date.now(), execution$, '0-33-115555-33-1155-3-15-3-1', {
-          1: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
-          3: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
-        }, (events) => {
-          const invalidations: string[] = events
-            .filter((evt) => evt.type === RunCommandEventEnum.CACHE_INVALIDATED)
-            .map((evt) => String(evt.workspace));
-          expect(invalidations.slice(0, 4).sort()).toEqual(['@org/workspace-b', '@org/api', '@org/app-b', '@org/app-a'].sort());
-          expect(invalidations.slice(4, 6).sort()).toEqual(['@org/api', '@org/app-b'].sort());
-          expect(invalidations.slice(6, 7).sort()).toEqual(['@org/app-b']);
-        });
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // +12ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' }, // +19ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' }, // +20ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-b' }, // +20ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' }, // +20ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // +20ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +26ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +12ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' }, // +12ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' }, // +12ms
+          ],
+        ], ObservableEvent.COMPLETE);
       } catch (e) {
         expect(e).toBeFalsy();
       }
@@ -243,22 +269,52 @@ describe('[class] Runner', () => {
         mode: 'topological',
         force: false,
       };
-      stubRun(stubs.run, [
-        { resolve: true, options, delay: 14, fromCache: true },
-        { resolve: true, options, delay: 7, fromCache: true },
-        { resolve: true, options, delay: 13, fromCache: true },
-        { resolve: true, options, delay: 23 },
-        { resolve: true, options, delay: 12 },
-        { resolve: true, options, delay: 4 },
-      ])
+      stubRunV2(stubs.run, new Map([
+        ['@org/workspace-a', [ { resolve: true, options, delay: 4, fromCache: true } ]],
+        ['@org/workspace-c', [ { resolve: true, options, delay: 2, fromCache: true } ]],
+        ['@org/workspace-b', [ { resolve: true, options, delay: 2, fromCache: true } ]],
+        ['@org/app-a', [ { resolve: true, options, delay: 23 } ]],
+        ['@org/api', [ { resolve: true, options, delay: 12 } ]],
+        ['@org/app-b', [ { resolve: true, options, delay: 4 } ]],
+      ]));
       try {
         const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
-        await expectObservable(Date.now(), execution$, '0-33-11-33-1155-3-15-3-1', {
-          1: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
-          3: ['@org/workspace-b', '@org/app-a', '@org/workspace-a',  '@org/app-b',  '@org/workspace-c', '@org/api'],
-          5: ['@org/api', '@org/app-b', '@org/app-b'],
-        });
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // +12ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' }, // +14ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +16ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +16ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' }, // +16ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' }, // +18ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' }, // +39ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' }, // +15ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // +15ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' }, // +12ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' }, // +12ms
+          ],
+        ], ObservableEvent.COMPLETE);
       } catch (e) {
         expect(e).toBeFalsy();
       }
@@ -404,8 +460,8 @@ describe('[class] Runner', () => {
         ]]
       ]));
       stubKill(stubs.kill, new Map([
-        ['@org/app-a', [{cmd: 'lint', delay: 1} ]],
-        ['@org/api', [{cmd: 'lint', delay: 2} ]],
+        ['@org/app-a', [{cmd: 'lint', delay: 0, pids: []} ]],
+        ['@org/api', [{cmd: 'lint', delay: 2, pids: [2344]} ]],
       ]))
       try {
         const runner = new Runner(project, 4);

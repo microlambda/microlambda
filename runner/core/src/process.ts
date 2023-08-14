@@ -47,6 +47,7 @@ export enum RunCommandEventEnum {
 
 export interface IResolvedTarget {
   workspace: Workspace;
+  // TODO: Remove affected as it is no longer used
   affected: boolean;
   hasCommand: boolean;
 }
@@ -66,39 +67,41 @@ export interface ISourceChangedEvent {
 
 export interface INodeInterruptedEvent {
   type: RunCommandEventEnum.NODE_INTERRUPTED;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
-export interface INodeSkippedEvent extends IResolvedTarget {
+export interface INodeSkippedEvent {
   type: RunCommandEventEnum.NODE_SKIPPED;
+  target: IResolvedTarget;
+
 }
 
 export interface IRunCommandStartedEvent {
   type: RunCommandEventEnum.NODE_STARTED;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface IRunCommandSuccessEvent {
   type: RunCommandEventEnum.NODE_PROCESSED;
   result: IProcessResult;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface ICacheInvalidatedEvent {
   type: RunCommandEventEnum.CACHE_INVALIDATED;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface IErrorInvalidatingCacheEvent {
   type: RunCommandEventEnum.ERROR_INVALIDATING_CACHE;
   error: unknown;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface IRunCommandErrorEvent {
   type: RunCommandEventEnum.NODE_ERRORED;
   error: unknown;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export type RunCommandEvent = IRunCommandStartedEvent | ITargetsResolvedEvent | IRunCommandSuccessEvent | IRunCommandErrorEvent | INodeSkippedEvent | ICacheInvalidatedEvent | IErrorInvalidatingCacheEvent | INodeInterruptedEvent | ISourceChangedEvent;

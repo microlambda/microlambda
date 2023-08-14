@@ -10,7 +10,7 @@ type ReceivedEvent = {type: RunCommandEventEnum | 'X', workspace?: string};
 type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string, delay?: number};
 
 const logger = (...args: unknown[]): void => {
-  if (false) {
+  if (true) {
     console.debug(args);
   }
 }
@@ -124,8 +124,8 @@ export const expectObservable = async (
         case RunCommandEventEnum.ERROR_INVALIDATING_CACHE:
         case RunCommandEventEnum.CACHE_INVALIDATED:
         case RunCommandEventEnum.NODE_INTERRUPTED:
-          logger('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.workspace?.name });
-          receivedEvents.push({ type: evt.type, workspace: evt.workspace?.name });
+          logger('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.target.workspace?.name });
+          receivedEvents.push({ type: evt.type, workspace: evt.target.workspace?.name });
           break;
         case RunCommandEventEnum.SOURCES_CHANGED:
           logger('+', Date.now() - startedAt, 'ms', { type: evt.type, workspace: evt.target.workspace?.name });
@@ -248,8 +248,8 @@ export const expectObservableV2 = async (
           case RunCommandEventEnum.ERROR_INVALIDATING_CACHE:
           case RunCommandEventEnum.CACHE_INVALIDATED:
           case RunCommandEventEnum.NODE_INTERRUPTED:
-            logger('+', Date.now() - startedAt, 'ms', {type: evt.type, workspace: evt.workspace?.name});
-            receivedEvents.push({type: evt.type, workspace: evt.workspace?.name, delay: Date.now() - startedAt});
+            logger('+', Date.now() - startedAt, 'ms', {type: evt.type, workspace: evt.target.workspace?.name});
+            receivedEvents.push({type: evt.type, workspace: evt.target.workspace?.name, delay: Date.now() - startedAt});
             break;
           case RunCommandEventEnum.SOURCES_CHANGED:
             logger('+', Date.now() - startedAt, 'ms', {type: evt.type, workspace: evt.target.workspace?.name});
@@ -364,6 +364,7 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
 interface IKillStub {
   cmd: string;
   delay: number;
+  pids?: number[];
 }
 
 export const stubKill = (stub: SinonStub | undefined, calls: Map<string, Array<IKillStub>>) => {
@@ -389,7 +390,7 @@ export const stubKill = (stub: SinonStub | undefined, calls: Map<string, Array<I
         ${JSON.stringify(options, null, 2)
         }`);
       }
-      return new Promise<void>((resolve) => setTimeout(() => resolve(), call.delay ?? 0));
+      return new Promise<Array<number>>((resolve) => setTimeout(() => resolve(call.pids ?? []), call.delay ?? 0));
     });
   }
 }

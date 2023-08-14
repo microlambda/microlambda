@@ -312,7 +312,8 @@ export class Workspace {
     return this._processes;
   }
 
-  private static _killProcessTree(childProcess: ExecaChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM', logger?: IBaseLogger): void {
+  private static _killProcessTree(childProcess: ExecaChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM', logger?: IBaseLogger): Array<number> {
+    const pids = [childProcess.pid ?? -1];
     if (childProcess.pid) {
       processTree(childProcess.pid, (err, children) => {
         logger?.debug('Sending', signal, 'to', childProcess.pid);
@@ -322,15 +323,18 @@ export class Workspace {
         } else {
           children?.forEach((child) => {
             logger?.debug('Sending', signal, 'to', child.PID);
+            pids.push(Number(child.PID));
             process.kill(Number(child.PID), signal);
           });
         }
       });
     }
+    return pids;
   }
 
-  private static async _killProcess(childProcess: ExecaChildProcess, releasePorts: number[] = [], timeout = 500, logger?: IBaseLogger): Promise<void> {
-    return new Promise<void>((resolve) => {
+  private static async _killProcess(childProcess: ExecaChildProcess, releasePorts: number[] = [], timeout = 500, logger?: IBaseLogger): Promise<Array<number>> {
+    return new Promise<Array<number>>((resolve) => {
+      let pids: number[] = [];
       const watchKilled = (): void => {
         if (childProcess) {
           let isKilled = false;
@@ -339,7 +343,7 @@ export class Workspace {
             // This is the most common scenario, where sls offline gracefully shutdown underlying hapi server and
             // close properly with status 0
             isKilled = true;
-            return resolve();
+            return resolve(pids);
           });
           // This is a security to make child process release given ports, we give 500ms to process to gracefully
           // exit. Otherwise, we send SIGKILL to the whole process tree to free the port (#Rampage)
@@ -347,32 +351,33 @@ export class Workspace {
             setTimeout(async () => {
               const areAvailable = await Promise.all(releasePorts.map((port) => isPortAvailable(port)));
               if (areAvailable.some((a) => !a) && !isKilled) {
-                this._killProcessTree(childProcess, 'SIGKILL', logger);
+                pids = this._killProcessTree(childProcess, 'SIGKILL', logger);
               }
-              return resolve();
+              return resolve(pids);
             }, timeout);
           }
         }
       };
       if (childProcess) {
         watchKilled();
-        this._killProcessTree(childProcess, undefined, logger);
+        pids = this._killProcessTree(childProcess, undefined, logger);
       }
     })
-
   }
 
-  async kill(options: { cmd: string, releasePorts?: number[], timeout?: number, _workspace?: string }): Promise<void> {
+  async kill(options: { cmd: string, releasePorts?: number[], timeout?: number, _workspace?: string }): Promise<Array<number>> {
     const { cmd, releasePorts, timeout } = options;
     this._logger?.debug('Get processes for', cmd);
     const processes = this.processes.get(cmd);
     this._killed$.get(cmd)?.next();
     this._runs.delete(cmd);
     this._logger?.debug('Found', processes?.size ?? 0, 'running processes');
+    let killedPids: number[][] = [];
     if (processes) {
-      await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500, this._logger)));
+      killedPids = await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500, this._logger)));
     }
     this._logger?.debug('All processes killed');
+    return killedPids.flat();
   }
 
   private async _runCommand(
@@ -638,10 +643,26 @@ export class Workspace {
     return process;
   }
 
-  async invalidateLocalCache(
+  async invalidateCache(
     cmd: string,
+    options: RunOptions,
   ): Promise<void> {
-    const cache = new LocalCache(this, cmd);
+    let cache: Cache;
+    if (isUsingRemoteCache(options) && options.remoteCache) {
+      cache = new RemoteCache(
+        options.remoteCache.region,
+        options.remoteCache.bucket,
+        this,
+        options.cmd,
+        options.affected,
+        options.args,
+        options.env,
+        this.eventsLog,
+        options.cachePrefix,
+      );
+    } else {
+      cache = new LocalCache(this, cmd);
+    }
     await cache.invalidate();
   }
 

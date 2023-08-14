@@ -18,6 +18,7 @@ import {EventsLog, EventsLogger} from '@microlambda/logger';
 import {checkWorkingDirectoryClean} from './remote-cache-utils';
 import {getDefaultThreads} from '@microlambda/utils';
 import {v4 as uuid} from 'uuid';
+import {Scheduler} from "./scheduler";
 
 export interface ICommonRunOptions {
   cmd: string;
@@ -67,16 +68,16 @@ export const isUsingRemoteCache = (options: RunOptions): options is IParallelRem
   return (options as IParallelRemoteCacheRunOptions).remoteCache != null;
 }
 
-type FailedExecution =  { status: 'ko', error: unknown, target: IResolvedTarget};
-type SucceededExecution = {status: 'ok', result: IProcessResult, target: IResolvedTarget };
-type CaughtProcessExecution =  SucceededExecution | FailedExecution;
+//type FailedExecution =  { status: 'ko', error: unknown, target: IResolvedTarget};
+//type SucceededExecution = {status: 'ok', result: IProcessResult, target: IResolvedTarget };
+//type CaughtProcessExecution =  SucceededExecution | FailedExecution;
 
-const isFailedExecution = (execution: CaughtProcessExecution): execution is FailedExecution => { return execution.status === 'ko' }
+// const isFailedExecution = (execution: CaughtProcessExecution): execution is FailedExecution => { return execution.status === 'ko' }
 
-const isRunCommandErroredEvent = (error: unknown): error is RunCommandEvent => {
+/*export const isRunCommandErroredEvent = (error: unknown): error is RunCommandEvent => {
   const _error = error as (IRunCommandErrorEvent | IErrorInvalidatingCacheEvent);
   return (_error.type === RunCommandEventEnum.ERROR_INVALIDATING_CACHE || _error.type === RunCommandEventEnum.NODE_ERRORED) && !!_error.workspace;
-}
+}*/
 
 export type RunOptions = IParallelRunOptions | ITopologicalRunOptions | IParallelRemoteCacheRunOptions | ITopologicalRemoteCacheRunOptions;
 
@@ -110,7 +111,7 @@ interface IReschedulingContext {
 }
 
 export class Runner {
-  private _watchers = new Map<string, { watcher: Watcher, abort: Subject<void>}>();
+  //private _watchers = new Map<string, { watcher: Watcher, abort: Subject<void>}>();
   private _logger: EventsLogger | undefined;
   private _currentExecution: ICurrentExecution | undefined;
 
@@ -122,48 +123,11 @@ export class Runner {
     this._logger = logger?.scope('runner-core/runner');
   }
 
-  private _scheduleTasks(options: RunOptions, targets: OrderedTargets): Observable<RunCommandEvent | IStepCompletedEvent> {
-    this._logger?.debug('Schedule tasks', { cmd: options.cmd });
-    const steps$ = targets.map((step) => this._runStep(options, step, targets));
-    return from(steps$).pipe(concatAll());
-  }
-
-  private _rescheduleTasks(
-    options: RunOptions,
-    fromStep: IResolvedTarget[],
-    impactedTargets: Set<IResolvedTarget>,
-    targets: OrderedTargets,
-  ): Observable<RunCommandEvent | IStepCompletedEvent> {
-    console.debug('Rescheduling from step', targets.indexOf(fromStep));
-    console.debug('Rescheduling', options.cmd, targets
-      .filter((step) => {
-        return targets.indexOf(step) >= targets.indexOf(fromStep);
-      }).map((step) => {
-        if (targets.indexOf(step) === targets.indexOf(fromStep)) {
-          return step.filter((t) => [...impactedTargets].some(t2 => t2.workspace.name === t.workspace.name)).map((t) => t.workspace.name);
-        }
-        return step.map((t) => t.workspace.name);
-      }));
-    const subsequentSteps$ = targets
-      .filter((step) => {
-        return targets.indexOf(step) >= targets.indexOf(fromStep);
-      })
-      .map((step) => {
-        console.debug('Scheduling step', targets.indexOf(step));
-        if (targets.indexOf(step) === targets.indexOf(fromStep)) {
-          console.debug('Ignoring non-impacted targets, impacted targets are', Array.from(impactedTargets).map(w => w.workspace.name));
-          return this._runStep(options, step, targets, impactedTargets);
-        }
-        return this._runStep(options, step, targets);
-      });
-    return from(subsequentSteps$).pipe(concatAll());
-  }
-
-  unwatch(cmd: string): void {
+  /*unwatch(cmd: string): void {
     this._logger?.debug('Un-watching command', cmd);
     this._watchers.get(cmd)?.watcher.unwatch();
     this._watchers.get(cmd)?.abort.next();
-  }
+  }*/
 
   private get currentExecution(): ICurrentExecution {
     if (!this._currentExecution) {
@@ -191,21 +155,12 @@ export class Runner {
           this._logger?.info('No eligible targets found for command', options.cmd)
           return obs.complete();
         }
-        if (!options.watch) {
-          const tasks$ = this._scheduleTasks(options, targets);
-          this._logger?.info('Tasks scheduled for command', options.cmd)
-          tasks$.subscribe({
-            next: (evt) => {
-              if (!isStepCompletedEvent(evt)) {
-                obs.next(evt);
-              }
-            },
-            error: (err) => obs.error(err),
-            complete: () => obs.complete()
-          })
-        } else {
-          this._runAndWatch(options, targets, obs);
-        }
+        const scheduler = new Scheduler(targets, options, this._concurrency, this.logger);
+        scheduler.execute().subscribe({
+          next: (evt) => obs.next(evt),
+          error: (err) => obs.error(err),
+          complete: () => obs.complete()
+        });
       });
     });
   }
@@ -252,8 +207,12 @@ export class Runner {
     }
   }
 
-  private _runAndWatch(options: IParallelRunOptions | ITopologicalRunOptions, _targets: OrderedTargets, obs: Subscriber<RunCommandEvent>): void {
+  /*private _runAndWatch(options: IParallelRunOptions | ITopologicalRunOptions, _targets: OrderedTargets, obs: Subscriber<RunCommandEvent>): void {
     let targets = _targets;
+
+    // tasks
+
+
     this._logger?.info('Running target', options.cmd, 'in watch mode');
     const initialTasksId = uuid();
     const initialTasks$ = this._scheduleTasks(options, targets);
@@ -267,18 +226,7 @@ export class Runner {
     this._watchers.set(options.cmd, { watcher, abort: shouldAbort$ });
     this._logger?.debug('Watching sources');
     let currentStep: IResolvedTarget[] | undefined;
-    const isBeforeCurrentStep = (impactedStep: IResolvedTarget[] | undefined): boolean => {
-      if(!currentStep || !impactedStep) {
-        return false;
-      }
-      return targets.indexOf(impactedStep) < targets.indexOf(currentStep);
-    }
-    const isEqualsCurrentStep = (impactedStep: IResolvedTarget[] | undefined): boolean => {
-      if(!currentStep || !impactedStep) {
-        return false;
-      }
-      return targets.indexOf(impactedStep) === targets.indexOf(currentStep);
-    }
+
     // let shouldLetFinishStepAndReschedule = false;
     // let areAllProcessed = false;
     const workspaceWithRunningProcesses = new Set<Workspace>();
@@ -331,13 +279,13 @@ export class Runner {
               killed:  [...killed].map((w) => w.name),
             })
           }*/
-          obs.next(evt);
+          /*bs.next(evt);
           /*if (evt.type === RunCommandEventEnum.NODE_PROCESSED && (killing$.has(evt.workspace) || killed.has(evt.workspace))) {
             this._logger?.debug('Node killed not forwarding processed event', evt.workspace.name);
           } else {
             obs.next(evt);
           }*/
-        } /*else if (shouldLetFinishStepAndReschedule) {
+        /*} /*else if (shouldLetFinishStepAndReschedule) {
           // If step finished, and should abort/reschedule after completion, do it
           shouldLetFinishStepAndReschedule = false;
           // should reschedule, after having killed processed
@@ -351,6 +299,7 @@ export class Runner {
           // eslint-disable-next-line @typescript-eslint/no-use-before-define
           executeTasks(newTasksId);
         }*/
+/*
       },
       error: (err: unknown): void => {
         obs.error(err);
@@ -363,7 +312,7 @@ export class Runner {
       },
     });
 
-    const onSourcesChanged = (changes: Array<WatchEvent>): void => {
+    /*const onSourcesChanged = (changes: Array<WatchEvent>): void => {
       shouldReschedule$.next({
         sourceChanged: changes,
         addedInScope: [],
@@ -420,7 +369,7 @@ export class Runner {
         isStrictlyBeforeCurrentStep, isAfterCurrentStep,
         shouldReprocess: mostEarlyStepImpactedIndex != null && mostEarlyStepImpacted && !isAfterCurrentStep,
       });*/
-      if (mostEarlyStepImpactedIndex != null && mostEarlyStepImpacted && !isAfterCurrentStep) {
+      /*if (mostEarlyStepImpactedIndex != null && mostEarlyStepImpacted && !isAfterCurrentStep) {
         this._logger?.debug(options.cmd, 'Impacted step is same than current step. Should abort after current step execution');
         for (const target of currentStep ?? []) {
           const isProcessing = workspaceWithRunningProcesses.has(target.workspace);
@@ -582,15 +531,15 @@ export class Runner {
               const newTasksId = uuid();
               activeTasks$.set(newTasksId, newTasks$);
               executeTasks(newTasksId);
-            } else if (/*areAllProcessed && */mostEarlyStepImpacted) {
+            } else if (areAllProcessed && mostEarlyStepImpacted) {
 
               const newTasks$ =  this._rescheduleTasks(options, mostEarlyStepImpacted, impactedTargets, targets);
               const newTasksId = uuid();
               activeTasks$.set(newTasksId, newTasks$);
               executeTasks(newTasksId);
-            }/* else if (mostEarlyStepImpacted) {
+            } else if (mostEarlyStepImpacted) {
               shouldLetFinishStepAndReschedule = true;
-            }*/
+            }
           });
         }
       }
@@ -599,213 +548,5 @@ export class Runner {
     sourcesChange$.pipe(takeUntil(stopWatching$)).subscribe(onSourcesChanged.bind(this));
 
     executeTasks(initialTasksId);
-  }
-
-  private _runStepV2(
-    options: RunOptions,
-    step: IResolvedTarget[],
-    targets: OrderedTargets,
-    only?: Set<IResolvedTarget>,
-  ): Observable<RunCommandEvent | IStepCompletedEvent> {
-    const tasks$ = new Map<string, Observable<RunCommandEvent>>();
-    const executions = new Set<CaughtProcessExecution>();
-    this._logger?.info('Preparing step', targets.indexOf(step), { cmd: options.cmd });
-    return new Observable<RunCommandEvent | IStepCompletedEvent>((obs) => {
-
-    });
-  }
-
-  private _runStep(
-    options: RunOptions,
-    step: IResolvedTarget[],
-    targets: OrderedTargets,
-    only?: Set<IResolvedTarget>,
-  ): Observable<RunCommandEvent | IStepCompletedEvent> {
-    const executions = new Set<CaughtProcessExecution>();
-    this._logger?.info('Preparing step', targets.indexOf(step), { cmd: options.cmd });
-    const tasks$ = step
-      .filter((t) => !only || [...only].some((o) => o.workspace.name === t.workspace.name))
-      .map((t) => this._runForWorkspace(options, executions, t));
-    const step$ = from(tasks$).pipe(
-      mergeAll(this._concurrency),
-    );
-    return new Observable<RunCommandEvent | IStepCompletedEvent>((obs) => {
-      this._logger?.info('Running step', targets.indexOf(step), { cmd: options.cmd, nodes: step.map((t) => t.workspace.name) });
-      const resolveInvalidations$ = (): Observable<RunCommandEvent> => {
-        // When execution step is completed or errored, perform required cache invalidations
-        // Invalidate cache of every errored nodes
-        this._logger?.info('Resolving invalidations');
-        const invalidations$: Array<Observable<RunCommandEvent>> = [];
-        if (!isUsingRemoteCache(options) && options.mode === 'topological') {
-          let hasAtLeastOneError = false;
-          let isCachedInvalidated = false;
-          let current: IResolvedTarget | null = null;
-          for (const execution of executions) {
-            current = execution.target;
-            this._logger?.info('Execution status', { cmd: options.cmd, workspace: execution.target.workspace.name, status: execution.status });
-            if (isFailedExecution(execution)) {
-              this._logger?.info('Execution failed, invalidating cache', { cmd: options.cmd, workspace: execution.target.workspace.name })
-              hasAtLeastOneError = true;
-              invalidations$.push(Runner._invalidateLocalCache(execution.target.workspace, options.cmd));
-            } else if (!execution.result.fromCache) {
-              this._logger?.info('Cache has been invalidated during execution', { cmd: options.cmd, workspace: execution.target.workspace.name });
-              isCachedInvalidated = true;
-            }
-          }
-          // In topological mode, if an error happened during the step
-          // or a cache has been invalidated all ancestors cache.
-          if ((hasAtLeastOneError || isCachedInvalidated) && current) {
-            invalidations$.push(Runner._invalidateSubsequentWorkspaceLocalCache(targets, current, options.cmd));
-          }
-        }
-        return from(invalidations$).pipe(concatAll())
-      }
-      //console.debug('step subscription', step.map((t) => t.workspace.name));
-      const isInvalidating = new Set<Workspace>();
-      let hasCompleted = false;
-      step$.subscribe({
-        next: (evt) => {
-          this._logger?.info('Forwarding run command event', { cmd: options.cmd, type: evt.type, workspace: (evt as { workspace: { name: string }})?.workspace?.name });
-          if (!isUsingRemoteCache(options) && options.mode === 'parallel' && evt.type === RunCommandEventEnum.NODE_ERRORED) {
-            isInvalidating.add(evt.workspace);
-            Runner._invalidateLocalCache(evt.workspace, options.cmd).subscribe({
-              next: (evt) => obs.next(evt),
-              error: (error) => {
-                if (isRunCommandErroredEvent(error)) {
-                  obs.next(error);
-                }
-                obs.error(error);
-              },
-              complete: () => {
-                isInvalidating.delete(evt.workspace);
-                if (isInvalidating.size < 1 && hasCompleted) {
-                  obs.next({ type: "STEP_COMPLETED" });
-                  obs.complete();
-                }
-              },
-            });
-          }
-          obs.next(evt);
-        },
-        error: (err) => {
-          this._logger?.info('Error received', { cmd: options.cmd, err });
-          if (isRunCommandErroredEvent(err)) {
-            this._logger?.info('Is node errored event', { cmd: options.cmd });
-            obs.next(err);
-          }
-          this._logger?.warn('Unexpected error received during step execution', { cmd: options.cmd, err });
-          resolveInvalidations$().subscribe({
-            next: (next) => obs.next(next),
-            error: (error) => {
-              if (isRunCommandErroredEvent(error)) {
-                obs.next(error);
-              }
-              obs.error(error);
-            },
-            complete: () => obs.error(err)
-          });
-        },
-        complete: () => {
-          this._logger?.info('Step execution completed', { cmd: options.cmd, step: targets.indexOf(step) })
-          resolveInvalidations$().subscribe({
-            next: (next) => obs.next(next),
-            error: (error) => {
-              if (isRunCommandErroredEvent(error)) {
-                obs.next(error);
-              }
-              obs.error(error);
-            },
-            complete: () => {
-              hasCompleted = true;
-              if (isInvalidating.size < 1 && hasCompleted) {
-                obs.next({ type: "STEP_COMPLETED" });
-                obs.complete();
-              }
-            }
-          });
-        }
-      })
-    })
-  }
-
-  private _runForWorkspace(
-    options: RunOptions,
-    executions: Set<CaughtProcessExecution>,
-    target: IResolvedTarget,
-  ): Observable<RunCommandEvent> {
-    if (target.affected && target.hasCommand) {
-      console.debug('Run for', target.workspace.name);
-      const started$: Observable<RunCommandEvent>  = of({ type: RunCommandEventEnum.NODE_STARTED, workspace: target.workspace });
-      const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(options, target).pipe(
-        concatMap((result) => this._mapToRunCommandEvents(options, executions, result, target)),
-      );
-      return concat(
-        started$,
-        execute$,
-      );
-    }
-    return of({ type: RunCommandEventEnum.NODE_SKIPPED, ...target });
-  }
-
-  private _executeCommandCatchingErrors(
-    options: RunOptions,
-    target: IResolvedTarget,
-  ) : Observable<CaughtProcessExecution>{
-    this._logger?.info('Preparing command', {cmd: options.cmd, workspace: target.workspace.name});
-    const command$ = target.workspace.run(options, target.workspace.name);
-    return command$.pipe(
-      map((result) => ({ status: 'ok' as const, result, target })),
-      catchError((error) => of({ status: 'ko' as const, error, target })),
-    );
-  }
-
-  private _mapToRunCommandEvents(
-    options: RunOptions,
-    executions: Set<CaughtProcessExecution>,
-    execution: CaughtProcessExecution,
-    target: IResolvedTarget,
-  ): Observable<RunCommandEvent> {
-    return new Observable<RunCommandEvent>((obs) => {
-      executions.add(execution);
-      const workspace = target.workspace;
-      this._logger?.info('Mapping events for', { workspace: workspace.name, cmd: options.cmd });
-      if (execution.status === 'ok') {
-        const result = execution.result;
-        //console.info('Execution success, sending node processed event', { workspace: workspace.name, cmd: options.cmd });
-        obs.next({ type: RunCommandEventEnum.NODE_PROCESSED, result, workspace: workspace });
-        obs.complete();
-      } else  if (options.mode === 'topological' && !options.watch) {
-        this._logger?.info('Execution errored in topological mode, sending node errored event and aborting', { workspace: workspace.name, cmd: options.cmd });
-        obs.error({ type: RunCommandEventEnum.NODE_ERRORED, error: execution.error, workspace });
-        obs.complete();
-      } else {
-        this._logger?.info('Execution errored in parallel mode, sending node errored event and continuing', { workspace: workspace.name, cmd: options.cmd });
-        obs.next({ type: RunCommandEventEnum.NODE_ERRORED, error: execution.error, workspace });
-        obs.complete();
-      }
-    });
-  }
-
-  private static _invalidateLocalCache(workspace: Workspace, cmd: string): Observable<RunCommandEvent> {
-    return new Observable<RunCommandEvent>((obs) => {
-      workspace.invalidateLocalCache(cmd)
-        .then(() => obs.next({ type: RunCommandEventEnum.CACHE_INVALIDATED, workspace }))
-        .catch((error) => obs.error({ type: RunCommandEventEnum.ERROR_INVALIDATING_CACHE, workspace, error}))
-        .finally(() => obs.complete());
-    });
-  }
-
-  private static _invalidateSubsequentWorkspaceLocalCache(targets: IResolvedTarget[][], current: IResolvedTarget, cmd: string): Observable<RunCommandEvent> {
-    const invalidate$: Array<Observable<RunCommandEvent>> = [];
-    let isAfterCurrent = false;
-    for (const step of targets) {
-      if (isAfterCurrent) {
-        invalidate$.push(...step.map((t) => Runner._invalidateLocalCache(t.workspace, cmd)));
-      }
-      if (step.includes(current)) {
-        isAfterCurrent = true;
-      }
-    }
-    return from(invalidate$).pipe(mergeAll());
-  }
+  }*/
 }

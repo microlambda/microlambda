@@ -418,4 +418,10 @@ describe('[class] workspace', () => {
   describe('[method] getLastReleaseTag', () => {
     it.todo('should be tested');
   });
+  // TODO: Important
+  describe('[method] kill', () => {
+    it.todo('should resolves if no running process');
+    it.todo('should kill the whole process tree with SIGTERM');
+    it.todo('should kill the whole process tree with SIGKILL if ports no release without timeout');
+  });
 });
