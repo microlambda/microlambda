@@ -392,6 +392,7 @@ export const stubKill = (stub: SinonStub | undefined, calls: Map<string, Array<I
         ${JSON.stringify(options, null, 2)
         }`);
       }
+      logger('(mock) killing', workspace, call);
       return new Promise<Array<number>>((resolve) => setTimeout(() => resolve(call.pids ?? []), call.delay ?? 0));
     });
   }

@@ -1,12 +1,13 @@
 /* eslint-disable no-console */
-import {concat, Observable, of, Subscriber} from "rxjs";
+import {concat, Observable, of, Subject, Subscriber} from "rxjs";
 import {IProcessResult, IResolvedTarget, RunCommandEvent, RunCommandEventEnum, Step} from "./process";
-import {OrderedTargets} from "./targets";
-import {RunOptions} from "./runner";
-import {catchError, map} from "rxjs/operators";
+import {OrderedTargets, TargetsResolver} from "./targets";
+import {isTopological, RunOptions} from "./runner";
+import {catchError, map, takeUntil} from "rxjs/operators";
 import {EventsLog, EventsLogger} from "@microlambda/logger";
 import {Workspace} from "./workspace";
 import {Watcher, WatchEvent} from "./watcher";
+import {Project} from "./project";
 
 interface ITask {
   type: 'kill' | 'invalidate' | 'run';
@@ -23,12 +24,20 @@ interface IImpactedTargets  {
   mostEarlyStepImpacted: IResolvedTarget[] | undefined
 }
 
+interface IReschedulingContext {
+  removedFromScope: IResolvedTarget[];
+  addedInScope: IResolvedTarget[];
+  sourceChanged: WatchEvent[];
+}
+
 type FailedExecution =  { status: 'ko', error: unknown, target: IResolvedTarget};
 type SucceededExecution = {status: 'ok', result: IProcessResult, target: IResolvedTarget };
 type CaughtProcessExecution =  SucceededExecution | FailedExecution;
 
 export class Scheduler {
   private _tasks$: ITask[] = [];
+  private _targets: OrderedTargets = [];
+
   private _obs: Subscriber<RunCommandEvent> | undefined;
   private _logger: EventsLogger | undefined;
   private _runningTasks = 0;
@@ -47,8 +56,13 @@ export class Scheduler {
     errored: new Set(),
   };
 
+  private _watcher: Watcher | undefined;
+  private _sourcesChanged$: Observable<Array<WatchEvent>> | undefined;
+  private _scopeChanged$ = new Subject<void>();
   private _pendingInvalidations = new Set<string>();
   private _alreadyInvalidated = new Set<string>();
+
+  private _execution: Observable<RunCommandEvent> | undefined;
 
   private get obs(): Subscriber<RunCommandEvent> {
     if (!this._obs) {
@@ -58,7 +72,7 @@ export class Scheduler {
   }
 
   constructor(
-    private _targets: OrderedTargets,
+    private readonly _project: Project,
     private _options: RunOptions,
     readonly concurrency: number,
     readonly logger?: EventsLog,
@@ -66,30 +80,110 @@ export class Scheduler {
     this._logger = logger?.scope('runner-core/scheduler');
   }
 
+  get execution(): Observable<RunCommandEvent> | undefined {
+    return this._execution;
+  }
+
   execute(): Observable<RunCommandEvent> {
-    return new Observable((obs) => {
-      this._obs = obs;
-      this._scheduleTasks();
-      this._updateCurrentStep(0);
-      this._executeNextTask();
-      if (this._options.watch) {
-        const watcher = new Watcher(this._targets, this._options.cmd, this._options.debounce, this._logger?.logger);
-        watcher.watch().subscribe((changes) => this.sourcesChanged(changes));
-      }
+    if (!this._execution) {
+      this._execution = new Observable((obs) => {
+        this._obs = obs;
+        const targets = new TargetsResolver(this._project, this._logger?.logger);
+        targets.resolve(this._options.cmd, this._options).then((initialTargets) => {
+          this._logger?.info('Targets resolved for command', this._options.cmd, initialTargets.map(s => s.map(t => t.workspace.name)));
+          obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: initialTargets.flat() });
+          if (!initialTargets.length) {
+            this._logger?.info('No eligible targets found for command', this._options.cmd)
+            return obs.complete();
+          }
+          this._targets = initialTargets;
+          this._scheduleTasks();
+          this._updateCurrentStep(0);
+          this._executeNextTask();
+          this._resetWatcher();
+        });
+      });
+    }
+    return this._execution;
+  }
+
+  private _resetWatcher(): void {
+    if (this._options.watch) {
+      this._watcher?.unwatch();
+      const watcher = new Watcher(this._targets, this._options.cmd, this._options.debounce, this._logger?.logger);
+      this._watcher = watcher;
+      this._sourcesChanged$ = watcher.watch();
+      this._sourcesChanged$.pipe(takeUntil(this._scopeChanged$)).subscribe({
+        next: (fsEvents) => this._sourcesChanged(fsEvents),
+      });
+    }
+  }
+
+  private _sourcesChanged(changes: WatchEvent[]): void {
+    console.debug('Sources changed', changes.map((c) => c.target.workspace.name));
+    this._reschedule({
+      removedFromScope: [],
+      addedInScope: [],
+      sourceChanged: changes,
     });
   }
 
-  sourcesChanged(changes: WatchEvent[]): void {
-    console.debug('Sources changed', changes.map((c) => c.target.workspace.name));
-    const { toKill, toStart, toRestart } = this._resolveImpactedTargets(changes);
+  scopeChanged(newScope: Workspace[]): void {
+    const targetsResolver = new TargetsResolver(this._project, this._logger?.logger);
+    const newOptions = { ...this._options };
+    if (isTopological(newOptions)) {
+      newOptions.to = [...newScope];
+    } else {
+      newOptions.workspaces = [...newScope];
+    }
+
+    targetsResolver.resolve(newOptions.cmd, newOptions).then((_newTargets) => {
+      const previousTargets = this._targets.flat();
+      const newTargets = _newTargets.flat();
+
+      const addedInScope = newTargets.filter((nt) => !TargetsResolver.includesWorkspace(previousTargets, nt.workspace));
+      const removedFromScope = previousTargets.filter((pt) => !TargetsResolver.includesWorkspace(newTargets, pt.workspace));
+
+      if (!addedInScope.length && !removedFromScope.length) {
+        console.debug('Nothing to do');
+        return;
+      }
+
+      //console.log('Targets resolved', newTargets.map((t) => t.workspace.name));
+      this.obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: newTargets });
+
+      this._options = newOptions;
+      this._targets = _newTargets;
+      this._scopeChanged$.next();
+      this._resetWatcher();
+      this._reschedule({
+        addedInScope,
+        removedFromScope,
+        sourceChanged: [],
+      })
+    });
+  }
+
+  private _reschedule(context: IReschedulingContext): void {
+    const { toKill, toStart, toRestart } = this._resolveImpactedTargets(context.sourceChanged);
+    // Match by workspace name in case of shallow copy
+    const includes = (set: Set<IResolvedTarget>, target: IResolvedTarget): boolean => {
+      return [...set].some((t) => t.workspace.name === target.workspace.name);
+    }
+    context.addedInScope.forEach((added) => {
+      if (!includes(toStart, added) && !includes(toRestart, added) && !this._isQueued(added) && this._isScheduled(added)) {
+        toStart.add(added);
+      }
+    });
+    context.removedFromScope.forEach((removed) => {
+      if (!includes(toKill, removed) && !includes(toRestart, removed) && this._isRunning(removed)) {
+        toKill.add(removed);
+      }
+    });
     console.debug('to kill', [...toKill].map((t) => t.workspace.name));
     console.debug('to start', [...toStart].map((t) => t.workspace.name));
     console.debug('to restart', [...toRestart].map((t) => t.workspace.name));
     this._restartTargets({ toKill, toStart, toRestart });
-  }
-
-  scopeChanged(newScope: Workspace[]): void {
-    throw new Error('TODO');
   }
 
   private _updateCurrentStep(idx: number): void {
@@ -116,7 +210,16 @@ export class Scheduler {
     let mostEarlyStepImpacted: Step | undefined;
     let mostEarlyStepImpactedIndex: number | undefined;
     const impactedTargetsByStep = new Map<number, Array<IResolvedTarget>>();
-
+    if (!changes.length) {
+      return {
+        toKill,
+        toStart,
+        toRestart: new Set<IResolvedTarget>(),
+        mostEarlyStepImpacted: undefined,
+        mostEarlyStepImpactedIndex: undefined,
+        impactedTargets,
+      }
+    }
     const isBeforeCurrentStep = (impactedStep: IResolvedTarget[] | undefined): boolean => {
       if(!this._currentStep || !impactedStep) {
         return false;
@@ -172,29 +275,19 @@ export class Scheduler {
       this._logger?.debug(this._options.cmd, 'Impacted step is same than current step. Should abort after current step execution');
       const currentStep = this._targets.at(this._currentStepIndex);
       for (const target of currentStep ?? []) {
-        const isQueued = Array.from(this._currentStep.queued).some((t) => t.workspace.name === target.workspace.name);
-        const isErrored = Array.from(this._currentStep.errored).some((t) => t.workspace.name === target.workspace.name);
-        const isProcessing = Array.from(this._currentStep.processing).some((t) => t.workspace.name === target.workspace.name);
-        const isSucceeded = Array.from(this._currentStep.processed).some((t) => t.workspace.name === target.workspace.name);
-        const isProcessed = isSucceeded || isErrored;
+        const isQueued = this._isQueued(target);
+        const isRunning = this._isRunning(target);
 
-        const isDaemon = target.workspace.isDaemon(this._options.cmd);
-
-        const isRunning = isProcessing || (isProcessed && isDaemon);
         const isImpacted = changes.some((c) => c.target.workspace.name === target.workspace.name);
-        const isTarget = this._targets.some((step) => step.filter((t) => t.affected && t.hasCommand).some((t) => t.workspace.name === target.workspace.name));
-
-        const shouldKill = isRunning && (isImpacted || isStrictlyBeforeCurrentStep) && isTarget;
-        const shouldStart = isTarget && isImpacted && !isQueued;
+        const isScheduled = this._isScheduled(target);
+        const shouldKill = isRunning && (isImpacted || isStrictlyBeforeCurrentStep) && isScheduled;
+        const shouldStart = isScheduled && isImpacted && !isQueued;
 
         console.debug({
           target: target.workspace.name,
-          isProcessing,
-          isProcessed,
-          isDaemon,
           isRunning,
           isImpacted,
-          isTarget,
+          isScheduled,
           shouldKill,
           shouldStart,
         })
@@ -219,6 +312,23 @@ export class Scheduler {
     }
   }
 
+  private _isScheduled(target: IResolvedTarget): boolean {
+    return this._targets.some((step) => step.filter((t) => t.affected && t.hasCommand).some((t) => t.workspace.name === target.workspace.name));
+  }
+
+  private _isQueued(target: IResolvedTarget): boolean {
+    return Array.from(this._currentStep.queued).some((t) => t.workspace.name === target.workspace.name);
+  }
+
+  private _isRunning(target: IResolvedTarget): boolean {
+    const isErrored = Array.from(this._currentStep.errored).some((t) => t.workspace.name === target.workspace.name);
+    const isProcessing = Array.from(this._currentStep.processing).some((t) => t.workspace.name === target.workspace.name);
+    const isSucceeded = Array.from(this._currentStep.processed).some((t) => t.workspace.name === target.workspace.name);
+    const isProcessed = isSucceeded || isErrored;
+    const isDaemon = target.workspace.isDaemon(this._options.cmd);
+    return isProcessing || (isProcessed && isDaemon);
+  }
+
   private _restartTargets(actions: {toStart: Set<IResolvedTarget>, toKill: Set<IResolvedTarget>, toRestart: Set<IResolvedTarget> }): void {
     const { toStart, toKill, toRestart } = actions;
     const allTargets = new Set([...toStart, ...toKill, ...toRestart]);
@@ -234,15 +344,15 @@ export class Scheduler {
       }
       const startTarget = (): void => {
         console.debug('Asked to start', workspace.name);
-        const allProcessed = !this._hasNextTask();
-        console.debug({allProcessed, currentIndex: this._currentTaskIndex});
+        const areAllProcessed = !this._hasNextTask();
+        console.debug({areAllProcessed, currentIndex: this._currentTaskIndex});
 
         this._tasks$.splice(this._currentTaskIndex + 1, 0, {
           type: 'run',
           target,
           operation$: this._runForWorkspace(target)
         });
-        if (allProcessed) {
+        if (areAllProcessed) {
           this._executeNextTask();
         }
       }

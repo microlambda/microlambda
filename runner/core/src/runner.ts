@@ -1,23 +1,13 @@
 /* eslint-disable no-console */
-import {BehaviorSubject, concat, from, Observable, of, skip, Subject, Subscriber, Subscription} from "rxjs";
-import {catchError, concatAll, concatMap, map, mergeAll, takeUntil} from "rxjs/operators";
+import { Observable} from "rxjs";
 import {
-  IErrorInvalidatingCacheEvent,
-  IProcessResult,
-  IResolvedTarget,
-  IRunCommandErrorEvent,
   RunCommandEvent,
-  RunCommandEventEnum,
-  Step
 } from "./process";
 import {Project} from "./project";
 import {Workspace} from "./workspace";
-import {OrderedTargets, TargetsResolver} from "./targets";
-import {Watcher, WatchEvent} from "./watcher";
 import {EventsLog, EventsLogger} from '@microlambda/logger';
 import {checkWorkingDirectoryClean} from './remote-cache-utils';
 import {getDefaultThreads} from '@microlambda/utils';
-import {v4 as uuid} from 'uuid';
 import {Scheduler} from "./scheduler";
 
 export interface ICommonRunOptions {
@@ -83,37 +73,33 @@ export type RunOptions = IParallelRunOptions | ITopologicalRunOptions | IParalle
 
 export const isTopological = (options: RunOptions): options is ITopologicalRunOptions | ITopologicalRemoteCacheRunOptions => options.mode === 'topological';
 
-interface IStepCompletedEvent {
+/*interface IStepCompletedEvent {
   type: 'STEP_COMPLETED',
-}
+}*/
 
-const isStepCompletedEvent = (evt: RunCommandEvent | IStepCompletedEvent): evt is IStepCompletedEvent => {
+/*const isStepCompletedEvent = (evt: RunCommandEvent | IStepCompletedEvent): evt is IStepCompletedEvent => {
   return evt.type === 'STEP_COMPLETED';
-}
+}*/
 
 interface ICurrentExecution {
-  watch: boolean;
-  currentScope$: BehaviorSubject<Array<Workspace>>;
+  options: RunOptions;
+  execution$: Observable<RunCommandEvent>;
+  scheduler: Scheduler;
+  scope: Array<Workspace>;
 }
 
-interface IImpactedTargets  {
+/*interface IImpactedTargets  {
   toKill: Set<IResolvedTarget>;
   toStart: Set<IResolvedTarget>;
   mostEarlyStepImpactedIndex: number | undefined;
   impactedTargets: Set<IResolvedTarget>;
   mostEarlyStepImpacted: IResolvedTarget[] | undefined
-}
-
-interface IReschedulingContext {
-  removedFromScope: IResolvedTarget[];
-  addedInScope: IResolvedTarget[];
-  sourceChanged: WatchEvent[];
-}
+}*/
 
 export class Runner {
   //private _watchers = new Map<string, { watcher: Watcher, abort: Subject<void>}>();
   private _logger: EventsLogger | undefined;
-  private _currentExecution: ICurrentExecution | undefined;
+  private _currentExecution = new Map<string, ICurrentExecution>()
 
   constructor(
     private readonly _project: Project,
@@ -129,48 +115,36 @@ export class Runner {
     this._watchers.get(cmd)?.abort.next();
   }*/
 
-  private get currentExecution(): ICurrentExecution {
-    if (!this._currentExecution) {
-      throw new Error('Assertion failed: no current execution');
-    }
-    return this._currentExecution;
-  }
-
   runCommand(options: RunOptions): Observable<RunCommandEvent> {
-    if (this._currentExecution) {
-      throw new Error('This runner already have a current execution running');
+    const currentExecution = this._currentExecution.get(options.cmd)?.execution$;
+    if (currentExecution) {
+      return currentExecution;
+    }
+    if (isUsingRemoteCache(options) && options.remoteCache) {
+      checkWorkingDirectoryClean(this._project.root);
+      if (options.watch) {
+        throw new Error('Cannot execute command in watch mode while using remote caching');
+      }
     }
     const scope = (isTopological(options) ? options.to : options.workspaces) ?? [...this._project.workspaces.values()];
-    this._currentExecution = { watch: options.watch ?? false, currentScope$: new BehaviorSubject<Array<Workspace>>(scope)};
-    return new Observable((obs) => {
-      if (isUsingRemoteCache(options) && options.remoteCache) {
-        checkWorkingDirectoryClean(this._project.root);
-      }
-      this._logger?.info('Resolving for command', options.cmd);
-      const targets = new TargetsResolver(this._project, this._logger?.logger);
-      targets.resolve(options.cmd, options).then((targets) => {
-        this._logger?.info('Targets resolved for command', options.cmd, targets.map(s => s.map(t => t.workspace.name)));
-        obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: targets.flat() });
-        if (!targets.length) {
-          this._logger?.info('No eligible targets found for command', options.cmd)
-          return obs.complete();
-        }
-        const scheduler = new Scheduler(targets, options, this._concurrency, this.logger);
-        scheduler.execute().subscribe({
-          next: (evt) => obs.next(evt),
-          error: (err) => obs.error(err),
-          complete: () => obs.complete()
-        });
-      });
+    const scheduler = new Scheduler(this._project, options, this._concurrency, this.logger);
+    const execution$ = scheduler.execute();
+    this._currentExecution.set(options.cmd, {
+      execution$,
+      scheduler,
+      scope,
+      options,
     });
+    return execution$;
   }
 
-  private _areInScope(workspaces: Workspace[]): { inside: Array<Workspace>, outside: Array<Workspace> } {
-    const previousScope = this._currentExecution?.currentScope$.getValue();
+  private _areInScope(cmd: string, workspaces: Workspace[]): { inside: Array<Workspace>, outside: Array<Workspace>, cmdExecution: ICurrentExecution } {
+    const cmdExecution = this._currentExecution.get(cmd);
+    const previousScope = cmdExecution?.scope;
     if (!previousScope) {
       throw new Error('Error adding/removing targets: no current execution');
     }
-    if (!this._currentExecution?.watch) {
+    if (!cmdExecution.options.watch) {
       throw new Error('Error adding/removing targets: current execution is not in watch mode');
     }
     const inside: Workspace[] = []
@@ -180,30 +154,32 @@ export class Runner {
       if (isAlreadyInScope) inside.push(workspace);
       else outside.push(workspace);
     }
-    return { inside, outside };
+    return { inside, outside, cmdExecution };
   }
 
-  addWorkspaces(workspaces: Workspace[]): void {
-    const { outside } = this._areInScope(workspaces);
+  addWorkspaces(cmd: string, workspaces: Workspace[]): void {
+    console.debug('add workspace', 'cmd', workspaces.map((w) => w.name));
+    const { outside, cmdExecution } = this._areInScope(cmd, workspaces);
     const toAdd = outside;
     if (toAdd.length) {
-      const previousScope = this.currentExecution.currentScope$.getValue();
-      const newScope = [...previousScope, ...toAdd];
-      this.currentExecution.currentScope$.next(newScope);
+      console.debug('not already in scope', toAdd.map((w) => w.name));
+      const previousScope = cmdExecution.scope;
+      cmdExecution.scope =  [...previousScope, ...toAdd];
+      cmdExecution.scheduler.scopeChanged(cmdExecution.scope);
     }
   }
 
-  removeWorkspace(workspaces: Workspace[]): void {
+  removeWorkspace(cmd: string, workspaces: Workspace[]): void {
     //console.debug('Removing', workspaces.map((w) => w.name));
-    const { inside } = this._areInScope(workspaces);
+    const { inside, cmdExecution } = this._areInScope(cmd, workspaces);
     const toRemove = inside;
     if (toRemove.length) {
-      const previousScope = this.currentExecution.currentScope$.getValue();
+      const previousScope = cmdExecution.scope;
       const shouldBeKeptInScope = (workspace: Workspace): boolean => {
         return !toRemove.some((w) => w.name === workspace.name);
       }
-      const newScope = previousScope.filter(shouldBeKeptInScope);
-      this.currentExecution.currentScope$.next(newScope);
+      cmdExecution.scope = previousScope.filter(shouldBeKeptInScope);
+      cmdExecution.scheduler.scopeChanged(cmdExecution.scope);
     }
   }
 

@@ -17,6 +17,10 @@ export class TargetsResolver {
     this._logger = logger?.scope(TargetsResolver.scope);
   }
 
+  static includesWorkspace(targets: IResolvedTarget[], workspace: Workspace): boolean {
+    return targets.some((t) => t.workspace.name === workspace.name);
+  }
+
   private _logger: EventsLogger | undefined;
 
   // FIXME: Could be sync

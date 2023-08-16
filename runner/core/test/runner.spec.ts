@@ -650,8 +650,8 @@ describe('[class] Runner', () => {
         { workspaceNames: ['@org/api', '@org/workspace-b'], delay: 350},
         { workspaceNames: ['@org/workspace-c'], delay: 400},
         // After first recompile
-        { workspaceNames: ['@org/app-a', '@org/workspace-a', '@org/workspace-c'], delay: 600},
-        { workspaceNames: ['@org/app-b'], delay: 650},
+        { workspaceNames: ['@org/app-a', '@org/workspace-a', '@org/workspace-c'], delay: 700},
+        { workspaceNames: ['@org/app-b'], delay:750},
       ]));
 
       stubKill(stubs.kill, new Map([
@@ -1290,7 +1290,7 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+          runner.addWorkspaces('start', [ project.workspaces.get('@org/api')!]);
         }, 100);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -1359,8 +1359,8 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
-        }, 100);
+          runner.addWorkspaces('start', [ project.workspaces.get('@org/api')!]);
+        }, 150);
         await expectObservableV2(Date.now(), execution$, [
           [
             { type: RunCommandEventEnum.TARGETS_RESOLVED },
@@ -1435,7 +1435,7 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+          runner.addWorkspaces('start', [ project.workspaces.get('@org/api')!]);
         }, 100);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -1497,8 +1497,8 @@ describe('[class] Runner', () => {
       ]));
 
       stubKill(stubs.kill, new Map([
-        ['@org/app-b', [{cmd: 'start', delay: 12} ]],
-        ['@org/api', [{cmd: 'start', delay: 24} ]],
+        ['@org/app-b', [{cmd: 'start', delay: 12, pids: [123] } ]],
+        ['@org/api', [{cmd: 'start', delay: 24, pids: [123] } ]],
       ]))
 
       stubRunV2(stubs.run, new Map([
@@ -1518,7 +1518,7 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+          runner.addWorkspaces('start', [ project.workspaces.get('@org/api')!]);
         }, 100);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -1544,12 +1544,13 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-b' },
           ],
           [
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-b' },
+
           ],
+          [{ type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },],[{ type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+
           ],
           [
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
@@ -1597,7 +1598,7 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.removeWorkspace([ project.workspaces.get('@org/api')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/api')!]);
         }, 100);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -1674,10 +1675,10 @@ describe('[class] Runner', () => {
 
       stubKill(stubs.kill, new Map([
         ['@org/app-b', [
-          { cmd: 'start', delay: 20 },
+          { cmd: 'start', delay: 20, pids: [34] },
         ]],
         ['@org/api', [
-          { cmd: 'start', delay: 20 },
+          { cmd: 'start', delay: 20, pids: [34343] },
         ]],
       ]));
 
@@ -1685,12 +1686,12 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.removeWorkspace([ project.workspaces.get('@org/api')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/api')!]);
           console.debug('100ms');
         }, 100);
         setTimeout(() => {
           console.debug('300ms');
-          runner.removeWorkspace([ project.workspaces.get('@org/app-b')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/app-b')!]);
         }, 300);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -1780,7 +1781,7 @@ describe('[class] Runner', () => {
 
       stubKill(stubs.kill, new Map([
         ['@org/api', [
-          { cmd: 'lint', delay: 20 },
+          { cmd: 'lint', delay: 20, pids: [223] },
         ]],
       ]));
 
@@ -1788,12 +1789,12 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.removeWorkspace([ project.workspaces.get('@org/api')!]);
+          runner.removeWorkspace('lint', [ project.workspaces.get('@org/api')!]);
           console.debug('100ms');
         }, 100);
         setTimeout(() => {
           console.debug('300ms');
-          runner.removeWorkspace([ project.workspaces.get('@org/app-b')!]);
+          runner.removeWorkspace('lint', [ project.workspaces.get('@org/app-b')!]);
         }, 300);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -1884,10 +1885,10 @@ describe('[class] Runner', () => {
 
       stubKill(stubs.kill, new Map([
         ['@org/app-b', [
-          { cmd: 'start', delay: 20 },
+          { cmd: 'start', delay: 20, pids: [23] },
         ]],
         ['@org/api', [
-          { cmd: 'start', delay: 20 },
+          { cmd: 'start', delay: 20, pids: [42] },
         ]],
       ]));
 
@@ -1895,12 +1896,12 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.removeWorkspace([ project.workspaces.get('@org/api')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/api')!]);
           console.debug('100ms');
         }, 100);
         setTimeout(() => {
           console.debug('300ms');
-          runner.removeWorkspace([ project.workspaces.get('@org/app-b')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/app-b')!]);
         }, 300);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -2007,16 +2008,16 @@ describe('[class] Runner', () => {
 
       stubKill(stubs.kill, new Map([
         ['@org/app-a', [
-          { cmd: 'start', delay: 20 },  // +350ms
-          { cmd: 'start', delay: 20 },  // +600ms
+          { cmd: 'start', delay: 12, pids: [23] },  // +350ms
+          { cmd: 'start', delay: 12, pids: [23] },  // +600ms
         ]],
         ['@org/app-b', [
-          { cmd: 'start', delay: 20 },  // +350ms
-          { cmd: 'start', delay: 20 },  // +550ms
+          { cmd: 'start', delay: 20, pids: [23] },  // +350ms
+          { cmd: 'start', delay: 20, pids: [23] },  // +550ms
         ]],
         ['@org/api', [
-          { cmd: 'start', delay: 20 },  // +100ms
-          { cmd: 'start', delay: 20 },  // +550ms
+          { cmd: 'start', delay: 20, pids: [23] },  // +100ms
+          { cmd: 'start', delay: 20, pids: [23] },  // +550ms
         ]],
       ]));
 
@@ -2024,16 +2025,16 @@ describe('[class] Runner', () => {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
         setTimeout(() => {
-          runner.removeWorkspace([ project.workspaces.get('@org/api')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/api')!]);
         }, 100);
         setTimeout(() => {
-          runner.addWorkspaces([ project.workspaces.get('@org/api')!]);
+          runner.addWorkspaces('start', [ project.workspaces.get('@org/api')!]);
         }, 300);
         setTimeout(() => {
-          runner.removeWorkspace([ project.workspaces.get('@org/app-b')!, project.workspaces.get('@org/api')!]);
+          runner.removeWorkspace('start', [ project.workspaces.get('@org/app-b')!, project.workspaces.get('@org/api')!]);
         }, 550);
         setTimeout(() => {
-          runner.addWorkspaces([ project.workspaces.get('@org/app-b')!, project.workspaces.get('@org/api')!]);
+          runner.addWorkspaces('start', [ project.workspaces.get('@org/app-b')!, project.workspaces.get('@org/api')!]);
         }, 700);
         await expectObservableV2(Date.now(), execution$, [
           [
@@ -2066,10 +2067,14 @@ describe('[class] Runner', () => {
           ],
           [
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' }, // +370ms
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-b' }, // +370ms
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +380ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-b' }, // +370ms
+          ],
+          [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' }, // +380ms
           ],
           [
@@ -2204,6 +2209,7 @@ describe('[class] Runner', () => {
           ],
           [
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' },
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/workspace-c' },
           ],
           [
@@ -2213,21 +2219,10 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
           ],
           [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
-          ],
-          [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
           ],
           [
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' },
-          ],
-          [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
@@ -2235,6 +2230,8 @@ describe('[class] Runner', () => {
           ],
           [
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' },
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-b' },
           ],
@@ -2245,21 +2242,10 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
           ],
           [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
-          ],
-          [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
           ],
           [
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' },
-          ],
-          [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
@@ -2280,15 +2266,14 @@ describe('[class] Runner', () => {
           ],
           [
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
           ],
           [
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
-          ],
-          [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
