@@ -655,10 +655,8 @@ describe('[class] Runner', () => {
       ]));
 
       stubKill(stubs.kill, new Map([
-        ['@org/workspace-a', [{ cmd: 'lint', delay: 10 }, { cmd: 'lint', delay:20 }]],
-        ['@org/app-a', [{ cmd: 'lint', delay: 12 }]],
-        ['@org/app-b', [{ cmd: 'lint', delay: 200 }]],
-        ['@org/api', [{ cmd: 'lint', delay: 21 }, { cmd: 'lint', delay: 22 }]],
+        ['@org/workspace-a', [{ cmd: 'lint', delay: 10, pids: [2345] }]],
+        ['@org/api', [{ cmd: 'lint', delay: 21, pids: [2345] }, { cmd: 'lint', delay: 22, pids: [2345] }]],
       ]));
 
       const options: RunOptions = {
@@ -806,19 +804,6 @@ describe('[class] Runner', () => {
           { resolve: true, options, delay: 100 },
         ]],
       ]));
-      /*stubRun(stubs.run, [
-        // Initial
-        { resolve: false, options, delay: 100, error: new Error('Mocked') }, // +0ms w-a
-        { resolve: true, options, delay: 400 }, // wb
-        { resolve: true, options, delay: 120 }, // wc
-        { resolve: true, options, delay: 100 }, // +400ms // app-a
-        // + 250ms - recompile workspace-a
-        { resolve: true, options, delay: 100 }, // +550ms // w-a
-        // + 600ms - broke app-a
-        { resolve: false, options, delay: 100, error: new Error('Mocked') }, // app-a
-        // + 750ms -fix
-        { resolve: true, options, delay: 100 }, // app-a
-      ]);*/
       try {
         const runner = new Runner(project, 8);
         const execution$ = runner.runCommand(options);
@@ -870,7 +855,7 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a'}, // +850ms
 
           ]
-        ], 200);
+        ], 400);
       } catch (e) {
         expect(e).toBeFalsy();
       }
@@ -912,11 +897,11 @@ describe('[class] Runner', () => {
 
       stubKill(stubs.kill, new Map([
         ['@org/workspace-b', [
-          { cmd: 'lint', delay: 25 },
+          { cmd: 'lint', delay: 25, pids: [123] },
         ]],
         ['@org/app-a', [
-          { cmd: 'lint', delay: 20 },
-          { cmd: 'lint', delay: 15 },
+          { cmd: 'lint', delay: 20, pids: [123] },
+          { cmd: 'lint', delay: 15, pids: [123] },
         ]],
       ]));
 
@@ -971,11 +956,15 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-b'}, // +150ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/workspace-b'}, // +175ms
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a'}, // +170ms
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },  // +170ms (-> 320ms)
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/workspace-b'}, // +175ms
+          ],
+          [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' }, // + 175ms (-> 285ms)
           ],
           [
@@ -1003,8 +992,8 @@ describe('[class] Runner', () => {
       ], 14));
 
       stubKill(stubs.kill, new Map([
-        ['@org/app-a', [{cmd: 'start', delay: 11} ]],
-        ['@org/api', [{cmd: 'start', delay: 8}, {cmd: 'start', delay: 23} ]],
+        ['@org/app-a', [{cmd: 'start', delay: 15, pids: [123]} ]],
+        ['@org/api', [{cmd: 'start', delay: 5, pids: [123]}, {cmd: 'start', delay: 23, pids: [123]} ]],
       ]))
 
       stubRunV2(stubs.run, new Map([
@@ -1017,7 +1006,7 @@ describe('[class] Runner', () => {
         ]],
         ['@org/api', [
           { resolve: false, error: new Error('Bim!') },
-          { resolve: false, error: new Error('Bam!') },
+          { resolve: false, error: new Error('Bam!'), delay: 15 },
           { resolve: true, delay: 42 },
         ]],
       ]));
@@ -1058,18 +1047,23 @@ describe('[class] Runner', () => {
           [
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
+          ],
+          [
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
           ],
           [
             { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.NODE_ERRORED, workspace: '@org/api' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
           ],
           [
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },
@@ -1101,8 +1095,8 @@ describe('[class] Runner', () => {
       ], 14));
 
       stubKill(stubs.kill, new Map([
-        ['@org/app-a', [{cmd: 'start', delay: 1} ]],
-        ['@org/api', [{cmd: 'start', delay: 2} ]],
+        ['@org/app-a', [{cmd: 'start', delay: 1, pids: [123]} ]],
+        ['@org/api', [{cmd: 'start', delay: 12, pids: [123]} ]],
       ]))
 
       stubRunV2(stubs.run, new Map([
@@ -1154,10 +1148,14 @@ describe('[class] Runner', () => {
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
             { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
+          ],
+          [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
           ],
           [
@@ -1183,8 +1181,8 @@ describe('[class] Runner', () => {
       ], 12));
 
       stubKill(stubs.kill, new Map([
-        ['@org/app-a', [{cmd: 'start', delay: 150} ]],
-        ['@org/api', [{cmd: 'start', delay: 200} ]],
+        ['@org/app-a', [{cmd: 'start', delay: 150, pids: [123]} ]],
+        ['@org/api', [{cmd: 'start', delay: 200, pids: [123]} ]],
       ]))
 
       stubRunV2(stubs.run, new Map([
@@ -1234,10 +1232,13 @@ describe('[class] Runner', () => {
           [
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' }, // +230ms
             { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },  // +260ms
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' }, // +310ms
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +320ms
+          ],[            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' }, // +310ms
+          ],
+          [
+
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' }, // +320ms
           ],
           [

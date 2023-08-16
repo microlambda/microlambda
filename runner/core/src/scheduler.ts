@@ -362,9 +362,6 @@ export class Scheduler {
       },
       complete: () => {
         this._completedTasks++;
-        if (task.type === 'run') {
-          this._alreadyInvalidated.delete(task.target.workspace.name);
-        }
         console.debug('Task completed', task.target.workspace.name, this._completedTasks, '/', this._tasks$.length);
         this._runningTasks--;
         console.debug('Current concurrency', this._runningTasks);
@@ -384,6 +381,8 @@ export class Scheduler {
     if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
       this._currentStep.processing.delete(evt.target);
       this._currentStep.processed.add(evt.target);
+      console.debug('Task run', evt.target.workspace.name, 'done. New cache written. Removing from invalidated');
+      this._alreadyInvalidated.delete(evt.target.workspace.name);
     }
     if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
       this._currentStep.processing.delete(evt.target);
@@ -493,6 +492,8 @@ export class Scheduler {
     }
 
     for (const [invalidatedName, invalidated] of potentialInvalidations.entries()) {
+      console.debug('Is already planned', isAlreadyPlanned(invalidatedName));
+      console.debug('Is already invalidated', this._alreadyInvalidated.has(invalidatedName));
       if (!isAlreadyPlanned(invalidatedName) && !invalidations$.has(invalidatedName) && !this._alreadyInvalidated.has(invalidatedName)) {
         console.debug('Invalidating', invalidatedName);
         invalidations$.set(invalidatedName, {
@@ -505,6 +506,7 @@ export class Scheduler {
 
     this._tasks$.splice(this._currentTaskIndex + 1, 0, ...invalidations$.values());
     console.debug(this._tasks$.map((t) => [t.type, t.target.workspace.name]));
+    console.debug('cursor:', this._currentTaskIndex);
   }
 
   private _invalidateCache(target: IResolvedTarget): Observable<RunCommandEvent> {

@@ -163,6 +163,9 @@ const verifyAssertionsV2 = (
   receivedEvents: ReceivedEventV2[],
   receivedCompletion: ObservableEvent | undefined,
 ) => {
+  console.debug('received', receivedEvents);
+  console.debug('expected', expectedTimeframe.flat());
+
   if (expectedCompletion === ObservableEvent.COMPLETE && receivedCompletion !== ObservableEvent.COMPLETE) {
     throw new Error('Expected observable to complete');
   }
@@ -226,7 +229,6 @@ export const expectObservableV2 = async (
         }
         timeout = setTimeout(() => {
           logger('+', Date.now() - startedAt, 'ms', 'TIMEOUT REACHED')
-          console.debug(receivedEvents);
           verifyAssertionsV2(expectedTimeframe, expectedCompletion, receivedEvents, undefined);
           resolve();
         }, expectedCompletion);
