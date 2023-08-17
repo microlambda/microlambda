@@ -485,8 +485,8 @@ describe('[class] Runner', () => {
               { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
             ],
             [
-              { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
               { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+              { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
             ],
             [
               { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/api' },
@@ -2136,13 +2136,13 @@ describe('[class] Runner', () => {
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/workspace-a'], delay: 320},
         { workspaceNames: ['@org/workspace-a'], delay: 840},
-        { workspaceNames: ['@org/app-a'], delay: 1200},
+        { workspaceNames: ['@org/app-a'], delay: 1400},
       ]));
       stubKill(stubs.kill, new Map([
         ['@org/workspace-a', [{cmd: 'build', delay: 23}, {cmd: 'build', delay: 12}]],
-        ['@org/workspace-c', [{cmd: 'build', delay: 15}]],
-        ['@org/app-a', [{cmd: 'build', delay: 31}]],
-        ['@org/app-b', [{cmd: 'build', delay: 19}]],
+        ['@org/workspace-c', [{cmd: 'build', delay: 15, pids: [23]}]],
+        ['@org/app-a', [{cmd: 'build', delay: 31, pids: [23]}]],
+        ['@org/app-b', [{cmd: 'build', delay: 19, pids: [23]}]],
       ]));
       const options: RunOptions = {
         cmd: 'build',
@@ -2163,18 +2163,18 @@ describe('[class] Runner', () => {
           { resolve: true, delay: 200 },
         ]],
         ['@org/workspace-c', [
-          { resolve: true, delay: 300 },
+          { resolve: true, delay: 300, killed: 120 },
           { resolve: true, delay: 200 },
           { resolve: true, delay: 20 },
         ]],
         ['@org/app-a', [
-          { resolve: true, delay: 2 },
+          { resolve: true, delay: 150, killed: 100 },
           { resolve: true, delay: 200 },
           { resolve: true, delay: 20 },
           { resolve: true, delay: 20 },
         ]],
         ['@org/app-b', [
-          { resolve: true, delay: 2 },
+          { resolve: true, delay: 120, killed: 100 },
           { resolve: true, delay: 200 },
           { resolve: true, delay: 20 },
         ]],
@@ -2190,84 +2190,81 @@ describe('[class] Runner', () => {
         const execution$ = runner.runCommand(options);
         await expectObservableV2(Date.now(), execution$, [
           [
-            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+            { type: RunCommandEventEnum.TARGETS_RESOLVED }, // +12ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // +41ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' }, // +48ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +250ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' }, // +260ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' }, // +260ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' }, // +260ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // +260ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' },  // +270ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },  // +280ms
           ],
           [
-            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },  // +370ms
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/workspace-c' }, // + 390ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' }, // +390ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // 405ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +600ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' }, //+ 605ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' }, // +808ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +810ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' }, // +810ms
           ],
           [
-            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' }, // +893ms
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-a' }, // +920ms
+            { type: RunCommandEventEnum.NODE_INTERRUPTED, workspace: '@org/app-b' }, // +930ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' }, // +945ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' }, // +945ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // +950ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +1140ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' }, // +1150ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' }, // +1170ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },  // +1180ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },  // +1180ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },  // +1260ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },  // +1180ms
           ],
           [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' }, //+1380
           ],
           [
-            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' }, // +1388
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
-          ],
-          [
-            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' }, // + 1454
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' }, // +1461
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // +
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
@@ -2322,7 +2319,7 @@ describe('[class] Runner', () => {
         { resolve: true, options, delay: 200 }, // (w-a)
         { resolve: true, options, delay: 200 }, // (w-b)
         { resolve: true, options, delay: 300 }, // (w-c) // +200ms
-        { resolve: true, options, delay: 100 }, // (app-a)
+        { resolve: true, options, delay: 150 }, // (app-a)
         { resolve: true, options, delay: 200 }, // app-b)
         { resolve: true, options, delay: 100 }, // (api)
         // Schedule 2
@@ -2330,7 +2327,52 @@ describe('[class] Runner', () => {
       try {
         const runner = new Runner(project, 4);
         const execution$ = runner.runCommand(options);
-        await expectObservable(Date.now(), execution$, '0-337-11-5555-37-1-555-337115-3-1', {}, undefined, 500);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-c' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-c' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' },
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/app-a' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' },
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' },
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' },
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' },
+          ],
+        ], 200);
       } catch (e) {
         expect(e).toBeFalsy();
       }
@@ -2351,11 +2393,11 @@ describe('[class] Runner', () => {
         ]
       ], 5));
       stubs.watch?.returns(mockSourcesChange([
-        { workspaceNames: ['@org/workspace-b'], delay: 150},
+        { workspaceNames: ['@org/workspace-b'], delay: 100},
       ]));
 
       stubKill(stubs.kill, new Map([
-        ['@org/workspace-b', [{ cmd: 'build', delay: 10 }]],
+        ['@org/workspace-b', [{ cmd: 'build', delay: 10, pids: [133] }]],
       ]));
       const options: RunOptions = {
         cmd: 'build',
@@ -2423,20 +2465,14 @@ describe('[class] Runner', () => {
           ],
           [
             { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' }, // + 500ms
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' }, // + 500ms
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' }, // + 500ms
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // + 500ms
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +505ms
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' }, // +505ms
           ],
           [
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +510ms
-            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' }, // +510ms
-          ],
-          [
-            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // +510ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' }, // +510ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' }, // +510ms
           ],
           [
             { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' }, // +510ms
@@ -2493,7 +2529,7 @@ describe('[class] Runner', () => {
       try {
         const runner = new Runner(project, 2);
         const execution$ = runner.runCommand(options);
-        await expectObservable(Date.now(), execution$, '0-33-113-7-1-555-3-1-555-33-11-5-3-1', {}, undefined, 500);
+        await expectObservable(Date.now(), execution$, '0-33-1-5553-1-7-1-33-11-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
       }
@@ -2536,7 +2572,7 @@ describe('[class] Runner', () => {
           watch: true,
           debounce: 8,
         });
-        await expectObservable(Date.now(), execution$, '0-33-7-1131-555-33-11-5-3-1', {}, undefined, 500);
+        await expectObservable(Date.now(), execution$, '0-33-7-1131-555-33-11-3-1', {}, undefined, 500);
       } catch (e) {
         expect(e).toBeFalsy();
       }

@@ -340,7 +340,10 @@ export const stubRunV2 = (stub: SinonStub | undefined, calls: Map<string, Array<
       return new Observable<IProcessResult>((obs) => {
         logger('(mock) Running command', workspace);
         if (call.killed) {
-          setTimeout(() => obs.complete(), call.killed ?? 0);
+          setTimeout(() => {
+            logger('(mock) Killed Running command', workspace);
+            obs.complete()
+          }, call.killed ?? 0);
         }
         if (call.resolve) {
           setTimeout(() => {

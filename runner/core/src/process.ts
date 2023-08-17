@@ -111,3 +111,4 @@ export const isNodeSucceededEvent = (event: RunCommandEvent): event is  IRunComm
 export const isNodeErroredEvent = (event: RunCommandEvent): event is  IRunCommandErrorEvent => event.type === RunCommandEventEnum.NODE_ERRORED;
 export const isNodeStartedEvent = (event: RunCommandEvent): event is  IRunCommandStartedEvent => event.type === RunCommandEventEnum.NODE_STARTED;
 export const isNodeSkippedEvent = (event: RunCommandEvent): event is  IRunCommandStartedEvent => event.type === RunCommandEventEnum.NODE_SKIPPED;
+export const isSourceChangedEvent = (event: RunCommandEvent): event is  ISourceChangedEvent => event.type === RunCommandEventEnum.SOURCES_CHANGED;
