@@ -46,12 +46,12 @@ describe('[class] Runner', () => {
     it('should run command in all workspace at once - parallel', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {
@@ -95,12 +95,12 @@ describe('[class] Runner', () => {
     it('should run command in all workspace even if it fails for some workspace - parallel', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {
@@ -133,18 +133,18 @@ describe('[class] Runner', () => {
     it('should run command from leaves to roots - topological', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {
@@ -207,18 +207,18 @@ describe('[class] Runner', () => {
     it('should terminate and invalidate cache of subsequent workspaces if a command fail in a workspace - topological', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {
@@ -250,18 +250,18 @@ describe('[class] Runner', () => {
     it('should invalidate cache of subsequent workspaces if a command must be re-run in a workspace - topological', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {
@@ -322,12 +322,12 @@ describe('[class] Runner', () => {
     it('should terminate on cache invalidation error  - parallel', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       stubs.invalidate?.rejects();
@@ -359,18 +359,18 @@ describe('[class] Runner', () => {
     it('should terminate on cache invalidation error  - topological', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {
@@ -410,7 +410,6 @@ describe('[class] Runner', () => {
         return of(changes.workspaceNames.map((w) => ({
           target: {
             workspace: project.workspaces.get(w)!,
-            affected: true,
             hasCommand: true,
           },
           events: [{
@@ -424,12 +423,12 @@ describe('[class] Runner', () => {
     it('should handle single-interruption in running step and when idle - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
 
@@ -516,12 +515,12 @@ describe('[class] Runner', () => {
     it('should do nothing if impacted process has not started yet - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 10));
       stubs.watch?.returns(mockSourcesChange([
@@ -594,12 +593,12 @@ describe('[class] Runner', () => {
     it('should do nothing if impacted target is not affected - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: false, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: false },
         ]
       ], 12));
       stubs.watch?.returns(mockSourcesChange([
@@ -634,12 +633,12 @@ describe('[class] Runner', () => {
     it('should handle correctly multiple interruption - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       stubs.watch?.returns(mockSourcesChange([
@@ -765,12 +764,12 @@ describe('[class] Runner', () => {
     it('should handle correctly errored node - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: false, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: false },
         ]
       ], 10));
       stubs.watch?.returns(mockSourcesChange([
@@ -863,18 +862,18 @@ describe('[class] Runner', () => {
     it('should handle multiple file changes within a step execution - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: false, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: false },
         ]
       ], 8));
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/workspace-a'], delay: 70},
         { workspaceNames: ['@org/app-a'], delay: 100},
-        { workspaceNames: ['@org/app-a', '@org/workspace-b'], delay: 150},
+        { workspaceNames: ['@org/app-a', '@org/workspace-b'], delay: 170},
       ]));
       stubRunV2(stubs.run, new Map([
         ['@org/workspace-a', [
@@ -982,12 +981,12 @@ describe('[class] Runner', () => {
     it('should restart daemon when flagged as failed - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 14));
 
@@ -1085,12 +1084,12 @@ describe('[class] Runner', () => {
     it('should restart daemon when flagged as succeed - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 14));
 
@@ -1171,12 +1170,12 @@ describe('[class] Runner', () => {
     it('should restart daemon when starting and files change - [parallel]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: false },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
 
@@ -1267,9 +1266,9 @@ describe('[class] Runner', () => {
 
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1330,15 +1329,15 @@ describe('[class] Runner', () => {
       };
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
       stubs.targets?.withArgs('start', { ...options, workspaces: secondScope }).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1406,15 +1405,15 @@ describe('[class] Runner', () => {
       };
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
       stubs.targets?.withArgs('start', { ...options, workspaces: secondScope }).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1480,15 +1479,15 @@ describe('[class] Runner', () => {
       };
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
       stubs.targets?.withArgs('start', { ...options, workspaces: secondScope }).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1576,8 +1575,8 @@ describe('[class] Runner', () => {
 
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1640,22 +1639,22 @@ describe('[class] Runner', () => {
 
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
       stubs.targets?.withArgs('start', {...options, workspaces: secondScope}).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
 
       stubs.targets?.withArgs('start', {...options, workspaces: thirdScope}).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1746,22 +1745,22 @@ describe('[class] Runner', () => {
 
       stubs.targets?.withArgs('lint', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
       stubs.targets?.withArgs('lint', {...options, workspaces: secondScope}).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
 
       stubs.targets?.withArgs('lint', {...options, workspaces: thirdScope}).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1846,22 +1845,22 @@ describe('[class] Runner', () => {
 
       stubs.targets?.withArgs('start', options).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 20));
 
       stubs.targets?.withArgs('start', {...options, workspaces: secondScope}).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ]
       ], 20));
 
       stubs.targets?.withArgs('start', {...options, workspaces: thirdScope}).returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
         ]
       ], 20));
 
@@ -1973,7 +1972,7 @@ describe('[class] Runner', () => {
       };
       scopes.forEach((scope) => {
         stubs.targets?.withArgs('start', { ...options, workspaces: scope }).returns(resolveAfter([
-          scope.map((workspace) => ({ workspace, affected: true, hasCommand: true })),
+          scope.map((workspace) => ({ workspace, hasCommand: true })),
         ], 20));
       });
 
@@ -2119,18 +2118,18 @@ describe('[class] Runner', () => {
     it('should handle correctly interruption in previous step - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       stubs.watch?.returns(mockSourcesChange([
@@ -2286,18 +2285,18 @@ describe('[class] Runner', () => {
     it('should handle correctly interruption in subsequent step - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       stubs.watch?.returns(mockSourcesChange([
@@ -2380,16 +2379,16 @@ describe('[class] Runner', () => {
     it('should handle correctly interruption in current step (running node) - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 5));
       stubs.watch?.returns(mockSourcesChange([
@@ -2488,18 +2487,18 @@ describe('[class] Runner', () => {
     it('should handle correctly interruption in current step (processed node) - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
-      ], 12));
+      ], 5));
       stubs.watch?.returns(mockSourcesChange([
         { workspaceNames: ['@org/workspace-a'], delay: 250},
       ]));
@@ -2514,8 +2513,8 @@ describe('[class] Runner', () => {
       }
       stubRun(stubs.run, [
         // Schedule 1
-        { resolve: true, options, delay: 200 }, // (w-a)
-        { resolve: true, options, delay: 200 }, // (w-b)
+        { resolve: true, options, delay: 180 }, // (w-a)
+        { resolve: true, options, delay: 220 }, // (w-b)
         { resolve: true, options, delay: 300 }, // (w-c) // +200ms
         { resolve: true, options, delay: 0 }, // (app-a)
         { resolve: true, options, delay: 0 }, // app-b)
@@ -2529,7 +2528,52 @@ describe('[class] Runner', () => {
       try {
         const runner = new Runner(project, 2);
         const execution$ = runner.runCommand(options);
-        await expectObservable(Date.now(), execution$, '0-33-1-5553-1-7-1-33-11-3-1', {}, undefined, 500);
+        await expectObservableV2(Date.now(), execution$, [
+          [
+            { type: RunCommandEventEnum.TARGETS_RESOLVED }, // +5ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // +5ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-b' }, // +5ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +185ms
+          ],
+          [
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-a' }, // +190ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/app-b' }, // +190ms
+            { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/api' }, // +190ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-c' }, // +190ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-b' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.SOURCES_CHANGED, workspace: '@org/workspace-a' }, // +220ms
+            // TODO: { type: RunCommandEventEnum.CACHE_INVALIDATED, workspace: '@org/workspace-a' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/workspace-a' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-a' }, // +220ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/workspace-c' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-a' }, // +220ms
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/app-b' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-a' }, // +220ms
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/app-b' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_STARTED, workspace: '@org/api' }, // +220ms
+          ],
+          [
+            { type: RunCommandEventEnum.NODE_PROCESSED, workspace: '@org/api' }, // +220ms
+          ],
+        ], 500);
       } catch (e) {
         expect(e).toBeFalsy();
       }
@@ -2537,16 +2581,16 @@ describe('[class] Runner', () => {
     it('should handle correctly interruption in current step (queued node) - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/app-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: true },
         ],
         [
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       stubs.watch?.returns(mockSourcesChange([
@@ -2580,12 +2624,12 @@ describe('[class] Runner', () => {
     it('should handle correctly multiple interruption complex scenario - [topological]', async () => {
       stubs.targets?.returns(resolveAfter([
         [
-          { workspace: project.workspaces.get('@org/workspace-a')!, affected: true, hasCommand: true },
-          { workspace: project.workspaces.get('@org/workspace-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/workspace-c')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-a')!, affected: false, hasCommand: true },
-          { workspace: project.workspaces.get('@org/app-b')!, affected: true, hasCommand: false },
-          { workspace: project.workspaces.get('@org/api')!, affected: true, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-a')!, hasCommand: true },
+          { workspace: project.workspaces.get('@org/workspace-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/workspace-c')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-a')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/app-b')!, hasCommand: false },
+          { workspace: project.workspaces.get('@org/api')!, hasCommand: true },
         ]
       ], 12));
       const options: RunOptions = {

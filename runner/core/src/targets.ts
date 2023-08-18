@@ -35,7 +35,7 @@ export class TargetsResolver {
   private _findTargets(eligible: Workspace[], cmd: string): Array<IResolvedTarget> {
     return eligible.map((workspace) => {
       const hasCommand = workspace.hasCommand(cmd);
-      return { workspace, affected: true, hasCommand};
+      return { workspace, hasCommand};
     });
   }
 
@@ -43,7 +43,7 @@ export class TargetsResolver {
     this._logger?.silly('Recursively resolving targets');
     const targets = this._findTargets(Array.from(this._project.getTopologicallySortedWorkspaces(options.to)), cmd);
     // Find targets we will not run command on as it is either unaffected or it has not the command
-    const inactiveTargets = targets.filter((t) => !t.hasCommand || !t.affected);
+    const inactiveTargets = targets.filter((t) => !t.hasCommand);
     // We also store the names for better performance in further recursion
     const inactiveTargetsNames = new Set(inactiveTargets.map((t) => t.workspace.name));
 

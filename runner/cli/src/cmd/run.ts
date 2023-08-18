@@ -135,7 +135,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
   const printError = (error: unknown): void => {
     if (isNodeEvent(error)) {
       logger.lf();
-      logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(error.workspace.name)}`, logger.failed);
+      logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(error.target.workspace.name)}`, logger.failed);
       printError(error.error);
     } else if (isProcessError(error) && !!error.all) {
       logger.lf();
@@ -165,7 +165,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
           nbTargets = event.targets.length;
         } else if (isNodeSucceededEvent(event)) {
           logger.lf();
-          logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.workspace.name)} ${logger.took(event.result.overall )} ${event.result.fromCache ? ( event.result.remoteCache ? logger.fromRemoteCache : logger.fromCache) : ''}`);
+          logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)} ${logger.took(event.result.overall )} ${event.result.fromCache ? ( event.result.remoteCache ? logger.fromRemoteCache : logger.fromCache) : ''}`);
           for (const command of event.result.commands) {
             if (!isDaemon(command)) {
               logger.lf();
@@ -183,9 +183,9 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
           logger.seperator();
         } else if (isNodeErroredEvent(event)) {
           logger.lf();
-          logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.workspace.name)} failed`);
+          logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)} failed`);
           printError(event.error);
-          failures.add(event.workspace);
+          failures.add(event.target.workspace);
         }
     },
     error: (err) => {

@@ -32,23 +32,22 @@ export interface ICommandResult extends ExecaReturnValue {
 }
 
 export enum RunCommandEventEnum {
-  TARGETS_RESOLVED,
-  NODE_PROCESSED,
-  NODE_ERRORED,
-  NODE_STARTED,
-  NODE_SKIPPED,
-  CACHE_INVALIDATED,
-  ERROR_INVALIDATING_CACHE,
-  SOURCES_CHANGED,
-  NODE_INTERRUPTED,
-  ARTIFACTS_DOWNLOADED,
-  ARTIFACTS_UPLOADED,
+  TARGETS_RESOLVED = 'target_resolved',
+  NODE_PROCESSED = 'processed',
+  NODE_ERRORED = 'errored',
+  NODE_STARTED = 'started',
+  NODE_SKIPPED = 'skipped',
+  CACHE_INVALIDATED = 'cache_invalidated',
+  ERROR_INVALIDATING_CACHE = 'error_invalidating_cache',
+  SOURCES_CHANGED = 'source_changed',
+  NODE_INTERRUPTING = 'interrupting',
+  NODE_INTERRUPTED = 'interrupted',
+  ARTIFACTS_DOWNLOADED = 'artifacts_downloaded',
+  ARTIFACTS_UPLOADED = 'artifacts_uploaded',
 }
 
 export interface IResolvedTarget {
   workspace: Workspace;
-  // TODO: Remove affected as it is no longer used
-  affected: boolean;
   hasCommand: boolean;
 }
 

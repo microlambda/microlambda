@@ -19,7 +19,7 @@ import { EventsLog, EventsLogger } from '@microlambda/logger';
 import {
   ConfigReader,
   ICommandConfig,
-  ILogsCondition,
+  ILogsCondition, IResolvedPackageConfig,
   isScriptTarget,
   ITargetConfig,
   ITargetsConfig,
@@ -64,7 +64,7 @@ export class Workspace {
     return new Workspace(pkg, root, await this.loadConfig(pkg.name, root, project), project, logger);
   }
 
-  static async loadConfig(name: string, root: string, project?: Project): Promise<{ regions?: string[], targets: ITargetsConfig }> {
+  static async loadConfig(name: string, root: string, project?: Project): Promise<IResolvedPackageConfig> {
     const configReader = new ConfigReader(project?.root || root);
     if (!project) {
       // Not loading target for root package
@@ -535,6 +535,20 @@ export class Workspace {
     }
   }
 
+  static args(options: RunOptions): string[] | string | undefined {
+    if (options.args instanceof Map) {
+      return options.args.get(this.name);
+    }
+    return options.args;
+  }
+
+  static env(options: RunOptions): Record<string, string> | undefined {
+    if (options.env instanceof Map) {
+      return options.env.get(this.name);
+    }
+    return options.env;
+  }
+
   private async _run(options: RunOptions): Promise<IProcessResult> {
     const now = Date.now();
     this._logger?.info('Running command', { cmd: options.cmd, workspace: this.name });
@@ -550,8 +564,8 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        options.args,
-        options.env,
+        Workspace.args(options),
+        Workspace.env(options),
         this.eventsLog,
         options.cachePrefix,
       );
@@ -561,20 +575,23 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        options.args,
-        options.env,
+        Workspace.args(options),
+        Workspace.env(options),
         this.eventsLog,
         options.cachePrefix,
       );
     } else {
       this._logger?.info('Using local cache');
-      cache = new LocalCache(this, options.cmd, options.args, options.env, this.eventsLog);
-      artifacts = new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog);
+      cache = new LocalCache(this, options.cmd,         Workspace.args(options),
+        Workspace.env(options), this.eventsLog);
+      artifacts = new LocalArtifacts(this, options.cmd,         Workspace.args(options),
+        Workspace.env(options), this.eventsLog);
     }
     try {
       if (options.force) {
         this._logger?.info('Option --force used, removing artifacts to run command on a clean state');
-        await new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog).removeArtifacts();
+        await new LocalArtifacts(this, options.cmd,         Workspace.args(options),
+          Workspace.env(options), this.eventsLog).removeArtifacts();
       } else {
         const cachedOutputs = await cache?.read();
         if (artifacts instanceof RemoteArtifacts) {
@@ -598,11 +615,13 @@ export class Workspace {
         }
       }
       this._logger?.info('Running command');
-      return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd,         Workspace.args(options),
+        Workspace.env(options), options.stdio);
     } catch (e) {
       this._logger?.warn('Error reading cache', { cmd: options.cmd, target: this.name });
       // Error reading from cache
-      return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd,         Workspace.args(options),
+        Workspace.env(options), options.stdio);
     }
   }
 
@@ -655,8 +674,8 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        options.args,
-        options.env,
+        Workspace.args(options),
+        Workspace.env(options),
         this.eventsLog,
         options.cachePrefix,
       );

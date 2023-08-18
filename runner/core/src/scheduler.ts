@@ -342,7 +342,7 @@ export class Scheduler {
   }
 
   private _isScheduled(target: IResolvedTarget): boolean {
-    return this._targets.some((step) => step.filter((t) => t.affected && t.hasCommand).some((t) => t.workspace.name === target.workspace.name));
+    return this._targets.some((step) => step.filter((t) => t.hasCommand).some((t) => t.workspace.name === target.workspace.name));
   }
 
   private _isQueued(target: IResolvedTarget): boolean {
@@ -426,7 +426,8 @@ export class Scheduler {
   private async _killTarget(target: IResolvedTarget): Promise<void> {
     const workspace = target.workspace;
     console.debug('Asked to kill', workspace.name);
-    return workspace.kill({ cmd: this._options.cmd, _workspace: workspace.name }).then((killedPids) => {
+    const releasePorts = this._options.watch ? this._options.releasePorts?.get(workspace.name)?.filter((port) => Number.isInteger(port)) : undefined;
+    return workspace.kill({ cmd: this._options.cmd, _workspace: workspace.name, releasePorts }).then((killedPids) => {
       console.debug('Killed', this._options.cmd, workspace.name, 'pids', killedPids);
       if (killedPids.length) {
         this.obs.next({ type: RunCommandEventEnum.NODE_INTERRUPTED, target });
@@ -585,7 +586,7 @@ export class Scheduler {
   private _runForWorkspace(
     target: IResolvedTarget,
   ): Observable<RunCommandEvent> {
-    if (target.affected && target.hasCommand) {
+    if (target.hasCommand) {
       const started$: Observable<RunCommandEvent>  = of({ type: RunCommandEventEnum.NODE_STARTED, target });
       const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(target).pipe(
         map((result) => this._mapToRunCommandEvents(result, target)),

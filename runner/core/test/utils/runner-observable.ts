@@ -53,10 +53,17 @@ const expectTimeframe = (
 
 const expectWorkspaces = (
   receivedEvents: ReceivedEvent[],
-  expectedWorkspaces: { [idx: number]: string[] },
+  expectedWorkspaces: { [idx: string]: string[] },
   reject: (err: unknown) => void,
 ) => {
-  for (const type of [1, 2, 3, 4, 5, 6]) {
+  for (const type of [
+    RunCommandEventEnum.NODE_PROCESSED,
+    RunCommandEventEnum.NODE_ERRORED,
+    RunCommandEventEnum.NODE_STARTED,
+    RunCommandEventEnum.NODE_SKIPPED,
+    RunCommandEventEnum.CACHE_INVALIDATED,
+    RunCommandEventEnum.ERROR_INVALIDATING_CACHE,
+  ]) {
     if (expectedWorkspaces[type]) {
       const receivedWorkspaces = receivedEvents
         .filter((e) => e.type === type)
@@ -194,7 +201,7 @@ const verifyAssertionsV2 = (
       if (e1.type === e2.type && e1.workspace && e2.workspace) {
         return e1.workspace.localeCompare(e2.workspace);
       }
-      return e2.type - e1.type;
+      return e2.type.localeCompare(e1.type);
     };
     const _arr1: ReceivedEventV2[] = JSON.parse(JSON.stringify(arr1));
     const _arr2: ReceivedEventV2[] = JSON.parse(JSON.stringify(arr2));
