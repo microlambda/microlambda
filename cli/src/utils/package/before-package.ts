@@ -1,5 +1,4 @@
 import { EventsLog } from '@microlambda/logger';
-import { getDefaultThreads, getThreads } from '@microlambda/utils';
 import { beforeBuild } from '../build/pre-requisites';
 import { logger } from '../logger';
 import { typeCheck } from '../build/type-check';

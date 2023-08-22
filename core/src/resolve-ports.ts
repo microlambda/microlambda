@@ -17,7 +17,7 @@ export type PortMap = {
  * If a config file is found and the service port is explicitly assigned in it, use it
  * Otherwise start from default port 3001 and increment it.
  * @param services
- * @param config
+ * @param configReader
  * @param logger
  * @param defaultPorts
  */
@@ -32,17 +32,20 @@ export const resolvePorts = async (
     const config = await configReader.loadPackageConfig(service.name, service.root);
     logger?.scope('port').debug('Resolving port from config', config);
     const fromConfig: Partial<IServicePortsConfig> = {};
-    if (config.ports && typeof config.ports === 'number') {
-      fromConfig.http = config.ports;
-    } else {
-      if (config.ports?.http) {
-        fromConfig.http = config.ports;
-      }
-      if (config.ports?.lambda) {
-        fromConfig.lambda = config.ports;
-      }
-      if (config.ports?.websocket) {
-        fromConfig.websocket = config.ports;
+    const ports = config.ports;
+    if (ports) {
+      if (typeof ports === 'number') {
+        fromConfig.http = ports;
+      } else {
+        if (ports?.http) {
+          fromConfig.http = ports.http;
+        }
+        if (ports?.lambda) {
+          fromConfig.lambda = ports.lambda;
+        }
+        if (ports?.websocket) {
+          fromConfig.websocket = ports.websocket;
+        }
       }
     }
     result[service.name] = {

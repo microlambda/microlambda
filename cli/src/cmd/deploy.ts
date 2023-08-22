@@ -273,7 +273,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
                 const evt = {
                   type: RunCommandEventEnum.NODE_ERRORED,
                   error: err,
-                  workspace: service,
+                  target: {workspace: service, hasCommand: true},
                   region,
                 } as DeployEvent;
                 return of(evt);

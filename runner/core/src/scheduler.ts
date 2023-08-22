@@ -2,8 +2,11 @@
 import {concat, Observable, of, Subject, Subscriber} from "rxjs";
 import {
   IProcessResult,
-  IResolvedTarget, isNodeErroredEvent,
-  isNodeSucceededEvent, ISourceChangedEvent, isSourceChangedEvent,
+  IResolvedTarget,
+  isNodeErroredEvent,
+  isNodeSucceededEvent,
+  ISourceChangedEvent,
+  isSourceChangedEvent,
   RunCommandEvent,
   RunCommandEventEnum,
   Step
@@ -171,25 +174,11 @@ export class Scheduler {
   }
 
   private _reschedule(context: IReschedulingContext): void {
-    const impacted = this._resolveImpactedTargets(context.sourceChanged);
-    const { toKill, toStart } = impacted;
-    // Match by workspace name in case of shallow copy
-    const includes = (set: Set<IResolvedTarget> | Array<IResolvedTarget>, target: IResolvedTarget): boolean => {
-      return [...set].some((t) => t.workspace.name === target.workspace.name);
+    const hasScopeChanged= context.removedFromScope.length || context.addedInScope.length;
+    if (this._options.mode === 'topological' && hasScopeChanged) {
+      return this._doCompleteReschedule(context.sourceChanged);
     }
-    context.removedFromScope.forEach((removed) => {
-      if (!includes(toKill, removed) && this._isRunning(removed)) {
-        toKill.add(removed);
-      }
-    });
-    context.addedInScope.forEach((added) => {
-      if (!includes(toStart, added) && !this._isQueued(added) && this._isScheduled(added)) {
-        toStart.push(added);
-      }
-    });
-    console.debug('to kill', [...toKill].map((t) => t.workspace.name));
-    console.debug('to start', [...toStart].map((t) => t.workspace.name));
-    this._rescheduleTargets(impacted);
+    this._doPartialReschedule(context);
   }
 
   private _updateCurrentStep(idx: number, queue?: IResolvedTarget[]): void {
@@ -283,10 +272,6 @@ export class Scheduler {
           }
         }
       }
-      // Restart current step targets that have been killed
-      /*for (const killed of toKill) {
-        scheduleStart(killed);
-      }*/
     }
     return {
       toKill,
@@ -362,45 +347,97 @@ export class Scheduler {
     return isProcessing || (isProcessed && isDaemon);
   }
 
-  private _rescheduleTargets(actions: IImpactedTargets): void {
-    const { toStart, toKill, mostEarlyStepImpactedIndex } = actions;
-    if (mostEarlyStepImpactedIndex == null || mostEarlyStepImpactedIndex === this._currentStepIndex) {
-      console.debug('Restarting impacted target in current step');
-      for (const target of new Set([...toStart, ...toKill])) {
-        const shouldStart = toStart.some((t) => t.workspace.name === target.workspace.name);
-        const shouldKill = [...toKill].some((t) => t.workspace.name === target.workspace.name);
-        if (shouldStart && !shouldKill) {
-          this._startTargets([target]);
-        } else {
-          this._killTarget(target).then(() => {
-            if (shouldStart) {
-              this._startTargets([target]);
-            }
-          });
-        }
-      }
-    } else if (toKill.size || toStart.length) {
-      console.debug('Kill all impacted target in current step');
-      console.debug('Current tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
-      const subsequentTasks = this._tasks$.slice(this._currentTaskIndex + 1);
-      this._tasks$.splice(this._currentTaskIndex + 1, this._tasks$.length - this._currentTaskIndex - 1);
-      console.debug('Subsequent tasks', subsequentTasks.map((t => [t.type, t.target.workspace.name])));
-      console.debug('New tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
-      console.debug('cursor:', this._currentTaskIndex);
-      Promise.all([...toKill].map((target) => this._killTarget(target))).then(() => {
-        if (mostEarlyStepImpactedIndex == null) {
-          throw new Error('Fatal: cannot reschedule as most early impacted step has not been resolved');
-        }
-        const queue = toStart.filter((targetToStart) => {
-          const mostEarlyImpactedStep = this._targets.at(mostEarlyStepImpactedIndex);
-          return mostEarlyImpactedStep?.some((t) => t.workspace.name === targetToStart.workspace.name);
-        });
-        console.debug('to invalidate', actions.toInvalidate.map((e) => e.target.workspace.name));
-        const invalidations = this._resolveInvalidations(actions.toInvalidate);
-        this._updateCurrentStep(mostEarlyStepImpactedIndex, queue);
-        this._startTargets(toStart, [...invalidations.values()], subsequentTasks);
-      });
+  private _doPartialReschedule(context: IReschedulingContext): void {
+    const impacted = this._resolveImpactedTargets(context.sourceChanged);
+    const { toKill, toStart, mostEarlyStepImpactedIndex } = impacted;
+    // Match by workspace name in case of shallow copy
+    const includes = (set: Set<IResolvedTarget> | Array<IResolvedTarget>, target: IResolvedTarget): boolean => {
+      return [...set].some((t) => t.workspace.name === target.workspace.name);
     }
+    context.removedFromScope.forEach((removed) => {
+      if (!includes(toKill, removed) && this._isRunning(removed)) {
+        toKill.add(removed);
+      }
+    });
+    context.addedInScope.forEach((added) => {
+      if (!includes(toStart, added) && !this._isQueued(added) && this._isScheduled(added)) {
+        toStart.push(added);
+      }
+    });
+    console.debug('to kill', [...toKill].map((t) => t.workspace.name));
+    console.debug('to start', [...toStart].map((t) => t.workspace.name));
+    const shouldRescheduleFromCurrentStep = mostEarlyStepImpactedIndex == null || mostEarlyStepImpactedIndex === this._currentStepIndex;
+    if (shouldRescheduleFromCurrentStep) {
+      this._rescheduleFromCurrentStep(impacted);
+    } else if (toKill.size || toStart.length) {
+      this._rescheduleFromPreviousStep(impacted);
+    }
+  }
+
+  private _doCompleteReschedule(changes: WatchEvent[]): void {
+    // Send source changed events
+    const sourceChangedEvents: RunCommandEvent[] = changes.map((c) => ({ type: RunCommandEventEnum.SOURCES_CHANGED, ...c }));
+    sourceChangedEvents.forEach((evt) => this.obs.next(evt));
+    // Kill all running targets
+    const currentStep = this._targets.at(this._currentStepIndex);
+    const toKill = new Set<IResolvedTarget>();
+    for (const target of currentStep ?? []) {
+      if (this._isRunning(target)) {
+        toKill.add(target);
+      }
+    }
+    Promise.all([...toKill].map((t) => this._killTarget(t))).then(() => {
+      const invalidations$ = this._resolveInvalidations(sourceChangedEvents).values();
+      const run$ = this._getInitialSchedule();
+      this._tasks$.splice(this._currentTaskIndex + 1, this._tasks$.length - this._currentTaskIndex - 1);
+      this._tasks$.push(...[...invalidations$, ...run$]);
+      this._executeNextTask();
+    });
+  }
+
+  private _rescheduleFromCurrentStep(actions: IImpactedTargets): void {
+    const { toStart, toKill } = actions;
+    console.debug('Restarting impacted target in current step');
+    const invalidations = this._resolveInvalidations(actions.toInvalidate);
+    for (const target of new Set([...toStart, ...toKill])) {
+      const shouldStart = toStart.some((t) => t.workspace.name === target.workspace.name);
+      const shouldKill = [...toKill].some((t) => t.workspace.name === target.workspace.name);
+      if (shouldStart && !shouldKill) {
+        this._startTargets([target], [...invalidations.values()]);
+        invalidations.clear();
+      } else {
+        this._killTarget(target).then(() => {
+          if (shouldStart) {
+            this._startTargets([target], [...invalidations.values()]);
+            invalidations.clear();
+          }
+        });
+      }
+    }
+  }
+
+  private _rescheduleFromPreviousStep(actions: IImpactedTargets): void {
+    const { toStart, toKill, mostEarlyStepImpactedIndex } = actions;
+    console.debug('Current tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
+    const subsequentTasks = this._tasks$.slice(this._currentTaskIndex + 1);
+    this._tasks$.splice(this._currentTaskIndex + 1, this._tasks$.length - this._currentTaskIndex - 1);
+    console.debug('Subsequent tasks', subsequentTasks.map((t => [t.type, t.target.workspace.name])));
+    console.debug('New tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
+    console.debug('cursor:', this._currentTaskIndex);
+    console.debug('Kill all impacted target in current step');
+    Promise.all([...toKill].map((target) => this._killTarget(target))).then(() => {
+      if (mostEarlyStepImpactedIndex == null) {
+        throw new Error('Fatal: cannot reschedule as most early impacted step has not been resolved');
+      }
+      const queue = toStart.filter((targetToStart) => {
+        const mostEarlyImpactedStep = this._targets.at(mostEarlyStepImpactedIndex);
+        return mostEarlyImpactedStep?.some((t) => t.workspace.name === targetToStart.workspace.name);
+      });
+      console.debug('to invalidate', actions.toInvalidate.map((e) => e.target.workspace.name));
+      const invalidations = this._resolveInvalidations(actions.toInvalidate);
+      this._updateCurrentStep(mostEarlyStepImpactedIndex, queue);
+      this._startTargets(toStart, [...invalidations.values()], subsequentTasks);
+    });
   }
 
   private _startTargets(targets: IResolvedTarget[], invalidations$?: ITask[], subsequentTasks?: ITask[]): void {
@@ -426,6 +463,7 @@ export class Scheduler {
   private async _killTarget(target: IResolvedTarget): Promise<void> {
     const workspace = target.workspace;
     console.debug('Asked to kill', workspace.name);
+    this.obs.next({ type: RunCommandEventEnum.NODE_INTERRUPTING, target });
     const releasePorts = this._options.watch ? this._options.releasePorts?.get(workspace.name)?.filter((port) => Number.isInteger(port)) : undefined;
     return workspace.kill({ cmd: this._options.cmd, _workspace: workspace.name, releasePorts }).then((killedPids) => {
       console.debug('Killed', this._options.cmd, workspace.name, 'pids', killedPids);
@@ -436,7 +474,11 @@ export class Scheduler {
   }
 
   private _scheduleTasks(): void {
-    this._tasks$ = this._targets.flat().map((target) => ({
+    this._tasks$ = this._getInitialSchedule();
+  }
+
+  private _getInitialSchedule(): ITask[] {
+    return this._targets.flat().map((target) => ({
       target,
       type: 'run',
       operation$: this._runForWorkspace(target),
@@ -655,7 +697,7 @@ export class Scheduler {
           potentialInvalidations.set(t.workspace.name, t);
         }
       }
-      const haveSourceChanged = evt.type === RunCommandEventEnum.SOURCES_CHANGED;
+      const haveSourceChanged = evt.type === RunCommandEventEnum.SOURCES_CHANGED && evt.target.hasCommand;
       const isErrored = evt.type === RunCommandEventEnum.NODE_ERRORED;
       const isNotFromCache = evt.type === RunCommandEventEnum.NODE_PROCESSED && !evt.result.fromCache;
       if (haveSourceChanged || isErrored) {

@@ -64,6 +64,11 @@ export interface ISourceChangedEvent {
   events: Array<IChangeEvent>;
 }
 
+export interface INodeInterruptingEvent {
+  type: RunCommandEventEnum.NODE_INTERRUPTING;
+  target: IResolvedTarget;
+}
+
 export interface INodeInterruptedEvent {
   type: RunCommandEventEnum.NODE_INTERRUPTED;
   target: IResolvedTarget;
@@ -103,7 +108,7 @@ export interface IRunCommandErrorEvent {
   target: IResolvedTarget;
 }
 
-export type RunCommandEvent = IRunCommandStartedEvent | ITargetsResolvedEvent | IRunCommandSuccessEvent | IRunCommandErrorEvent | INodeSkippedEvent | ICacheInvalidatedEvent | IErrorInvalidatingCacheEvent | INodeInterruptedEvent | ISourceChangedEvent;
+export type RunCommandEvent = IRunCommandStartedEvent | ITargetsResolvedEvent | IRunCommandSuccessEvent | IRunCommandErrorEvent | INodeSkippedEvent | ICacheInvalidatedEvent | IErrorInvalidatingCacheEvent | INodeInterruptingEvent | INodeInterruptedEvent | ISourceChangedEvent;
 
 export const isTargetResolvedEvent = (event: RunCommandEvent): event is  ITargetsResolvedEvent => event.type === RunCommandEventEnum.TARGETS_RESOLVED;
 export const isNodeSucceededEvent = (event: RunCommandEvent): event is  IRunCommandSuccessEvent => event.type === RunCommandEventEnum.NODE_PROCESSED;

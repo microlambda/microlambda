@@ -1,7 +1,8 @@
 import {RunCommandEvent, RunCommandEventEnum, RunOptions} from '../../src';
-import {delay, Observable, of, switchMap, throwError} from 'rxjs';
+import {delay, from, mergeAll, Observable, of, switchMap, throwError} from 'rxjs';
 import {SinonStub} from "sinon";
-import {IProcessResult} from "../../lib";
+import {IProcessResult, Project, OrderedTargets} from "../../src";
+import {WatchEvent} from "../../src/watcher";
 
 const equals = (arr1: Array<boolean | number | string>, arr2: Array<boolean | number | string>) => JSON.stringify(arr1) === JSON.stringify(arr2);
 const areEquivalent = (arr1: Array<boolean | number | string>, arr2: Array<boolean | number | string>) => equals(arr1.sort(), arr2.sort());
@@ -14,6 +15,28 @@ const logger = (...args: unknown[]): void => {
     console.debug(args);
   }
 }
+
+export const mockSourcesChange = (project: Project, targets: OrderedTargets, changes: Array<{ workspaceNames: string[], delay: number }>): Observable<Array<WatchEvent>> => {
+  const fakeEvents$: Array<Observable<Array<WatchEvent>>> = changes.map((changes) => {
+    return of(changes.workspaceNames.map((w) => {
+      const workspace = project.workspaces.get(w);
+      if (!workspace) {
+        throw new Error('Cannot mock fs event for unknown workspace ' + w);
+      }
+      return {
+        target: {
+          workspace,
+          hasCommand: targets.flat().find((t) => t.workspace.name === workspace.name)?.hasCommand ?? false,
+        },
+        events: [{
+          event: 'change' as const,
+          path: '/what/ever'
+        }]
+      }
+    })).pipe(delay(changes.delay));
+  });
+  return from(fakeEvents$).pipe(mergeAll());
+};
 
 const expectTimeframe = (
   receivedEvents: ReceivedEvent[],
@@ -201,7 +224,7 @@ const verifyAssertionsV2 = (
       if (e1.type === e2.type && e1.workspace && e2.workspace) {
         return e1.workspace.localeCompare(e2.workspace);
       }
-      return e2.type.localeCompare(e1.type);
+      return e1.type.localeCompare(e2.type);
     };
     const _arr1: ReceivedEventV2[] = JSON.parse(JSON.stringify(arr1));
     const _arr2: ReceivedEventV2[] = JSON.parse(JSON.stringify(arr2));
@@ -213,6 +236,7 @@ const verifyAssertionsV2 = (
   for (const expectedSlice of expectedTimeframe) {
      const receivedSlice = receivedEvents.slice(currentIndex, currentIndex + expectedSlice.length);
      if (!compare(receivedSlice, expectedSlice)) {
+       console.debug({receivedSlice, expectedSlice})
        throw mismatchError;
      }
      currentIndex += expectedSlice.length;
@@ -256,6 +280,7 @@ export const expectObservableV2 = async (
           case RunCommandEventEnum.NODE_SKIPPED:
           case RunCommandEventEnum.ERROR_INVALIDATING_CACHE:
           case RunCommandEventEnum.CACHE_INVALIDATED:
+          case RunCommandEventEnum.NODE_INTERRUPTING:
           case RunCommandEventEnum.NODE_INTERRUPTED:
             logger('+', Date.now() - startedAt, 'ms', {type: evt.type, workspace: evt.target.workspace?.name});
             receivedEvents.push({type: evt.type, workspace: evt.target.workspace?.name, delay: Date.now() - startedAt});
