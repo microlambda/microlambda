@@ -37,6 +37,7 @@ interface IReschedulingContext {
   removedFromScope: IResolvedTarget[];
   addedInScope: IResolvedTarget[];
   sourceChanged: WatchEvent[];
+  previousTargets: OrderedTargets;
 }
 
 type FailedExecution =  { status: 'ko', error: unknown, target: IResolvedTarget};
@@ -126,6 +127,7 @@ export class Scheduler {
       removedFromScope: [],
       addedInScope: [],
       sourceChanged: changes,
+      previousTargets: this._targets,
     });
   }
 
@@ -141,11 +143,11 @@ export class Scheduler {
 
     targetsResolver.resolve(newOptions.cmd, newOptions).then((_newTargets) => {
       console.debug('Target resolved', _newTargets.map((s) => s.map((t) => t.workspace.name)));
-      const previousTargets = this._targets.flat();
+      const previousTargets = this._targets;
       const newTargets = _newTargets.flat();
 
-      const addedInScope = newTargets.filter((nt) => !TargetsResolver.includesWorkspace(previousTargets, nt.workspace));
-      const removedFromScope = previousTargets.filter((pt) => !TargetsResolver.includesWorkspace(newTargets, pt.workspace));
+      const addedInScope = newTargets.filter((nt) => !TargetsResolver.includesWorkspace(previousTargets.flat(), nt.workspace));
+      const removedFromScope = previousTargets.flat().filter((pt) => !TargetsResolver.includesWorkspace(newTargets, pt.workspace));
 
       if (!addedInScope.length && !removedFromScope.length) {
         console.debug('Nothing to do');
@@ -164,16 +166,18 @@ export class Scheduler {
         addedInScope,
         removedFromScope,
         sourceChanged: [],
+        previousTargets,
       })
     });
   }
 
   private _reschedule(context: IReschedulingContext): void {
-    const hasScopeChanged= context.removedFromScope.length || context.addedInScope.length;
+    const hasScopeChanged = context.removedFromScope.length || context.addedInScope.length;
     if (this._options.mode === 'topological' && hasScopeChanged) {
-      return this._doCompleteReschedule(context.sourceChanged);
+      return this._doCompleteReschedule(context.sourceChanged, context.previousTargets);
+    } else if (hasScopeChanged || context.sourceChanged.length) {
+      this._doPartialReschedule(context);
     }
-    this._doPartialReschedule(context);
   }
 
   private _updateCurrentStep(idx: number, queue?: IResolvedTarget[]): void {
@@ -375,13 +379,13 @@ export class Scheduler {
     }
   }
 
-  private _doCompleteReschedule(changes: WatchEvent[]): void {
+  private _doCompleteReschedule(changes: WatchEvent[], previousTargets: OrderedTargets): void {
     this._reschedulingAll = true;
     // Send source changed events
     const sourceChangedEvents: RunCommandEvent[] = changes.map((c) => ({ type: RunCommandEventEnum.SOURCES_CHANGED, ...c }));
     sourceChangedEvents.forEach((evt) => this.obs.next(evt));
     // Kill all running targets
-    const currentStep = this._targets.at(this._currentStepIndex);
+    const currentStep = previousTargets.at(this._currentStepIndex);
     const toKill = new Set<IResolvedTarget>();
     for (const target of currentStep ?? []) {
       if (this._isRunning(target)) {
@@ -390,6 +394,7 @@ export class Scheduler {
     }
     Promise.all([...toKill].map((t) => this._killTarget(t))).then(() => {
       this._reschedulingAll = false;
+      this._updateCurrentStep(0);
       const invalidations$ = this._resolveInvalidations(sourceChangedEvents).values();
       const run$ = this._getInitialSchedule();
       this._tasks$.splice(this._currentTaskIndex + 1, this._tasks$.length - this._currentTaskIndex - 1);
@@ -399,7 +404,7 @@ export class Scheduler {
   }
 
   private get _isReschedulingFromCurrentStep(): boolean {
-    return this._reschedulingFromStep === this._currentStepIndex;
+    return this._reschedulingFromStep === this._currentStepIndex && !this._reschedulingAll;
   }
 
   private _rescheduleFromCurrentStep(actions: IImpactedTargets): void {
@@ -436,6 +441,10 @@ export class Scheduler {
     console.debug('cursor:', this._currentTaskIndex);
     console.debug('Kill all impacted target in current step');
     Promise.all([...toKill].map((target) => this._killTarget(target))).then(() => {
+      if (this._reschedulingAll) {
+        console.debug('Already rescheduling all, not restarting target from step', mostEarlyStepImpactedIndex);
+        return;
+      }
       this._reschedulingFromStep = undefined;
       if (mostEarlyStepImpactedIndex == null) {
         throw new Error('Fatal: cannot reschedule as most early impacted step has not been resolved');
