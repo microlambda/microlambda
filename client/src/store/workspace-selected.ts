@@ -14,16 +14,14 @@ export const selected = writable<
 >(undefined);
 
 selected.subscribe(async (workspace) => {
-  const hasChanged = _selected !== workspace?.name;
-  if (hasChanged) {
-    _selected = workspace?.name || undefined;
-    log.info('Workspace selected', workspace?.name, workspace?.isService);
-    void resetBuildLogs(workspace);
-    void resetOfflineLogs(workspace);
-  }
+  _selected = workspace?.name || undefined;
+  log.info('Workspace selected', workspace?.name, workspace?.isService);
+  void resetBuildLogs(workspace);
+  void resetOfflineLogs(workspace);
 });
 
 export const restoreSelected = (graph: IGraph): void => {
+  log.info('Restoring selected workspace', _selected);
   if (_selected) {
     const pkg = graph.packages.find((node) => node.name === _selected);
     const service = graph.services.find((node) => node.name === _selected);
@@ -32,5 +30,7 @@ export const restoreSelected = (graph: IGraph): void => {
     } else if (service) {
       selected.set({ ...service, isService: true });
     }
+  } else {
+    selected.set(undefined);
   }
 }

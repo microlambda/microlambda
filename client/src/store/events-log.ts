@@ -18,7 +18,7 @@ function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
     set,
     update,
     fetch: async (): Promise<void> => {
-      const response = await fetchEventLogs([0]);
+      const response = await fetchEventLogs(currentSlice ?? [0]);
       currentSlice = response.metadata.slice;
       set(response);
     },
@@ -26,3 +26,11 @@ function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
 }
 
 export const eventsLog = createEventsLog();
+
+export const resetEventsLog = async (): Promise<void> => {
+  eventsLog.set({
+    data: [],
+    metadata: { count: 0, slice: [0, 0] },
+  });
+  return eventsLog.fetch();
+}

@@ -1,9 +1,10 @@
-import { map, mergeWith, Observable } from 'rxjs';
-import { EventsLog, EventsLogger } from '@microlambda/logger';
-import { getDefaultThreads } from '@microlambda/utils';
-import { Workspace } from './graph/workspace';
-import { Project } from './graph/project';
-import { RunCommandEvent, Runner } from '@microlambda/runner-core';
+import {map, mergeWith, Observable, tap} from 'rxjs';
+import {EventsLog, EventsLogger} from '@microlambda/logger';
+import {getDefaultThreads} from '@microlambda/utils';
+import {Workspace} from './graph/workspace';
+import {Project} from './graph/project';
+import {RunCommandEvent, RunCommandEventEnum, Runner} from '@microlambda/runner-core';
+import {ServiceStatus, TranspilingStatus, TypeCheckStatus} from "@microlambda/types";
 
 export type SchedulerEvent = RunCommandEvent & { cmd: 'start' | 'transpile' | 'build' };
 
@@ -75,7 +76,27 @@ export class Scheduler {
         watch: true,
         debounce: debounce.transpile,
       })
-      .pipe(map((evt) => ({ ...evt, cmd: 'transpile' })));
+      .pipe(
+        tap((evt) => {
+          switch (evt.type) {
+            case RunCommandEventEnum.NODE_STARTED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().transpiled(TranspilingStatus.TRANSPILING);
+              break;
+            case RunCommandEventEnum.NODE_PROCESSED:
+              const workspace = this.project.getWorkspace(evt.target.workspace.name);
+              workspace?.updateStatus().transpiled(TranspilingStatus.TRANSPILED);
+              workspace?.updateMetric().transpile({ took: evt.result.overall, finishedAt: new Date().toISOString(), fromCache: evt.result.fromCache});
+              break;
+            case RunCommandEventEnum.NODE_ERRORED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().transpiled(TranspilingStatus.ERROR_TRANSPILING);
+              break;
+            case RunCommandEventEnum.NODE_INTERRUPTED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().transpiled(TranspilingStatus.NOT_TRANSPILED);
+              break;
+          }
+        }),
+        map((evt) => ({ ...evt, cmd: 'transpile' }))
+      );
 
     const build$: Observable<SchedulerEvent> = this._runner
       .runCommand({
@@ -85,7 +106,26 @@ export class Scheduler {
         watch: true,
         debounce: debounce.build,
       })
-      .pipe(map((evt) => ({ ...evt, cmd: 'build' })));
+      .pipe(
+        tap((evt) => {
+          switch (evt.type) {
+            case RunCommandEventEnum.NODE_STARTED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.CHECKING);
+              break;
+            case RunCommandEventEnum.NODE_PROCESSED:
+              const workspace = this.project.getWorkspace(evt.target.workspace.name);
+              workspace?.updateStatus().typechecked(TypeCheckStatus.SUCCESS);
+              workspace?.updateMetric().typecheck({ took: evt.result.overall, finishedAt: new Date().toISOString(), fromCache: evt.result.fromCache});
+              break;
+            case RunCommandEventEnum.NODE_ERRORED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.ERROR);
+              break;
+            case RunCommandEventEnum.NODE_INTERRUPTED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.NOT_CHECKED);
+              break;
+          }
+        }),
+        map((evt) => ({ ...evt, cmd: 'build' })));
 
     const start$: Observable<SchedulerEvent> = this._runner
       .runCommand({
@@ -97,7 +137,29 @@ export class Scheduler {
         args: this._startArgs,
         releasePorts: this._ports,
       })
-      .pipe(map((evt) => ({ ...evt, cmd: 'start' })));
+      .pipe(
+        tap((evt) => {
+          switch (evt.type) {
+            case RunCommandEventEnum.NODE_STARTED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.STARTING);
+              break;
+            case RunCommandEventEnum.NODE_PROCESSED:
+              const workspace = this.project.getWorkspace(evt.target.workspace.name);
+              workspace?.updateStatus().started(ServiceStatus.RUNNING);
+              workspace?.updateMetric().start({ took: evt.result.overall, finishedAt: new Date().toISOString(), fromCache: evt.result.fromCache});
+              break;
+            case RunCommandEventEnum.NODE_ERRORED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.CRASHED);
+              break;
+            case RunCommandEventEnum.NODE_INTERRUPTING:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.STOPPING);
+              break;
+            case RunCommandEventEnum.NODE_INTERRUPTED:
+              this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.STOPPED);
+              break;
+          }
+        }),
+        map((evt) => ({ ...evt, cmd: 'start' })));
     this._process = transpile$.pipe(mergeWith(build$, start$));
     return this._process;
   }

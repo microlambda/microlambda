@@ -2,7 +2,9 @@ import {readable} from "svelte/store";
 import {io} from "socket.io-client";
 import {env} from "../env/dev.env";
 import {logger} from "../logger";
-import {updateGraph} from "./graph";
+import {graph, patchGraph} from "./graph";
+import {resetEventsLog} from "./events-log";
+import type {ILogsReceivedEvent, IRunCommandEvent} from "../types/ws";
 
 const log = logger.scope('(store/ws)');
 
@@ -31,11 +33,14 @@ connected.subscribe(async (connected) => {
     log.warn('Disconnected !');
   } else {
     log.info('Connected !');
-    socket.on('graph.updated', async () => {
-      void updateGraph();
+    // Refresh graph
+    void graph.fetch();
+    void resetEventsLog();
+    socket.on('run.command.event', async (evt: IRunCommandEvent) => {
+      patchGraph([evt]);
     });
-    socket.on('event.log.added', async () => {
-      // TODO
+    socket.on('logs.received', async (evt: ILogsReceivedEvent) => {
+
     });
   }
 });

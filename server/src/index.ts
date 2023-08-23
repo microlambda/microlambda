@@ -47,6 +47,10 @@ export const startServer = (options: {
       enabled: n.hasCommand('start'),
       transpiled: n.transpiled,
       typeChecked: n.typechecked,
+      hasTargets: {
+        build: n.hasCommand('build'),
+        start: n.hasCommand('start'),
+      },
       status: n.started,
       children: Array.from(n.descendants.values()).map((n) => n.name),
       metrics: n.metrics,

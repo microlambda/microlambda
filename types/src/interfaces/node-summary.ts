@@ -21,6 +21,10 @@ export interface INodeSummary {
   transpiled: TranspilingStatus;
   typeChecked: TypeCheckStatus;
   status: ServiceStatus | null;
+  hasTargets: {
+    build: boolean;
+    start: boolean;
+  }
   children: string[];
   metrics: ICommandMetrics;
 }
