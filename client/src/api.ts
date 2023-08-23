@@ -3,12 +3,9 @@
  */
 
 import { env } from './env/dev.env';
-import type { IEventLog, LogLevel, SchedulerStatus } from '@microlambda/types';
-import { logger } from './logger';
+import type { IEventLog, LogLevel } from '@microlambda/types';
 import type { IGraph } from './types/graph';
 import type { ILogsResponse } from './types/logs-response';
-
-const log = logger.scope('(api)');
 
 export async function fetchGraph(): Promise<IGraph> {
   const response = await fetch(`${env.apiUrl}/api/graph`);
@@ -66,25 +63,6 @@ export async function stopAll(): Promise<void> {
   return _doActionOnGraph('stopAll');
 }
 
-let connected = false;
-
-export async function healthCheck(): Promise<boolean> {
-  try {
-    if (!connected) {
-      log.info('API Connected');
-    }
-    connected = true;
-    await fetch(`${env.apiUrl}/api/ping`);
-    return true;
-  } catch (e) {
-    if (connected) {
-      log.warn('API Disconnected');
-    }
-    connected = false;
-    return false;
-  }
-}
-
 export async function fetchServiceLogs(
   service: string,
   slice: [number, number?],
@@ -120,11 +98,4 @@ export async function fetchEventLogs(
       `${env.apiUrl}/api/logs?slice=${slice.join(',')}&level=` + level,
     )
   ).json();
-}
-
-export async function fetchSchedulerStatus(): Promise<SchedulerStatus> {
-  /*const response = await fetch(`${env.apiUrl}/api/scheduler/status`);
-  const status = await response.json();
-  log.info("Scheduler status", status);*/
-  return 0;
 }

@@ -1,4 +1,4 @@
-import joi from '@hapi/joi';
+import joi from 'joi';
 import { validate } from './validate';
 import { HandlingError } from '../handling/api';
 

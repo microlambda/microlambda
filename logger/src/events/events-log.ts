@@ -3,6 +3,7 @@ import { IEventLogOptions, LogLevel } from './options';
 import { IEventsLogEntry } from './events-log-entry';
 import { EventsLogger } from './events-logger';
 import { IEventsLogHandler } from './handlers';
+import { Subject } from 'rxjs';
 
 /**
  * @class EventsLog
@@ -11,6 +12,8 @@ import { IEventsLogHandler } from './handlers';
  * All logs are scoped : each class should declared a unique prefix so logs can be easily filtered.
  */
 export class EventsLog {
+  logs$: Subject<void> = new Subject<void>();
+
   constructor(
     readonly options: IEventLogOptions = {
       prefix: DEFAULT_PREFIXES,
@@ -37,6 +40,7 @@ export class EventsLog {
   }
 
   scope(scope?: string): EventsLogger {
+    this.logs$.next();
     return new EventsLogger(this, this.options, this.level, this._buffer, this._handlers, scope);
   }
 }

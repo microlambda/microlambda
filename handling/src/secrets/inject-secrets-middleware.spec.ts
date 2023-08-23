@@ -2,9 +2,10 @@ import { injectSecrets } from './inject-secrets-middleware';
 import { AwsStub, mockClient } from 'aws-sdk-client-mock';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { MetadataBearer } from '@smithy/types';
 
 describe('The inject secret middleware', () => {
-  const mocks: Record<string, AwsStub<object, unknown, unknown>> = {};
+  const mocks: Record<string, AwsStub<object, MetadataBearer, unknown>> = {};
   beforeEach(() => {
     mocks.ssm = mockClient(SSMClient);
     mocks.secretsManager = mockClient(SecretsManagerClient);

@@ -1,4 +1,4 @@
-import { INodeSummary } from '@microlambda/types';
+import type { INodeSummary } from '@microlambda/types';
 
 export interface IGraph {
   packages: INodeSummary[];

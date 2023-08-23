@@ -21,17 +21,17 @@
     "monorepo"
   ],
   "dependencies": {
-    "@aws-sdk/client-acm": "^3.272.0",
-    "@aws-sdk/client-apigatewayv2": "^3.272.0",
-    "@aws-sdk/client-cloudformation": "^3.272.0",
-    "@aws-sdk/client-dynamodb": "^3.272.0",
-    "@aws-sdk/client-iam": "^3.272.0",
-    "@aws-sdk/client-lambda": "^3.272.0",
-    "@aws-sdk/client-route-53": "^3.272.0",
-    "@aws-sdk/client-s3": "^3.272.0",
-    "@aws-sdk/client-secrets-manager": "^3.272.0",
-    "@aws-sdk/client-ssm": "^3.272.0",
-    "@aws-sdk/lib-storage": "^3.272.0"
+    "@aws-sdk/client-acm": "^3.363.0",
+    "@aws-sdk/client-apigatewayv2": "^3.363.0",
+    "@aws-sdk/client-cloudformation": "^3.363.0",
+    "@aws-sdk/client-dynamodb": "^3.363.0",
+    "@aws-sdk/client-iam": "^3.363.0",
+    "@aws-sdk/client-lambda": "^3.363.0",
+    "@aws-sdk/client-route-53": "^3.363.0",
+    "@aws-sdk/client-s3": "^3.367.0",
+    "@aws-sdk/client-secrets-manager": "^3.363.0",
+    "@aws-sdk/client-ssm": "^3.370.0",
+    "@aws-sdk/lib-storage": "^3.367.0"
   },
   "devDependencies": {
     "@microlambda/types": "workspace:*",

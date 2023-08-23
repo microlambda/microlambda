@@ -192,10 +192,12 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
           logger.lf();
           event.events.forEach((e) => logger.info(`* [${e.event}] ${e.path}`));
         } else if (isNodeInterruptingEvent(event)) {
+          logger.lf();
           logger.info(logger.centipod, `Interrupting target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)}`);
           logger.lf();
           logger.info('PIDs:', event.pids.join(','));
         } else if (isNodeInterruptedEvent(event)) {
+          logger.lf();
           logger.info(logger.centipod, `Interrupted target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)}`);
           logger.lf();
           logger.info('PIDs', event.pids.join(','));
@@ -220,3 +222,4 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
     },
   });
 }
+

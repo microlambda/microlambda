@@ -6,7 +6,6 @@ import {
   Handler,
   Callback,
 } from 'aws-lambda';
-
 interface ITestBedOptions<TRequest = unknown, TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext> {
   body: TRequest | null;
   headers: { [name: string]: string };
@@ -37,7 +36,7 @@ interface IHandlerResponse<TResponse = unknown> {
 export class TestBed<
   TRequest = unknown,
   TResponse = unknown,
-  TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext,
+  TAuthorizerContext extends APIGatewayEventDefaultAuthorizerContext = APIGatewayEventDefaultAuthorizerContext,
 > {
   private readonly _handler: Handler;
 
@@ -183,7 +182,7 @@ export class TestBed<
     };
     return this;
   }
-
+  //
   public authorize(authorizerContext: TAuthorizerContext): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.requestContext.authorizer = authorizerContext;
     return this;
