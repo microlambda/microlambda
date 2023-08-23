@@ -78,8 +78,7 @@ export class IOSocketManager {
       log.info('graph updated');
       this._io.emit('graph.updated');
     });
-    // TODO: Debounce times from root config
-    this._scheduler.exec(initialScope, { transpile: 200, build: 1000, start: 1000 }).subscribe((evt) => {
+    this._scheduler.execution$.subscribe((evt) => {
       this._handleRunCommandEvent(evt);
     });
   }

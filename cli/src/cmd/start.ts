@@ -26,15 +26,21 @@ export const start = async (options: IStartOptions): Promise<void> => {
   // await yarnInstall(graph, logger);
   const DEFAULT_PORT = 4545;
   const scheduler = new Scheduler(project, eventsLog);
+  scheduler.exec(options.interactive ? [] : [...project.services.values()], {
+    transpile: 200,
+    build: 500,
+    start: 500,
+  });
+  const port = options.port || DEFAULT_PORT;
   const startingServer = ora('Starting server').start();
   const server = await startServer({
-    port: options.port || DEFAULT_PORT,
+    port,
     project,
     logger: eventsLog,
     scheduler,
     config,
   });
-  startingServer.text = 'Mila server started on http://localhost:4545 ✨';
+  startingServer.text = `Mila server started on http://localhost:${port} ✨`;
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
   starting.succeed();
@@ -44,6 +50,7 @@ export const start = async (options: IStartOptions): Promise<void> => {
     logger.lf();
     logger.info('Connected as', chalk.white.bold(awsUser.arn));
   } catch (e) {
+    logger.lf();
     logger.warn('Not connected to AWS, live environments infos will be not available.');
   }
 

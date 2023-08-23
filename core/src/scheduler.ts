@@ -52,6 +52,13 @@ export class Scheduler {
     this.startAll();
   }
 
+  get execution$(): Observable<SchedulerEvent> {
+    if (!this._process) {
+      throw new Error('No process running');
+    }
+    return this._process;
+  }
+
   exec(
     initialScope: Workspace[],
     debounce: { transpile: number; build: number; start: number },
@@ -82,7 +89,7 @@ export class Scheduler {
 
     const start$: Observable<SchedulerEvent> = this._runner
       .runCommand({
-        cmd: 'build',
+        cmd: 'start',
         mode: 'parallel',
         watch: true,
         workspaces: initialScope,
