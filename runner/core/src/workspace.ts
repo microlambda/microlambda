@@ -134,6 +134,20 @@ export class Workspace {
     return this.pkg.version;
   }
 
+  getPids(cmd: string): number[] {
+    const pids: number[] = [];
+    const processes = this._processes.get(cmd);
+    if (!processes) {
+      return pids;
+    }
+    for (const proc of processes.values()) {
+      if (proc.pid) {
+        pids.push(proc.pid);
+      }
+    }
+    return pids;
+  }
+
   private _publish: Publish | undefined;
   private _npmInfos: INpmInfos | undefined;
 

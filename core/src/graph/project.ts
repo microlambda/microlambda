@@ -2,7 +2,7 @@ import { Project as CentipodProject } from '@microlambda/runner-core';
 import { Workspace } from './workspace';
 import { resolvePorts } from '../resolve-ports';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
-import {ConfigReader} from "@microlambda/config";
+import { ConfigReader } from '@microlambda/config';
 
 export class Project extends CentipodProject {
   private _services = new Map<string, Workspace>();

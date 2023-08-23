@@ -1,12 +1,12 @@
 import { Server as WebSocketServer } from 'socket.io';
 import { Server } from 'http';
-import { Project, Scheduler } from '@microlambda/core';
+import { Project, Scheduler, Workspace as MilaWorkspace } from '@microlambda/core';
 import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { RunCommandEventEnum, Workspace } from '@microlambda/runner-core';
 import { EventsLog } from '@microlambda/logger';
-import {SchedulerEvent} from "@microlambda/core/lib";
+import { SchedulerEvent } from '@microlambda/core/lib';
 
 export class IOSocketManager {
   private _io: WebSocketServer;
@@ -16,7 +16,14 @@ export class IOSocketManager {
   private _graph: Project;
   private _graphUpdated$: Subject<void> = new Subject<void>();
 
-  constructor(port: number, server: Server, scheduler: Scheduler, logger: EventsLog, graph: Project, initialScope: Workspace[]) {
+  constructor(
+    port: number,
+    server: Server,
+    scheduler: Scheduler,
+    logger: EventsLog,
+    graph: Project,
+    initialScope: MilaWorkspace[],
+  ) {
     this._scheduler = scheduler;
     const log = logger.scope('@microlambda/server/io');
     log.info('Attaching Websocket', {

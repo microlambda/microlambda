@@ -6,7 +6,7 @@ import {
   isTargetResolvedEvent,
   Project,
   Workspace,
-  isDaemon, RunOptions,
+  isDaemon, RunOptions, isSourceChangedEvent, isNodeInterruptingEvent, isNodeInterruptedEvent,
 } from '@microlambda/runner-core';
 import { resolveProjectRoot } from "@microlambda/utils";
 import chalk from 'chalk';
@@ -186,6 +186,19 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
           logger.info(logger.centipod, `Run target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)} failed`);
           printError(event.error);
           failures.add(event.target.workspace);
+        } else if (isSourceChangedEvent(event)) {
+          logger.lf();
+          logger.info(logger.centipod, `Sources changed for ${chalk.white.bold(event.target.workspace.name)}`);
+          logger.lf();
+          event.events.forEach((e) => logger.info(`* [${e.event}] ${e.path}`));
+        } else if (isNodeInterruptingEvent(event)) {
+          logger.info(logger.centipod, `Interrupting target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)}`);
+          logger.lf();
+          logger.info('PIDs:', event.pids.join(','));
+        } else if (isNodeInterruptedEvent(event)) {
+          logger.info(logger.centipod, `Interrupted target ${chalk.white.bold(cmd)} on ${chalk.white.bold(event.target.workspace.name)}`);
+          logger.lf();
+          logger.info('PIDs', event.pids.join(','));
         }
     },
     error: (err) => {

@@ -62,4 +62,3 @@ export interface IResolvedPackageConfig {
   };
   ports?: IPortsConfig | number;
 }
-

@@ -28,34 +28,36 @@ export const resolvePorts = async (
   defaultPorts = { lambda: 2001, http: 3001, websocket: 6001 },
 ): Promise<PortMap> => {
   const result: PortMap = {};
-  await Promise.all(services.map(async (service) => {
-    const config = await configReader.loadPackageConfig(service.name, service.root);
-    logger?.scope('port').debug('Resolving port from config', config);
-    const fromConfig: Partial<IServicePortsConfig> = {};
-    const ports = config.ports;
-    if (ports) {
-      if (typeof ports === 'number') {
-        fromConfig.http = ports;
-      } else {
-        if (ports?.http) {
-          fromConfig.http = ports.http;
-        }
-        if (ports?.lambda) {
-          fromConfig.lambda = ports.lambda;
-        }
-        if (ports?.websocket) {
-          fromConfig.websocket = ports.websocket;
+  await Promise.all(
+    services.map(async (service) => {
+      const config = await configReader.loadPackageConfig(service.name, service.root);
+      logger?.scope('port').debug('Resolving port from config', config);
+      const fromConfig: Partial<IServicePortsConfig> = {};
+      const ports = config.ports;
+      if (ports) {
+        if (typeof ports === 'number') {
+          fromConfig.http = ports;
+        } else {
+          if (ports?.http) {
+            fromConfig.http = ports.http;
+          }
+          if (ports?.lambda) {
+            fromConfig.lambda = ports.lambda;
+          }
+          if (ports?.websocket) {
+            fromConfig.websocket = ports.websocket;
+          }
         }
       }
-    }
-    result[service.name] = {
-      ...defaultPorts,
-      ...fromConfig,
-    };
-    defaultPorts.http++;
-    defaultPorts.lambda++;
-    defaultPorts.websocket++;
-  }));
+      result[service.name] = {
+        ...defaultPorts,
+        ...fromConfig,
+      };
+      defaultPorts.http++;
+      defaultPorts.lambda++;
+      defaultPorts.websocket++;
+    }),
+  );
   logger?.scope('port').debug('Ports resolved', result);
   return result;
 };

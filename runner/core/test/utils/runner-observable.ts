@@ -3,11 +3,10 @@ import {delay, from, mergeAll, Observable, of, switchMap, throwError} from 'rxjs
 import {SinonStub} from "sinon";
 import {IProcessResult, Project, OrderedTargets} from "../../src";
 import {WatchEvent} from "../../src/watcher";
-const equals = (arr1: Array<boolean | number | string>, arr2: Array<boolean | number | string>) => JSON.stringify(arr1) === JSON.stringify(arr2);
 type ReceivedEventV2 = {type: RunCommandEventEnum, workspace?: string, delay?: number};
 
 const logger = (...args: unknown[]): void => {
-  if (true) {
+  if (process.env.DEBUG_RUNNER_TESTS) {
     console.debug(args);
   }
 }

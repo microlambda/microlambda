@@ -6,7 +6,7 @@ import {
   ServerlessInstance,
 } from '@microlambda/types';
 import { validateConfig } from './config';
-import { ConfigReader, IConfig, Project, Workspace } from '@microlambda/core';
+import { Project, Workspace } from '@microlambda/core';
 import { PluginLogger } from '@microlambda/logger';
 import {
   afterDeploy,
@@ -32,7 +32,6 @@ class ServerlessMicrolambdaPlugin {
 
   private _pluginConfig: IPluginConfig | undefined;
   private _graph: Project | undefined;
-  private _config: IConfig | undefined;
   private _service: Workspace | undefined;
   private readonly _log: IBaseLogger;
 
@@ -230,7 +229,6 @@ class ServerlessMicrolambdaPlugin {
     if (!this._graph) {
       const projectRoot = resolveProjectRoot();
       this._log.info(`Project root resolved ${projectRoot}`);
-      this._config = new ConfigReader().readConfig();
       this._graph = await Project.loadProject(projectRoot);
       this._log.info(
         `Dependencies graph resolved: ${this._graph.workspaces.size} nodes`,

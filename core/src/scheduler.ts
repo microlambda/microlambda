@@ -1,4 +1,4 @@
-import {map, mergeWith, Observable, tap} from 'rxjs';
+import { map, mergeWith, Observable } from 'rxjs';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { getDefaultThreads } from '@microlambda/utils';
 import { Workspace } from './graph/workspace';
@@ -17,7 +17,7 @@ export class Scheduler {
     this._logger = logger.scope('core/scheduler');
     this._logger.debug('New recompilation scheduler instance');
     this._concurrency = concurrency || getDefaultThreads();
-    this._runner = new Runner(this.project, this._concurrency, logger)
+    this._runner = new Runner(this.project, this._concurrency, logger);
   }
 
   public startOne(service: Workspace): void {
@@ -31,7 +31,7 @@ export class Scheduler {
 
   public stopOne(service: Workspace): void {
     this._runner.removeWorkspace('start', [service]);
- }
+  }
 
   public gracefulShutdown(): void {
     this._runner.removeWorkspace('start', [...this.project.services.values()]);
@@ -52,36 +52,45 @@ export class Scheduler {
     this.startAll();
   }
 
-  exec(initialScope: Workspace[], debounce: { transpile: number, build: number, start: number }): Observable<SchedulerEvent> {
+  exec(
+    initialScope: Workspace[],
+    debounce: { transpile: number; build: number; start: number },
+  ): Observable<SchedulerEvent> {
     if (this._process) {
       throw new Error('A process is already running');
     }
     const initialTree = initialScope.map((service) => service.descendants.values()).flat();
-    const transpile$: Observable<SchedulerEvent> = this._runner.runCommand({
-      cmd: 'transpile',
-      mode: 'parallel',
-      workspaces: [...new Set(...initialTree)],
-      watch: true,
-      debounce: debounce.transpile,
-    }).pipe(map((evt) => ({ ...evt, cmd: 'transpile' })));
+    const transpile$: Observable<SchedulerEvent> = this._runner
+      .runCommand({
+        cmd: 'transpile',
+        mode: 'parallel',
+        workspaces: [...new Set(...initialTree)],
+        watch: true,
+        debounce: debounce.transpile,
+      })
+      .pipe(map((evt) => ({ ...evt, cmd: 'transpile' })));
 
-    const build$: Observable<SchedulerEvent> = this._runner.runCommand({
-      cmd: 'build',
-      mode: 'topological',
-      to: initialScope,
-      watch: true,
-      debounce: debounce.build,
-    }).pipe(map((evt) => ({ ...evt, cmd: 'build' })));;
+    const build$: Observable<SchedulerEvent> = this._runner
+      .runCommand({
+        cmd: 'build',
+        mode: 'topological',
+        to: initialScope,
+        watch: true,
+        debounce: debounce.build,
+      })
+      .pipe(map((evt) => ({ ...evt, cmd: 'build' })));
 
-    const start$: Observable<SchedulerEvent> = this._runner.runCommand({
-      cmd: 'build',
-      mode: 'parallel',
-      watch: true,
-      workspaces: initialScope,
-      debounce: debounce.start,
-      args: this._startArgs,
-      releasePorts: this._ports,
-    }).pipe(map((evt) => ({ ...evt, cmd: 'start' })));
+    const start$: Observable<SchedulerEvent> = this._runner
+      .runCommand({
+        cmd: 'build',
+        mode: 'parallel',
+        watch: true,
+        workspaces: initialScope,
+        debounce: debounce.start,
+        args: this._startArgs,
+        releasePorts: this._ports,
+      })
+      .pipe(map((evt) => ({ ...evt, cmd: 'start' })));
     this._process = transpile$.pipe(mergeWith(build$, start$));
     return this._process;
   }
@@ -93,7 +102,7 @@ export class Scheduler {
           `--httpPort ${service.ports?.http.toString() || '3000'} --lambdaPort ${
             service.ports?.lambda.toString() || '4000'
           } --websocketPort ${service.ports?.websocket.toString() || '6000'} --reloadHandler`,
-        ])
+        ]);
       }
     }
     return args;

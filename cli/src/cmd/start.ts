@@ -47,7 +47,7 @@ export const start = async (options: IStartOptions): Promise<void> => {
     logger.warn('Not connected to AWS, live environments infos will be not available.');
   }
 
-  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project);
+  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project, []);
   for (const workspace of project.workspaces.values()) {
     const ioHandler = new WebsocketLogsHandler(workspace, io);
     workspace.addLogsHandler(ioHandler);

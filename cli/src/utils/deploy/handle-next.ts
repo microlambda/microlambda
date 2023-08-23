@@ -1,7 +1,7 @@
 import { RunCommandEventEnum } from '@microlambda/runner-core';
 import chalk from 'chalk';
 import { MilaSpinnies } from '../spinnies';
-import {DeployEvent} from "./print-report";
+import { DeployEvent } from './print-report';
 
 export const handleNext = (
   evt: DeployEvent,

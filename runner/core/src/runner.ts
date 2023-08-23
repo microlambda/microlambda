@@ -107,7 +107,7 @@ export class Runner {
   private _areInScope(cmd: string, workspaces: Workspace[]): { inside: Array<Workspace>, outside: Array<Workspace>, cmdExecution: ICurrentExecution } {
     const cmdExecution = this._currentExecution.get(cmd);
     const previousScope = cmdExecution?.scope;
-    console.debug({ previousScope: previousScope?.map((w) => w.name) });
+    this._logger?.debug({ previousScope: previousScope?.map((w) => w.name) });
     if (!previousScope) {
       throw new Error('Error adding/removing targets: no current execution');
     }
@@ -126,7 +126,7 @@ export class Runner {
 
   addWorkspaces(cmd: string, workspaces: Workspace[]): void {
     const { outside, cmdExecution } = this._areInScope(cmd, workspaces);
-    console.debug({ outside: outside.map((w) => w.name) });
+    this._logger?.debug({ outside: outside.map((w) => w.name) });
     const toAdd = outside;
     if (toAdd.length) {
       const previousScope = cmdExecution.scope;
@@ -136,7 +136,7 @@ export class Runner {
   }
 
   removeWorkspace(cmd: string, workspaces: Workspace[]): void {
-    //console.debug('Removing', workspaces.map((w) => w.name));
+    this._logger?.debug('Removing', workspaces.map((w) => w.name));
     const { inside, cmdExecution } = this._areInScope(cmd, workspaces);
     const toRemove = inside;
     if (toRemove.length) {

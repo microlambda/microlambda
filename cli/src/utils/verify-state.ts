@@ -6,7 +6,9 @@ import { IRootConfig } from '@microlambda/config';
 export const verifyState = async (config: IRootConfig): Promise<void> => {
   const printError = (): void => {
     logger.error('State verification failed. Please double-check config.state');
-    logger.error('Either you are not connected to the right AWS account or you did not run yarn mila init on a fresh project?');
+    logger.error(
+      'Either you are not connected to the right AWS account or you did not run yarn mila init on a fresh project?',
+    );
   };
   try {
     const [checksumsBucketExists, stateTableValid] = await Promise.all([

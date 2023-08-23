@@ -93,7 +93,10 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
         switch (next.evt.type) {
           case RunCommandEventEnum.NODE_STARTED: {
             log?.debug('Testing process started', next.evt.target.workspace.name);
-            spinnies.add(next.evt.target.workspace.name, `Testing ${next.evt.target.workspace.name}${chalk.magenta(affectedInfos)}`);
+            spinnies.add(
+              next.evt.target.workspace.name,
+              `Testing ${next.evt.target.workspace.name}${chalk.magenta(affectedInfos)}`,
+            );
             if (cmd.verbose) {
               logger.lf();
             }
@@ -159,7 +162,10 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
               }
               logger.lf();
             }
-            spinnies.succeed(next.evt.target.workspace.name, `${next.evt.target.workspace.name} tested${chalk.magenta(fromCache)}`);
+            spinnies.succeed(
+              next.evt.target.workspace.name,
+              `${next.evt.target.workspace.name} tested${chalk.magenta(fromCache)}`,
+            );
             break;
           }
           case RunCommandEventEnum.NODE_ERRORED: {

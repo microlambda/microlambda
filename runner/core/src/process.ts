@@ -67,11 +67,14 @@ export interface ISourceChangedEvent {
 export interface INodeInterruptingEvent {
   type: RunCommandEventEnum.NODE_INTERRUPTING;
   target: IResolvedTarget;
+  pids: number[];
 }
 
 export interface INodeInterruptedEvent {
   type: RunCommandEventEnum.NODE_INTERRUPTED;
   target: IResolvedTarget;
+  pids: number[];
+  // signal: string;
 }
 
 export interface INodeSkippedEvent {
@@ -83,6 +86,7 @@ export interface INodeSkippedEvent {
 export interface IRunCommandStartedEvent {
   type: RunCommandEventEnum.NODE_STARTED;
   target: IResolvedTarget;
+  // pids: number[];
 }
 
 export interface IRunCommandSuccessEvent {
@@ -116,3 +120,6 @@ export const isNodeErroredEvent = (event: RunCommandEvent): event is  IRunComman
 export const isNodeStartedEvent = (event: RunCommandEvent): event is  IRunCommandStartedEvent => event.type === RunCommandEventEnum.NODE_STARTED;
 export const isNodeSkippedEvent = (event: RunCommandEvent): event is  IRunCommandStartedEvent => event.type === RunCommandEventEnum.NODE_SKIPPED;
 export const isSourceChangedEvent = (event: RunCommandEvent): event is  ISourceChangedEvent => event.type === RunCommandEventEnum.SOURCES_CHANGED;
+export const isNodeInterruptingEvent = (event: RunCommandEvent): event is  INodeInterruptingEvent => event.type === RunCommandEventEnum.NODE_INTERRUPTING;
+export const isNodeInterruptedEvent = (event: RunCommandEvent): event is  INodeInterruptedEvent => event.type === RunCommandEventEnum.NODE_INTERRUPTED;
+
