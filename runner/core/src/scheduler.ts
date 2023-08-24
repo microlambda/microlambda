@@ -655,6 +655,9 @@ export class Scheduler {
       console.debug(`[${this._options.cmd}]`,'Task run', evt.target.workspace.name, 'done. New cache written. Removing from invalidated');
       this._alreadyInvalidated.delete(evt.target.workspace.name);
     }
+    if (evt.type === RunCommandEventEnum.NODE_SKIPPED) {
+      this._currentStep.set(evt.target.workspace.name, 'processed');
+    }
     if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
       this._currentStep.set(evt.target.workspace.name, 'errored');
     }

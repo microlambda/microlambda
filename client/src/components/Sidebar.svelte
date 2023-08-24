@@ -8,7 +8,7 @@
     graph.fetch();
   });
 
-  const selectService = (node: any, isService: boolean) => {
+  const selectService = (node: any, isService: boolean): void => {
     if (node) {
       selected.set({ ...node,  isService });
     }
