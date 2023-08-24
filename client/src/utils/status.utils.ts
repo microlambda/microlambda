@@ -1,18 +1,14 @@
-import type {
-  TranspilingStatus,
-  TypeCheckStatus,
-  ServiceStatus,
-} from '@microlambda/types';
+import type {ServiceStatus, TranspilingStatus, TypeCheckStatus,} from '@microlambda/types';
 
 export const getTranspiled = (status: TranspilingStatus): string => {
   switch (status) {
-    case 2:
+    case 'transpiled':
       return 'Transpiled';
-    case 1:
+    case 'transpiling':
       return 'Transpiling';
-    case 3:
+    case 'error_transpiling':
       return 'Error transpiling';
-    case 0:
+    case 'not_transpiled':
       return 'Not transpiled';
     default:
       return 'Unknown';
@@ -21,13 +17,13 @@ export const getTranspiled = (status: TranspilingStatus): string => {
 
 export const getTypeChecked = (status: TypeCheckStatus): string => {
   switch (status) {
-    case 1:
+    case 'checking':
       return 'Typechecking';
-    case 0:
+    case 'not_checked':
       return 'Not type-checked';
-    case 3:
+    case 'error_checking_types':
       return 'Type errors';
-    case 2:
+    case 'type_checked':
       return 'Type checked';
     default:
       return 'Unknown';
@@ -36,31 +32,31 @@ export const getTypeChecked = (status: TypeCheckStatus): string => {
 
 export const getTranspiledClass = (status: TranspilingStatus): string => {
   switch (status) {
-    case 2:
+    case 'transpiled':
       return 'green';
-    case 1:
+    case 'transpiling':
       return 'blue';
-    case 3:
+    case 'error_transpiling':
       return 'bright-red';
-    case 0:
+    case 'not_transpiled':
       return 'grey';
     default:
-      return '';
+      return 'Unknown';
   }
 };
 
 export const getTypeCheckClass = (status: TypeCheckStatus): string => {
   switch (status) {
-    case 1:
+    case 'checking':
       return 'blue';
-    case 0:
+    case 'not_checked':
       return 'grey';
-    case 3:
+    case 'error_checking_types':
       return 'bright-red';
-    case 2:
+    case 'type_checked':
       return 'green';
     default:
-      return '';
+      return 'Unknown';
   }
 };
 
@@ -72,18 +68,18 @@ export const getServiceStatus = (
     return 'Disabled';
   }
   switch (status) {
-    case 4:
+    case 'crashed':
       return 'Crashed';
-    case 1:
+    case 'running':
       return 'Running';
-    case 0:
+    case 'starting':
       return 'Starting';
-    case 3:
+    case 'stopped':
       return 'Stopped';
-    case 2:
+    case 'stopping':
       return 'Stopping';
     default:
-      return 'Unknown';
+      return 'Not started';
   }
 };
 
@@ -92,20 +88,20 @@ export const getServiceStatusClass = (
   enabled: boolean,
 ): string => {
   if (!enabled) {
-    return 'grey';
+    return 'disabled';
   }
   switch (status) {
-    case 4:
+    case 'crashed':
       return 'bright-red';
-    case 1:
+    case 'running':
       return 'green';
-    case 0:
+    case 'starting':
       return 'blue';
-    case 3:
-      return 'red';
-    case 2:
-      return 'blue';
+    case 'stopped':
+      return 'grey';
+    case 'stopping':
+      return 'orange';
     default:
-      return '';
+      return 'grey';
   }
 };

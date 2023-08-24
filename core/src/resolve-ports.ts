@@ -29,7 +29,7 @@ export const resolvePorts = async (
 ): Promise<PortMap> => {
   const result: PortMap = {};
   await Promise.all(
-    services.map(async (service) => {
+    services.filter((s) => s.hasCommand('start')).map(async (service) => {
       const config = await configReader.loadPackageConfig(service.name, service.root);
       logger?.scope('port').debug('Resolving port from config', config);
       const fromConfig: Partial<IServicePortsConfig> = {};

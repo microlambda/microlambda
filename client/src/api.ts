@@ -5,7 +5,6 @@
 import { env } from './env/dev.env';
 import type { IEventLog, LogLevel } from '@microlambda/types';
 import type { IGraph } from './types/graph';
-import type { ILogsResponse } from './types/logs-response';
 
 export async function fetchGraph(): Promise<IGraph> {
   const response = await fetch(`${env.apiUrl}/api/graph`);
@@ -65,37 +64,34 @@ export async function stopAll(): Promise<void> {
 
 export async function fetchServiceLogs(
   service: string,
-  slice: [number, number?],
-): Promise<ILogsResponse> {
+): Promise<Array<string>> {
   return (
     await fetch(
       `${env.apiUrl}/api/services/${encodeURIComponent(
         service,
-      )}/logs?slice=${slice.join(',')}`,
+      )}/logs`,
     )
   ).json();
 }
 
 export async function fetchCompilationLogs(
   node: string,
-  slice: [number, number?],
-): Promise<ILogsResponse> {
+): Promise<Array<string>> {
   return (
     await fetch(
       `${env.apiUrl}/api/nodes/${encodeURIComponent(
         node,
-      )}/tsc/logs?slice=${slice.join(',')}`,
+      )}/tsc/logs`,
     )
   ).json();
 }
 
 export async function fetchEventLogs(
-  slice: [number, number?],
   level: LogLevel = 'info',
-): Promise<ILogsResponse<IEventLog>> {
+): Promise<Array<IEventLog>> {
   return (
     await fetch(
-      `${env.apiUrl}/api/logs?slice=${slice.join(',')}&level=` + level,
+      `${env.apiUrl}/api/logs?&level=` + level,
     )
   ).json();
 }

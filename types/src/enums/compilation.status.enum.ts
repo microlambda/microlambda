@@ -4,15 +4,15 @@
  */
 
 export enum TranspilingStatus {
-  NOT_TRANSPILED,
-  TRANSPILING,
-  TRANSPILED,
-  ERROR_TRANSPILING,
+  NOT_TRANSPILED = 'not_transpiled',
+  TRANSPILING = 'transpiling',
+  TRANSPILED = 'transpiled',
+  ERROR_TRANSPILING = 'error_transpiling',
 }
 
 export enum TypeCheckStatus {
-  NOT_CHECKED,
-  CHECKING,
-  SUCCESS,
-  ERROR,
+  NOT_CHECKED= 'not_checked',
+  CHECKING = 'checking',
+  SUCCESS = 'type_checked',
+  ERROR = 'error_checking_types',
 }

@@ -1,11 +1,10 @@
-import express, { Request } from 'express';
+import express from 'express';
 import { createServer, Server } from 'http';
 import { Project, Scheduler, Workspace } from '@microlambda/core';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
 import { EventsLog } from '@microlambda/logger';
-import { getTrimmedSlice } from './utils/logs';
 import { EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable } from '@microlambda/environments';
 import { State } from '@microlambda/remote-state';
 import { IRootConfig } from '@microlambda/config';
@@ -65,27 +64,16 @@ export const startServer = (options: {
     res.json(response);
   });
 
-  const getSliceFromQuery = (req: Request): [number, number?] => {
-    if (!req.query.slice) {
-      return [0];
-    }
-    const rawSlice = req.query.slice.toString().split(',');
-    if (rawSlice.length === 0 || rawSlice.length > 2 || rawSlice.some((str) => !Number.isInteger(Number(str)))) {
-      log.warn('Invalid slice', rawSlice);
-      return [0];
-    }
-    return rawSlice[1] ? [Number(rawSlice[0]), Number(rawSlice[1])] : [Number(rawSlice[0])];
-  };
-
   app.get('/api/logs', (req, res) => {
     if (project.logger) {
-      let logs = project.logger.buffer.filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level));
-      if (req.query.scope && typeof req.query.scope === 'string') {
-        logs = logs.filter((entry) => entry.scope?.includes(req.query.scope!.toString()));
+      let logs = project.logger.buffer.filter((log) => ['warn', 'info', 'error'].includes(log.level));
+      const scope = req.query.scope && typeof req.query.scope === 'string' ? req.query.scope : undefined;
+      if (scope) {
+        logs = logs.filter((entry) => entry.scope?.includes(scope));
       }
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
+      return res.json(logs ?? []);
     } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
+      return res.json([]);
     }
   });
 
@@ -144,11 +132,7 @@ export const startServer = (options: {
       return res.status(404).send();
     }
     const logs: string[] | undefined = node.logs('in-memory')?.get('build') as string[] | undefined;
-    if (logs) {
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
-    } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
-    }
+    return res.json(logs ?? []);
   });
 
   app.get('/api/services/:service/logs', (req, res) => {
@@ -159,11 +143,7 @@ export const startServer = (options: {
       return res.status(404).send();
     }
     const logs: string[] | undefined = service.logs('in-memory')?.get('start') as string[] | undefined;
-    if (logs) {
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
-    } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
-    }
+    return res.json(logs ?? []);
   });
 
   app.get('/api/aws/account', async (req, res) => {

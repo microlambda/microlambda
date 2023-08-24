@@ -55,7 +55,7 @@
         <li on:click={selectService(node, true)}>
           <StatusPill transpiled="{node.transpiled}"/>
           <StatusPill typeChecked="{node.typeChecked}"/>
-          <StatusPill enabled="{node.enabled}" serviceStatus="{node.status}"/>
+          <StatusPill enabled="{node.hasTargets.start}" serviceStatus="{node.status}"/>
           <span>{node.name}</span>
         </li>
       {/each}

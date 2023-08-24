@@ -43,7 +43,7 @@
           return colors.fuschia;
       }
     };
-    logs = rawLogs.data.map((log, idx) => {
+    logs = rawLogs.map((log, idx) => {
       return {
         id: idx,
         text: `<span style="color: ${getLevelColor(log.level)};">[${log.level}]</span> <strong>(${log.scope})</strong> <span style="color: ${colors.light_grey}">${log.date}</span> - ${log.args.join(" ")}\n`

@@ -1,9 +1,9 @@
-import {map, mergeWith, Observable, tap} from 'rxjs';
+import {finalize, from, map, mergeAll, mergeWith, Observable, tap} from 'rxjs';
 import {EventsLog, EventsLogger} from '@microlambda/logger';
 import {getDefaultThreads} from '@microlambda/utils';
 import {Workspace} from './graph/workspace';
 import {Project} from './graph/project';
-import {RunCommandEvent, RunCommandEventEnum, Runner} from '@microlambda/runner-core';
+import {RunCommandEvent, RunCommandEventEnum, Runner, Workspace as CentipodWorkspace} from '@microlambda/runner-core';
 import {ServiceStatus, TranspilingStatus, TypeCheckStatus} from "@microlambda/types";
 
 export type SchedulerEvent = RunCommandEvent & { cmd: 'start' | 'transpile' | 'build' };
@@ -24,18 +24,26 @@ export class Scheduler {
   public startOne(service: Workspace): void {
     this._logger.info('Starting', service.name);
     this._runner.addWorkspaces('start', [service]);
+    this._runner.addWorkspaces('build', [service]);
+    this._runner.addWorkspaces('transpile', [service]);
   }
 
   public startAll(): void {
     this._runner.addWorkspaces('start', [...this.project.services.values()]);
+    this._runner.addWorkspaces('build', [...this.project.services.values()]);
+    this._runner.addWorkspaces('transpile', [...this.project.services.values()]);
   }
 
   public stopOne(service: Workspace): void {
     this._runner.removeWorkspace('start', [service]);
+    this._runner.removeWorkspace('build', [service]);
+    this._runner.removeWorkspace('transpile', [service]);
   }
 
   public gracefulShutdown(): void {
     this._runner.removeWorkspace('start', [...this.project.services.values()]);
+    this._runner.removeWorkspace('build', [...this.project.services.values()]);
+    this._runner.removeWorkspace('transpile', [...this.project.services.values()]);
   }
 
   public stopAll(): void {
@@ -67,12 +75,12 @@ export class Scheduler {
     if (this._process) {
       throw new Error('A process is already running');
     }
-    const initialTree = initialScope.map((service) => service.descendants.values()).flat();
+    // TODO: Can be done in // on the whole tree
     const transpile$: Observable<SchedulerEvent> = this._runner
       .runCommand({
         cmd: 'transpile',
-        mode: 'parallel',
-        workspaces: [...new Set(...initialTree)],
+        mode: 'topological',
+        to: initialScope,
         watch: true,
         debounce: debounce.transpile,
       })
@@ -132,6 +140,7 @@ export class Scheduler {
         cmd: 'start',
         mode: 'parallel',
         watch: true,
+        force: true,
         workspaces: initialScope,
         debounce: debounce.start,
         args: this._startArgs,
@@ -160,7 +169,7 @@ export class Scheduler {
           }
         }),
         map((evt) => ({ ...evt, cmd: 'start' })));
-    this._process = transpile$.pipe(mergeWith(build$, start$));
+    this._process = from([transpile$, build$, start$]).pipe(mergeAll());
     return this._process;
   }
   private get _startArgs(): Map<string, string[]> {

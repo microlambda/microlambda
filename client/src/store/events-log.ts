@@ -1,25 +1,19 @@
-import type {ILogsResponse} from "../types/logs-response";
 import type {IEventLog} from "@microlambda/types";
 import {writable} from "svelte/store";
 import {fetchEventLogs} from "../api";
 import type {ICreateWritable} from "../utils/store";
-import type {LogsSlice} from "../types/logs-slice";
 
+let logs: IEventLog[] = [];
 
-let currentSlice: LogsSlice | undefined;
-
-function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
-  const { subscribe, update, set } = writable<ILogsResponse<IEventLog>>({
-    data: [],
-    metadata: { count: 0, slice: [0, 0] },
-  });
+function createEventsLog(): ICreateWritable<Array<IEventLog>> {
+  const { subscribe, update, set } = writable<Array<IEventLog>>([]);
   return {
     subscribe,
     set,
     update,
     fetch: async (): Promise<void> => {
-      const response = await fetchEventLogs(currentSlice ?? [0]);
-      currentSlice = response.metadata.slice;
+      const response = await fetchEventLogs();
+      logs = response;
       set(response);
     },
   };
@@ -28,9 +22,12 @@ function createEventsLog(): ICreateWritable<ILogsResponse<IEventLog>> {
 export const eventsLog = createEventsLog();
 
 export const resetEventsLog = async (): Promise<void> => {
-  eventsLog.set({
-    data: [],
-    metadata: { count: 0, slice: [0, 0] },
-  });
+  eventsLog.set([]);
   return eventsLog.fetch();
+}
+
+export const appendEventLogs = (newLogs: IEventLog[]): void => {
+  const updatedLogs = [...logs, ...newLogs];
+  logs = updatedLogs;
+  eventsLog.set(updatedLogs);
 }

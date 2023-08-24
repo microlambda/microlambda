@@ -1,7 +1,7 @@
 export enum ServiceStatus {
-  STARTING,
-  RUNNING,
-  STOPPING,
-  STOPPED,
-  CRASHED,
+  STARTING = 'starting',
+  RUNNING = 'running',
+  STOPPING = 'stopping',
+  STOPPED = 'stopped',
+  CRASHED = 'crashed',
 }

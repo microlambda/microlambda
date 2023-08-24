@@ -4,6 +4,7 @@ import {resetBuildLogs} from "./build-logs";
 import {resetOfflineLogs} from "./offline-logs";
 import {logger} from "../logger";
 import type {IGraph} from "../types/graph";
+import {subscribeToLogs} from "./ws";
 
 const log = logger.scope('(store/selected)');
 
@@ -16,6 +17,9 @@ export const selected = writable<
 selected.subscribe(async (workspace) => {
   _selected = workspace?.name || undefined;
   log.info('Workspace selected', workspace?.name, workspace?.isService);
+  if (workspace) {
+    subscribeToLogs(workspace.name);
+  }
   void resetBuildLogs(workspace);
   void resetOfflineLogs(workspace);
 });

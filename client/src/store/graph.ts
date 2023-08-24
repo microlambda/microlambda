@@ -1,10 +1,9 @@
-import type {INodeSummary} from "@microlambda/types";
+import type {INodeSummary, IRunCommandEvent} from "@microlambda/types";
 import {derived, writable} from "svelte/store";
 import {fetchGraph} from "../api";
 import type {ICreateWritable} from "../utils/store";
 import {logger} from "../logger";
 import {restoreSelected} from "./workspace-selected";
-import type {IRunCommandEvent} from "../types/ws";
 import type {IGraph} from "../types/graph";
 import {findService, findWorkspace} from "../utils/graph";
 
@@ -12,40 +11,6 @@ const log = logger.scope('(store/graph)');
 
 let currentGraph: IGraph | undefined;
 let eventsReceivedWhileRefreshingGraph: IRunCommandEvent[] = [];
-
-export const patchGraph = (events: IRunCommandEvent[]): void => {
-  if (!currentGraph) {
-    log.warn('Cannot patch graph: not loaded');
-    eventsReceivedWhileRefreshingGraph = eventsReceivedWhileRefreshingGraph.concat(events);
-    return;
-  }
-  const previousGraph = { ...currentGraph };
-  for (const evt of events) {
-    switch (evt.type) {
-      case "start":
-        const service = findService(previousGraph, evt.workspace);
-        if (service) {
-          service.status = evt.status;
-          service.metrics.start = evt.metrics;
-        }
-        break;
-      case "build":
-        const workspace = findWorkspace(previousGraph, evt.workspace);
-        if (workspace) {
-          workspace.typeChecked = evt.status;
-          workspace.metrics.typecheck = evt.metrics;
-        }
-        break;
-      case "transpile":
-        const pkg = findWorkspace(previousGraph, evt.workspace);
-        if (pkg) {
-          pkg.transpiled = evt.status;
-          pkg.metrics.transpile = evt.metrics;
-        }
-        break;
-    }
-  }
-}
 
 function createGraph(): ICreateWritable<{
   packages: INodeSummary[];
@@ -73,10 +38,48 @@ function createGraph(): ICreateWritable<{
 
 export const graph = createGraph();
 
+export const patchGraph = (events: IRunCommandEvent[]): void => {
+  if (!currentGraph) {
+    log.warn('Cannot patch graph: not loaded');
+    eventsReceivedWhileRefreshingGraph = eventsReceivedWhileRefreshingGraph.concat(events);
+    return;
+  }
+  const updatedGraph = { ...currentGraph };
+  for (const evt of events) {
+    switch (evt.type) {
+      case "start":
+        const service = findService(updatedGraph, evt.workspace);
+        if (service) {
+          service.status = evt.status;
+          service.metrics.start = evt.metrics;
+        }
+        break;
+      case "build":
+        const workspace = findWorkspace(updatedGraph, evt.workspace);
+        if (workspace) {
+          workspace.typeChecked = evt.status;
+          workspace.metrics.typecheck = evt.metrics;
+        }
+        break;
+      case "transpile":
+        const pkg = findWorkspace(updatedGraph, evt.workspace);
+        if (pkg) {
+          pkg.transpiled = evt.status;
+          pkg.metrics.transpile = evt.metrics;
+        }
+        break;
+    }
+  }
+  graph.set(updatedGraph);
+}
+
 graph.subscribe((graph) => {
   log.info('Graph updated');
+  const shouldRestore = !currentGraph;
   currentGraph = graph;
-  restoreSelected(graph);
+  if (shouldRestore) {
+    restoreSelected(graph);
+  }
 });
 
 export const services = derived(graph, ($graph) => $graph.services);

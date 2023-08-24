@@ -1,11 +1,12 @@
 import { bold } from 'chalk';
 import { inspect } from 'util';
 import { DEFAULT_INSPECT_DEPTH } from './defaults';
-import { IBaseLogger } from '@microlambda/types';
+import {IBaseLogger, IEventLog} from '@microlambda/types';
 import { EventsLog } from './events-log';
 import { IEventsLogEntry, EventsLogBuffer } from './events-log-entry';
 import { IEventLogOptions, LogLevel } from './options';
 import { IEventsLogHandler } from './handlers';
+import {Subject} from "rxjs";
 
 export class EventsLogger implements IBaseLogger {
   constructor(
@@ -14,6 +15,7 @@ export class EventsLogger implements IBaseLogger {
     readonly level: LogLevel | 'silent',
     readonly buffer: EventsLogBuffer,
     readonly handlers: IEventsLogHandler[],
+    private readonly _logs$: Subject<IEventLog>,
     readonly scope?: string,
   ) {}
 
@@ -79,6 +81,7 @@ export class EventsLogger implements IBaseLogger {
       this.buffer.shift();
     }
     this.handlers.forEach((handler) => handler.write(entry));
+    this._logs$.next({ ...entry, args: args.map((a) => this._toString(a))});
   }
 
   private _toEntry(level: LogLevel, args: unknown[]): IEventsLogEntry {

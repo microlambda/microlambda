@@ -337,8 +337,13 @@ export class Workspace {
         } else {
           children?.forEach((child) => {
             logger?.debug('Sending', signal, 'to', child.PID);
-            pids.push(Number(child.PID));
-            process.kill(Number(child.PID), signal);
+            try {
+              process.kill(Number(child.PID), signal);
+              pids.push(Number(child.PID));
+            } catch (e) {
+              logger?.error('Error killing process');
+              logger?.error(e);
+            }
           });
         }
       });
