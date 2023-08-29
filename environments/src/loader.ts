@@ -45,7 +45,7 @@ export class EnvironmentLoader {
     const rootEnv = await this._loadFile({ ssmMode, shouldInterpolate });
     const stageEnv = await this._loadFile({ env, ssmMode, shouldInterpolate });
     const serviceEnv = await this._loadFile({ service, ssmMode, shouldInterpolate });
-    const serviceStageEnv = await this._loadFile({ env, ssmMode, shouldInterpolate });
+    const serviceStageEnv = await this._loadFile({ env, service, ssmMode, shouldInterpolate });
     const markAsOverwritten = (
       vars: ILoadedEnvironmentVariable[],
       overwrittenBy: ILoadedEnvironmentVariable[],

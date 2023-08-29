@@ -1,17 +1,22 @@
 <script lang='ts'>
   import { onMount } from 'svelte';
 
-  import { services, packages, graph, selected } from '../store';
+  import {services, packages, graph, selected, environments, selectWorkspace} from '../store';
   import StatusPill from './StatusPill.svelte';
+  import {selectEnv as _selectEnv} from "../store/environments";
+  import type {INodeSummary} from "@microlambda/types";
 
   onMount(() => {
     graph.fetch();
   });
 
-  const selectService = (node: any, isService: boolean): void => {
-    if (node) {
-      selected.set({ ...node,  isService });
-    }
+  function selectService(node: INodeSummary, isService: boolean): void {
+    selectWorkspace({ ...node, isService });
+  }
+
+  function selectEnv(env: string): void {
+    selectWorkspace();
+    _selectEnv(env);
   }
 </script>
 
@@ -70,11 +75,11 @@
         </li>
       {/each}
     </ul>{/if}
-    {#if $services.length}<h3 class="mt0">Environments</h3>
+    {#if $environments.length}<h3 class="mt0">Environments</h3>
     <ul>
-      {#each $services as node}
-        <li on:click={selectService(node, true)}>
-          <span>{node.name}</span>
+      {#each $environments as env}
+        <li on:click={selectEnv(env.name)}>
+          <span>{env.name}</span>
         </li>
       {/each}
     </ul>{/if}

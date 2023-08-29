@@ -15,13 +15,16 @@ export const selected = writable<
 >(undefined);
 
 selected.subscribe(async (workspace) => {
+  const hasChanged = _selected !== workspace?.name;
   _selected = workspace?.name || undefined;
   log.info('Workspace selected', workspace?.name, workspace?.isService);
-  if (workspace) {
-    subscribeToLogs(workspace.name);
+  if (hasChanged) {
+    if (workspace) {
+      subscribeToLogs(workspace.name);
+    }
+    void resetBuildLogs(workspace);
+    void resetOfflineLogs(workspace);
   }
-  void resetBuildLogs(workspace);
-  void resetOfflineLogs(workspace);
 });
 
 export const restoreSelected = (graph: IGraph): void => {
@@ -36,5 +39,18 @@ export const restoreSelected = (graph: IGraph): void => {
     }
   } else {
     selected.set(undefined);
+  }
+}
+
+export const patchStatus = (workspace: INodeSummary): void => {
+  if (_selected === workspace.name) {
+    const updated = { ...workspace, isService: true };
+    selected.set(updated);
+  }
+};
+
+export const selectWorkspace = (workspace?: INodeSummary & { isService: boolean }): void => {
+  if (_selected !== workspace?.name) {
+    selected.set(workspace);
   }
 }

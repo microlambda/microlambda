@@ -568,7 +568,8 @@ export class Scheduler {
       console.debug(`[${this._options.cmd}]`,'should run', nextTask.target.workspace.name, '?');
       const nextTargetStep = this._targets.find((step) => step.find((t) => t.workspace.name === nextTask.target.workspace.name));
       if (!nextTargetStep) {
-        throw new Error('Assertion failed: task not found in targets');
+        // This should not happen, that means a rescheduling is in progress waiting
+        return true;
       }
       const nextTargetStepIndex = this._targets.indexOf(nextTargetStep);
       console.debug(`[${this._options.cmd}]`,'next task step #', nextTargetStepIndex);

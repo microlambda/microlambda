@@ -11,8 +11,7 @@
 {#if $selected}
 <div class="actions" transition:fade={{duration: env.transitionDuration}}>
   {#if $selected?.type === 'service' && $selected?.hasTargets.start}
-
-    {#if ['crashed', 'stopped', 'running'].includes($selected?.status)}
+    {#if ['crashed', 'running'].includes($selected?.status)}
       <Button on:click={stopService($selected?.name)}>Stop</Button>
       <Button on:click={restartService($selected?.name)}>Restart</Button>
     {:else}

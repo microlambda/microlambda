@@ -11,11 +11,13 @@
   import { selected } from '../store';
   import { fade } from 'svelte/transition';
   import { env } from '../env/dev.env';
+  import EnvironmentVariables from "./EnvironmentVariables.svelte";
+
   const tabs: ITab[] = [
     { name: 'Dependencies graph', component: DependenciesGraph },
     { name: 'Service logs', component: ServiceLogs },
     { name: 'Compilation Logs', component: BuildLogs },
-    { name: 'Environments Variables', component: BuildLogs },
+    { name: 'Environments Variables', component: EnvironmentVariables },
   ];
 
   let node: INodeSummary;
@@ -34,6 +36,6 @@
   <NodeHeader/>
   <NodeActions/>
   <NodeInfos/>
-  <Tabs tabs="{tabs}"/>
+  <Tabs tabs="{$selected.isService ? tabs : [tabs[0], tabs[2], tabs[3]]}"/>
 </section>
 {/if}

@@ -15,7 +15,7 @@
 
   let height = 0;
   let container: HTMLElement;
-  const paddingBottom = 75;
+  const paddingBottom = 90;
   const log = logger.scope('<Tabs/>');
 
   const fitToWindow = () => {

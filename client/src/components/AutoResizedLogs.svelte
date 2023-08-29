@@ -20,7 +20,7 @@
   tabMounted.subscribe((ready) => {
     log.debug('Tab mounted', ready);
     if (ready) {
-      fitToTabContent();
+      setTimeout(() => fitToTabContent(), 20);
     }
   });
 

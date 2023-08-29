@@ -1,6 +1,6 @@
 <script lang='ts'>
   import Disconnected from './components/Disconnected.svelte';
-  import { connected, selected } from './store';
+  import { connected, selected, selectedEnv } from './store';
   import Sidebar from './components/Sidebar.svelte';
   import EventLog from './components/EventLog.svelte';
   import Node from './components/Node.svelte';
@@ -76,6 +76,8 @@
     <div class="panel">
         {#if $selected}
          <Node/>
+        {:else if $selectedEnv}
+            <p>Envs</p>
         {:else}
         <EventLog/>
       {/if}

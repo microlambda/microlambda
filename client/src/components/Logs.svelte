@@ -71,7 +71,7 @@
   <label for="auto-scroll">Automatically scroll when receiving new logs</label>
 </div>
 
-<div class="wrapper" bind:this={container} style="{`height: ${height}px; width: ${width}px`}">
+<div class="wrapper" bind:this={container} style="{`height: ${height}px;`}">
   <div class="scrollable" bind:this={div}>
     {#if logs && logs.length && Array.isArray(logs)}
       <VirtualScroll
@@ -83,7 +83,7 @@
         on:bottom={() => scrolledToBottom()}
         on:top={() => scrolledToTop()}
       >
-        <pre>{ @html fromAnsi.toHtml(data.text) }</pre>
+        <pre style="margin-bottom: 10px;">{ @html fromAnsi.toHtml(data.text) }</pre>
       </VirtualScroll>
     {:else }
     <pre>No logs to show ¯\_(ツ)_/¯</pre>

@@ -34,7 +34,7 @@ export interface ITargetConfigCmd extends ITargetCacheConfig {
 export type ITargetConfig = ITargetConfigScript | ITargetConfigCmd;
 
 export const isScriptTarget = (target: ITargetConfig): target is ITargetConfigScript =>
-  !!(target as ITargetConfigScript).script;
+  !!(target as ITargetConfigScript)?.script;
 
 export interface ITargetsConfig {
   [cmd: string]: ITargetConfig;

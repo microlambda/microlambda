@@ -147,8 +147,12 @@ export const startServer = (options: {
   });
 
   app.get('/api/aws/account', async (req, res) => {
-    const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
-    res.json(account);
+    try {
+      const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
+      res.json({ connected: true, account});
+    } catch {
+      res.json({ connected: false });
+    }
   });
 
   app.get('/api/environments', async (req, res) => {
@@ -157,27 +161,25 @@ export const startServer = (options: {
     return res.json(envs);
   });
 
-  app.get('/api/services/:service/environment', async (req, res) => {
-    const serviceName = req.params.service;
-    const loader = new EnvironmentLoader(project);
+  app.get('/api/state/:env', async (req, res) => {
     const state = new State(options.config);
-    const envs = await state.listEnvironments();
-    const vars: Record<string, Array<ILoadedEnvironmentVariable>> = {};
-    const loadEnvironments$ = envs.map((env) =>
-      loader
+    const services = await state.listServices(req.params.env);
+    return res.json(services);
+  });
+
+  app.get('/api/services/:service/environment/:env', async (req, res) => {
+    const serviceName = req.params.service;
+    const env = req.params.env;
+    const loader = new EnvironmentLoader(project);
+    const vars: Array<ILoadedEnvironmentVariable> = await loader
         .loadAll({
-          env: env.name,
+          env: env,
           service: serviceName,
           inject: false,
           shouldInterpolate: true,
-          ssmMode: SSMResolverMode.IGNORE,
+          ssmMode: SSMResolverMode.WARN,
           overwrite: false,
-        })
-        .then((loaded) => {
-          vars[env.name] = loaded;
-        }),
-    );
-    await Promise.all(loadEnvironments$);
+        });
     return res.json(vars);
   });
 

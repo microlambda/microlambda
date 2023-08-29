@@ -5,6 +5,7 @@
 import { env } from './env/dev.env';
 import type { IEventLog, LogLevel } from '@microlambda/types';
 import type { IGraph } from './types/graph';
+import type {IEnvironment, IAwsAccount, ILoadedEnvironmentVariable, IServiceInstance} from "./types/env-var";
 
 export async function fetchGraph(): Promise<IGraph> {
   const response = await fetch(`${env.apiUrl}/api/graph`);
@@ -92,6 +93,43 @@ export async function fetchEventLogs(
   return (
     await fetch(
       `${env.apiUrl}/api/logs?&level=` + level,
+    )
+  ).json();
+}
+
+export async function fetchAwsAccount(): Promise<IAwsAccount> {
+  return (
+    await fetch(
+      `${env.apiUrl}/api/aws/account`,
+    )
+  ).json();
+}
+
+export async function fetchEnvironments(): Promise<Array<IEnvironment>> {
+  return (
+    await fetch(
+      `${env.apiUrl}/api/environments`,
+    )
+  ).json();
+}
+
+export async function fetchServicesInstance(
+  environment: string,
+): Promise<Array<IServiceInstance>> {
+  return (
+    await fetch(
+      `${env.apiUrl}/api/state/${environment}`,
+    )
+  ).json();
+}
+
+export async function fetchServiceEnvironment(
+  serviceName: string,
+  environment: string,
+): Promise<Array<ILoadedEnvironmentVariable>> {
+  return (
+    await fetch(
+      `${env.apiUrl}/api/services/${encodeURIComponent(serviceName)}/environment/${environment}`,
     )
   ).json();
 }

@@ -554,14 +554,14 @@ export class Workspace {
     }
   }
 
-  static args(options: RunOptions): string[] | string | undefined {
+  args(options: RunOptions): string[] | string | undefined {
     if (options.args instanceof Map) {
       return options.args.get(this.name);
     }
     return options.args;
   }
 
-  static env(options: RunOptions): Record<string, string> | undefined {
+  env(options: RunOptions): Record<string, string> | undefined {
     if (options.env instanceof Map) {
       return options.env.get(this.name);
     }
@@ -583,8 +583,8 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        Workspace.args(options),
-        Workspace.env(options),
+        this.args(options),
+        this.env(options),
         this.eventsLog,
         options.cachePrefix,
       );
@@ -594,23 +594,23 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        Workspace.args(options),
-        Workspace.env(options),
+        this.args(options),
+        this.env(options),
         this.eventsLog,
         options.cachePrefix,
       );
     } else {
       this._logger?.info('Using local cache');
-      cache = new LocalCache(this, options.cmd,         Workspace.args(options),
-        Workspace.env(options), this.eventsLog);
-      artifacts = new LocalArtifacts(this, options.cmd,         Workspace.args(options),
-        Workspace.env(options), this.eventsLog);
+      cache = new LocalCache(this, options.cmd,         this.args(options),
+        this.env(options), this.eventsLog);
+      artifacts = new LocalArtifacts(this, options.cmd,         this.args(options),
+        this.env(options), this.eventsLog);
     }
     try {
       if (options.force) {
         this._logger?.info('Option --force used, removing artifacts to run command on a clean state');
-        await new LocalArtifacts(this, options.cmd,         Workspace.args(options),
-          Workspace.env(options), this.eventsLog).removeArtifacts();
+        await new LocalArtifacts(this, options.cmd,         this.args(options),
+          this.env(options), this.eventsLog).removeArtifacts();
       } else {
         const cachedOutputs = await cache?.read();
         if (artifacts instanceof RemoteArtifacts) {
@@ -634,13 +634,13 @@ export class Workspace {
         }
       }
       this._logger?.info('Running command');
-      return this._runCommandsAndCache(cache, artifacts, options.cmd,         Workspace.args(options),
-        Workspace.env(options), options.stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd,         this.args(options),
+        this.env(options), options.stdio);
     } catch (e) {
       this._logger?.warn('Error reading cache', { cmd: options.cmd, target: this.name });
       // Error reading from cache
-      return this._runCommandsAndCache(cache, artifacts, options.cmd,         Workspace.args(options),
-        Workspace.env(options), options.stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd,         this.args(options),
+        this.env(options), options.stdio);
     }
   }
 
@@ -693,8 +693,8 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        Workspace.args(options),
-        Workspace.env(options),
+        this.args(options),
+        this.env(options),
         this.eventsLog,
         options.cachePrefix,
       );

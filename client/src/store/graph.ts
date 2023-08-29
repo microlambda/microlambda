@@ -3,7 +3,7 @@ import {derived, writable} from "svelte/store";
 import {fetchGraph} from "../api";
 import type {ICreateWritable} from "../utils/store";
 import {logger} from "../logger";
-import {restoreSelected} from "./workspace-selected";
+import {patchStatus, restoreSelected} from "./workspace-selected";
 import type {IGraph} from "../types/graph";
 import {findService, findWorkspace} from "../utils/graph";
 
@@ -52,6 +52,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
         if (service) {
           service.status = evt.status;
           service.metrics.start = evt.metrics;
+          patchStatus(service);
         }
         break;
       case "build":
