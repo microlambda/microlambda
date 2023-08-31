@@ -3,6 +3,7 @@
     import {loadingServiceEnvironment, loadServiceEnvironment, serviceEnvironment} from "../store/env-vars";
     import {environments} from "../store/environments";
     import {selected} from "../store/workspace-selected";
+    import EnvironmentVariableValue from "./EnvironmentVariableValue.svelte";
 
     let allEnvs: string[] = [];
     let selectedEnvVariables: Array<ILoadedEnvironmentVariable> = [];
@@ -51,13 +52,10 @@
         vertical-align: center;
         td, th {
           text-align: left;
-          padding: 0.5rem;
+          padding: 0.4rem;
         }
         th {
           padding: 1rem 0;
-        }
-        td:last-child {
-          font-family: "Roboto Mono", monospace;
         }
         td {
           font-size: 10pt;
@@ -72,14 +70,18 @@
 <select bind:value={selectedEnv} on:change={(e) => selectEnv(e.target.value)}>
     {#each allEnvs as env}<option value="{env}">{env}</option>{/each}
 </select>
-<table>
-    <tbody>
-     {#each selectedEnvVariables as variable}
-         <tr>
-             <td>{variable.key}</td>
-             <td>{variable.value}</td>
-         </tr>
-     {/each}
-    </tbody>
-</table>
+    {#if selectedEnvVariables.length}
+    <table>
+        <tbody>
+         {#each selectedEnvVariables as variable}
+             <tr>
+                 <td>{variable.key}</td>
+                 <td><EnvironmentVariableValue variable="{variable}"></EnvironmentVariableValue></td>
+             </tr>
+         {/each}
+        </tbody>
+    </table>
+    {:else}
+        <h3>Nothing to show ¯\_(ツ)_/¯</h3>
+    {/if}
 {/if}

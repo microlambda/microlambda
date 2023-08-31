@@ -38,6 +38,17 @@ function createGraph(): ICreateWritable<{
 
 export const graph = createGraph();
 
+const isService = (w: INodeSummary): boolean => {
+  return currentGraph?.services.some((s) => s.name === w.name) ?? false;
+}
+
+const populateIsService = (w: INodeSummary): INodeSummary & { isService: boolean } => {
+  return {
+    ...w,
+    isService: isService(w),
+  }
+}
+
 export const patchGraph = (events: IRunCommandEvent[]): void => {
   if (!currentGraph) {
     log.warn('Cannot patch graph: not loaded');
@@ -52,7 +63,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
         if (service) {
           service.status = evt.status;
           service.metrics.start = evt.metrics;
-          patchStatus(service);
+          patchStatus(populateIsService(service));
         }
         break;
       case "build":
@@ -60,6 +71,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
         if (workspace) {
           workspace.typeChecked = evt.status;
           workspace.metrics.typecheck = evt.metrics;
+          patchStatus(populateIsService(workspace));
         }
         break;
       case "transpile":
@@ -67,6 +79,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
         if (pkg) {
           pkg.transpiled = evt.status;
           pkg.metrics.transpile = evt.metrics;
+          patchStatus(populateIsService(pkg));
         }
         break;
     }

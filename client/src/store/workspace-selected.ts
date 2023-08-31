@@ -5,6 +5,7 @@ import {resetOfflineLogs} from "./offline-logs";
 import {logger} from "../logger";
 import type {IGraph} from "../types/graph";
 import {subscribeToLogs} from "./ws";
+import type {ServiceStatus} from "@microlambda/types";
 
 const log = logger.scope('(store/selected)');
 
@@ -42,9 +43,9 @@ export const restoreSelected = (graph: IGraph): void => {
   }
 }
 
-export const patchStatus = (workspace: INodeSummary): void => {
+export const patchStatus = (workspace: INodeSummary & { isService: boolean }): void => {
   if (_selected === workspace.name) {
-    const updated = { ...workspace, isService: true };
+    const updated = { ...workspace };
     selected.set(updated);
   }
 };

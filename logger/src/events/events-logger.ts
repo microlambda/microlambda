@@ -34,6 +34,30 @@ export class EventsLogger implements IBaseLogger {
     return scopes.some((scope) => wildcardMatch(this.scope!, scope));
   }
 
+  getLogs(level = 'info', scopes?: string[]): IEventsLogEntry[] {
+    const getLvl = (): string[] => {
+      switch (level) {
+        case 'warn':
+          return ['error', 'warn'];
+        case 'error':
+          return ['error'];
+        case 'debug':
+          return ['error', 'warn', 'info', 'debug'];
+        case 'silly':
+          return ['error', 'warn', 'info', 'debug', 'silly'];
+        default:
+          return ['error', 'warn', 'info'];
+      }
+    };
+    const lvl = getLvl();
+    let logs = [...this.buffer.filter((log) => lvl.includes(log.level))];
+    if (scopes) {
+      logs = logs.filter((entry) => entry.scope && scopes.includes(entry.scope));
+    }
+    logs.forEach((entry) => entry.args = entry.args.map((a) => this._toString(a)));
+    return logs;
+  }
+
   silly(...args: unknown[]): void {
     if (['silly'].includes(this.level) && this.inScope) {
       // eslint-disable-next-line no-console

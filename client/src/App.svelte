@@ -5,6 +5,7 @@
   import EventLog from './components/EventLog.svelte';
   import Node from './components/Node.svelte';
   import Header from './components/Header.svelte';
+  import Environment from "./components/Environment.svelte";
 </script>
 
 <style lang="scss">
@@ -77,7 +78,7 @@
         {#if $selected}
          <Node/>
         {:else if $selectedEnv}
-            <p>Envs</p>
+        <Environment/>
         {:else}
         <EventLog/>
       {/if}

@@ -54,6 +54,14 @@
 
 <aside>
   <div class="sidebar-content">
+    {#if $environments.length}<h3 class="mt0">Environments</h3>
+      <ul>
+        {#each $environments as env}
+          <li on:click={selectEnv(env.name)}>
+            <span>{env.name}</span>
+          </li>
+        {/each}
+      </ul>{/if}
     {#if $services.length}<h3 class="mt0">Services</h3>
     <ul>
       {#each $services as node}
@@ -72,14 +80,6 @@
           <StatusPill transpiled="{node.transpiled}"/>
           <StatusPill typeChecked="{node.typeChecked}"/>
           <span>{node.name}</span>
-        </li>
-      {/each}
-    </ul>{/if}
-    {#if $environments.length}<h3 class="mt0">Environments</h3>
-    <ul>
-      {#each $environments as env}
-        <li on:click={selectEnv(env.name)}>
-          <span>{env.name}</span>
         </li>
       {/each}
     </ul>{/if}

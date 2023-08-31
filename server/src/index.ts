@@ -66,11 +66,7 @@ export const startServer = (options: {
 
   app.get('/api/logs', (req, res) => {
     if (project.logger) {
-      let logs = project.logger.buffer.filter((log) => ['warn', 'info', 'error'].includes(log.level));
-      const scope = req.query.scope && typeof req.query.scope === 'string' ? req.query.scope : undefined;
-      if (scope) {
-        logs = logs.filter((entry) => entry.scope?.includes(scope));
-      }
+      const logs = project.logger.getLogs();
       return res.json(logs ?? []);
     } else {
       return res.json([]);

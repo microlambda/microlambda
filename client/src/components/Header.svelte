@@ -1,6 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
-  import {graph, selectWorkspace} from '../store';
+  import {graph, selectEnv, selectWorkspace} from '../store';
   import { stopAll, startAll, restartAll } from '../api';
   import { logger } from '../logger';
 
@@ -19,6 +19,7 @@
 
   function unselectNode() {
     selectWorkspace();
+    selectEnv();
     visible = false;
   }
 

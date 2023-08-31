@@ -26,7 +26,6 @@ function createEnvironmentsStore(): ICreateWritable<Array<IEnvironment>> {
     fetch: async (): Promise<void> => {
       const response = await fetchEnvironments();
       allEnvironments = response;
-      console.debug({allEnvironments});
       set(response);
     },
   };
@@ -37,16 +36,16 @@ export const selectedEnv = createSelectedEnvironmentsStore();
 
 selectedEnv.subscribe((env) => {
   selected = env;
-  console.debug('Environment selected', env);
   if (selected) {
     void loadInstances(selected.name);
   }
 });
 
-export const selectEnv = (env: string): void => {
-  console.debug('Select env', env);
-  console.debug({allEnvironments});
+export const selectEnv = (env?: string): void => {
+  if (!env) {
+    selectedEnv.set(undefined);
+    return;
+  }
   const toSelect = allEnvironments.find((e) => e.name === env);
-  console.debug({toSelect})
   selectedEnv.set(toSelect);
 };

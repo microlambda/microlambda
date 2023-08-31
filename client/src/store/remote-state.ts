@@ -24,11 +24,15 @@ function createServicesInstancesStore(): ICreateWritable<Array<IServiceInstance>
   };
 }
 
+export const loadingInstances = writable<boolean>(true);
+
 export const servicesInstances = createServicesInstancesStore();
 
 export const loadInstances = async (env?: string): Promise<void> => {
   servicesInstances.set([]);
+  loadingInstances.set(true);
   if (env) {
     await servicesInstances.fetch(env);
   }
+  loadingInstances.set(false);
 };

@@ -83,7 +83,7 @@
         on:bottom={() => scrolledToBottom()}
         on:top={() => scrolledToTop()}
       >
-        <pre style="margin-bottom: 10px;">{ @html fromAnsi.toHtml(data.text) }</pre>
+        <pre>{ @html fromAnsi.toHtml(data.text) }</pre>
       </VirtualScroll>
     {:else }
     <pre>No logs to show ¯\_(ツ)_/¯</pre>
