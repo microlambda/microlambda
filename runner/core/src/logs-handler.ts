@@ -20,11 +20,11 @@ export abstract class AbstractLogsHandler<T> implements ILogsHandler {
   abstract open(target: string): void;
 
   commandStarted(target: string, cmd: string): void {
-    this.append(target,`Process ${cmd} started at ${new Date().toISOString()}`)
+    this.append(target,`Process ${cmd} started at ${new Date().toISOString()}\n`)
   }
 
   commandEnded(target: string, result: ExecaReturnValue | ExecaError): void {
-    this.append(target,`Process exited with status ${result.exitCode} at ${new Date().toISOString()}`);
+    this.append(target,`Process exited with status ${result.exitCode} at ${new Date().toISOString()}\n`);
   }
 
   get(target: string): T | undefined { return this._logs.get(target) }
@@ -39,7 +39,7 @@ export abstract class AbstractLogsHandler<T> implements ILogsHandler {
 export class InMemoryLogHandler extends AbstractLogsHandler<Array<string>> {
   name = 'in-memory';
   open(target: string): void { this._open(target, []) }
-  close(): void { /* no need to close in memory */ }
+  close(): void { /* no need to close in-memory */ }
 
   append(target: string, chunk: string | Buffer): void {
     this.open(target);
@@ -58,14 +58,18 @@ export abstract class LogFilesHandler extends AbstractLogsHandler<WriteStream> {
   abstract path(target: string): string;
 
   open(target: string): void {
-    this._open(target, createWriteStream(this.path(target)));
+    const stream = createWriteStream(this.path(target));
+    this._open(target, stream);
   }
 
   append(target: string, chunk: string | Buffer): void {
-    this.open(target);
+    const stream = this.get(target);
+    if (!stream) {
+      this.open(target);
+    }
     try {
       if (chunk) {
-        this.get(target)?.write(chunk);
+        stream?.write(chunk);
       }
     } catch (e) {
       /* best effort, should not crash the process */

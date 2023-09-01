@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {concat, Observable, of, Subject, Subscriber} from "rxjs";
 import {
   IProcessResult,
@@ -126,7 +125,7 @@ export class Scheduler {
   }
 
   private _sourcesChanged(changes: WatchEvent[]): void {
-    console.debug(`[${this._options.cmd}]`,'Sources changed', changes.map((c) => c.target.workspace.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'Sources changed', changes.map((c) => c.target.workspace.name));
     this._reschedule({
       removedFromScope: [],
       addedInScope: [],
@@ -136,7 +135,7 @@ export class Scheduler {
   }
 
   scopeChanged(newScope: Workspace[]): void {
-    console.debug(`[${this._options.cmd}]`,'Scope changed', newScope.map((t) => t.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'Scope changed', newScope.map((t) => t.name));
     const targetsResolver = new TargetsResolver(this._project, this._logger?.logger);
     const newOptions = { ...this._options };
     if (isTopological(newOptions)) {
@@ -146,7 +145,7 @@ export class Scheduler {
     }
 
     targetsResolver.resolve(newOptions.cmd, newOptions).then((_newTargets) => {
-      console.debug('Target resolved', newOptions.cmd, _newTargets.map((s) => s.map((t) => t.workspace.name)));
+      this._logger?.debug('Target resolved', newOptions.cmd, _newTargets.map((s) => s.map((t) => t.workspace.name)));
       const previousTargets = this._targets;
       const newTargets = _newTargets.flat();
 
@@ -154,7 +153,7 @@ export class Scheduler {
       const removedFromScope = previousTargets.flat().filter((pt) => !TargetsResolver.includesWorkspace(newTargets, pt.workspace));
 
       if (!addedInScope.length && !removedFromScope.length) {
-        console.debug(`[${this._options.cmd}]`,'Nothing to do');
+        this._logger?.debug(`[${this._options.cmd}]`,'Nothing to do');
         return;
       }
 
@@ -164,7 +163,7 @@ export class Scheduler {
       this._options = newOptions;
       this._targets = _newTargets;
       this._scopeChanged$.next();
-      console.debug(`[${this._options.cmd}]`,'Reset watcher');
+      this._logger?.debug(`[${this._options.cmd}]`,'Reset watcher');
       this._resetWatcher();
       this._reschedule({
         addedInScope,
@@ -176,7 +175,7 @@ export class Scheduler {
   }
 
   private _reschedule(context: IReschedulingContext): void {
-    console.debug(`[${this._options.cmd}]`,'Perform reschedule', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
+    this._logger?.debug(`[${this._options.cmd}]`,'Perform reschedule', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
     const hasScopeChanged = context.removedFromScope.length || context.addedInScope.length;
     if (this._options.mode === 'topological' && hasScopeChanged) {
       return this._doCompleteReschedule(context.sourceChanged, context.previousTargets);
@@ -186,11 +185,11 @@ export class Scheduler {
   }
 
   private _updateCurrentStep(idx: number, queue?: IResolvedTarget[]): void {
-    console.debug(`[${this._options.cmd}]`,'Updating current step', idx);
+    this._logger?.debug(`[${this._options.cmd}]`,'Updating current step', idx);
     this._currentStepIndex = idx;
     const currentStep = this._targets.at(this._currentStepIndex);
     if (!currentStep) {
-      console.debug(`[${this._options.cmd}]`,'Last step reached')
+      this._logger?.debug(`[${this._options.cmd}]`,'Last step reached')
       return;
     }
     this._currentStep.clear();
@@ -213,14 +212,14 @@ export class Scheduler {
       }
     }
 
-    console.debug(`[${this._options.cmd}]`,'Sources changed', changes.map((c) => c.target.workspace.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'Sources changed', changes.map((c) => c.target.workspace.name));
     const { mostEarlyStepImpacted, mostEarlyStepImpactedIndex } = this._findMostEarlyImpactedStep(changes);
 
     const isInCurrentStep = this._isEqualsCurrentStep(mostEarlyStepImpacted);
     const isStrictlyBeforeCurrentStep = this._isBeforeCurrentStep(mostEarlyStepImpacted);
     const isAfterCurrentStep = !isInCurrentStep && !isStrictlyBeforeCurrentStep;
     const currentStep = this._targets.at(this._currentStepIndex);
-    console.debug(`[${this._options.cmd}]`,{
+    this._logger?.debug(`[${this._options.cmd}]`,{
       isInCurrentStep,
       isStrictlyBeforeCurrentStep,
       isAfterCurrentStep,
@@ -243,7 +242,7 @@ export class Scheduler {
         const shouldKill = isRunning && isImpacted && isScheduled;
         const shouldStart = !isQueued && isImpacted && isScheduled;
 
-        console.debug(`[${this._options.cmd}]`,{w: target.workspace.name, isQueued, isRunning, isImpacted, isScheduled, shouldStart, shouldKill});
+        this._logger?.debug(`[${this._options.cmd}]`,{w: target.workspace.name, isQueued, isRunning, isImpacted, isScheduled, shouldStart, shouldKill});
 
         if (shouldKill) {
           toKill.add(target);
@@ -254,7 +253,7 @@ export class Scheduler {
       }
     } else if(isStrictlyBeforeCurrentStep && currentStep && mostEarlyStepImpactedIndex != null) {
       // KIll everyone in current step
-      console.debug(`[${this._options.cmd}]`,'Before current step')
+      this._logger?.debug(`[${this._options.cmd}]`,'Before current step')
       for (const target of currentStep) {
         if (this._isRunning(target)) {
           toKill.add(target);
@@ -306,7 +305,7 @@ export class Scheduler {
         if (mostEarlyStepImpactedIndex === undefined || impactedStepNumber < mostEarlyStepImpactedIndex) {
           mostEarlyStepImpactedIndex = impactedStepNumber;
           mostEarlyStepImpacted = impactedStep;
-          console.debug(`[${this._options.cmd}]`,'Most early step impacted step updated', mostEarlyStepImpactedIndex);
+          this._logger?.debug(`[${this._options.cmd}]`,'Most early step impacted step updated', mostEarlyStepImpactedIndex);
         }
       }
     }
@@ -350,16 +349,16 @@ export class Scheduler {
 
   private _doPartialReschedule(context: IReschedulingContext): void {
     if (this._reschedulingAll) {
-      console.debug(`[${this._options.cmd}]`,'Already performing a complete reschedule');
+      this._logger?.debug(`[${this._options.cmd}]`,'Already performing a complete reschedule');
       return;
     }
     const impacted = this._resolveImpactedTargets(context.sourceChanged);
     const { toKill, toStart, mostEarlyStepImpactedIndex } = impacted;
     if (this._reschedulingFromStep && mostEarlyStepImpactedIndex && this._reschedulingFromStep < mostEarlyStepImpactedIndex) {
-      console.debug(`[${this._options.cmd}]`,'Already performing a partial reschedule from a previous step', this._reschedulingFromStep);
+      this._logger?.debug(`[${this._options.cmd}]`,'Already performing a partial reschedule from a previous step', this._reschedulingFromStep);
       return;
     }
-    console.debug(`[${this._options.cmd}]`,'Perform partial reschedule', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
+    this._logger?.debug(`[${this._options.cmd}]`,'Perform partial reschedule', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
     // Match by workspace name in case of shallow copy
     const includes = (set: Set<IResolvedTarget> | Array<IResolvedTarget>, target: IResolvedTarget): boolean => {
       return [...set].some((t) => t.workspace.name === target.workspace.name);
@@ -374,8 +373,8 @@ export class Scheduler {
         toStart.push(added);
       }
     });
-    console.debug(`[${this._options.cmd}]`,'to kill', [...toKill].map((t) => t.workspace.name));
-    console.debug(`[${this._options.cmd}]`,'to start', [...toStart].map((t) => t.workspace.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'to kill', [...toKill].map((t) => t.workspace.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'to start', [...toStart].map((t) => t.workspace.name));
     const shouldRescheduleFromCurrentStep = mostEarlyStepImpactedIndex == null || mostEarlyStepImpactedIndex === this._currentStepIndex;
     if (shouldRescheduleFromCurrentStep) {
       this._reschedulingFromStep = this._currentStepIndex;
@@ -388,7 +387,7 @@ export class Scheduler {
 
   private _doCompleteReschedule(changes: WatchEvent[], previousTargets: OrderedTargets): void {
     this._reschedulingAll = true;
-    console?.debug(`[${this._options.cmd}]`,'Perform complete reschedule', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
+    this._logger?.debug(`[${this._options.cmd}]`,'Perform complete reschedule', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
     // Send source changed events
     const sourceChangedEvents: RunCommandEvent[] = changes.map((c) => ({ type: RunCommandEventEnum.SOURCES_CHANGED, ...c }));
     sourceChangedEvents.forEach((evt) => this.obs.next(evt));
@@ -402,14 +401,14 @@ export class Scheduler {
     }
     Promise.all([...toKill].map((t) => this._killTarget(t))).then(() => {
       this._reschedulingAll = false;
-      console.debug(`[${this._options.cmd}]`,'Done complete rescheduling', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
+      this._logger?.debug(`[${this._options.cmd}]`,'Done complete rescheduling', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
       this._updateCurrentStep(0);
       const invalidations$ = this._resolveInvalidations(sourceChangedEvents).values();
       const run$ = this._getInitialSchedule();
       this._tasks$.splice(this._currentTaskIndex + 1, this._tasks$.length - this._currentTaskIndex - 1);
       this._tasks$.push(...[...invalidations$, ...run$]);
       this._executeNextTask();
-      console.debug(this._tasks$.map((t) => [t.type, t.target.workspace.name]), this._currentTaskIndex);
+      this._logger?.debug(this._tasks$.map((t) => [t.type, t.target.workspace.name]), this._currentTaskIndex);
     });
   }
 
@@ -419,12 +418,12 @@ export class Scheduler {
 
   private _rescheduleFromCurrentStep(actions: IImpactedTargets): void {
     const { toStart, toKill } = actions;
-    console.debug(`[${this._options.cmd}]`,'Rescheduling from current step', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
+    this._logger?.debug(`[${this._options.cmd}]`,'Rescheduling from current step', { reschedulingAll: this._reschedulingAll, reschedulingFromStep: this._reschedulingFromStep });
     const invalidations = this._resolveInvalidations(actions.toInvalidate);
     const actions$: Array<Promise<void>> = [];
     for (const target of new Set([...toStart, ...toKill])) {
       if (!this._isReschedulingFromCurrentStep) {
-        console.debug(`[${this._options.cmd}]`,'Rescheduling from current step aborted by previous step rescheduling')
+        this._logger?.debug(`[${this._options.cmd}]`,'Rescheduling from current step aborted by previous step rescheduling')
         break;
       }
       const shouldStart = toStart.some((t) => t.workspace.name === target.workspace.name);
@@ -442,24 +441,24 @@ export class Scheduler {
       }
     }
     Promise.all(actions$).finally(() => {
-      console.debug(`[${this._options.cmd}]`,'Rescheduling from current step done');
+      this._logger?.debug(`[${this._options.cmd}]`,'Rescheduling from current step done');
       this._reschedulingFromStep = undefined;
     });
   }
 
   private _rescheduleFromPreviousStep(actions: IImpactedTargets): void {
     const { toStart, toKill, mostEarlyStepImpactedIndex } = actions;
-    console.debug(`[${this._options.cmd}]`,'Rescheduling from previous step', { mostEarlyStepImpactedIndex, reschedulingFromStep: this._reschedulingFromStep });
-    console.debug(`[${this._options.cmd}]`,'Current tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
+    this._logger?.debug(`[${this._options.cmd}]`,'Rescheduling from previous step', { mostEarlyStepImpactedIndex, reschedulingFromStep: this._reschedulingFromStep });
+    this._logger?.debug(`[${this._options.cmd}]`,'Current tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
     const subsequentTasks = this._tasks$.slice(this._currentTaskIndex + 1);
     this._tasks$.splice(this._currentTaskIndex + 1, this._tasks$.length - this._currentTaskIndex - 1);
-    console.debug(`[${this._options.cmd}]`,'Subsequent tasks', subsequentTasks.map((t => [t.type, t.target.workspace.name])));
-    console.debug(`[${this._options.cmd}]`,'New tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
-    console.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex);
-    console.debug(`[${this._options.cmd}]`,'Kill all impacted target in current step');
+    this._logger?.debug(`[${this._options.cmd}]`,'Subsequent tasks', subsequentTasks.map((t => [t.type, t.target.workspace.name])));
+    this._logger?.debug(`[${this._options.cmd}]`,'New tasks state', this._tasks$.map((t => [t.type, t.target.workspace.name])));
+    this._logger?.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex);
+    this._logger?.debug(`[${this._options.cmd}]`,'Kill all impacted target in current step');
     Promise.all([...toKill].map((target) => this._killTarget(target))).then(() => {
       if (this._reschedulingAll) {
-        console.debug(`[${this._options.cmd}]`,'Already rescheduling all, not restarting target from step', mostEarlyStepImpactedIndex);
+        this._logger?.debug(`[${this._options.cmd}]`,'Already rescheduling all, not restarting target from step', mostEarlyStepImpactedIndex);
         return;
       }
       if (mostEarlyStepImpactedIndex == null) {
@@ -469,21 +468,21 @@ export class Scheduler {
         const mostEarlyImpactedStep = this._targets.at(mostEarlyStepImpactedIndex);
         return mostEarlyImpactedStep?.some((t) => t.workspace.name === targetToStart.workspace.name);
       });
-      console.debug(`[${this._options.cmd}]`,'to invalidate', actions.toInvalidate.map((e) => e.target.workspace.name));
+      this._logger?.debug(`[${this._options.cmd}]`,'to invalidate', actions.toInvalidate.map((e) => e.target.workspace.name));
       const invalidations = this._resolveInvalidations(actions.toInvalidate);
       this._updateCurrentStep(mostEarlyStepImpactedIndex, queue);
       this._startTargets(toStart, [...invalidations.values()], subsequentTasks);
     }).finally(() => {
-      console.debug(`[${this._options.cmd}]`,'Rescheduling from current previous step done');
+      this._logger?.debug(`[${this._options.cmd}]`,'Rescheduling from current previous step done');
       this._reschedulingFromStep = undefined
     });
   }
 
   private _startTargets(targets: IResolvedTarget[], invalidations$?: ITask[], subsequentTasks?: ITask[]): void {
-    console.debug(`[${this._options.cmd}]`,'Asked to start', targets.map((t) => t.workspace.name));
-    console.debug(`[${this._options.cmd}]`,'Invalidations', invalidations$?.map((t) => t.target.workspace.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'Asked to start', targets.map((t) => t.workspace.name));
+    this._logger?.debug(`[${this._options.cmd}]`,'Invalidations', invalidations$?.map((t) => t.target.workspace.name));
     const areAllProcessed = !this._hasNextTask();
-    console.debug(`[${this._options.cmd}]`,{areAllProcessed, currentIndex: this._currentTaskIndex, concurrency: this.concurrency, running: this._runningTasks});
+    this._logger?.debug(`[${this._options.cmd}]`,{areAllProcessed, currentIndex: this._currentTaskIndex, concurrency: this.concurrency, running: this._runningTasks});
     const toRun$ = [...targets].map((target) => ({
       type: 'run' as const,
       target,
@@ -501,10 +500,10 @@ export class Scheduler {
 
   private async _killTarget(target: IResolvedTarget): Promise<void> {
     const workspace = target.workspace;
-    console.debug(`[${this._options.cmd}]`,'Asked to kill', workspace.name);
+    this._logger?.debug(`[${this._options.cmd}]`,'Asked to kill', workspace.name);
     const existingKilling$ = this._killing$.get(workspace.name);
     if (existingKilling$) {
-      console.debug(`[${this._options.cmd}]`,'Already killing', workspace.name);
+      this._logger?.debug(`[${this._options.cmd}]`,'Already killing', workspace.name);
       return existingKilling$;
     }
     const pids = workspace.getPids(this._options.cmd);
@@ -512,7 +511,7 @@ export class Scheduler {
     const releasePorts = this._options.watch ? this._options.releasePorts?.get(workspace.name)?.filter((port) => Number.isInteger(port)) : undefined;
     const kill$ = workspace.kill({ cmd: this._options.cmd, _workspace: workspace.name, releasePorts })
       .then((killedPids) => {
-        console.debug(`[${this._options.cmd}]`,'Killed', this._options.cmd, workspace.name, 'pids', killedPids);
+        this._logger?.debug(`[${this._options.cmd}]`,'Killed', this._options.cmd, workspace.name, 'pids', killedPids);
         if (killedPids.length) {
           this.obs.next({ type: RunCommandEventEnum.NODE_INTERRUPTED, target, pids: killedPids });
         }
@@ -543,37 +542,37 @@ export class Scheduler {
   private _shouldExecuteNextTask(): boolean {
     // Maximum concurrency already reached
     if (this._runningTasks >= this.concurrency) {
-      console.debug(`[${this._options.cmd}]`,'Maximum concurrency reached, waiting for a task to finish');
+      this._logger?.debug(`[${this._options.cmd}]`,'Maximum concurrency reached, waiting for a task to finish');
       return false;
     }
 
     // Check of next task can be done without breaking topological constraint
     const nextTaskIndex = this._currentTaskIndex + 1;
-    console.debug(`[${this._options.cmd}]`,'all', this._tasks$.map((t) =>[t.type, t.target.workspace.name]));
-    console.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex)
+    this._logger?.debug(`[${this._options.cmd}]`,'all', this._tasks$.map((t) =>[t.type, t.target.workspace.name]));
+    this._logger?.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex)
     const nextTask = this._tasks$.at(nextTaskIndex);
     if (!nextTask) {
-      console.debug(`[${this._options.cmd}]`,'No more task');
+      this._logger?.debug(`[${this._options.cmd}]`,'No more task');
       return false;
     }
-    console.debug(`[${this._options.cmd}]`,'should run next tasks ?', nextTask.type, nextTask.target.workspace.name);
+    this._logger?.debug(`[${this._options.cmd}]`,'should run next tasks ?', nextTask.type, nextTask.target.workspace.name);
     if (this._pendingInvalidations.has(nextTask.target.workspace.name)) {
-      console.debug(`[${this._options.cmd}]`,'Pending invalidation waiting for it to complete');
+      this._logger?.debug(`[${this._options.cmd}]`,'Pending invalidation waiting for it to complete');
       return false;
     }
     const shouldWaitPreviousTasksToComplete = (): boolean => {
       if (nextTask.type !== 'run') {
         return false;
       }
-      console.debug(`[${this._options.cmd}]`,'should run', nextTask.target.workspace.name, '?');
+      this._logger?.debug(`[${this._options.cmd}]`,'should run', nextTask.target.workspace.name, '?');
       const nextTargetStep = this._targets.find((step) => step.find((t) => t.workspace.name === nextTask.target.workspace.name));
       if (!nextTargetStep) {
         // This should not happen, that means a rescheduling is in progress waiting
         return true;
       }
       const nextTargetStepIndex = this._targets.indexOf(nextTargetStep);
-      console.debug(`[${this._options.cmd}]`,'next task step #', nextTargetStepIndex);
-      console.debug(`[${this._options.cmd}]`,'current step #', this._currentStepIndex);
+      this._logger?.debug(`[${this._options.cmd}]`,'next task step #', nextTargetStepIndex);
+      this._logger?.debug(`[${this._options.cmd}]`,'current step #', this._currentStepIndex);
       if (nextTargetStepIndex > this._currentStepIndex) {
         const hasQueued = [...this._currentStep.values()].some((s) => s === 'queued');
         const hasErrored = [...this._currentStep.values()].some((s) => s === 'errored');
@@ -582,7 +581,7 @@ export class Scheduler {
         if (hasErrored  && this._options.mode === 'topological' && !this._options.watch && !this._pendingInvalidations.size) {
           this.obs.error();
         }
-        console.debug(`[${this._options.cmd}]`,{hasQueued, hasErrored, hasProcessing, hasPendingInvalidation});
+        this._logger?.debug(`[${this._options.cmd}]`,{hasQueued, hasErrored, hasProcessing, hasPendingInvalidation});
 
         return hasQueued || hasErrored || hasProcessing || hasPendingInvalidation;
       } else {
@@ -594,11 +593,11 @@ export class Scheduler {
   }
 
   private _executeNextTask(): void {
-    console.debug(`[${this._options.cmd}]`,'Executing next task if possible');
+    this._logger?.debug(`[${this._options.cmd}]`,'Executing next task if possible');
     if (this._shouldExecuteNextTask()) {
       this._currentTaskIndex++;
       const nextTask = this._tasks$.at(this._currentTaskIndex);
-      console.debug(`[${this._options.cmd}]`,'Current task', this._currentTaskIndex, this._tasks$.at(this._currentTaskIndex)?.type, this._tasks$.at(this._currentTaskIndex)?.target.workspace.name);
+      this._logger?.debug(`[${this._options.cmd}]`,'Current task', this._currentTaskIndex, this._tasks$.at(this._currentTaskIndex)?.type, this._tasks$.at(this._currentTaskIndex)?.target.workspace.name);
       if (nextTask) {
         this._executeTask(nextTask);
         if (this._hasNextTask()) {
@@ -620,10 +619,10 @@ export class Scheduler {
       }
       this._currentStep.set(task.target.workspace.name, 'processing');
     }
-    console.debug(`[${this._options.cmd}]`,'Running task', task.type, task.target.workspace.name);
+    this._logger?.debug(`[${this._options.cmd}]`,'Running task', task.type, task.target.workspace.name);
     if (task.type === 'run') {
       this._runningTasks++;
-      console.debug(`[${this._options.cmd}]`,'Current concurrency', this._runningTasks);
+      this._logger?.debug(`[${this._options.cmd}]`,'Current concurrency', this._runningTasks);
     }
     task.operation$.subscribe({
       next: this._onRunCommandEventReceived.bind(this),
@@ -633,10 +632,10 @@ export class Scheduler {
       },
       complete: () => {
         this._completedTasks++;
-        console.debug(`[${this._options.cmd}]`,'Task completed', task.target.workspace.name, this._completedTasks, '/', this._tasks$.length);
+        this._logger?.debug(`[${this._options.cmd}]`,'Task completed', task.target.workspace.name, this._completedTasks, '/', this._tasks$.length);
         if (task.type === 'run') {
           this._runningTasks--;
-          console.debug(`[${this._options.cmd}]`,'Current concurrency', this._runningTasks);
+          this._logger?.debug(`[${this._options.cmd}]`,'Current concurrency', this._runningTasks);
         }
         if (this._hasNextTask()) {
           this._executeNextTask();
@@ -653,7 +652,7 @@ export class Scheduler {
     this.obs.next(evt);
     if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
       this._currentStep.set(evt.target.workspace.name, 'processed');
-      console.debug(`[${this._options.cmd}]`,'Task run', evt.target.workspace.name, 'done. New cache written. Removing from invalidated');
+      this._logger?.debug(`[${this._options.cmd}]`,'Task run', evt.target.workspace.name, 'done. New cache written. Removing from invalidated');
       this._alreadyInvalidated.delete(evt.target.workspace.name);
     }
     if (evt.type === RunCommandEventEnum.NODE_SKIPPED) {
@@ -680,7 +679,7 @@ export class Scheduler {
     target: IResolvedTarget,
   ): Observable<RunCommandEvent> {
     if (target.hasCommand) {
-      console.debug(`[${this._options.cmd}]`,'Started', this._options.cmd, target.workspace.name)
+      this._logger?.debug(`[${this._options.cmd}]`,'Started', this._options.cmd, target.workspace.name)
       const started$: Observable<RunCommandEvent>  = of({ type: RunCommandEventEnum.NODE_STARTED, target });
       const execute$: Observable<RunCommandEvent> = this._executeCommandCatchingErrors(target).pipe(
         map((result) => this._mapToRunCommandEvents(result, target)),
@@ -726,8 +725,8 @@ export class Scheduler {
     const invalidations$ = this._resolveInvalidations(events);
     const index = (insertAt ?? this._currentTaskIndex) + 1;
     this._tasks$.splice(index, 0, ...invalidations$.values());
-    console.debug(`[${this._options.cmd}]`,this._tasks$.map((t) => [t.type, t.target.workspace.name]));
-    console.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex);
+    this._logger?.debug(`[${this._options.cmd}]`,this._tasks$.map((t) => [t.type, t.target.workspace.name]));
+    this._logger?.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex);
   }
 
   private _resolveInvalidations(events: Array<RunCommandEvent>): Map<string, ITask> {
@@ -766,7 +765,7 @@ export class Scheduler {
         }
       }
     }
-    console.debug(`[${this._options.cmd}]`,'Potential invalidations', potentialInvalidations.keys());
+    this._logger?.debug(`[${this._options.cmd}]`,'Potential invalidations', potentialInvalidations.keys());
 
 
     const invalidations$: Map<string, ITask> = new Map();
@@ -784,10 +783,10 @@ export class Scheduler {
     }
 
     for (const [invalidatedName, invalidated] of potentialInvalidations.entries()) {
-      console.debug(`[${this._options.cmd}]`,'Is already planned', isAlreadyPlanned(invalidatedName));
-      console.debug(`[${this._options.cmd}]`,'Is already invalidated', this._alreadyInvalidated.has(invalidatedName));
+      this._logger?.debug(`[${this._options.cmd}]`,'Is already planned', isAlreadyPlanned(invalidatedName));
+      this._logger?.debug(`[${this._options.cmd}]`,'Is already invalidated', this._alreadyInvalidated.has(invalidatedName));
       if (!isAlreadyPlanned(invalidatedName) && !invalidations$.has(invalidatedName) && !this._alreadyInvalidated.has(invalidatedName)) {
-        console.debug(`[${this._options.cmd}]`,'Invalidating', invalidatedName);
+        this._logger?.debug(`[${this._options.cmd}]`,'Invalidating', invalidatedName);
         invalidations$.set(invalidatedName, {
           type: 'invalidate',
           target: invalidated,
@@ -803,14 +802,14 @@ export class Scheduler {
       this._pendingInvalidations.add(target.workspace.name);
       target.workspace.invalidateCache(this._options.cmd, this._options)
         .then(() => {
-          console.debug(`[${this._options.cmd}]`,'invalidated');
+          this._logger?.debug(`[${this._options.cmd}]`,'invalidated');
           obs.next({type: RunCommandEventEnum.CACHE_INVALIDATED, target});
         })
         .catch((error) => obs.next({ type: RunCommandEventEnum.ERROR_INVALIDATING_CACHE, target, error}))
         .finally(() => {
           this._alreadyInvalidated.add(target.workspace.name);
           this._pendingInvalidations.delete(target.workspace.name);
-          console.debug(`[${this._options.cmd}]`,'invalidation completed');
+          this._logger?.debug(`[${this._options.cmd}]`,'invalidation completed');
           obs.complete()
         });
     });

@@ -221,6 +221,7 @@ program
 
 program
   .command('package')
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deployment')
   .option('--verbose', 'print package commands output', false)
   .option('--no-install', 'skip installing dependencies', false)
   .option('--no-recompile', 'skip workspaces recompilation', false)

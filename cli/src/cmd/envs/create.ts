@@ -4,7 +4,7 @@ import { printAccountInfos } from './list';
 import { regions } from '@microlambda/config';
 import { prompt } from 'inquirer';
 import { verifyState } from '../../utils/verify-state';
-import { promises as fs } from 'fs';
+import {existsSync, promises as fs} from 'fs';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { join } from 'path';
 import { init } from '../../utils/init';
@@ -14,7 +14,7 @@ export const createEnv = async (name: string): Promise<void> => {
   logger.lf();
   const projectRoot = resolveProjectRoot();
   const { project } = await init(projectRoot);
-
+  logger.lf();
   const config = await printAccountInfos();
   await verifyState(config);
   const state = new State(config);
@@ -39,13 +39,14 @@ export const createEnv = async (name: string): Promise<void> => {
     },
   ]);
   await state.createEnvironment(name, answers.regions.split(','));
+  logger.lf();
   logger.success('Environment successfully initialized.');
-  const dotenv = [join(projectRoot, `.env.${name}`)];
+  const dotenv = [join(projectRoot, 'envs',`.env.${name}`)];
   for (const service of project.services.values()) {
-    dotenv.push(join(service.root, `.env.${name}`));
+    dotenv.push(join(service.root, `envs`, `.env.${name}`));
   }
-  await Promise.all(
-    dotenv.map((path) =>
+  const createDotEnv = async (path: string): Promise<void> => {
+    if (!existsSync(path)) {
       fs
         .open(path)
         .then(() => {
@@ -54,9 +55,10 @@ export const createEnv = async (name: string): Promise<void> => {
         .catch((err) => {
           logger.warn('Error creating environment file @', path);
           logger.warn(err);
-        }),
-    ),
-  );
-  logger.info();
-  logger.info('Perform your first deploy using yarn mila deploy');
+        });
+    }
+  }
+
+  await Promise.all(dotenv.map((path) => createDotEnv(path)));
+  logger.success(`Perform your first deploy using "yarn mila deploy -e ${name}" 🚀`);
 };

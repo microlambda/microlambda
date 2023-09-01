@@ -5,7 +5,8 @@ import {Workspace} from './graph/workspace';
 import {Project} from './graph/project';
 import {RunCommandEvent, RunCommandEventEnum, Runner} from '@microlambda/runner-core';
 import {ServiceStatus, TranspilingStatus, TypeCheckStatus} from "@microlambda/types";
-import {EnvironmentLoader, SSMResolverMode} from "@microlambda/environments";
+import {SSMResolverMode} from "@microlambda/environments";
+import {resolveEnvs} from "./environment";
 
 export type SchedulerEvent = RunCommandEvent & { cmd: 'start' | 'transpile' | 'build' };
 
@@ -79,8 +80,6 @@ export class Scheduler {
     this._process = new Observable<SchedulerEvent>((obs) => {
       this._resolveEnvs()
         .then((envs) => {
-          console.debug('Resolved envs');
-          console.debug(envs);
           // TODO: Can be done in // on the whole tree
           const transpile$: Observable<SchedulerEvent> = this._runner
             .runCommand({
@@ -212,25 +211,6 @@ export class Scheduler {
   }
 
   private async _resolveEnvs(): Promise<Map<string, Record<string, string>>> {
-    const envs = new Map<string, Record<string, string>>();
-    const loader = new EnvironmentLoader(this.project, this._logger);
-    const loadEnv$ = [...this.project.services.values()].map((service) => loader.loadAll({
-      env: 'local',
-      service,
-      shouldInterpolate: true,
-      overwrite: false,
-      ssmMode: SSMResolverMode.IGNORE,
-      inject: false,
-    }).then((loadedEnv) => {
-      const vars: Record<string, string> = {};
-      for (const entry of loadedEnv) {
-        if (entry.value) {
-          vars[entry.key] = entry.value;
-        }
-      }
-      envs.set(service.name, vars);
-    }));
-    await Promise.all(loadEnv$);
-    return envs;
+    return resolveEnvs(this.project, 'local', SSMResolverMode.IGNORE, this._logger);
   }
 }

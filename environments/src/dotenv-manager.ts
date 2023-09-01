@@ -31,7 +31,7 @@ export class DotenvManager {
   }
 
   get path(): string {
-    return join(this.workspace?.root ?? this.project.root, this.scope?.env ? `.env.${this.scope.env}` : '.env');
+    return join(this.workspace?.root ?? this.project.root, 'envs', this.scope?.env ? `.env.${this.scope.env}` : '.env');
   }
 
   async load(force = false): Promise<Record<string, string>> {

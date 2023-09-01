@@ -50,7 +50,7 @@ export class Workspace {
     this._logger = this.eventsLog?.scope('runner-core/workspace');
   }
 
-  private _logger: EventsLogger | undefined;
+  private readonly _logger: EventsLogger | undefined;
 
   // Statics
   static async loadPackage(root: string): Promise<Package> {
@@ -623,7 +623,7 @@ export class Workspace {
           this._logger?.info('From cache', { cmd: options.cmd, target: this.name });
           this._handleLogs('open', options.cmd);
           cachedOutputs.forEach((output) => {
-            this._handleLogs('append', options.cmd, output.command);
+            this._handleLogs('commandStarted', options.cmd, output.command);
             this._handleLogs('append', options.cmd, output.all);
             this._handleLogs('append', options.cmd, `Process exited with status ${output.exitCode} (${output.took}ms)`);
           });

@@ -1,6 +1,6 @@
-import { EnvironmentLoader, SSMResolverMode } from '@microlambda/environments';
-import { Workspace } from '@microlambda/runner-core';
-import { IBaseLogger, ServerlessInstance } from '@microlambda/types';
+import {EnvironmentLoader, SSMResolverMode} from '@microlambda/environments';
+import {Workspace} from '@microlambda/runner-core';
+import {IBaseLogger, ServerlessInstance} from '@microlambda/types';
 import chalk from 'chalk';
 
 export const injectLambdasEnvironmentVariables = async (
@@ -24,6 +24,7 @@ export const injectLambdasEnvironmentVariables = async (
     shouldInterpolate: hook === 'before-offline',
     overwrite: false,
     inject: hook === 'before-offline',
+    ssmMode: hook === 'before-offline' ? SSMResolverMode.IGNORE : SSMResolverMode.ERROR,
   });
   if (!serverless.service.provider.environment) {
     serverless.service.provider.environment = {};

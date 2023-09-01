@@ -7,3 +7,4 @@ export * from './scheduler';
 export * from './log-handlers/file';
 export * from './shared-infra';
 export * from './shared-infra/types';
+export * from './environment';

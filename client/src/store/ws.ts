@@ -5,8 +5,8 @@ import {logger} from "../logger";
 import {graph, patchGraph} from "./graph";
 import {appendEventLogs, resetEventsLog} from "./events-log";
 import type {IEventLog, ILogsReceivedEvent, IRunCommandEvent} from "@microlambda/types";
-import {appendOfflineLogs} from "./offline-logs";
-import {appendBuildLogs} from "./build-logs";
+import {appendOfflineLogs, resetOfflineLogs} from "./offline-logs";
+import {appendBuildLogs, resetBuildLogs} from "./build-logs";
 
 const log = logger.scope('(store/ws)');
 
@@ -41,6 +41,8 @@ connected.subscribe(async (connected) => {
     // Refresh graph
     void graph.fetch();
     void resetEventsLog();
+    void resetBuildLogs();
+    void resetOfflineLogs();
     log.info('Listening WS events');
     socket.on('run.command.event', async (evt: IRunCommandEvent) => {
       log.debug('Received event', evt);

@@ -1,29 +1,31 @@
 import chalk from 'chalk';
-import { prompt } from 'inquirer';
-import { tap, catchError, mergeAll, map, concatAll } from 'rxjs/operators';
-import { logger } from '../utils/logger';
-import { LockManager } from '@microlambda/remote-state';
-import { resolveDeltas } from '../utils/deploy/resolve-deltas';
-import { beforeDeploy } from '../utils/deploy/pre-requisites';
-import { IDeployCmd } from '../utils/deploy/cmd-options';
-import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
-import { resolveProjectRoot } from '@microlambda/utils';
-import { packageServices } from '../utils/package/do-package';
-import { currentSha1, ICommandResult, RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
-import { printAccountInfos } from './envs/list';
-import ora from 'ora';
-import { beforePackage } from '../utils/package/before-package';
-import { from, Observable, of } from 'rxjs';
-import { DeployEvent, printReport } from '../utils/deploy/print-report';
-import { handleNext } from '../utils/deploy/handle-next';
-import { MilaSpinnies } from '../utils/spinnies';
+import {prompt} from 'inquirer';
+import {catchError, concatAll, map, mergeAll, tap} from 'rxjs/operators';
+import {logger} from '../utils/logger';
+import {LockManager} from '@microlambda/remote-state';
+import {resolveDeltas} from '../utils/deploy/resolve-deltas';
+import {beforeDeploy} from '../utils/deploy/pre-requisites';
+import {IDeployCmd} from '../utils/deploy/cmd-options';
+import {EventLogsFileHandler, EventsLog} from '@microlambda/logger';
+import {resolveProjectRoot} from '@microlambda/utils';
 import {
   deploySharedInfrastructure,
   ISharedInfraFailedDeployEvent,
-  SharedInfraDeployEventType,
+  resolveEnvs,
+  SharedInfraDeployEventType
 } from '@microlambda/core';
-import { getConcurrency } from '../utils/get-concurrency';
-import { relative } from 'path';
+import {packageServices} from '../utils/package/do-package';
+import {currentSha1, ICommandResult, RunCommandEventEnum, Runner, Workspace} from '@microlambda/runner-core';
+import {printAccountInfos} from './envs/list';
+import ora from 'ora';
+import {beforePackage} from '../utils/package/before-package';
+import {from, Observable, of} from 'rxjs';
+import {DeployEvent, printReport} from '../utils/deploy/print-report';
+import {handleNext} from '../utils/deploy/handle-next';
+import {MilaSpinnies} from '../utils/spinnies';
+import {getConcurrency} from '../utils/get-concurrency';
+import {relative} from 'path';
+import {SSMResolverMode} from "@microlambda/environments";
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -33,11 +35,13 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
 
-  const { env, project, state, config } = await beforeDeploy(cmd, eventsLog);
   logger.lf();
   logger.info(chalk.underline(chalk.bold('▼ Account informations')));
   logger.lf();
   await printAccountInfos();
+
+  const { env, project, state, config } = await beforeDeploy(cmd, eventsLog);
+
   const currentRevision = currentSha1();
 
   let lock: LockManager | undefined;
@@ -169,7 +173,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
         error: (err) => {
           logger.error('Error happened updating shared infrastructure');
           logger.error(err);
-          process.exit(1);
+          releaseLock().then(() => process.exit(1));
         },
         complete: () => {
           if (failures.size) {
@@ -185,14 +189,16 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
                 logger.error(failure.err);
               }
             }
-            process.exit(1);
+            releaseLock().then(() => process.exit(1));
           }
           return resolve();
         },
       });
     });
 
-    await packageServices(options, eventsLog);
+    const envs = await resolveEnvs(project, cmd.e, SSMResolverMode.ERROR, eventsLog.scope('deploy/env'));
+    console.debug(envs);
+    await packageServices(options, envs, eventsLog);
 
     logger.lf();
     logger.info('▼ Deploying services');
@@ -230,14 +236,15 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
             },
             cachePrefix,
           });
+          for (const env of envs.values()) {
+            env.AWS_REGION = region;
+          }
           const deploy$ = runner
             .runCommand({
               mode: 'parallel',
               workspaces: [service],
               cmd: 'deploy',
-              env: {
-                AWS_REGION: region,
-              },
+              env: envs,
               stdio: options.verbose ? 'inherit' : 'pipe',
               remoteCache: {
                 region: config.defaultRegion,

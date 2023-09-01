@@ -7,6 +7,8 @@ import { beforePackage } from '../utils/package/before-package';
 import { IPackageCmd } from '../utils/package/cmd-options';
 import { packageServices } from '../utils/package/do-package';
 import { printReport } from '../utils/deploy/print-report';
+import {resolveEnvs} from "@microlambda/core";
+import {SSMResolverMode} from "@microlambda/environments";
 
 export const packagr = async (cmd: IPackageCmd): Promise<void> => {
   try {
@@ -14,7 +16,8 @@ export const packagr = async (cmd: IPackageCmd): Promise<void> => {
     const projectRoot = resolveProjectRoot();
     const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-package-${Date.now()}`)]);
     const options = await beforePackage(projectRoot, cmd, eventsLog);
-    const { failures, success } = await packageServices(options);
+    const envs = await resolveEnvs(options.project, cmd.e, SSMResolverMode.ERROR, eventsLog.scope('deploy/env'));
+    const { failures, success } = await packageServices(options, envs);
     if (failures.size) {
       await printReport(success, failures, options.workspaces.length, 'package', options.verbose);
       process.exit(1);
