@@ -1,7 +1,13 @@
 # Microlambda
 
-Is an opinionated framework that simplifies development of typescript AWS serverless microservices
-architectures.
+Is an opinionated framework that simplifies development of AWS serverless microservices
+project using typescript.
+
+## User documentation
+
+A complete user guide is available on our [official website](https://microlambda.dev)
+
+## Developer documentation
 
 The project is maintained as a monorepo (using yarn workspaces) and contains the following packages:
 
@@ -14,8 +20,6 @@ The project is maintained as a monorepo (using yarn workspaces) and contains the
 * `@microlambda/testing` Tests helpers for easy functional tests setup. 
 * `@microlambda/plugin` Serverless framework plugin that enable custom domain creation and multi-regions deployments. 
 * `@microlambda/docs` Project documentation website. Powered by docusaurus.
-
-## Contribute
 
 ### Project first build
 

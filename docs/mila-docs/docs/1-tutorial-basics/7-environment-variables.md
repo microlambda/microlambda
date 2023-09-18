@@ -1,4 +1,8 @@
-# Managing Lambdas Environment
+---
+sidebar_position: 7
+---
+
+# Lambdas Environment Variables
 
 ## Using dotenv
 
