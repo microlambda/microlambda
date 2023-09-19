@@ -15,9 +15,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
-      - run: cd ./docs
       - run: npm i
+        working-directory: ./docs
       - run: npm run build
+        working-directory: ./docs
       - name: Upload to S3
         uses: jakejarvis/s3-sync-action@master
         with:
