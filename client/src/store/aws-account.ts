@@ -1,11 +1,13 @@
-import {derived, writable} from "svelte/store";
-import {fetchAwsAccount} from "../api";
-import type {ICreateWritable} from "../utils/store";
-import type {IAwsAccount} from "../types/env-var";
-import {environments} from "./environments";
+import { derived, writable } from 'svelte/store';
+import { fetchAwsAccount } from '../api';
+import type { ICreateWritable } from '../utils/store';
+import type { IAwsAccount } from '../types/env-var';
+import { environments } from './environments';
 
 function createAwsAccountStore(): ICreateWritable<IAwsAccount> {
-  const { subscribe, set, update } = writable<IAwsAccount>({ connected: false });
+  const { subscribe, set, update } = writable<IAwsAccount>({
+    connected: false,
+  });
   return {
     subscribe,
     set,
@@ -21,12 +23,12 @@ export const awsAccount = createAwsAccountStore();
 
 awsAccount.subscribe((account) => {
   if (account.connected) {
-    console.debug('Connected to AWS')
     void environments.fetch();
   }
-})
-export const awsConnected = derived(awsAccount, ($account) =>
-  $account.connected,
+});
+export const awsConnected = derived(
+  awsAccount,
+  ($account) => $account.connected,
 );
 
 void awsAccount.fetch();

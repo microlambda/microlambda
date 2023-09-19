@@ -1,7 +1,7 @@
-import type {IEventLog} from "@microlambda/types";
-import {writable} from "svelte/store";
-import {fetchEventLogs} from "../api";
-import type {ICreateWritable} from "../utils/store";
+import type { IEventLog } from '@microlambda/types';
+import { writable } from 'svelte/store';
+import { fetchEventLogs } from '../api';
+import type { ICreateWritable } from '../utils/store';
 
 let logs: IEventLog[] = [];
 
@@ -24,10 +24,10 @@ export const eventsLog = createEventsLog();
 export const resetEventsLog = async (): Promise<void> => {
   eventsLog.set([]);
   return eventsLog.fetch();
-}
+};
 
 export const appendEventLogs = (newLogs: IEventLog[]): void => {
   const updatedLogs = [...logs, ...newLogs];
   logs = updatedLogs;
   eventsLog.set(updatedLogs);
-}
+};

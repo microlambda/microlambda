@@ -1,9 +1,9 @@
-import {writable} from "svelte/store";
-import type { Writable } from "svelte/store";
-import {fetchEnvironments} from "../api";
-import type {ICreateWritable} from "../utils/store";
-import type {IEnvironment} from "../types/env-var";
-import {loadInstances} from "./remote-state";
+import { writable } from 'svelte/store';
+import type { Writable } from 'svelte/store';
+import { fetchEnvironments } from '../api';
+import type { ICreateWritable } from '../utils/store';
+import type { IEnvironment } from '../types/env-var';
+import { loadInstances } from './remote-state';
 
 let selected: IEnvironment | undefined;
 let allEnvironments: IEnvironment[] = [];

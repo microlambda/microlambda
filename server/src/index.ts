@@ -145,7 +145,7 @@ export const startServer = (options: {
   app.get('/api/aws/account', async (req, res) => {
     try {
       const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
-      res.json({ connected: true, account});
+      res.json({ connected: true, account });
     } catch {
       res.json({ connected: false });
     }
@@ -167,15 +167,14 @@ export const startServer = (options: {
     const serviceName = req.params.service;
     const env = req.params.env;
     const loader = new EnvironmentLoader(project);
-    const vars: Array<ILoadedEnvironmentVariable> = await loader
-        .loadAll({
-          env: env,
-          service: serviceName,
-          inject: false,
-          shouldInterpolate: true,
-          ssmMode: SSMResolverMode.WARN,
-          overwrite: false,
-        });
+    const vars: Array<ILoadedEnvironmentVariable> = await loader.loadAll({
+      env: env,
+      service: serviceName,
+      inject: false,
+      shouldInterpolate: true,
+      ssmMode: SSMResolverMode.WARN,
+      overwrite: false,
+    });
     return res.json(vars);
   });
 

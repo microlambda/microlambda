@@ -7,8 +7,8 @@ import { beforePackage } from '../utils/package/before-package';
 import { IPackageCmd } from '../utils/package/cmd-options';
 import { packageServices } from '../utils/package/do-package';
 import { printReport } from '../utils/deploy/print-report';
-import {resolveEnvs} from "@microlambda/core";
-import {SSMResolverMode} from "@microlambda/environments";
+import { resolveEnvs } from '@microlambda/core';
+import { SSMResolverMode } from '@microlambda/environments';
 
 export const packagr = async (cmd: IPackageCmd): Promise<void> => {
   try {

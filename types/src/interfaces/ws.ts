@@ -1,6 +1,6 @@
-import {ServiceStatus} from "../enums/service.status.enum";
-import {ICommandMetric} from "./node-summary";
-import {TranspilingStatus, TypeCheckStatus} from "../enums/compilation.status.enum";
+import { ServiceStatus } from '../enums/service.status.enum';
+import { ICommandMetric } from './node-summary';
+import { TranspilingStatus, TypeCheckStatus } from '../enums/compilation.status.enum';
 
 export interface ILogsReceivedEvent {
   target: string;

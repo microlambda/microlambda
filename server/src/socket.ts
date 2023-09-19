@@ -1,26 +1,37 @@
-import {Server as WebSocketServer, Socket} from 'socket.io';
+import { Server as WebSocketServer, Socket } from 'socket.io';
 import { Server } from 'http';
-import {Scheduler, SchedulerEvent} from '@microlambda/core';
+import { Scheduler, SchedulerEvent } from '@microlambda/core';
 import { EventsLog } from '@microlambda/logger';
 import {
   ICommandMetric,
-  IEventLog, ILogsReceivedEvent,
+  IEventLog,
+  ILogsReceivedEvent,
   IRunCommandEvent,
   ServiceStatus,
   TranspilingStatus,
-  TypeCheckStatus
-} from "@microlambda/types";
+  TypeCheckStatus,
+} from '@microlambda/types';
 import {
-  INodeInterruptedEvent, INodeInterruptingEvent,
+  INodeInterruptedEvent,
+  INodeInterruptingEvent,
   IRunCommandErrorEvent,
-  IRunCommandStartedEvent, IRunCommandSuccessEvent,
+  IRunCommandStartedEvent,
+  IRunCommandSuccessEvent,
   isNodeErroredEvent,
-  isNodeInterruptedEvent, isNodeInterruptingEvent, isNodeStartedEvent,
+  isNodeInterruptedEvent,
+  isNodeInterruptingEvent,
+  isNodeStartedEvent,
   isNodeSucceededEvent,
-  RunCommandEvent, RunCommandEventEnum
-} from "@microlambda/runner-core";
+  RunCommandEvent,
+  RunCommandEventEnum,
+} from '@microlambda/runner-core';
 
-type EligibleSchedulerEvents = (IRunCommandStartedEvent & {cmd: "start" | "transpile" | "build"}) | (IRunCommandSuccessEvent & {cmd: "start" | "transpile" | "build"}) | (IRunCommandErrorEvent & {cmd: "start" | "transpile" | "build"}) | (INodeInterruptedEvent & {cmd: "start" | "transpile" | "build"}) | (INodeInterruptingEvent & {cmd: "start" | "transpile" | "build"});
+type EligibleSchedulerEvents =
+  | (IRunCommandStartedEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (IRunCommandSuccessEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (IRunCommandErrorEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (INodeInterruptedEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (INodeInterruptingEvent & { cmd: 'start' | 'transpile' | 'build' });
 
 export class IOSocketManager {
   private _io: WebSocketServer;
@@ -28,12 +39,7 @@ export class IOSocketManager {
   private _selectedWorkspace = new Map<string, Set<string>>();
   private _connections = new Map<string, Socket>();
 
-  constructor(
-    port: number,
-    server: Server,
-    scheduler: Scheduler,
-    logger: EventsLog,
-  ) {
+  constructor(port: number, server: Server, scheduler: Scheduler, logger: EventsLog) {
     this._scheduler = scheduler;
     const log = logger.scope('@microlambda/server/io');
     log.info('Attaching Websocket');
@@ -44,7 +50,7 @@ export class IOSocketManager {
     this._io.on('connection', (socket) => {
       this._connections.set(socket.id, socket);
       // console.debug('New connection', socket.id);
-      socket.on("disconnect", () => {
+      socket.on('disconnect', () => {
         // console.debug('Disconnected', socket.id);
         this._connections.delete(socket.id);
       });
@@ -54,7 +60,7 @@ export class IOSocketManager {
         if (socketsSubscribedToWorkspace) {
           socketsSubscribedToWorkspace.add(socket.id);
         } else {
-          this._selectedWorkspace.set(workspace, new Set([socket.id]))
+          this._selectedWorkspace.set(workspace, new Set([socket.id]));
         }
         // console.debug(this._selectedWorkspace);
       });
@@ -78,7 +84,7 @@ export class IOSocketManager {
         target,
         log,
         workspace,
-      }
+      };
       for (const socketId of socketsSubscribedToWorkspace) {
         // console.debug('Forwarding to', socketId);
         const socket = this._connections.get(socketId);
@@ -147,23 +153,29 @@ export class IOSocketManager {
   }
 
   static formatEvent(evt: SchedulerEvent): IRunCommandEvent | undefined {
-    if (isNodeErroredEvent(evt) || isNodeSucceededEvent(evt) || isNodeInterruptingEvent(evt) || isNodeInterruptedEvent(evt) || isNodeStartedEvent(evt)) {
+    if (
+      isNodeErroredEvent(evt) ||
+      isNodeSucceededEvent(evt) ||
+      isNodeInterruptingEvent(evt) ||
+      isNodeInterruptedEvent(evt) ||
+      isNodeStartedEvent(evt)
+    ) {
       switch (evt.cmd) {
-        case "transpile":
+        case 'transpile':
           return {
             type: evt.cmd,
             workspace: evt.target.workspace.name,
             status: this.getTranspileStatus(evt),
             metrics: this.formatMetrics(evt),
-          }
-        case "build":
+          };
+        case 'build':
           return {
             type: evt.cmd,
             workspace: evt.target.workspace.name,
             status: this.getTypeCheckStatus(evt),
             metrics: this.formatMetrics(evt),
           };
-        case "start":
+        case 'start':
           return {
             type: evt.cmd,
             workspace: evt.target.workspace.name,

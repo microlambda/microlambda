@@ -4,7 +4,7 @@ import { IEventsLogEntry } from './events-log-entry';
 import { EventsLogger } from './events-logger';
 import { IEventsLogHandler } from './handlers';
 import { Subject } from 'rxjs';
-import { IEventLog } from "@microlambda/types";
+import { IEventLog } from '@microlambda/types';
 
 /**
  * @class EventsLog

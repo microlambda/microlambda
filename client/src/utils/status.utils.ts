@@ -1,4 +1,8 @@
-import type {ServiceStatus, TranspilingStatus, TypeCheckStatus,} from '@microlambda/types';
+import type {
+  ServiceStatus,
+  TranspilingStatus,
+  TypeCheckStatus,
+} from '@microlambda/types';
 
 export const getTranspiled = (status: TranspilingStatus): string => {
   switch (status) {

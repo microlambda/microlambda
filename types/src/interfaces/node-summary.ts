@@ -24,7 +24,7 @@ export interface INodeSummary {
   hasTargets: {
     build: boolean;
     start: boolean;
-  }
+  };
   children: string[];
   metrics: ICommandMetrics;
 }

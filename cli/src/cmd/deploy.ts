@@ -1,31 +1,31 @@
 import chalk from 'chalk';
-import {prompt} from 'inquirer';
-import {catchError, concatAll, map, mergeAll, tap} from 'rxjs/operators';
-import {logger} from '../utils/logger';
-import {LockManager} from '@microlambda/remote-state';
-import {resolveDeltas} from '../utils/deploy/resolve-deltas';
-import {beforeDeploy} from '../utils/deploy/pre-requisites';
-import {IDeployCmd} from '../utils/deploy/cmd-options';
-import {EventLogsFileHandler, EventsLog} from '@microlambda/logger';
-import {resolveProjectRoot} from '@microlambda/utils';
+import { prompt } from 'inquirer';
+import { catchError, concatAll, map, mergeAll, tap } from 'rxjs/operators';
+import { logger } from '../utils/logger';
+import { LockManager } from '@microlambda/remote-state';
+import { resolveDeltas } from '../utils/deploy/resolve-deltas';
+import { beforeDeploy } from '../utils/deploy/pre-requisites';
+import { IDeployCmd } from '../utils/deploy/cmd-options';
+import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
+import { resolveProjectRoot } from '@microlambda/utils';
 import {
   deploySharedInfrastructure,
   ISharedInfraFailedDeployEvent,
   resolveEnvs,
-  SharedInfraDeployEventType
+  SharedInfraDeployEventType,
 } from '@microlambda/core';
-import {packageServices} from '../utils/package/do-package';
-import {currentSha1, ICommandResult, RunCommandEventEnum, Runner, Workspace} from '@microlambda/runner-core';
-import {printAccountInfos} from './envs/list';
+import { packageServices } from '../utils/package/do-package';
+import { currentSha1, ICommandResult, RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
+import { printAccountInfos } from './envs/list';
 import ora from 'ora';
-import {beforePackage} from '../utils/package/before-package';
-import {from, Observable, of} from 'rxjs';
-import {DeployEvent, printReport} from '../utils/deploy/print-report';
-import {handleNext} from '../utils/deploy/handle-next';
-import {MilaSpinnies} from '../utils/spinnies';
-import {getConcurrency} from '../utils/get-concurrency';
-import {relative} from 'path';
-import {SSMResolverMode} from "@microlambda/environments";
+import { beforePackage } from '../utils/package/before-package';
+import { from, Observable, of } from 'rxjs';
+import { DeployEvent, printReport } from '../utils/deploy/print-report';
+import { handleNext } from '../utils/deploy/handle-next';
+import { MilaSpinnies } from '../utils/spinnies';
+import { getConcurrency } from '../utils/get-concurrency';
+import { relative } from 'path';
+import { SSMResolverMode } from '@microlambda/environments';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -197,7 +197,6 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
     });
 
     const envs = await resolveEnvs(project, cmd.e, SSMResolverMode.ERROR, eventsLog.scope('deploy/env'));
-    console.debug(envs);
     await packageServices(options, envs, eventsLog);
 
     logger.lf();

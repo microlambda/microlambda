@@ -1,11 +1,11 @@
-import {writable} from "svelte/store";
-import type {INodeSummary} from "@microlambda/types";
-import {resetBuildLogs} from "./build-logs";
-import {resetOfflineLogs} from "./offline-logs";
-import {logger} from "../logger";
-import type {IGraph} from "../types/graph";
-import {subscribeToLogs} from "./ws";
-import type {ServiceStatus} from "@microlambda/types";
+import { writable } from 'svelte/store';
+import type { INodeSummary } from '@microlambda/types';
+import { resetBuildLogs } from './build-logs';
+import { resetOfflineLogs } from './offline-logs';
+import { logger } from '../logger';
+import type { IGraph } from '../types/graph';
+import { subscribeToLogs } from './ws';
+import type { ServiceStatus } from '@microlambda/types';
 
 const log = logger.scope('(store/selected)');
 
@@ -41,17 +41,21 @@ export const restoreSelected = (graph: IGraph): void => {
   } else {
     selected.set(undefined);
   }
-}
+};
 
-export const patchStatus = (workspace: INodeSummary & { isService: boolean }): void => {
+export const patchStatus = (
+  workspace: INodeSummary & { isService: boolean },
+): void => {
   if (_selected === workspace.name) {
     const updated = { ...workspace };
     selected.set(updated);
   }
 };
 
-export const selectWorkspace = (workspace?: INodeSummary & { isService: boolean }): void => {
+export const selectWorkspace = (
+  workspace?: INodeSummary & { isService: boolean },
+): void => {
   if (_selected !== workspace?.name) {
     selected.set(workspace);
   }
-}
+};

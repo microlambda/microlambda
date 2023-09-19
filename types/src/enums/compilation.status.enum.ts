@@ -11,7 +11,7 @@ export enum TranspilingStatus {
 }
 
 export enum TypeCheckStatus {
-  NOT_CHECKED= 'not_checked',
+  NOT_CHECKED = 'not_checked',
   CHECKING = 'checking',
   SUCCESS = 'type_checked',
   ERROR = 'error_checking_types',

@@ -1,12 +1,16 @@
-import {readable} from "svelte/store";
-import {io} from "socket.io-client";
-import {env} from "../env/dev.env";
-import {logger} from "../logger";
-import {graph, patchGraph} from "./graph";
-import {appendEventLogs, resetEventsLog} from "./events-log";
-import type {IEventLog, ILogsReceivedEvent, IRunCommandEvent} from "@microlambda/types";
-import {appendOfflineLogs, resetOfflineLogs} from "./offline-logs";
-import {appendBuildLogs, resetBuildLogs} from "./build-logs";
+import { readable } from 'svelte/store';
+import { io } from 'socket.io-client';
+import { env } from '../env/dev.env';
+import { logger } from '../logger';
+import { graph, patchGraph } from './graph';
+import { appendEventLogs, resetEventsLog } from './events-log';
+import type {
+  IEventLog,
+  ILogsReceivedEvent,
+  IRunCommandEvent,
+} from '@microlambda/types';
+import { appendOfflineLogs, resetOfflineLogs } from './offline-logs';
+import { appendBuildLogs, resetBuildLogs } from './build-logs';
 
 const log = logger.scope('(store/ws)');
 
@@ -70,4 +74,4 @@ connected.subscribe(async (connected) => {
 export const subscribeToLogs = (workspace: string): void => {
   log.info('Subscribing to logs for', workspace);
   socket.emit('subscribe.to.logs', workspace);
-}
+};

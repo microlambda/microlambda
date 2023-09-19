@@ -1,4 +1,7 @@
-export interface IAwsAccount {connected: boolean, account?: { username: string, arn: string }}
+export interface IAwsAccount {
+  connected: boolean;
+  account?: { username: string; arn: string };
+}
 
 export interface ILoadedEnvironmentVariable {
   key: string;

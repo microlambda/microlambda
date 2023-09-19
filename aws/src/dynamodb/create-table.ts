@@ -3,7 +3,7 @@ import {
   CreateTableCommand,
   CreateTableOutput,
   CreateTableInput,
-  DescribeTableCommand
+  DescribeTableCommand,
 } from '@aws-sdk/client-dynamodb';
 
 export const createTable = async (region: string, options: CreateTableInput): Promise<CreateTableOutput> => {
@@ -11,9 +11,11 @@ export const createTable = async (region: string, options: CreateTableInput): Pr
   const output = await client.send(new CreateTableCommand(options));
   let isActive = false;
   while (!isActive) {
-    const table = await client.send(new DescribeTableCommand({
-      TableName: options.TableName,
-    }));
+    const table = await client.send(
+      new DescribeTableCommand({
+        TableName: options.TableName,
+      }),
+    );
     if (table.Table?.TableStatus === 'ACTIVE') {
       isActive = true;
     }

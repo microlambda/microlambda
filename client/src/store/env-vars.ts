@@ -1,19 +1,24 @@
-import {writable} from "svelte/store";
-import type {ICreateWritable} from "../utils/store";
-import type {ILoadedEnvironmentVariable} from "../types/env-var";
-import {fetchServiceEnvironment} from "../api";
+import { writable } from 'svelte/store';
+import type { ICreateWritable } from '../utils/store';
+import type { ILoadedEnvironmentVariable } from '../types/env-var';
+import { fetchServiceEnvironment } from '../api';
 
 const cache = new Map<string, Array<ILoadedEnvironmentVariable>>();
 let currentRequest: string | undefined;
 export const loadingServiceEnvironment = writable<boolean>(false);
 
-function createServicesEnvironmentStore(): ICreateWritable<Array<ILoadedEnvironmentVariable>, { service: string, env: string}> {
-  const { subscribe, set, update } = writable<Array<ILoadedEnvironmentVariable>>([]);
+function createServicesEnvironmentStore(): ICreateWritable<
+  Array<ILoadedEnvironmentVariable>,
+  { service: string; env: string }
+> {
+  const { subscribe, set, update } = writable<
+    Array<ILoadedEnvironmentVariable>
+  >([]);
   return {
     subscribe,
     set,
     update,
-    fetch: async ({env, service}): Promise<void> => {
+    fetch: async ({ env, service }): Promise<void> => {
       const key = `${service}|${env}`;
       const cached = cache.get(key);
       if (cached) {
@@ -31,12 +36,14 @@ function createServicesEnvironmentStore(): ICreateWritable<Array<ILoadedEnvironm
   };
 }
 
-
 export const serviceEnvironment = createServicesEnvironmentStore();
 
-export const loadServiceEnvironment = async (env: string, service: string): Promise<void> => {
+export const loadServiceEnvironment = async (
+  env: string,
+  service: string,
+): Promise<void> => {
   loadingServiceEnvironment.set(true);
   serviceEnvironment.set([]);
   currentRequest = `${service}|${env}`;
-  await serviceEnvironment.fetch({env, service});
+  await serviceEnvironment.fetch({ env, service });
 };

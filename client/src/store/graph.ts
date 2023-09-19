@@ -1,11 +1,11 @@
-import type {INodeSummary, IRunCommandEvent} from "@microlambda/types";
-import {derived, writable} from "svelte/store";
-import {fetchGraph} from "../api";
-import type {ICreateWritable} from "../utils/store";
-import {logger} from "../logger";
-import {patchStatus, restoreSelected} from "./workspace-selected";
-import type {IGraph} from "../types/graph";
-import {findService, findWorkspace} from "../utils/graph";
+import type { INodeSummary, IRunCommandEvent } from '@microlambda/types';
+import { derived, writable } from 'svelte/store';
+import { fetchGraph } from '../api';
+import type { ICreateWritable } from '../utils/store';
+import { logger } from '../logger';
+import { patchStatus, restoreSelected } from './workspace-selected';
+import type { IGraph } from '../types/graph';
+import { findService, findWorkspace } from '../utils/graph';
 
 const log = logger.scope('(store/graph)');
 
@@ -40,25 +40,28 @@ export const graph = createGraph();
 
 const isService = (w: INodeSummary): boolean => {
   return currentGraph?.services.some((s) => s.name === w.name) ?? false;
-}
+};
 
-const populateIsService = (w: INodeSummary): INodeSummary & { isService: boolean } => {
+const populateIsService = (
+  w: INodeSummary,
+): INodeSummary & { isService: boolean } => {
   return {
     ...w,
     isService: isService(w),
-  }
-}
+  };
+};
 
 export const patchGraph = (events: IRunCommandEvent[]): void => {
   if (!currentGraph) {
     log.warn('Cannot patch graph: not loaded');
-    eventsReceivedWhileRefreshingGraph = eventsReceivedWhileRefreshingGraph.concat(events);
+    eventsReceivedWhileRefreshingGraph =
+      eventsReceivedWhileRefreshingGraph.concat(events);
     return;
   }
   const updatedGraph = { ...currentGraph };
   for (const evt of events) {
     switch (evt.type) {
-      case "start":
+      case 'start':
         const service = findService(updatedGraph, evt.workspace);
         if (service) {
           service.status = evt.status;
@@ -66,7 +69,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
           patchStatus(populateIsService(service));
         }
         break;
-      case "build":
+      case 'build':
         const workspace = findWorkspace(updatedGraph, evt.workspace);
         if (workspace) {
           workspace.typeChecked = evt.status;
@@ -74,7 +77,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
           patchStatus(populateIsService(workspace));
         }
         break;
-      case "transpile":
+      case 'transpile':
         const pkg = findWorkspace(updatedGraph, evt.workspace);
         if (pkg) {
           pkg.transpiled = evt.status;
@@ -85,7 +88,7 @@ export const patchGraph = (events: IRunCommandEvent[]): void => {
     }
   }
   graph.set(updatedGraph);
-}
+};
 
 graph.subscribe((graph) => {
   log.info('Graph updated');

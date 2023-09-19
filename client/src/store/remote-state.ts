@@ -1,11 +1,14 @@
-import {writable} from "svelte/store";
-import {fetchServicesInstance} from "../api";
-import type {ICreateWritable} from "../utils/store";
-import type {IServiceInstance} from "../types/env-var";
+import { writable } from 'svelte/store';
+import { fetchServicesInstance } from '../api';
+import type { ICreateWritable } from '../utils/store';
+import type { IServiceInstance } from '../types/env-var';
 
 const cache = new Map<string, Array<IServiceInstance>>();
 
-function createServicesInstancesStore(): ICreateWritable<Array<IServiceInstance>, string> {
+function createServicesInstancesStore(): ICreateWritable<
+  Array<IServiceInstance>,
+  string
+> {
   const { subscribe, set, update } = writable<Array<IServiceInstance>>([]);
   return {
     subscribe,

@@ -5,7 +5,7 @@ import { ConfigReader } from '@microlambda/config';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { DotenvManager } from './dotenv-manager';
 import chalk from 'chalk';
-import * as process from "process";
+import * as process from 'process';
 
 export interface ILoadedEnvironmentVariable {
   key: string;
@@ -53,7 +53,7 @@ export class EnvironmentLoader {
       stageEnv,
       serviceEnv,
       serviceStageEnv,
-    })
+    });
     const markAsOverwritten = (
       vars: ILoadedEnvironmentVariable[],
       overwrittenBy: ILoadedEnvironmentVariable[],
@@ -87,13 +87,13 @@ export class EnvironmentLoader {
         return false;
       }
       if (options.overwrite) {
-        this._logger?.debug('yes (force)')
+        this._logger?.debug('yes (force)');
         return true;
       }
       const isAlreadyExisting = !!process.env[variable.key];
       this._logger?.debug('is existing', process.env[variable.key], !!process.env[variable.key]);
       this._logger?.debug('has value', !!variable.value);
-      this._logger?.debug('result',  !!variable.value && !isAlreadyExisting);
+      this._logger?.debug('result', !!variable.value && !isAlreadyExisting);
       return !!variable.value && !isAlreadyExisting;
     };
 
@@ -107,7 +107,7 @@ export class EnvironmentLoader {
         }
       }
     }
-    this._logger?.debug({result});
+    this._logger?.debug({ result });
     return result;
   }
 
