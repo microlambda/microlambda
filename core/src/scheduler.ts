@@ -101,13 +101,11 @@ export class Scheduler {
                   case RunCommandEventEnum.NODE_PROCESSED:
                     const workspace = this.project.getWorkspace(evt.target.workspace.name);
                     workspace?.updateStatus().transpiled(TranspilingStatus.TRANSPILED);
-                    workspace
-                      ?.updateMetric()
-                      .transpile({
-                        took: evt.result.overall,
-                        finishedAt: new Date().toISOString(),
-                        fromCache: evt.result.fromCache,
-                      });
+                    workspace?.updateMetric().transpile({
+                      took: evt.result.overall,
+                      finishedAt: new Date().toISOString(),
+                      fromCache: evt.result.fromCache,
+                    });
                     break;
                   case RunCommandEventEnum.NODE_ERRORED:
                     this.project
@@ -146,13 +144,11 @@ export class Scheduler {
                   case RunCommandEventEnum.NODE_PROCESSED:
                     const workspace = this.project.getWorkspace(evt.target.workspace.name);
                     workspace?.updateStatus().typechecked(TypeCheckStatus.SUCCESS);
-                    workspace
-                      ?.updateMetric()
-                      .typecheck({
-                        took: evt.result.overall,
-                        finishedAt: new Date().toISOString(),
-                        fromCache: evt.result.fromCache,
-                      });
+                    workspace?.updateMetric().typecheck({
+                      took: evt.result.overall,
+                      finishedAt: new Date().toISOString(),
+                      fromCache: evt.result.fromCache,
+                    });
                     break;
                   case RunCommandEventEnum.NODE_ERRORED:
                     this.project
@@ -195,13 +191,11 @@ export class Scheduler {
                   case RunCommandEventEnum.NODE_PROCESSED:
                     const workspace = this.project.getWorkspace(evt.target.workspace.name);
                     workspace?.updateStatus().started(ServiceStatus.RUNNING);
-                    workspace
-                      ?.updateMetric()
-                      .start({
-                        took: evt.result.overall,
-                        finishedAt: new Date().toISOString(),
-                        fromCache: evt.result.fromCache,
-                      });
+                    workspace?.updateMetric().start({
+                      took: evt.result.overall,
+                      finishedAt: new Date().toISOString(),
+                      fromCache: evt.result.fromCache,
+                    });
                     break;
                   case RunCommandEventEnum.NODE_ERRORED:
                     this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.CRASHED);
