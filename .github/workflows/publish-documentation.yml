@@ -3,9 +3,9 @@ name: update-doc
 run-name: Update documentation
 
 on:
-  branches:
-    - main
-    - next
+  push:
+    branches:
+      - main
 
 jobs:
   deploy:
