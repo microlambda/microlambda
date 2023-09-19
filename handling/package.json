@@ -34,7 +34,6 @@
     "joi": "^17.9.2"
   },
   "devDependencies": {
-    "@smithy/types": "^1.1.1",
     "@types/aws-lambda": "^8.10.119",
     "@types/node": "^16.18.38",
     "aws-sdk-client-mock": "^3.0.0",

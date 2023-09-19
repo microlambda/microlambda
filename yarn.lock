@@ -2730,7 +2730,6 @@ __metadata:
   dependencies:
     "@aws-sdk/client-secrets-manager": ^3.370.0
     "@aws-sdk/client-ssm": ^3.370.0
-    "@smithy/types": ^1.1.1
     "@types/aws-lambda": ^8.10.119
     "@types/node": ^16.18.38
     aws-sdk-client-mock: ^3.0.0
@@ -3389,15 +3388,6 @@ __metadata:
     "@smithy/util-stream": ^2.0.5
     tslib: ^2.5.0
   checksum: 8dabc85dae6f7a47cc743e412cbf4d95f93bdee163d9b9dfb0c1f4361f0c3c2d627a1e1dcfec506a2052775b8d3da5977ba94d820c3a3abc48c6d2344185d849
-  languageName: node
-  linkType: hard
-
-"@smithy/types@npm:^1.1.1":
-  version: 1.2.0
-  resolution: "@smithy/types@npm:1.2.0"
-  dependencies:
-    tslib: ^2.5.0
-  checksum: 376a1402d356a8dddd804af66ff2d273e57e332a3e9537a98039b47572684aae044d5fcd879ac6eee5cc08640ea00fbef0725a6a16026db5fb8d189473d44fe6
   languageName: node
   linkType: hard
 
