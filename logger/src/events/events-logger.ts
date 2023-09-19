@@ -1,11 +1,12 @@
 import { bold } from 'chalk';
 import { inspect } from 'util';
 import { DEFAULT_INSPECT_DEPTH } from './defaults';
-import { IBaseLogger } from '@microlambda/types';
+import { IBaseLogger, IEventLog } from '@microlambda/types';
 import { EventsLog } from './events-log';
 import { IEventsLogEntry, EventsLogBuffer } from './events-log-entry';
 import { IEventLogOptions, LogLevel } from './options';
 import { IEventsLogHandler } from './handlers';
+import { Subject } from 'rxjs';
 
 export class EventsLogger implements IBaseLogger {
   constructor(
@@ -14,6 +15,7 @@ export class EventsLogger implements IBaseLogger {
     readonly level: LogLevel | 'silent',
     readonly buffer: EventsLogBuffer,
     readonly handlers: IEventsLogHandler[],
+    private readonly _logs$: Subject<IEventLog>,
     readonly scope?: string,
   ) {}
 
@@ -30,6 +32,30 @@ export class EventsLogger implements IBaseLogger {
       return new RegExp('^' + rule.split('*').map(escapeRegex).join('.*') + '$').test(scope);
     };
     return scopes.some((scope) => wildcardMatch(this.scope!, scope));
+  }
+
+  getLogs(level = 'info', scopes?: string[]): IEventsLogEntry[] {
+    const getLvl = (): string[] => {
+      switch (level) {
+        case 'warn':
+          return ['error', 'warn'];
+        case 'error':
+          return ['error'];
+        case 'debug':
+          return ['error', 'warn', 'info', 'debug'];
+        case 'silly':
+          return ['error', 'warn', 'info', 'debug', 'silly'];
+        default:
+          return ['error', 'warn', 'info'];
+      }
+    };
+    const lvl = getLvl();
+    let logs = [...this.buffer.filter((log) => lvl.includes(log.level))];
+    if (scopes) {
+      logs = logs.filter((entry) => entry.scope && scopes.includes(entry.scope));
+    }
+    logs.forEach((entry) => (entry.args = entry.args.map((a) => this._toString(a))));
+    return logs;
   }
 
   silly(...args: unknown[]): void {
@@ -79,6 +105,7 @@ export class EventsLogger implements IBaseLogger {
       this.buffer.shift();
     }
     this.handlers.forEach((handler) => handler.write(entry));
+    this._logs$.next({ ...entry, args: args.map((a) => this._toString(a)) });
   }
 
   private _toEntry(level: LogLevel, args: unknown[]): IEventsLogEntry {

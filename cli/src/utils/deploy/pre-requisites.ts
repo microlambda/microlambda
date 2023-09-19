@@ -40,7 +40,7 @@ export const beforeDeploy = async (
     log.error('Target environment not found');
     logger.error(
       chalk.red(
-        'Target environment not found in remote state. You must initialize environments using yarn mila env create <name>',
+        'Target environment not found in remote state. You must initialize environments using yarn mila envs create <name>',
       ),
     );
     process.exit(1);

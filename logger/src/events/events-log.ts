@@ -4,6 +4,7 @@ import { IEventsLogEntry } from './events-log-entry';
 import { EventsLogger } from './events-logger';
 import { IEventsLogHandler } from './handlers';
 import { Subject } from 'rxjs';
+import { IEventLog } from '@microlambda/types';
 
 /**
  * @class EventsLog
@@ -12,7 +13,8 @@ import { Subject } from 'rxjs';
  * All logs are scoped : each class should declared a unique prefix so logs can be easily filtered.
  */
 export class EventsLog {
-  logs$: Subject<void> = new Subject<void>();
+  private _logs$ = new Subject<IEventLog>();
+  logs$ = this._logs$.asObservable();
 
   constructor(
     readonly options: IEventLogOptions = {
@@ -40,7 +42,6 @@ export class EventsLog {
   }
 
   scope(scope?: string): EventsLogger {
-    this.logs$.next();
-    return new EventsLogger(this, this.options, this.level, this._buffer, this._handlers, scope);
+    return new EventsLogger(this, this.options, this.level, this._buffer, this._handlers, this._logs$, scope);
   }
 }

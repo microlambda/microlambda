@@ -1,4 +1,5 @@
 import type { IGraph } from '../types/graph';
+import type { INodeSummary } from '@microlambda/types';
 
 export const areGraphEquals = (g1: IGraph, g2: IGraph): boolean => {
   if (
@@ -30,4 +31,18 @@ export const areGraphEquals = (g1: IGraph, g2: IGraph): boolean => {
     );
   }
   return false;
+};
+
+export const findWorkspace = (
+  graph: IGraph,
+  name: string,
+): INodeSummary | undefined => {
+  return [...graph.services, ...graph.packages].find((s) => s.name === name);
+};
+
+export const findService = (
+  graph: IGraph,
+  name: string,
+): INodeSummary | undefined => {
+  return graph.services.find((s) => s.name === name);
 };

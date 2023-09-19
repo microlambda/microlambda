@@ -11,9 +11,9 @@
 
   export let size: 'small' | 'big' = 'small';
   export let enabled = false;
-  export let transpiled: TranspilingStatus | undefined;
-  export let typeChecked: TypeCheckStatus | undefined;
-  export let serviceStatus: ServiceStatus | undefined;
+  export let transpiled: TranspilingStatus | undefined = undefined;
+  export let typeChecked: TypeCheckStatus | undefined = undefined;
+  export let serviceStatus: ServiceStatus | undefined = undefined;
 
   let status, statusClass: string;
 
@@ -52,6 +52,9 @@
     background-color: $grey;
     display: inline-flex;
     margin: 1px;
+    &.small.disabled {
+      background-color: transparent;
+    }
     &.red {
       background-color: $red;
     }
@@ -63,6 +66,9 @@
     }
     &.blue {
       background-color: $blue;
+    }
+    &.orange {
+      background-color: $orange;
     }
   }
 </style>

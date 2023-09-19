@@ -5,6 +5,7 @@ import { ConfigReader } from '@microlambda/config';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { DotenvManager } from './dotenv-manager';
 import chalk from 'chalk';
+import * as process from 'process';
 
 export interface ILoadedEnvironmentVariable {
   key: string;
@@ -41,11 +42,18 @@ export class EnvironmentLoader {
     ssmMode?: SSMResolverMode;
     inject: boolean;
   }): Promise<Array<ILoadedEnvironmentVariable>> {
+    this._logger?.debug('existing env', process.env);
     const { env, shouldInterpolate, ssmMode, service } = options;
     const rootEnv = await this._loadFile({ ssmMode, shouldInterpolate });
     const stageEnv = await this._loadFile({ env, ssmMode, shouldInterpolate });
     const serviceEnv = await this._loadFile({ service, ssmMode, shouldInterpolate });
-    const serviceStageEnv = await this._loadFile({ env, ssmMode, shouldInterpolate });
+    const serviceStageEnv = await this._loadFile({ env, service, ssmMode, shouldInterpolate });
+    this._logger?.debug({
+      rootEnv,
+      stageEnv,
+      serviceEnv,
+      serviceStageEnv,
+    });
     const markAsOverwritten = (
       vars: ILoadedEnvironmentVariable[],
       overwrittenBy: ILoadedEnvironmentVariable[],
@@ -53,6 +61,7 @@ export class EnvironmentLoader {
       const nameThatTakePrecedence = new Set([...overwrittenBy.map((v) => v.key)]);
       for (const variable of vars) {
         if (nameThatTakePrecedence.has(variable.key)) {
+          this._logger?.debug('Overwritten:', variable.key, variable.from);
           variable.overwritten = true;
         }
       }
@@ -72,13 +81,19 @@ export class EnvironmentLoader {
     serviceStageEnv.forEach((v) => this._printVariable(v));
 
     const shouldInject = (variable: ILoadedEnvironmentVariable): boolean => {
+      this._logger?.debug('should inject', variable.key, variable.from);
       if (variable.overwritten) {
+        this._logger?.debug('no overwritten');
         return false;
       }
       if (options.overwrite) {
+        this._logger?.debug('yes (force)');
         return true;
       }
       const isAlreadyExisting = !!process.env[variable.key];
+      this._logger?.debug('is existing', process.env[variable.key], !!process.env[variable.key]);
+      this._logger?.debug('has value', !!variable.value);
+      this._logger?.debug('result', !!variable.value && !isAlreadyExisting);
       return !!variable.value && !isAlreadyExisting;
     };
 
@@ -92,6 +107,7 @@ export class EnvironmentLoader {
         }
       }
     }
+    this._logger?.debug({ result });
     return result;
   }
 

@@ -15,15 +15,11 @@ export class Workspace extends CentipodWorkspace {
 
   private _ports: IServicePortsConfig | undefined;
   private _isService: boolean | null = null;
-  private _enabled = false;
   private _transpiled = TranspilingStatus.NOT_TRANSPILED;
   private _typechecked = TypeCheckStatus.NOT_CHECKED;
   private _started: ServiceStatus | null = null;
   private _metrics: ICommandMetrics = {};
 
-  get enabled(): boolean {
-    return this._enabled;
-  }
   get transpiled(): TranspilingStatus {
     return this._transpiled;
   }
@@ -42,13 +38,6 @@ export class Workspace extends CentipodWorkspace {
 
   assignPorts(ports: IServicePortsConfig): void {
     this._ports = ports;
-  }
-
-  enable(): void {
-    this._enabled = true;
-  }
-  disable(): void {
-    this._enabled = true;
   }
 
   updateStatus(): {

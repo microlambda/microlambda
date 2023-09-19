@@ -1,29 +1,45 @@
-import { Server as WebSocketServer } from 'socket.io';
+import { Server as WebSocketServer, Socket } from 'socket.io';
 import { Server } from 'http';
-import { Project, Scheduler, Workspace as MilaWorkspace } from '@microlambda/core';
-import { SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
-import { Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
-import { RunCommandEventEnum, Workspace } from '@microlambda/runner-core';
+import { Scheduler, SchedulerEvent } from '@microlambda/core';
 import { EventsLog } from '@microlambda/logger';
-import { SchedulerEvent } from '@microlambda/core/lib';
+import {
+  ICommandMetric,
+  IEventLog,
+  ILogsReceivedEvent,
+  IRunCommandEvent,
+  ServiceStatus,
+  TranspilingStatus,
+  TypeCheckStatus,
+} from '@microlambda/types';
+import {
+  INodeInterruptedEvent,
+  INodeInterruptingEvent,
+  IRunCommandErrorEvent,
+  IRunCommandStartedEvent,
+  IRunCommandSuccessEvent,
+  isNodeErroredEvent,
+  isNodeInterruptedEvent,
+  isNodeInterruptingEvent,
+  isNodeStartedEvent,
+  isNodeSucceededEvent,
+  RunCommandEvent,
+  RunCommandEventEnum,
+} from '@microlambda/runner-core';
+
+type EligibleSchedulerEvents =
+  | (IRunCommandStartedEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (IRunCommandSuccessEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (IRunCommandErrorEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (INodeInterruptedEvent & { cmd: 'start' | 'transpile' | 'build' })
+  | (INodeInterruptingEvent & { cmd: 'start' | 'transpile' | 'build' });
 
 export class IOSocketManager {
   private _io: WebSocketServer;
-  private _serviceToListen = '';
   private _scheduler: Scheduler;
-  //private _logger: ILogger;
-  private _graph: Project;
-  private _graphUpdated$: Subject<void> = new Subject<void>();
+  private _selectedWorkspace = new Map<string, Set<string>>();
+  private _connections = new Map<string, Socket>();
 
-  constructor(
-    port: number,
-    server: Server,
-    scheduler: Scheduler,
-    logger: EventsLog,
-    graph: Project,
-    initialScope: MilaWorkspace[],
-  ) {
+  constructor(port: number, server: Server, scheduler: Scheduler, logger: EventsLog) {
     this._scheduler = scheduler;
     const log = logger.scope('@microlambda/server/io');
     log.info('Attaching Websocket');
@@ -31,152 +47,143 @@ export class IOSocketManager {
     this._io.on('connect_error', (err) => {
       log.error(`connect_error due to ${err.message}`);
     });
-    this._graph = graph;
     this._io.on('connection', (socket) => {
-      socket.on('service.start', (serviceName: string) => {
-        log.info('received service.start request', serviceName);
-        const service = this._graph.services.get(serviceName);
-        if (!service) {
-          log.error('unknown service', serviceName);
+      this._connections.set(socket.id, socket);
+      // console.debug('New connection', socket.id);
+      socket.on('disconnect', () => {
+        // console.debug('Disconnected', socket.id);
+        this._connections.delete(socket.id);
+      });
+      socket.on('subscribe.to.logs', (workspace: string) => {
+        // console.debug('Subscribing to', workspace, socket.id);
+        const socketsSubscribedToWorkspace = this._selectedWorkspace.get(workspace);
+        if (socketsSubscribedToWorkspace) {
+          socketsSubscribedToWorkspace.add(socket.id);
         } else {
-          this._scheduler.startOne(service);
+          this._selectedWorkspace.set(workspace, new Set([socket.id]));
         }
+        // console.debug(this._selectedWorkspace);
       });
-      socket.on('service.restart', (serviceName: string) => {
-        log.info('received service.restart request', serviceName);
-        const service = this._graph.services.get(serviceName);
-        if (!service) {
-          log.error('unknown service', serviceName);
-        } else {
-          this._scheduler.restartOne(service);
-        }
-      });
-      socket.on('service.stop', (serviceName: string) => {
-        log.info('received service.stop request', serviceName);
-        const service = this._graph.services.get(serviceName);
-        if (!service) {
-          log.error('unknown service', serviceName);
-        } else {
-          this._scheduler.stopOne(service);
-        }
-      });
-      socket.on('send.service.logs', (service: string) => {
-        this._serviceToListen = service;
-      });
-    });
-    this._graphUpdated$.pipe(debounceTime(200)).subscribe(() => {
-      log.info('graph updated');
-      this._io.emit('graph.updated');
     });
     this._scheduler.execution$.subscribe((evt) => {
-      this._handleRunCommandEvent(evt);
+      const formattedEvent = IOSocketManager.formatEvent(evt);
+      if (formattedEvent) {
+        this._io.emit('run.command.event', formattedEvent);
+      }
     });
   }
 
-  private _handleRunCommandEvent(evt: SchedulerEvent): void {
+  handleEventLog(log: IEventLog): void {
+    this._io.emit('event.log.added', log);
+  }
+
+  handleTargetLog(target: string, log: string, workspace: string): void {
+    const socketsSubscribedToWorkspace = this._selectedWorkspace.get(workspace);
+    if (socketsSubscribedToWorkspace?.size) {
+      const targetLog: ILogsReceivedEvent = {
+        target,
+        log,
+        workspace,
+      };
+      for (const socketId of socketsSubscribedToWorkspace) {
+        // console.debug('Forwarding to', socketId);
+        const socket = this._connections.get(socketId);
+        if (socket) {
+          socket.emit('target.log.added', targetLog);
+        } else {
+          socketsSubscribedToWorkspace.delete(socketId);
+        }
+      }
+    }
+  }
+
+  static getTranspileStatus(evt: EligibleSchedulerEvents): TranspilingStatus {
     switch (evt.type) {
       case RunCommandEventEnum.NODE_STARTED:
-        switch (evt.cmd) {
-          case 'start':
-            this.statusUpdated(evt.target.workspace, ServiceStatus.STARTING);
-            break;
-          case 'transpile':
-            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.TRANSPILING);
-            break;
-          case 'build':
-            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.CHECKING);
-            break;
-        }
-        break;
-      case RunCommandEventEnum.NODE_PROCESSED:
-        switch (evt.cmd) {
-          case 'start':
-            this.statusUpdated(evt.target.workspace, ServiceStatus.RUNNING);
-            break;
-          case 'transpile':
-            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.TRANSPILED);
-            break;
-          case 'build':
-            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.SUCCESS);
-            break;
-        }
-        break;
+        return TranspilingStatus.TRANSPILING;
       case RunCommandEventEnum.NODE_ERRORED:
-        switch (evt.cmd) {
-          case 'start':
-            this.statusUpdated(evt.target.workspace, ServiceStatus.CRASHED);
-            break;
-          case 'transpile':
-            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.ERROR_TRANSPILING);
-            break;
-          case 'build':
-            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.ERROR);
-            break;
-        }
-        break;
-      case RunCommandEventEnum.NODE_INTERRUPTING:
-        switch (evt.cmd) {
-          case 'start':
-            this.statusUpdated(evt.target.workspace, ServiceStatus.STARTING);
-            break;
-        }
-        break;
+        return TranspilingStatus.ERROR_TRANSPILING;
+      case RunCommandEventEnum.NODE_PROCESSED:
+        return TranspilingStatus.TRANSPILED;
       case RunCommandEventEnum.NODE_INTERRUPTED:
-        switch (evt.cmd) {
-          case 'start':
-            this.statusUpdated(evt.target.workspace, ServiceStatus.STOPPED);
-            break;
-          case 'transpile':
-            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.NOT_TRANSPILED);
-            break;
-          case 'build':
-            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.NOT_CHECKED);
-            break;
-        }
-        break;
+      case RunCommandEventEnum.NODE_INTERRUPTING:
+        return TranspilingStatus.NOT_TRANSPILED;
     }
   }
 
-  private _graphUpdated(): void {
-    this._graphUpdated$.next();
-  }
-
-  statusUpdated(node: Workspace, status: ServiceStatus): void {
-    this._graphUpdated();
-    this._io.emit('node.status.updated', { node: node.name, status });
-  }
-
-  transpilingStatusUpdated(node: Workspace, status: TranspilingStatus): void {
-    this._graphUpdated();
-    this._io.emit('transpiling.status.updated', {
-      node: node.name,
-      status,
-    });
-  }
-
-  typeCheckStatusUpdated(node: Workspace, status: TypeCheckStatus): void {
-    this._graphUpdated();
-    this._io.emit('type.checking.status.updated', {
-      node: node.name,
-      status,
-    });
-  }
-
-  eventLogAdded(): void {
-    this._io.emit('event.log.added');
-  }
-
-  handleServiceLog(service: string, data: string): void {
-    if (this._serviceToListen === service) {
-      this._io.emit(service + '.log.added', data);
+  static getTypeCheckStatus(evt: EligibleSchedulerEvents): TypeCheckStatus {
+    switch (evt.type) {
+      case RunCommandEventEnum.NODE_STARTED:
+        return TypeCheckStatus.CHECKING;
+      case RunCommandEventEnum.NODE_ERRORED:
+        return TypeCheckStatus.ERROR;
+      case RunCommandEventEnum.NODE_PROCESSED:
+        return TypeCheckStatus.SUCCESS;
+      case RunCommandEventEnum.NODE_INTERRUPTED:
+      case RunCommandEventEnum.NODE_INTERRUPTING:
+        return TypeCheckStatus.NOT_CHECKED;
     }
   }
 
-  handleTscLogs(node: string, data: string): void {
-    this._io.emit('tsc.log.emitted', { node, data });
+  static getServiceStatus(evt: EligibleSchedulerEvents): ServiceStatus {
+    switch (evt.type) {
+      case RunCommandEventEnum.NODE_STARTED:
+        return ServiceStatus.STARTING;
+      case RunCommandEventEnum.NODE_ERRORED:
+        return ServiceStatus.CRASHED;
+      case RunCommandEventEnum.NODE_PROCESSED:
+        return ServiceStatus.RUNNING;
+      case RunCommandEventEnum.NODE_INTERRUPTING:
+        return ServiceStatus.STOPPING;
+      case RunCommandEventEnum.NODE_INTERRUPTED:
+        return ServiceStatus.STOPPED;
+    }
   }
 
-  schedulerStatusChanged(status: SchedulerStatus): void {
-    this._io.emit('scheduler.status.changed', status);
+  static formatMetrics(evt: RunCommandEvent): ICommandMetric | undefined {
+    let metrics: ICommandMetric | undefined;
+    if (isNodeSucceededEvent(evt)) {
+      metrics = {
+        finishedAt: new Date().toISOString(),
+        fromCache: evt.result.fromCache,
+        took: evt.result.overall,
+      };
+    }
+    return metrics;
+  }
+
+  static formatEvent(evt: SchedulerEvent): IRunCommandEvent | undefined {
+    if (
+      isNodeErroredEvent(evt) ||
+      isNodeSucceededEvent(evt) ||
+      isNodeInterruptingEvent(evt) ||
+      isNodeInterruptedEvent(evt) ||
+      isNodeStartedEvent(evt)
+    ) {
+      switch (evt.cmd) {
+        case 'transpile':
+          return {
+            type: evt.cmd,
+            workspace: evt.target.workspace.name,
+            status: this.getTranspileStatus(evt),
+            metrics: this.formatMetrics(evt),
+          };
+        case 'build':
+          return {
+            type: evt.cmd,
+            workspace: evt.target.workspace.name,
+            status: this.getTypeCheckStatus(evt),
+            metrics: this.formatMetrics(evt),
+          };
+        case 'start':
+          return {
+            type: evt.cmd,
+            workspace: evt.target.workspace.name,
+            status: this.getServiceStatus(evt),
+            metrics: this.formatMetrics(evt),
+          };
+      }
+    }
+    return;
   }
 }

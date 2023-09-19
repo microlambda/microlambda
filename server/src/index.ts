@@ -1,11 +1,10 @@
-import express, { Request } from 'express';
+import express from 'express';
 import { createServer, Server } from 'http';
 import { Project, Scheduler, Workspace } from '@microlambda/core';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
 import { EventsLog } from '@microlambda/logger';
-import { getTrimmedSlice } from './utils/logs';
 import { EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable } from '@microlambda/environments';
 import { State } from '@microlambda/remote-state';
 import { IRootConfig } from '@microlambda/config';
@@ -47,6 +46,10 @@ export const startServer = (options: {
       enabled: n.hasCommand('start'),
       transpiled: n.transpiled,
       typeChecked: n.typechecked,
+      hasTargets: {
+        build: n.hasCommand('build'),
+        start: n.hasCommand('start'),
+      },
       status: n.started,
       children: Array.from(n.descendants.values()).map((n) => n.name),
       metrics: n.metrics,
@@ -61,27 +64,12 @@ export const startServer = (options: {
     res.json(response);
   });
 
-  const getSliceFromQuery = (req: Request): [number, number?] => {
-    if (!req.query.slice) {
-      return [0];
-    }
-    const rawSlice = req.query.slice.toString().split(',');
-    if (rawSlice.length === 0 || rawSlice.length > 2 || rawSlice.some((str) => !Number.isInteger(Number(str)))) {
-      log.warn('Invalid slice', rawSlice);
-      return [0];
-    }
-    return rawSlice[1] ? [Number(rawSlice[0]), Number(rawSlice[1])] : [Number(rawSlice[0])];
-  };
-
   app.get('/api/logs', (req, res) => {
     if (project.logger) {
-      let logs = project.logger.buffer.filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level));
-      if (req.query.scope && typeof req.query.scope === 'string') {
-        logs = logs.filter((entry) => entry.scope?.includes(req.query.scope!.toString()));
-      }
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
+      const logs = project.logger.getLogs();
+      return res.json(logs ?? []);
     } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
+      return res.json([]);
     }
   });
 
@@ -140,11 +128,7 @@ export const startServer = (options: {
       return res.status(404).send();
     }
     const logs: string[] | undefined = node.logs('in-memory')?.get('build') as string[] | undefined;
-    if (logs) {
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
-    } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
-    }
+    return res.json(logs ?? []);
   });
 
   app.get('/api/services/:service/logs', (req, res) => {
@@ -155,16 +139,16 @@ export const startServer = (options: {
       return res.status(404).send();
     }
     const logs: string[] | undefined = service.logs('in-memory')?.get('start') as string[] | undefined;
-    if (logs) {
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
-    } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] } });
-    }
+    return res.json(logs ?? []);
   });
 
   app.get('/api/aws/account', async (req, res) => {
-    const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
-    res.json(account);
+    try {
+      const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
+      res.json({ connected: true, account });
+    } catch {
+      res.json({ connected: false });
+    }
   });
 
   app.get('/api/environments', async (req, res) => {
@@ -173,27 +157,24 @@ export const startServer = (options: {
     return res.json(envs);
   });
 
-  app.get('/api/services/:service/environment', async (req, res) => {
-    const serviceName = req.params.service;
-    const loader = new EnvironmentLoader(project);
+  app.get('/api/state/:env', async (req, res) => {
     const state = new State(options.config);
-    const envs = await state.listEnvironments();
-    const vars: Record<string, Array<ILoadedEnvironmentVariable>> = {};
-    const loadEnvironments$ = envs.map((env) =>
-      loader
-        .loadAll({
-          env: env.name,
-          service: serviceName,
-          inject: false,
-          shouldInterpolate: true,
-          ssmMode: SSMResolverMode.IGNORE,
-          overwrite: false,
-        })
-        .then((loaded) => {
-          vars[env.name] = loaded;
-        }),
-    );
-    await Promise.all(loadEnvironments$);
+    const services = await state.listServices(req.params.env);
+    return res.json(services);
+  });
+
+  app.get('/api/services/:service/environment/:env', async (req, res) => {
+    const serviceName = req.params.service;
+    const env = req.params.env;
+    const loader = new EnvironmentLoader(project);
+    const vars: Array<ILoadedEnvironmentVariable> = await loader.loadAll({
+      env: env,
+      service: serviceName,
+      inject: false,
+      shouldInterpolate: true,
+      ssmMode: SSMResolverMode.WARN,
+      overwrite: false,
+    });
     return res.json(vars);
   });
 

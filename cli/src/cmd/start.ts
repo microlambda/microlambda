@@ -50,18 +50,21 @@ export const start = async (options: IStartOptions): Promise<void> => {
     const awsUser = await aws.iam.getCurrentUser(config.defaultRegion);
     logger.lf();
     logger.info('Connected as', chalk.white.bold(awsUser.arn));
+    logger.lf();
   } catch (e) {
     logger.lf();
     logger.warn('Not connected to AWS, live environments infos will be not available.');
+    logger.lf();
   }
-
-  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project, []);
+  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog);
   for (const workspace of project.workspaces.values()) {
     const ioHandler = new WebsocketLogsHandler(workspace, io);
     workspace.addLogsHandler(ioHandler);
   }
 
-  eventsLog.logs$.pipe(debounceTime(200)).subscribe(() => io.eventLogAdded());
+  eventsLog.logs$.pipe(debounceTime(200)).subscribe({
+    next: (log) => io.handleEventLog(log),
+  });
 
   // logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   /*project.services.forEach((service) => {

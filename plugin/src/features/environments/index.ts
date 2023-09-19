@@ -24,6 +24,10 @@ export const injectLambdasEnvironmentVariables = async (
     shouldInterpolate: hook === 'before-offline',
     overwrite: false,
     inject: hook === 'before-offline',
+    ssmMode:
+      hook === 'before-offline'
+        ? SSMResolverMode.IGNORE
+        : SSMResolverMode.ERROR,
   });
   if (!serverless.service.provider.environment) {
     serverless.service.provider.environment = {};

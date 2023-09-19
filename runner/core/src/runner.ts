@@ -131,6 +131,7 @@ export class Runner {
     if (toAdd.length) {
       const previousScope = cmdExecution.scope;
       cmdExecution.scope =  [...previousScope, ...toAdd];
+      this._logger?.info('added: new scope', cmd, cmdExecution.scope.map((w) => w.name));
       cmdExecution.scheduler.scopeChanged(cmdExecution.scope);
     }
   }
@@ -145,6 +146,7 @@ export class Runner {
         return !toRemove.some((w) => w.name === workspace.name);
       }
       cmdExecution.scope = previousScope.filter(shouldBeKeptInScope);
+      this._logger?.info('removed: new scope', cmd, cmdExecution.scope.map((w) => w.name));
       cmdExecution.scheduler.scopeChanged(cmdExecution.scope);
     }
   }

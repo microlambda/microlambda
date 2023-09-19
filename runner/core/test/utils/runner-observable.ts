@@ -44,8 +44,8 @@ const verifyAssertionsV2 = (
   receivedEvents: ReceivedEventV2[],
   receivedCompletion: ObservableEvent | undefined,
 ) => {
-  console.debug('received', receivedEvents);
-  console.debug('expected', expectedTimeframe.flat());
+  logger('received', receivedEvents);
+  logger('expected', expectedTimeframe.flat());
 
   if (expectedCompletion === ObservableEvent.COMPLETE && receivedCompletion !== ObservableEvent.COMPLETE) {
     throw new Error('Expected observable to complete');
@@ -87,7 +87,7 @@ const verifyAssertionsV2 = (
   for (const expectedSlice of expectedTimeframe) {
      const receivedSlice = receivedEvents.slice(currentIndex, currentIndex + expectedSlice.length);
      if (!compare(receivedSlice, expectedSlice)) {
-       console.debug({receivedSlice, expectedSlice})
+       logger({receivedSlice, expectedSlice})
        throw mismatchError;
      }
      currentIndex += expectedSlice.length;
@@ -148,7 +148,7 @@ export const expectObservableV2 = async (
         timedOut();
       },
       error: (err) => {
-        console.error(err);
+        logger(err);
         logger('+', Date.now() - startedAt, 'ms', 'ERRORED', err);
         verifyAssertionsV2(expectedTimeframe, expectedCompletion, receivedEvents, ObservableEvent.ERROR);
         resolve();

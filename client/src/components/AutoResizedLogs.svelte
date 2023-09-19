@@ -5,7 +5,7 @@
   import { logger } from '../logger';
   export let type: 'offline' | 'tsc';
 
-  const log = logger.scope('<BuildLogs/>');
+  const log = logger.scope('<AutoResizedLogs/>');
   let height, width = 0;
 
   const fitToTabContent = () => {
@@ -20,7 +20,7 @@
   tabMounted.subscribe((ready) => {
     log.debug('Tab mounted', ready);
     if (ready) {
-      fitToTabContent();
+      setTimeout(() => fitToTabContent(), 20);
     }
   });
 

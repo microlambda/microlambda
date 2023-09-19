@@ -17,14 +17,14 @@ Get started by **creating a new microlambda project**.
 Microlambda provides a CLI to generate a new project from scratch.
 
 ```bash
-npx @microlambda/cli@latest new <project-name>
+npm init microlambda
 ```
 
 This command will perform the following actions :
 
 * Create a new folder `<project-name>` in the current working directory of your terminal
 * Initialize a git repository in it for our mono-repository
-* Create the project boilerplate with all the configurations file, an example of shared package and an "hello-world" repository. Learn more about [project structure](project-structure)
+* Create the project boilerplate with all the configurations file, an example of shared package and a "hello-world" repository. Learn more about [project structure](./tutorial-basics/project-structure)
 * Install the dependencies and configure workspaces using yarn
 * Initialize remote state and lock
 

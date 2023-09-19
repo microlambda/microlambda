@@ -1,4 +1,4 @@
-import type { LogsSlice } from './logs-slice';
+export type LogsSlice = [number, number];
 
 export interface ILogsResponse<T = string> {
   data: T[];

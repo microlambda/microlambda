@@ -71,7 +71,7 @@
   <label for="auto-scroll">Automatically scroll when receiving new logs</label>
 </div>
 
-<div class="wrapper" bind:this={container} style="{`height: ${height}px; width: ${width}px`}">
+<div class="wrapper" bind:this={container} style="{`height: ${height}px;`}">
   <div class="scrollable" bind:this={div}>
     {#if logs && logs.length && Array.isArray(logs)}
       <VirtualScroll

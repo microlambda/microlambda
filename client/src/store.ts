@@ -5,3 +5,7 @@ export * from './store/offline-logs';
 export * from './store/tab-mounted';
 export * from './store/workspace-selected';
 export * from './store/ws';
+export * from './store/environments';
+export * from './store/env-vars';
+export * from './store/aws-account';
+export * from './store/remote-state';

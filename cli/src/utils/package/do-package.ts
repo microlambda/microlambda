@@ -9,6 +9,7 @@ import { MilaSpinnies } from '../spinnies';
 
 export const packageServices = (
   options: IPackageOptions,
+  env: Map<string, Record<string, string>>,
   eventsLog?: EventsLog,
 ): Promise<{ failures: Set<RunCommandEvent>; success: Set<RunCommandEvent> }> => {
   return new Promise((resolve, reject) => {
@@ -75,6 +76,7 @@ export const packageServices = (
         mode: 'parallel',
         force: options.force || options.forcePackage,
         stdio: spinnies.stdio,
+        env,
       })
       .subscribe({ next: onNext, error: onError, complete: onComplete });
   });
