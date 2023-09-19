@@ -103,4 +103,4 @@ The CORS option can be either a boolean, to enable default CORS headers, or eith
 
 Wrapping your handlers in ``handle`` function also enable microlambda middleware.
 
-Learn more about in the [dedicated section](./6-using-middleware)
+Learn more about in the [dedicated section](./using-middleware)
