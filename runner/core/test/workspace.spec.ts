@@ -2,7 +2,7 @@ import { join, resolve } from "path";
 import { Workspace, Cache, ICommandResult, IDaemonCommandResult } from "../src";
 import { SinonStub, stub } from "sinon";
 import {Observable} from "rxjs";
-import {IProcessResult} from "../lib";
+import {IProcessResult} from "../src";
 
 const mockedProcesses = {
   succeed: resolve(join(__dirname, 'mocks', 'process', 'success-process.js')),
