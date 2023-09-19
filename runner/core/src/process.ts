@@ -32,22 +32,22 @@ export interface ICommandResult extends ExecaReturnValue {
 }
 
 export enum RunCommandEventEnum {
-  TARGETS_RESOLVED,
-  NODE_PROCESSED,
-  NODE_ERRORED,
-  NODE_STARTED,
-  NODE_SKIPPED,
-  CACHE_INVALIDATED,
-  ERROR_INVALIDATING_CACHE,
-  SOURCES_CHANGED,
-  NODE_INTERRUPTED,
-  ARTIFACTS_DOWNLOADED,
-  ARTIFACTS_UPLOADED,
+  TARGETS_RESOLVED = 'target_resolved',
+  NODE_PROCESSED = 'processed',
+  NODE_ERRORED = 'errored',
+  NODE_STARTED = 'started',
+  NODE_SKIPPED = 'skipped',
+  CACHE_INVALIDATED = 'cache_invalidated',
+  ERROR_INVALIDATING_CACHE = 'error_invalidating_cache',
+  SOURCES_CHANGED = 'source_changed',
+  NODE_INTERRUPTING = 'interrupting',
+  NODE_INTERRUPTED = 'interrupted',
+  ARTIFACTS_DOWNLOADED = 'artifacts_downloaded',
+  ARTIFACTS_UPLOADED = 'artifacts_uploaded',
 }
 
 export interface IResolvedTarget {
   workspace: Workspace;
-  affected: boolean;
   hasCommand: boolean;
 }
 
@@ -64,47 +64,62 @@ export interface ISourceChangedEvent {
   events: Array<IChangeEvent>;
 }
 
-export interface INodeInterruptedEvent {
-  type: RunCommandEventEnum.NODE_INTERRUPTED;
-  workspace: Workspace;
+export interface INodeInterruptingEvent {
+  type: RunCommandEventEnum.NODE_INTERRUPTING;
+  target: IResolvedTarget;
+  pids: number[];
 }
 
-export interface INodeSkippedEvent extends IResolvedTarget {
+export interface INodeInterruptedEvent {
+  type: RunCommandEventEnum.NODE_INTERRUPTED;
+  target: IResolvedTarget;
+  pids: number[];
+  // signal: string;
+}
+
+export interface INodeSkippedEvent {
   type: RunCommandEventEnum.NODE_SKIPPED;
+  target: IResolvedTarget;
+
 }
 
 export interface IRunCommandStartedEvent {
   type: RunCommandEventEnum.NODE_STARTED;
-  workspace: Workspace;
+  target: IResolvedTarget;
+  // pids: number[];
 }
 
 export interface IRunCommandSuccessEvent {
   type: RunCommandEventEnum.NODE_PROCESSED;
   result: IProcessResult;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface ICacheInvalidatedEvent {
   type: RunCommandEventEnum.CACHE_INVALIDATED;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface IErrorInvalidatingCacheEvent {
   type: RunCommandEventEnum.ERROR_INVALIDATING_CACHE;
   error: unknown;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
 export interface IRunCommandErrorEvent {
   type: RunCommandEventEnum.NODE_ERRORED;
   error: unknown;
-  workspace: Workspace;
+  target: IResolvedTarget;
 }
 
-export type RunCommandEvent = IRunCommandStartedEvent | ITargetsResolvedEvent | IRunCommandSuccessEvent | IRunCommandErrorEvent | INodeSkippedEvent | ICacheInvalidatedEvent | IErrorInvalidatingCacheEvent | INodeInterruptedEvent | ISourceChangedEvent;
+export type RunCommandEvent = IRunCommandStartedEvent | ITargetsResolvedEvent | IRunCommandSuccessEvent | IRunCommandErrorEvent | INodeSkippedEvent | ICacheInvalidatedEvent | IErrorInvalidatingCacheEvent | INodeInterruptingEvent | INodeInterruptedEvent | ISourceChangedEvent;
 
 export const isTargetResolvedEvent = (event: RunCommandEvent): event is  ITargetsResolvedEvent => event.type === RunCommandEventEnum.TARGETS_RESOLVED;
 export const isNodeSucceededEvent = (event: RunCommandEvent): event is  IRunCommandSuccessEvent => event.type === RunCommandEventEnum.NODE_PROCESSED;
 export const isNodeErroredEvent = (event: RunCommandEvent): event is  IRunCommandErrorEvent => event.type === RunCommandEventEnum.NODE_ERRORED;
 export const isNodeStartedEvent = (event: RunCommandEvent): event is  IRunCommandStartedEvent => event.type === RunCommandEventEnum.NODE_STARTED;
 export const isNodeSkippedEvent = (event: RunCommandEvent): event is  IRunCommandStartedEvent => event.type === RunCommandEventEnum.NODE_SKIPPED;
+export const isSourceChangedEvent = (event: RunCommandEvent): event is  ISourceChangedEvent => event.type === RunCommandEventEnum.SOURCES_CHANGED;
+export const isNodeInterruptingEvent = (event: RunCommandEvent): event is  INodeInterruptingEvent => event.type === RunCommandEventEnum.NODE_INTERRUPTING;
+export const isNodeInterruptedEvent = (event: RunCommandEvent): event is  INodeInterruptedEvent => event.type === RunCommandEventEnum.NODE_INTERRUPTED;
+

@@ -1,21 +1,12 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
-  import { graph, schedulerStatus, selected } from '../store';
+  import { graph, selected } from '../store';
   import { stopAll, startAll, restartAll } from '../api';
   import { logger } from '../logger';
-  import { onMount } from 'svelte';
 
   let visible = false;
   let allStarted = false;
   let schedulerBusy = false;
-
-  schedulerStatus.subscribe((status) => {
-    schedulerBusy = status === 1;
-  })
-
-  onMount(() => {
-    schedulerStatus.fetch();
-  });
 
   graph.subscribe((nodes) => {
     allStarted = nodes.services?.every((n) => n.status === 0 || n.status === 1 || n.status === 4);

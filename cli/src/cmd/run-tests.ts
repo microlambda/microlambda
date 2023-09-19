@@ -91,15 +91,18 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
         }
         switch (next.evt.type) {
           case RunCommandEventEnum.NODE_STARTED: {
-            log?.debug('Testing process started', next.evt.workspace.name);
-            spinnies.add(next.evt.workspace.name, `Testing ${next.evt.workspace.name}${chalk.magenta(affectedInfos)}`);
+            log?.debug('Testing process started', next.evt.target.workspace.name);
+            spinnies.add(
+              next.evt.target.workspace.name,
+              `Testing ${next.evt.target.workspace.name}${chalk.magenta(affectedInfos)}`,
+            );
             if (cmd.verbose) {
               logger.lf();
             }
             break;
           }
           case RunCommandEventEnum.NODE_PROCESSED: {
-            log?.debug('Testing process Finished', next.evt.workspace.name);
+            log?.debug('Testing process Finished', next.evt.target.workspace.name);
             success.add(next.evt);
             log?.debug(spinnies);
             let fromCache = '';
@@ -141,7 +144,7 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
                 if (currentBranch && sha1) {
                   saveExecutions$.push(
                     state.saveExecution({
-                      service: next.evt.workspace.name,
+                      service: next.evt.target.workspace.name,
                       branch: currentBranch,
                       cmd: 'test',
                       current_sha1: sha1,
@@ -151,21 +154,24 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
                 }
               } catch (e) {
                 logger.warn(
-                  next.evt.workspace.name,
+                  next.evt.target.workspace.name,
                   ':',
                   'Failed to cache results for next execution. Tests will be re-run next time.',
                 );
               }
               logger.lf();
             }
-            spinnies.succeed(next.evt.workspace.name, `${next.evt.workspace.name} tested${chalk.magenta(fromCache)}`);
+            spinnies.succeed(
+              next.evt.target.workspace.name,
+              `${next.evt.target.workspace.name} tested${chalk.magenta(fromCache)}`,
+            );
             break;
           }
           case RunCommandEventEnum.NODE_ERRORED: {
-            log?.debug('Test process errored', next.evt.workspace.name);
+            log?.debug('Test process errored', next.evt.target.workspace.name);
             failures.add(next.evt);
             log?.debug(spinnies);
-            spinnies.fail(next.evt.workspace.name, `Failed to test ${next.evt.workspace.name}`);
+            spinnies.fail(next.evt.target.workspace.name, `Failed to test ${next.evt.target.workspace.name}`);
             break;
           }
         }
@@ -180,7 +186,7 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
         } else {
           logger.error('\nError testing', failures.size, 'packages !');
           for (const fail of failures) {
-            logger.error(`Failed to test`, fail.workspace.name);
+            logger.error(`Failed to test`, fail.target.workspace.name);
             printError(fail.error);
           }
         }

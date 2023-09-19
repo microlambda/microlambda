@@ -66,7 +66,7 @@ export const printReport = async (
       ) {
         logger.info(
           chalk.bold(
-            `#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name} in ${
+            `#${i} - Successfully ${actionVerbBase}ed ${action.target.workspace.name} in ${
               (action as DeployEvent).region
             } region\n`,
           ),
@@ -75,7 +75,7 @@ export const printReport = async (
         action.type !== RunCommandEventEnum.TARGETS_RESOLVED &&
         action.type !== RunCommandEventEnum.SOURCES_CHANGED
       ) {
-        logger.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.workspace.name}\n`));
+        logger.info(chalk.bold(`#${i} - Successfully ${actionVerbBase}ed ${action.target.workspace.name}\n`));
       }
       if (isNodeSucceededEvent(action)) {
         action.result.commands.forEach((result) => {

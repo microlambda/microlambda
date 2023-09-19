@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { init } from '../utils/init';
 import { aws } from '@microlambda/aws';
 import chalk from 'chalk';
+import { debounceTime } from 'rxjs/operators';
 
 interface IStartOptions {
   interactive: boolean;
@@ -26,9 +27,21 @@ export const start = async (options: IStartOptions): Promise<void> => {
   // await yarnInstall(graph, logger);
   const DEFAULT_PORT = 4545;
   const scheduler = new Scheduler(project, eventsLog);
+  scheduler.exec(options.interactive ? [] : [...project.services.values()], {
+    transpile: 200,
+    build: 500,
+    start: 500,
+  });
+  const port = options.port || DEFAULT_PORT;
   const startingServer = ora('Starting server').start();
-  const server = await startServer(options.port || DEFAULT_PORT, project, eventsLog, scheduler);
-  startingServer.text = 'Mila server started on http://localhost:4545 ✨';
+  const server = await startServer({
+    port,
+    project,
+    logger: eventsLog,
+    scheduler,
+    config,
+  });
+  startingServer.text = `Mila server started on http://localhost:${port} ✨`;
   startingServer.succeed();
   const starting = ora('Application started 🚀 !').start();
   starting.succeed();
@@ -38,14 +51,18 @@ export const start = async (options: IStartOptions): Promise<void> => {
     logger.lf();
     logger.info('Connected as', chalk.white.bold(awsUser.arn));
   } catch (e) {
+    logger.lf();
     logger.warn('Not connected to AWS, live environments infos will be not available.');
   }
 
-  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project);
+  const io = new IOSocketManager(options.port || DEFAULT_PORT, server, scheduler, eventsLog, project, []);
   for (const workspace of project.workspaces.values()) {
     const ioHandler = new WebsocketLogsHandler(workspace, io);
     workspace.addLogsHandler(ioHandler);
   }
+
+  eventsLog.logs$.pipe(debounceTime(200)).subscribe(() => io.eventLogAdded());
+
   // logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
   /*project.services.forEach((service) => {
     service.status$.subscribe((status) => io.statusUpdated(service, status));

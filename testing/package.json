@@ -1,12 +1,17 @@
 {
   "name": "@microlambda/testing",
-  "version": "1.0.0-alpha.31",
+  "version": "1.0.0-alpha.32",
   "description": "Microlambda testing utilities",
   "author": "Mario Arnautou",
   "repository": {
     "url": "https://bitbucket.org/neoxia/microlambda"
   },
   "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "aws-lambda": "^1.0.7"
+  },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.119",
     "typescript": "^5.0.4"

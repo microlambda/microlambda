@@ -8,7 +8,7 @@ import { sync as glob } from 'fast-glob';
 import { command, ExecaChildProcess, ExecaError, ExecaReturnValue } from 'execa';
 import { CommandResult, ICommandResult, IDaemonCommandResult, IProcessResult, isDaemon } from './process';
 import { Publish, PublishActions, PublishEvent } from './publish';
-import { Observable, race, throwError } from 'rxjs';
+import {first, Observable, race, Subject, throwError} from 'rxjs';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import semver from 'semver';
 import { catchError, finalize } from 'rxjs/operators';
@@ -19,7 +19,7 @@ import { EventsLog, EventsLogger } from '@microlambda/logger';
 import {
   ConfigReader,
   ICommandConfig,
-  ILogsCondition,
+  ILogsCondition, IResolvedPackageConfig,
   isScriptTarget,
   ITargetConfig,
   ITargetsConfig,
@@ -33,6 +33,7 @@ import { RemoteArtifacts } from './artifacts/remote-artifacts';
 import { isUsingRemoteCache, RunOptions } from './runner';
 import { checkWorkingDirectoryClean } from './remote-cache-utils';
 import Timer = NodeJS.Timer;
+import {IBaseLogger} from "@microlambda/types";
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
@@ -63,7 +64,7 @@ export class Workspace {
     return new Workspace(pkg, root, await this.loadConfig(pkg.name, root, project), project, logger);
   }
 
-  static async loadConfig(name: string, root: string, project?: Project): Promise<{ regions?: string[], targets: ITargetsConfig }> {
+  static async loadConfig(name: string, root: string, project?: Project): Promise<IResolvedPackageConfig> {
     const configReader = new ConfigReader(project?.root || root);
     if (!project) {
       // Not loading target for root package
@@ -133,6 +134,20 @@ export class Workspace {
     return this.pkg.version;
   }
 
+  getPids(cmd: string): number[] {
+    const pids: number[] = [];
+    const processes = this._processes.get(cmd);
+    if (!processes) {
+      return pids;
+    }
+    for (const proc of processes.values()) {
+      if (proc.pid) {
+        pids.push(proc.pid);
+      }
+    }
+    return pids;
+  }
+
   private _publish: Publish | undefined;
   private _npmInfos: INpmInfos | undefined;
 
@@ -156,8 +171,8 @@ export class Workspace {
     tested.add(this);
 
     // Test if is affected
-    const affected = await this._testAffected(rev1, rev2, patterns);
-    if (affected) return true;
+    const isAffected = await this._testAffected(rev1, rev2, patterns);
+    if (isAffected) return true;
 
     // Test dependencies if are affected
     for (const dep of this.dependencies()) {
@@ -165,8 +180,8 @@ export class Workspace {
       if (tested.has(dep)) continue;
 
       // Test
-      const affected = await dep._testDepsAffected(tested, rev1, rev2, patterns);
-      if (affected) return true;
+      const isAffected = await dep._testDepsAffected(tested, rev1, rev2, patterns);
+      if (isAffected) return true;
     }
 
     return false;
@@ -221,12 +236,12 @@ export class Workspace {
   ): Promise<IDaemonCommandResult> {
     this._logger?.debug('Handling daemon for process', cmdProcess);
     const logsConditions = Array.isArray(daemonConfig) ? daemonConfig : [daemonConfig];
-    let killed = false;
+    let isKilled = false;
     const crashed$ = new Observable<IDaemonCommandResult>((obs) => {
       this._logger?.debug('Watching for daemon crash');
       cmdProcess.catch((crashed) => {
         this._logger?.error(crashed);
-        if (!killed) {
+        if (!isKilled) {
           this._handleLogs('append', target,'Daemon crashed');
           this._handleLogs('append', target, crashed.message);
           this._logger?.warn('Daemon crashed', { target: this.name });
@@ -265,7 +280,7 @@ export class Workspace {
     const race$ = race(...logsConditionsMet$, crashed$).pipe(
       catchError((e) => {
         this._logger?.error('Error happened, killing process', { target: this.name });
-        killed = true;
+        isKilled = true;
         cmdProcess.kill();
         this._logger?.debug('Rethrow', { target: this.name }, e);
         return throwError(e);
@@ -304,60 +319,79 @@ export class Workspace {
   }
 
   private _processes = new Map<string, Map<string, ExecaChildProcess>>();
+  private _runs = new Map<string, Observable<IProcessResult>>();
+  private _killed$ = new Map<string, Subject<void>>();
 
   get processes(): Map<string, Map<string, ExecaChildProcess<string>>> {
     return this._processes;
   }
 
-  private static _killProcessTree(childProcess: ExecaChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
+  private static _killProcessTree(childProcess: ExecaChildProcess, signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM', logger?: IBaseLogger): Array<number> {
+    const pids = [childProcess.pid ?? -1];
     if (childProcess.pid) {
       processTree(childProcess.pid, (err, children) => {
+        logger?.debug('Sending', signal, 'to', childProcess.pid);
+        childProcess.kill(signal);
         if (err) {
-          childProcess.kill(signal);
+          logger?.error('Error getting process tree', err);
+        } else {
+          children?.forEach((child) => {
+            logger?.debug('Sending', signal, 'to', child.PID);
+            pids.push(Number(child.PID));
+            process.kill(Number(child.PID), signal);
+          });
         }
-        children.forEach((child) => process.kill(Number(child.PID), signal));
       });
     }
+    return pids;
   }
 
-  private static async _killProcess(childProcess: ExecaChildProcess, releasePorts: number[] = [], timeout = 500): Promise<void> {
-    return new Promise<void>((resolve) => {
+  private static async _killProcess(childProcess: ExecaChildProcess, releasePorts: number[] = [], timeout = 500, logger?: IBaseLogger): Promise<Array<number>> {
+    return new Promise<Array<number>>((resolve) => {
+      let pids: number[] = [];
       const watchKilled = (): void => {
         if (childProcess) {
-          let killed = false;
+          let isKilled = false;
           childProcess.on('close', () => {
             // On close, we are sure that every process in process tree has exited, so we can complete observable
             // This is the most common scenario, where sls offline gracefully shutdown underlying hapi server and
             // close properly with status 0
-            killed = true;
-            return resolve();
+            isKilled = true;
+            return resolve(pids);
           });
           // This is a security to make child process release given ports, we give 500ms to process to gracefully
-          // exit. Other wise we send SIGKILL to the whole process tree to free the port (#Rampage)
+          // exit. Otherwise, we send SIGKILL to the whole process tree to free the port (#Rampage)
           if (releasePorts) {
             setTimeout(async () => {
               const areAvailable = await Promise.all(releasePorts.map((port) => isPortAvailable(port)));
-              if (areAvailable.some((a) => !a) && !killed) {
-                this._killProcessTree(childProcess, 'SIGKILL');
+              if (areAvailable.some((a) => !a) && !isKilled) {
+                pids = this._killProcessTree(childProcess, 'SIGKILL', logger);
               }
-              return resolve();
+              return resolve(pids);
             }, timeout);
           }
         }
       };
       if (childProcess) {
         watchKilled();
-        this._killProcessTree(childProcess);
+        pids = this._killProcessTree(childProcess, undefined, logger);
       }
     })
-
   }
 
-  async kill(cmd: string, releasePorts: number[] = [], timeout = 500): Promise<void> {
-    const processes = this._processes.get(cmd);
+  async kill(options: { cmd: string, releasePorts?: number[], timeout?: number, _workspace?: string }): Promise<Array<number>> {
+    const { cmd, releasePorts, timeout } = options;
+    this._logger?.debug('Get processes for', cmd);
+    const processes = this.processes.get(cmd);
+    this._killed$.get(cmd)?.next();
+    this._runs.delete(cmd);
+    this._logger?.debug('Found', processes?.size ?? 0, 'running processes');
+    let killedPids: number[][] = [];
     if (processes) {
-      await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts, timeout)));
+      killedPids = await Promise.all([...processes.values()].map((cp) => Workspace._killProcess(cp, releasePorts ?? [], timeout ?? 500, this._logger)));
     }
+    this._logger?.debug('All processes killed');
+    return killedPids.flat();
   }
 
   private async _runCommand(
@@ -379,6 +413,8 @@ export class Workspace {
       shell: process.platform === 'win32',
       stdio,
     });
+    this._logger?.debug('Process launched', _process.pid);
+    this._logger?.debug('Registering process for', target)
     if (this._processes.has(target)) {
       this._processes.get(target)?.set(cmdId, _process);
     } else {
@@ -437,7 +473,8 @@ export class Workspace {
     return [reformatCommandConfig(config.cmd)];
   }
 
-  private static isDaemon(config: ITargetConfig): boolean {
+  isDaemon(target: string): boolean {
+    const config = this.config[target];
     if (isScriptTarget(config)) {
       return !!config.daemon;
     }
@@ -455,7 +492,7 @@ export class Workspace {
   ): Promise<Array<CommandResult>> {
     const results: Array<CommandResult> = [];
     const config = this.config[target];
-    const commands = await this._resolveCommands(config);
+    const commands = this._resolveCommands(config);
     const _args = Array.isArray(args) ? args : [args];
     let idx = 0;
     this._handleLogs('open', target);
@@ -465,7 +502,7 @@ export class Workspace {
       results.push(await this._runCommand(target, _cmd, _args[idx], env, stdio));
       idx++;
     }
-    if (!Workspace.isDaemon(config)) {
+    if (!this.isDaemon(target)) {
       this._handleLogs('close', target);
     }
     this._logger?.info('All commands run', { cmd: target, target: this.name }, results);
@@ -512,6 +549,20 @@ export class Workspace {
     }
   }
 
+  static args(options: RunOptions): string[] | string | undefined {
+    if (options.args instanceof Map) {
+      return options.args.get(this.name);
+    }
+    return options.args;
+  }
+
+  static env(options: RunOptions): Record<string, string> | undefined {
+    if (options.env instanceof Map) {
+      return options.env.get(this.name);
+    }
+    return options.env;
+  }
+
   private async _run(options: RunOptions): Promise<IProcessResult> {
     const now = Date.now();
     this._logger?.info('Running command', { cmd: options.cmd, workspace: this.name });
@@ -527,8 +578,8 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        options.args,
-        options.env,
+        Workspace.args(options),
+        Workspace.env(options),
         this.eventsLog,
         options.cachePrefix,
       );
@@ -538,20 +589,23 @@ export class Workspace {
         this,
         options.cmd,
         options.affected,
-        options.args,
-        options.env,
+        Workspace.args(options),
+        Workspace.env(options),
         this.eventsLog,
         options.cachePrefix,
       );
     } else {
       this._logger?.info('Using local cache');
-      cache = new LocalCache(this, options.cmd, options.args, options.env, this.eventsLog);
-      artifacts = new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog);
+      cache = new LocalCache(this, options.cmd,         Workspace.args(options),
+        Workspace.env(options), this.eventsLog);
+      artifacts = new LocalArtifacts(this, options.cmd,         Workspace.args(options),
+        Workspace.env(options), this.eventsLog);
     }
     try {
       if (options.force) {
         this._logger?.info('Option --force used, removing artifacts to run command on a clean state');
-        await new LocalArtifacts(this, options.cmd, options.args, options.env, this.eventsLog).removeArtifacts();
+        await new LocalArtifacts(this, options.cmd,         Workspace.args(options),
+          Workspace.env(options), this.eventsLog).removeArtifacts();
       } else {
         const cachedOutputs = await cache?.read();
         if (artifacts instanceof RemoteArtifacts) {
@@ -575,41 +629,73 @@ export class Workspace {
         }
       }
       this._logger?.info('Running command');
-      return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd,         Workspace.args(options),
+        Workspace.env(options), options.stdio);
     } catch (e) {
       this._logger?.warn('Error reading cache', { cmd: options.cmd, target: this.name });
       // Error reading from cache
-      return this._runCommandsAndCache(cache, artifacts, options.cmd, options.args, options.env, options.stdio);
+      return this._runCommandsAndCache(cache, artifacts, options.cmd,         Workspace.args(options),
+        Workspace.env(options), options.stdio);
     }
   }
 
-  run(options: RunOptions): Observable<IProcessResult> {
+  run(options: RunOptions, _workspaceName?: string): Observable<IProcessResult> {
     this._logger?.info('Preparing command', { cmd: options.cmd, workspace: this.name });
-    return new Observable<IProcessResult>((obs) => {
+    const alreadyRunningProcess = this._runs.get(options.cmd);
+    if (alreadyRunningProcess) {
+      this._logger?.debug('Already running cmd', options.cmd)
+      return alreadyRunningProcess;
+    }
+    const killed$ = new Subject<void>();
+    this._killed$.set(options.cmd, killed$);
+    const process =  new Observable<IProcessResult>((obs) => {
       if (isUsingRemoteCache(options) && options.remoteCache) {
         checkWorkingDirectoryClean(this.project?.root);
       }
+      killed$.pipe(first()).subscribe(() => {
+        obs.complete();
+      });
       this._logger?.info('Running cmd', { cmd: options.cmd, target: this.name });
       this._logger?.debug('Running cmd', options.cmd)
       this._run(options)
         .then((result) => {
           this._logger?.info('Success', { cmd: options.cmd, target: this.name }, result);
-          obs.next(result)
+          obs.next(result);
         })
         .catch((error) => {
           this._logger?.warn('Errored', { cmd: options.cmd, target: this.name }, error);
           obs.error(error);
         }).finally(() => {
           this._logger?.debug('Completed', { cmd: options.cmd, target: this.name });
-          obs.complete();
+          this._runs.delete(options.cmd);
+          this._killed$.delete(options.cmd);
+        obs.complete();
       });
     });
+    this._runs.set(options.cmd, process);
+    return process;
   }
 
-  async invalidateLocalCache(
+  async invalidateCache(
     cmd: string,
+    options: RunOptions,
   ): Promise<void> {
-    const cache = new LocalCache(this, cmd);
+    let cache: Cache;
+    if (isUsingRemoteCache(options) && options.remoteCache) {
+      cache = new RemoteCache(
+        options.remoteCache.region,
+        options.remoteCache.bucket,
+        this,
+        options.cmd,
+        options.affected,
+        Workspace.args(options),
+        Workspace.env(options),
+        this.eventsLog,
+        options.cachePrefix,
+      );
+    } else {
+      cache = new LocalCache(this, cmd);
+    }
     await cache.invalidate();
   }
 

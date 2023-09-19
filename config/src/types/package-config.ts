@@ -40,10 +40,25 @@ export interface ITargetsConfig {
   [cmd: string]: ITargetConfig;
 }
 
+interface IPortsConfig {
+  http?: number;
+  lambda?: number;
+  websocket?: number;
+}
+
 export interface IPackageConfig {
   regions?: string[];
   targets?: {
     [cmd: string]: ITargetConfig;
   };
+  ports?: IPortsConfig | number;
   extends?: string;
+}
+
+export interface IResolvedPackageConfig {
+  regions?: string[];
+  targets: {
+    [cmd: string]: ITargetConfig;
+  };
+  ports?: IPortsConfig | number;
 }

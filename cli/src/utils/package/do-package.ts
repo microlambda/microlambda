@@ -22,31 +22,31 @@ export const packageServices = (
     const onNext = (evt: RunCommandEvent): void => {
       switch (evt.type) {
         case RunCommandEventEnum.NODE_STARTED: {
-          log?.debug('Packaging process started', evt.workspace.name);
-          spinnies.add(evt.workspace.name, `Packaging ${evt.workspace.name}`);
+          log?.debug('Packaging process started', evt.target.workspace.name);
+          spinnies.add(evt.target.workspace.name, `Packaging ${evt.target.workspace.name}`);
           break;
         }
         case RunCommandEventEnum.NODE_PROCESSED: {
-          log?.debug('Packaging process Finished', evt.workspace.name);
-          const metadata = Packager.readMetadata(evt.workspace);
+          log?.debug('Packaging process Finished', evt.target.workspace.name);
+          const metadata = Packager.readMetadata(evt.target.workspace);
           log?.debug('Metadata', metadata);
           success.add(evt);
           const usesLayer = metadata.megabytes?.layer;
           const codeSize = metadata.megabytes?.code || metadata.megabytes;
           log?.debug(spinnies);
           spinnies.succeed(
-            evt.workspace.name,
-            `${evt.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
+            evt.target.workspace.name,
+            `${evt.target.workspace.name} packaged ${chalk.cyan(codeSize + 'MB')}${
               usesLayer ? chalk.cyan(` (using ${metadata.megabytes?.layer + 'MB'} layer)`) : ''
             } ${chalk.gray(metadata.took + 'ms')} ${evt.result.fromCache ? chalk.gray('(from cache)') : ''}`,
           );
           break;
         }
         case RunCommandEventEnum.NODE_ERRORED: {
-          log?.debug('Packaging process errored', evt.workspace.name);
+          log?.debug('Packaging process errored', evt.target.workspace.name);
           failures.add(evt);
           log?.debug(spinnies);
-          spinnies.fail(evt.workspace.name, `Failed to package ${evt.workspace.name}`);
+          spinnies.fail(evt.target.workspace.name, `Failed to package ${evt.target.workspace.name}`);
           break;
         }
       }
@@ -61,7 +61,7 @@ export const packageServices = (
       } else {
         logger.error('\nError packaging', failures.size, 'packages !');
         for (const fail of failures) {
-          logger.error(`Failed to package`, fail.workspace.name);
+          logger.error(`Failed to package`, fail.target.workspace.name);
           printError(fail.error);
         }
       }

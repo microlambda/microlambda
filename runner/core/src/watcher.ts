@@ -35,14 +35,14 @@ export class Watcher {
   private _events$ = new Subject<Array<WatchEvent>>();
 
   watch(): Observable<Array<WatchEvent>> {
-    this.unwatch();
+    void this.unwatch();
     const filesChanges = new Map<IResolvedTarget, Array<IChangeEvent>>();
     this.targets.forEach((target) => {
       const patterns = target.workspace.config[this.cmd]?.src?.internals;
       patterns?.forEach((glob) => {
         this._logger?.info('Watching', join(target.workspace.root, glob));
-        this._watcher = watch(join(target.workspace.root, glob)).on('all', (event, path) => {
-          if (event === 'change') {
+        this._watcher = watch(join(target.workspace.root, glob), { ignoreInitial: true }).on('all', (event, path) => {
+          if (event === 'change' || event === 'add' || event === 'unlink') {
             if (filesChanges.has(target)) {
               filesChanges.get(target)?.push({ event, path });
             } else {
@@ -65,8 +65,8 @@ export class Watcher {
     return this._events$.asObservable();
   }
 
-  unwatch(): void {
-    this._watcher?.close();
+  async unwatch(): Promise<void> {
     this._events$ = new Subject<Array<WatchEvent>>();
+    await this._watcher?.close();
   }
 }

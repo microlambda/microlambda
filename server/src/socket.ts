@@ -1,11 +1,12 @@
 import { Server as WebSocketServer } from 'socket.io';
 import { Server } from 'http';
-import { isStopServiceEvent, Project, RunCommandSchedulerEvent, Scheduler } from '@microlambda/core';
-import { IEventLog, SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
+import { Project, Scheduler, Workspace as MilaWorkspace } from '@microlambda/core';
+import { SchedulerStatus, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { RunCommandEventEnum, Workspace } from '@microlambda/runner-core';
 import { EventsLog } from '@microlambda/logger';
+import { SchedulerEvent } from '@microlambda/core/lib';
 
 export class IOSocketManager {
   private _io: WebSocketServer;
@@ -15,21 +16,18 @@ export class IOSocketManager {
   private _graph: Project;
   private _graphUpdated$: Subject<void> = new Subject<void>();
 
-  constructor(port: number, server: Server, scheduler: Scheduler, logger: EventsLog, graph: Project) {
+  constructor(
+    port: number,
+    server: Server,
+    scheduler: Scheduler,
+    logger: EventsLog,
+    graph: Project,
+    initialScope: MilaWorkspace[],
+  ) {
     this._scheduler = scheduler;
     const log = logger.scope('@microlambda/server/io');
-    log.info('Attaching Websocket', {
-      cors: {
-        origin: ['http://localhost:4200', 'http://localhost:' + port],
-        credentials: true,
-      },
-    });
-    this._io = new WebSocketServer(server, {
-      cors: {
-        origin: ['http://localhost:4200', 'http://localhost:' + port],
-        credentials: true,
-      },
-    });
+    log.info('Attaching Websocket');
+    this._io = new WebSocketServer(server);
     this._io.on('connect_error', (err) => {
       log.error(`connect_error due to ${err.message}`);
     });
@@ -70,73 +68,69 @@ export class IOSocketManager {
       log.info('graph updated');
       this._io.emit('graph.updated');
     });
-    this._scheduler.events$.subscribe((evt) => {
-      if (isStopServiceEvent(evt)) {
-        switch (evt.type) {
-          case 'stopping':
-            this.statusUpdated(evt.service, ServiceStatus.STOPPING);
-            break;
-          case 'stopped':
-            this.statusUpdated(evt.service, ServiceStatus.STOPPED);
-            break;
-        }
-      } else {
-        this._handleRunCommandEvent(evt);
-      }
+    this._scheduler.execution$.subscribe((evt) => {
+      this._handleRunCommandEvent(evt);
     });
   }
 
-  private _handleRunCommandEvent(evt: RunCommandSchedulerEvent): void {
+  private _handleRunCommandEvent(evt: SchedulerEvent): void {
     switch (evt.type) {
       case RunCommandEventEnum.NODE_STARTED:
         switch (evt.cmd) {
           case 'start':
-            this.statusUpdated(evt.workspace, ServiceStatus.STARTING);
+            this.statusUpdated(evt.target.workspace, ServiceStatus.STARTING);
             break;
           case 'transpile':
-            this.transpilingStatusUpdated(evt.workspace, TranspilingStatus.TRANSPILING);
+            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.TRANSPILING);
             break;
           case 'build':
-            this.typeCheckStatusUpdated(evt.workspace, TypeCheckStatus.CHECKING);
+            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.CHECKING);
             break;
         }
         break;
       case RunCommandEventEnum.NODE_PROCESSED:
         switch (evt.cmd) {
           case 'start':
-            this.statusUpdated(evt.workspace, ServiceStatus.RUNNING);
+            this.statusUpdated(evt.target.workspace, ServiceStatus.RUNNING);
             break;
           case 'transpile':
-            this.transpilingStatusUpdated(evt.workspace, TranspilingStatus.TRANSPILED);
+            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.TRANSPILED);
             break;
           case 'build':
-            this.typeCheckStatusUpdated(evt.workspace, TypeCheckStatus.SUCCESS);
+            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.SUCCESS);
             break;
         }
         break;
       case RunCommandEventEnum.NODE_ERRORED:
         switch (evt.cmd) {
           case 'start':
-            this.statusUpdated(evt.workspace, ServiceStatus.CRASHED);
+            this.statusUpdated(evt.target.workspace, ServiceStatus.CRASHED);
             break;
           case 'transpile':
-            this.transpilingStatusUpdated(evt.workspace, TranspilingStatus.ERROR_TRANSPILING);
+            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.ERROR_TRANSPILING);
             break;
           case 'build':
-            this.typeCheckStatusUpdated(evt.workspace, TypeCheckStatus.ERROR);
+            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.ERROR);
+            break;
+        }
+        break;
+      case RunCommandEventEnum.NODE_INTERRUPTING:
+        switch (evt.cmd) {
+          case 'start':
+            this.statusUpdated(evt.target.workspace, ServiceStatus.STARTING);
             break;
         }
         break;
       case RunCommandEventEnum.NODE_INTERRUPTED:
         switch (evt.cmd) {
           case 'start':
-            this.statusUpdated(evt.workspace, ServiceStatus.STOPPED);
+            this.statusUpdated(evt.target.workspace, ServiceStatus.STOPPED);
             break;
           case 'transpile':
-            this.transpilingStatusUpdated(evt.workspace, TranspilingStatus.NOT_TRANSPILED);
+            this.transpilingStatusUpdated(evt.target.workspace, TranspilingStatus.NOT_TRANSPILED);
             break;
           case 'build':
-            this.typeCheckStatusUpdated(evt.workspace, TypeCheckStatus.NOT_CHECKED);
+            this.typeCheckStatusUpdated(evt.target.workspace, TypeCheckStatus.NOT_CHECKED);
             break;
         }
         break;
@@ -168,8 +162,8 @@ export class IOSocketManager {
     });
   }
 
-  eventLogAdded(log: IEventLog): void {
-    this._io.emit('event.log.added', log);
+  eventLogAdded(): void {
+    this._io.emit('event.log.added');
   }
 
   handleServiceLog(service: string, data: string): void {

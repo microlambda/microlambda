@@ -4,11 +4,10 @@
       "cmd": "../node_modules/.bin/prettier . --write",
       "src": {
         "internals": [
-          "{src,test}/**/*.{ts,tsx,json,yml}",
-          "eslintrc"
+          "**/*.{ts,tsx,json,yml,html,md,js,jsx}"
         ],
         "root": [
-          "eslintrc"
+          ".prettierrc.json"
         ]
       }
     },

@@ -4,7 +4,7 @@ import { regions } from './regions';
 import { rootConfigSchema } from './schemas/root-config';
 import { packageConfigSchema } from './schemas/package-config';
 import { IRootConfig } from './types/root-config';
-import { IPackageConfig, ITargetsConfig } from './types/package-config';
+import { IPackageConfig, IResolvedPackageConfig, ITargetsConfig } from './types/package-config';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { promises as fs } from 'fs';
 import { EventsLog } from '@microlambda/logger';
@@ -25,7 +25,7 @@ export class ConfigReader {
 
   private _configs: {
     root?: IRootConfig;
-    packages: Map<string, { regions?: string[]; targets: ITargetsConfig }>;
+    packages: Map<string, IResolvedPackageConfig>;
   } = {
     packages: new Map(),
   };
@@ -60,10 +60,7 @@ export class ConfigReader {
     return value;
   }
 
-  async loadPackageConfig(
-    packageName: string,
-    packageRoot: string,
-  ): Promise<{ regions?: string[]; targets: ITargetsConfig }> {
+  async loadPackageConfig(packageName: string, packageRoot: string): Promise<IResolvedPackageConfig> {
     this._logger?.debug('Loading package config', packageName, packageRoot);
     const alreadyLoaded = this._configs.packages.get(packageName);
     if (alreadyLoaded) {
@@ -72,8 +69,11 @@ export class ConfigReader {
     }
     const path = join(packageRoot, 'mila.json');
     const targets = await this._loadPackageConfig(path);
-    const rootConfig: IPackageConfig = (await this._readPackageConfigFile(path)) as IPackageConfig;
-    const loaded = { targets, regions: rootConfig.regions };
+    const packageConfig = (await this._readPackageConfigFile(path)) as IPackageConfig;
+    delete packageConfig.extends;
+    const loaded = packageConfig as IResolvedPackageConfig;
+    loaded.targets = targets;
+    loaded.regions = packageConfig.regions;
     this._logger?.debug('Config file loaded', packageName, loaded);
     this._configs.packages.set(packageName, loaded);
     return loaded;

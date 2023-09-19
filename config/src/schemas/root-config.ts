@@ -16,11 +16,7 @@ export const rootConfigSchema = joi.object().keys({
     })
     .required(),
   sharedResources: joi
-    .object()
-    .keys({
-      shared: joi.string().optional(),
-      env: joi.string().optional(),
-    })
+    .alternatives([joi.array().items(joi.string().required()).optional(), joi.string().optional()])
     .optional(),
   targets: targetsConfigSchema.optional(),
 });

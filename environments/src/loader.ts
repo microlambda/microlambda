@@ -6,7 +6,7 @@ import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { DotenvManager } from './dotenv-manager';
 import chalk from 'chalk';
 
-interface ILoadedEnvironmentVariable {
+export interface ILoadedEnvironmentVariable {
   key: string;
   value?: string;
   from: string;

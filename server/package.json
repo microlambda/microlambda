@@ -14,8 +14,11 @@
     "lerna"
   ],
   "dependencies": {
+    "@microlambda/aws": "workspace:*",
     "@microlambda/client": "workspace:*",
+    "@microlambda/config": "workspace:*",
     "@microlambda/core": "workspace:*",
+    "@microlambda/environments": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "body-parser": "^1.20.2",

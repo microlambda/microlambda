@@ -1,15 +1,14 @@
 import { Project as CentipodProject } from '@microlambda/runner-core';
 import { Workspace } from './workspace';
 import { resolvePorts } from '../resolve-ports';
-import { IConfig } from '../config/config';
-import { ConfigReader } from '../config/read-config';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
+import { ConfigReader } from '@microlambda/config';
 
 export class Project extends CentipodProject {
   private _services = new Map<string, Workspace>();
   private _packages = new Map<string, Workspace>();
 
-  constructor(prj: CentipodProject, private readonly _milaConfig: IConfig, readonly logger?: EventsLogger) {
+  constructor(prj: CentipodProject, readonly logger?: EventsLogger) {
     super(prj.pkg, prj.root, prj._config, prj.project);
   }
 
@@ -24,10 +23,7 @@ export class Project extends CentipodProject {
     log?.info('Loading project');
     const centipodProject = await super.loadProject(root, logger);
     log?.info('Found', centipodProject.workspaces.size, 'workspaces');
-    const configReader = new ConfigReader();
-    const config = configReader.readConfig();
-    const prj = new Project(centipodProject, config, log);
-    configReader.validate(prj);
+    const prj = new Project(centipodProject, log);
     for (const [name, workspace] of centipodProject.workspaces.entries()) {
       const milaWorkspace = new Workspace(workspace);
       if (milaWorkspace.isService) {
@@ -40,7 +36,7 @@ export class Project extends CentipodProject {
     log?.info('Found', prj.packages.size, 'packages');
     log?.info('Found', prj.services.size, 'services');
     log?.info('Resolving ports');
-    const ports = resolvePorts([...prj.workspaces.values()], config);
+    const ports = await resolvePorts([...prj.workspaces.values()], new ConfigReader(root));
     prj.services.forEach((s) => {
       log?.info('Service', s.name, 'is assigned port', ports[s.name]?.http);
       s.assignPorts(ports[s.name]);
