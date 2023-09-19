@@ -1,9 +1,9 @@
-import {derived, writable} from "svelte/store";
-import type {ILogsResponse} from "../types/logs-response";
-import {fetchServiceLogs} from "../api";
-import type {ICreateWritable} from "../utils/store";
-import type {INodeSummary} from "@microlambda/types";
-import type {LogsSlice} from "../types/logs-slice";
+import { derived, writable } from 'svelte/store';
+import type { ILogsResponse } from '../types/logs-response';
+import { fetchServiceLogs } from '../api';
+import type { ICreateWritable } from '../utils/store';
+import type { INodeSummary } from '@microlambda/types';
+import type { LogsSlice } from '../types/logs-slice';
 
 let currentSlice: LogsSlice | undefined;
 function createServiceLogs(): ICreateWritable<ILogsResponse, string> {
@@ -24,14 +24,18 @@ function createServiceLogs(): ICreateWritable<ILogsResponse, string> {
 }
 
 const serviceLogs = createServiceLogs();
-export const offlineLogs = derived(serviceLogs, ($logs: ILogsResponse<string>) =>
-  $logs.data.map((log, idx) => ({ id: idx, text: log })),
+export const offlineLogs = derived(
+  serviceLogs,
+  ($logs: ILogsResponse<string>) =>
+    $logs.data.map((log, idx) => ({ id: idx, text: log })),
 );
 
-export const resetOfflineLogs = async (workspace?: (INodeSummary & {isService: boolean})): Promise<void> => {
+export const resetOfflineLogs = async (
+  workspace?: INodeSummary & { isService: boolean },
+): Promise<void> => {
   currentSlice = undefined;
   serviceLogs.set({ data: [], metadata: { count: 0, slice: [0, 0] } });
   if (workspace && workspace.isService) {
     await serviceLogs.fetch(workspace.name);
   }
-}
+};

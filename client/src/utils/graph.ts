@@ -1,4 +1,4 @@
-import type { IGraph } from "../types/graph";
+import type { IGraph } from '../types/graph';
 
 export const areGraphEquals = (g1: IGraph, g2: IGraph): boolean => {
   if (

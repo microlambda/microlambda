@@ -1,10 +1,9 @@
-import type {ILogsResponse} from "../types/logs-response";
-import type {IEventLog} from "@microlambda/types";
-import {writable} from "svelte/store";
-import {fetchEventLogs} from "../api";
-import type {ICreateWritable} from "../utils/store";
-import type {LogsSlice} from "../types/logs-slice";
-
+import type { ILogsResponse } from '../types/logs-response';
+import type { IEventLog } from '@microlambda/types';
+import { writable } from 'svelte/store';
+import { fetchEventLogs } from '../api';
+import type { ICreateWritable } from '../utils/store';
+import type { LogsSlice } from '../types/logs-slice';
 
 let currentSlice: LogsSlice | undefined;
 

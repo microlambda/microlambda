@@ -1,9 +1,9 @@
-import {writable} from "svelte/store";
-import type {INodeSummary} from "@microlambda/types";
-import {resetBuildLogs} from "./build-logs";
-import {resetOfflineLogs} from "./offline-logs";
-import {logger} from "../logger";
-import type {IGraph} from "../types/graph";
+import { writable } from 'svelte/store';
+import type { INodeSummary } from '@microlambda/types';
+import { resetBuildLogs } from './build-logs';
+import { resetOfflineLogs } from './offline-logs';
+import { logger } from '../logger';
+import type { IGraph } from '../types/graph';
 
 const log = logger.scope('(store/selected)');
 
@@ -33,4 +33,4 @@ export const restoreSelected = (graph: IGraph): void => {
       selected.set({ ...service, isService: true });
     }
   }
-}
+};

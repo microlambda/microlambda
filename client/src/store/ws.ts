@@ -1,8 +1,8 @@
-import {readable} from "svelte/store";
-import {io} from "socket.io-client";
-import {env} from "../env/dev.env";
-import {logger} from "../logger";
-import {updateGraph} from "./graph";
+import { readable } from 'svelte/store';
+import { io } from 'socket.io-client';
+import { env } from '../env/dev.env';
+import { logger } from '../logger';
+import { updateGraph } from './graph';
 
 const log = logger.scope('(store/ws)');
 

@@ -1,11 +1,11 @@
-import type {INodeSummary} from "@microlambda/types";
-import {derived, writable} from "svelte/store";
-import {fetchGraph} from "../api";
-import type {IGraph} from "../types/graph";
-import type {ICreateWritable} from "../utils/store";
-import { areGraphEquals } from "../utils/graph";
-import {logger} from "../logger";
-import {restoreSelected} from "./workspace-selected";
+import type { INodeSummary } from '@microlambda/types';
+import { derived, writable } from 'svelte/store';
+import { fetchGraph } from '../api';
+import type { IGraph } from '../types/graph';
+import type { ICreateWritable } from '../utils/store';
+import { areGraphEquals } from '../utils/graph';
+import { logger } from '../logger';
+import { restoreSelected } from './workspace-selected';
 
 const log = logger.scope('(store/graph)');
 
@@ -42,7 +42,7 @@ export const updateGraph = async (): Promise<void> => {
     log.info('Graph updated', currentGraph);
     graph.set(newGraph);
   }
-}
+};
 
 graph.subscribe((graph) => {
   restoreSelected(graph);
