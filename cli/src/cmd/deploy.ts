@@ -16,7 +16,6 @@ import {
 import { packageServices } from '../utils/package/do-package';
 import { currentSha1, ICommandResult, RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
 import { printAccountInfos } from './envs/list';
-import ora from 'ora';
 import { beforePackage } from '../utils/package/before-package';
 import { from, Observable, of } from 'rxjs';
 import { DeployEvent, printReport } from '../utils/deploy/print-report';
@@ -25,7 +24,7 @@ import { MilaSpinnies } from '../utils/spinnies';
 import { getConcurrency } from '../utils/get-concurrency';
 import { relative } from 'path';
 import { SSMResolverMode } from '@microlambda/environments';
-import { checkIfEnvIsLock } from '../utils/check-env-lock';
+import {checkIfEnvIsLock} from '../utils/check-env-lock';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -44,21 +43,8 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
 
   const currentRevision = currentSha1();
 
-  const lock = await checkIfEnvIsLock(cmd, env, project, config);
+  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config);
 
-  const releaseLock = async (msg?: string): Promise<void> => {
-    if (lock) {
-      try {
-        logger.lf();
-        const lockRelease = ora(msg || '🔒 Releasing lock...');
-        await lock?.releaseLock();
-        lockRelease.succeed('🔒 Lock released !');
-      } catch (e) {
-        logger.error('Error releasing lock, you probably would have to do it yourself !', e);
-        throw e;
-      }
-    }
-  };
   process.on('SIGINT', async () => {
     eventsLog.scope('process').warn('SIGINT signal received');
     try {

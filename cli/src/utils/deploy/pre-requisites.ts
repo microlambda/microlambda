@@ -9,7 +9,6 @@ import { verifyState } from '../verify-state';
 import { IDeployCmd } from './cmd-options';
 import { Project } from '@microlambda/core';
 import { IRootConfig } from '@microlambda/config';
-import { services } from '@microlambda/client/src/store/graph';
 
 export const beforeDeploy = async (
   cmd: IDeployCmd,

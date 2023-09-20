@@ -19,6 +19,7 @@ import { destroyEnv } from './cmd/envs/destroy';
 import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
 import { runTests } from './cmd/run-tests';
+import {releaseLock} from "./utils/check-env-lock";
 
 const program = new Command();
 
@@ -281,7 +282,7 @@ program
     'defines how much threads can be used for parallel tasks',
     getDefaultThreads().toString(),
   )
-  .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')
@@ -291,6 +292,22 @@ program
         await remove(cmd);
       }),
   );
+
+program
+  .command('release-lock')
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion')
+  .option(
+    '-s <service>, --service <service>',
+    'the service you want to remove. If no specified all services will be removed.',
+  )
+  .description('Release lock for a given environment')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await releaseLock(cmd.e, cmd.s);
+      }),
+  );
+
 
 program
   .command('generate [blueprint]')
