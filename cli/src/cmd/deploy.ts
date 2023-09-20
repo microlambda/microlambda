@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import { prompt } from 'inquirer';
 import { catchError, concatAll, map, mergeAll, tap } from 'rxjs/operators';
 import { logger } from '../utils/logger';
-import { LockManager } from '@microlambda/remote-state';
 import { resolveDeltas } from '../utils/deploy/resolve-deltas';
 import { beforeDeploy } from '../utils/deploy/pre-requisites';
 import { IDeployCmd } from '../utils/deploy/cmd-options';
@@ -26,6 +25,7 @@ import { MilaSpinnies } from '../utils/spinnies';
 import { getConcurrency } from '../utils/get-concurrency';
 import { relative } from 'path';
 import { SSMResolverMode } from '@microlambda/environments';
+import { checkIfEnvIsLock } from '../utils/check-env-lock';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -44,16 +44,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
 
   const currentRevision = currentSha1();
 
-  let lock: LockManager | undefined;
-  if (!cmd.skipLock) {
-    lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
-    if (await lock.isLocked()) {
-      logger.lf();
-      logger.info('🔒 Environment is locked. Waiting for the lock to be released');
-      await lock.waitLockToBeReleased();
-    }
-    await lock.lock();
-  }
+  const lock = await checkIfEnvIsLock(cmd, env, project, config);
 
   const releaseLock = async (msg?: string): Promise<void> => {
     if (lock) {

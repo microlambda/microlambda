@@ -6,10 +6,12 @@ import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { logger } from '../utils/logger';
 import chalk from 'chalk';
 import { printAccountInfos } from './envs/list';
-import { LockManager } from '@microlambda/remote-state';
 import { getConcurrency } from '../utils/get-concurrency';
 import { resolveEnvs } from '@microlambda/core';
 import { SSMResolverMode } from '@microlambda/environments';
+import { checkIfEnvIsLock } from '../utils/check-env-lock';
+import { prompt } from 'inquirer';
+import Table from 'cli-table3';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
   const projectRoot = resolveProjectRoot();
@@ -24,31 +26,47 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
   await printAccountInfos();
 
-  // TODO: Avoid duplication, factorize with deploy
-  let lock: LockManager | undefined;
-  if (!cmd.skipLock) {
-    lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
-    if (await lock.isLocked()) {
-      logger.lf();
-      logger.info('🔒 Environment is locked. Waiting for the lock to be released');
-      await lock.waitLockToBeReleased();
-    }
-    await lock.lock();
-  }
+  await checkIfEnvIsLock(cmd, env, project, config);
 
-  // If cmd.s is given (coma-seperated list of services)
-  // Verify that every service exist (already done in "beforeDeploy", just return list)
+  // process.on('SIGINT', ... => realeaseLock..
 
   const servicesInstances = await state.listServices(cmd.e);
   servicesInstances.map((i) => [i.name, i.sha1]);
 
-  // Print table of services to destroy to the user
-  // Using lib 'cli-table3'
-  // Display table with services name as rows
-  // And currently deployed sha1 in column
+  const table = new Table({
+    head: ['Service', 'sha1'],
+    style: {
+      head: ['cyan'],
+    },
+  });
 
-  // If --only-prompt  process.exit(0)
-  // Ask for confirmation except if option --no-prompt
+  for (const [serviceName, sha1] of servicesInstances) {
+    const row = [chalk.bold(serviceName)];
+    row.push(chalk.grey(sha1));
+    table.push(row);
+  }
+
+  // eslint-disable-next-line no-console
+  console.log(table.toString());
+
+  if (cmd.onlyPrompt) {
+    logger.info('Only Prompt');
+    process.exit(0);
+  }
+
+  if (cmd.prompt) {
+    const answers = await prompt([
+      {
+        type: 'confirm',
+        name: 'ok',
+        message: `Are you sure you want to execute this remove on ${chalk.magenta.bold(env.name)}`,
+      },
+    ]);
+    if (!answers.ok) {
+      // await releaseLock(); ??
+      process.exit(2);
+    }
+  }
 
   // Source env
   const envs = await resolveEnvs(project, cmd.e, SSMResolverMode.ERROR, eventsLog.scope('remove/env'));
