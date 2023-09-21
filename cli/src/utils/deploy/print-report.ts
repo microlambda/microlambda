@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { printError } from '../print-process-error';
 
 export type DeployEvent = RunCommandEvent & { region: string };
+export type RemoveEvent = RunCommandEvent & { region: string };
 
 export const printReport = async (
   actions: Set<DeployEvent | RunCommandEvent>,

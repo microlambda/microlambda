@@ -105,7 +105,10 @@ export class Runner {
   }
 
   private _areInScope(cmd: string, workspaces: Workspace[]): { inside: Array<Workspace>, outside: Array<Workspace>, cmdExecution: ICurrentExecution } {
+    console.log('-areInScope');
     const cmdExecution = this._currentExecution.get(cmd);
+    console.log('this._currentExecution : ', this._currentExecution);
+    console.log('cmdExecution : ', cmdExecution);
     const previousScope = cmdExecution?.scope;
     this._logger?.debug({ previousScope: previousScope?.map((w) => w.name) });
     if (!previousScope) {
