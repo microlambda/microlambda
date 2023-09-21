@@ -19,7 +19,7 @@ import { destroyEnv } from './cmd/envs/destroy';
 import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
 import { runTests } from './cmd/run-tests';
-import {releaseLock} from "./utils/check-env-lock";
+import { releaseLock } from './utils/check-env-lock';
 
 const program = new Command();
 
@@ -307,7 +307,6 @@ program
         await releaseLock(cmd.e, cmd.s);
       }),
   );
-
 
 program
   .command('generate [blueprint]')

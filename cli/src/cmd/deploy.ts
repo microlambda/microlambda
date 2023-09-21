@@ -24,7 +24,7 @@ import { MilaSpinnies } from '../utils/spinnies';
 import { getConcurrency } from '../utils/get-concurrency';
 import { relative } from 'path';
 import { SSMResolverMode } from '@microlambda/environments';
-import {checkIfEnvIsLock} from '../utils/check-env-lock';
+import { checkIfEnvIsLock } from '../utils/check-env-lock';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();

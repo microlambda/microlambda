@@ -1,11 +1,11 @@
-import {IEnvironment, LockManager} from '@microlambda/remote-state';
-import {logger} from './logger';
-import {IDeployCmd} from './deploy/cmd-options';
-import {IRootConfig} from '@microlambda/config';
-import {Project} from '@microlambda/core';
-import ora from "ora";
-import {resolveProjectRoot} from "@microlambda/utils";
-import {init} from "./init";
+import { IEnvironment, LockManager } from '@microlambda/remote-state';
+import { logger } from './logger';
+import { IDeployCmd } from './deploy/cmd-options';
+import { IRootConfig } from '@microlambda/config';
+import { Project } from '@microlambda/core';
+import ora from 'ora';
+import { resolveProjectRoot } from '@microlambda/utils';
+import { init } from './init';
 
 export const checkIfEnvIsLock = async (
   cmd: IDeployCmd,
@@ -56,4 +56,4 @@ export const releaseLock = async (env: string, services?: string): Promise<void>
     logger.error('Error releasing lock, you probably would have to do it yourself !', e);
     process.exit(1);
   }
-}
+};
