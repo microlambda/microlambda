@@ -2,9 +2,14 @@ import { ExecaReturnValue } from 'execa';
 
 export enum SharedInfraDeployEventType {
   STACKS_RESOLVED = 'stack_resolved',
-  STARTED = 'started',
-  SUCCEEDED = 'succeeded',
-  FAILED = 'failed',
+  DEPLOYING = 'deploying',
+  NO_CHANGES = 'no_changes',
+  REMOVING='removing',
+  DEPLOYED = 'deployed',
+  REMOVED = 'removed',
+  FAILED_DEPLOY = 'failed_deploy',
+  FAILED_REMOVE = 'failed_removed',
+
 }
 interface ISharedInfraStacksResolvedEvent {
   type: SharedInfraDeployEventType.STACKS_RESOLVED;
@@ -12,14 +17,21 @@ interface ISharedInfraStacksResolvedEvent {
 }
 
 interface ISharedInfraStartDeployEvent {
-  type: SharedInfraDeployEventType.STARTED;
+  type: SharedInfraDeployEventType.DEPLOYING | SharedInfraDeployEventType.REMOVING;
+  stack: string;
+  env: string;
+  region: string;
+}
+
+interface ISharedInfraSkipDeployEvent {
+  type: SharedInfraDeployEventType.NO_CHANGES;
   stack: string;
   env: string;
   region: string;
 }
 
 interface ISharedInfraSuccessDeployEvent {
-  type: SharedInfraDeployEventType.SUCCEEDED;
+  type: SharedInfraDeployEventType.DEPLOYED | SharedInfraDeployEventType.REMOVED;
   stack: string;
   env: string;
   region: string;
@@ -27,7 +39,7 @@ interface ISharedInfraSuccessDeployEvent {
 }
 
 export interface ISharedInfraFailedDeployEvent {
-  type: SharedInfraDeployEventType.FAILED;
+  type: SharedInfraDeployEventType.FAILED_DEPLOY | SharedInfraDeployEventType.FAILED_REMOVE;
   stack: string;
   env: string;
   region: string;

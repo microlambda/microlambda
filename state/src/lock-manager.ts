@@ -81,9 +81,17 @@ export class LockManager {
     const workspaces = this.workspaces;
     if (!workspaces) {
       const allLocks = await this.getLocks();
-      await Promise.all(allLocks.map((l) => this.state.delete(l.k1, l.k2)));
+      await Promise.all(allLocks.map((l) => this.state.delete(l.k1, l.k2).catch((e) => {
+        if (!e.message.includes('does not exists')) {
+          throw e;
+        }
+      })));
     } else {
-      await Promise.all(workspaces.map((w) => this.state.delete(this.env, `lock|${w}`)));
+      await Promise.all(workspaces.map((w) => this.state.delete(this.env, `lock|${w}`).catch((e) => {
+        if (!e.message.includes('does not exists')) {
+          throw e;
+        }
+      })));
     }
   }
 }

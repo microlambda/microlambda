@@ -1,4 +1,4 @@
-import Model, { beginsWith } from 'dynamodels';
+import Model, {beginsWith, eq} from 'dynamodels';
 import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { IRootConfig } from '@microlambda/config';
@@ -72,6 +72,17 @@ export interface IServiceInstance extends IServiceInstanceRequest {
   k3: string;
 }
 
+export interface ISharedInfraStateRequest {
+  yml: string;
+  region: string;
+  checksum: string;
+}
+
+export interface ISharedInfraState extends ISharedInfraStateRequest{
+  k1: string; // $yml
+  k2: string; // Shared-infra|$region
+}
+
 export class State extends Model<unknown> {
   constructor(config: IRootConfig) {
     super();
@@ -115,16 +126,18 @@ export class State extends Model<unknown> {
     return services as IServiceInstance[];
   }
 
-  async createReplicate(env: string, region: string): Promise<void> {
+  async createReplicate(env: string, region: string): Promise<IEnvironment> {
     const toUpdate = await this.findEnv(env);
     toUpdate.regions.push(region);
     await this.save(toUpdate);
+    return toUpdate;
   }
 
-  async removeReplicate(env: string, region: string): Promise<void> {
+  async removeReplicate(env: string, region: string): Promise<IEnvironment> {
     const toUpdate = await this.findEnv(env);
     toUpdate.regions = toUpdate.regions.filter((r) => r !== region);
     await this.save(toUpdate);
+    return toUpdate;
   }
 
   async listServiceInstances(env: string, serviceName: string): Promise<Array<IServiceInstance>> {
@@ -170,5 +183,29 @@ export class State extends Model<unknown> {
       k2: `executions|${request.service}|${request.cmd}`,
       ...request,
     });
+  }
+
+  async removeServiceInstances(options: { service: string; env: string; region: string }): Promise<void> {
+    await this.delete(options.service, `service|${options.env}|${options.region}`);
+  }
+
+  async getSharedInfrastructureState(yml: string): Promise<Array<ISharedInfraState>> {
+    const currentState = await this.query().keys({
+      k1: eq(yml),
+      k2: beginsWith('shared-infra|')
+    }).execAll();
+    return currentState as ISharedInfraState[];
+  }
+
+  async setSharedInfrastructureState(request: ISharedInfraStateRequest): Promise<void> {
+    await this.save({
+      k1: request.yml,
+      k2: `shared-infra|${request.region}`,
+      ...request,
+    })
+  }
+
+  async deleteSharedInfrastructureState(yml: string, region: string): Promise<void> {
+    await this.delete(yml, `shared-infra|${region}`);
   }
 }

@@ -258,7 +258,7 @@ program
     getDefaultThreads().toString(),
   )
   .option('-s <service>, --service <service>', 'the services you want to deploy (coma-seperated list)')
-  .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
@@ -269,7 +269,6 @@ program
       }, true),
   );
 
-// FIXME
 program
   .command('remove')
   .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion')
@@ -290,7 +289,7 @@ program
     async (cmd) =>
       await commandWrapper(async () => {
         await remove(cmd);
-      }),
+      }, true),
   );
 
 program

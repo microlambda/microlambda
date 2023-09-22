@@ -30,6 +30,8 @@ export const destroyEnv = async (name: string): Promise<void> => {
     process.exit(1);
   }
   await lock.lock();
+
+
   await state.removeEnv(name);
   // TODO: delete all related secrets/params
   await lock.releaseLock();

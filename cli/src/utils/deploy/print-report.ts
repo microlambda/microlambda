@@ -3,8 +3,8 @@ import { logger } from '../logger';
 import chalk from 'chalk';
 import { printError } from '../print-process-error';
 
-export type DeployEvent = RunCommandEvent & { region: string };
-export type RemoveEvent = RunCommandEvent & { region: string };
+export type DeployEvent = RunCommandEvent & { region: string; action: 'deploy' | 'remove' };
+export type RemoveEvent = DeployEvent;
 
 export const printReport = async (
   actions: Set<DeployEvent | RunCommandEvent>,
@@ -36,7 +36,7 @@ export const printReport = async (
         chalk.bold(
           chalk.red(
             `#${i} - Failed to ${action} ${
-              (evt as { workspace?: { name: string } }).workspace?.name
+              (evt as { target: { workspace?: { name: string } }}).target?.workspace?.name
             } in ${region} region\n`,
           ),
         ),
@@ -44,7 +44,7 @@ export const printReport = async (
     } else {
       logger.error(
         chalk.bold(
-          chalk.red(`#${i} - Failed to ${action} ${(evt as { workspace?: { name: string } }).workspace?.name}\n`),
+          chalk.red(`#${i} - Failed to ${action} ${(evt as { target: { workspace?: { name: string } }}).target?.workspace?.name}\n`),
         ),
       );
     }

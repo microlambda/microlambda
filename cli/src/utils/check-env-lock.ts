@@ -57,3 +57,15 @@ export const releaseLock = async (env: string, services?: string): Promise<void>
     process.exit(1);
   }
 };
+
+export const releaseLockOnProcessExit = (release: (msg?: string) => Promise<void>): void => {
+  process.on('SIGINT', async () => {
+    try {
+      await release('🔒 SIGINT received, releasing lock...');
+      process.exit(0);
+    } catch (e) {
+      logger.error('Error releasing lock, you probably would have to do it yourself !');
+      process.exit(2);
+    }
+  });
+}

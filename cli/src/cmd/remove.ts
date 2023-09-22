@@ -1,5 +1,5 @@
 import { IDeployCmd } from '../utils/deploy/cmd-options';
-import { ICommandResult, RunCommandEventEnum, Runner } from '@microlambda/runner-core';
+import { RunCommandEventEnum, Runner} from '@microlambda/runner-core';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { beforeDeploy } from '../utils/deploy/pre-requisites';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
@@ -7,18 +7,16 @@ import { logger } from '../utils/logger';
 import chalk from 'chalk';
 import { printAccountInfos } from './envs/list';
 import { getConcurrency } from '../utils/get-concurrency';
-import { resolveEnvs } from '@microlambda/core';
-import { SSMResolverMode } from '@microlambda/environments';
-import { checkIfEnvIsLock } from '../utils/check-env-lock';
+import {checkIfEnvIsLock, releaseLockOnProcessExit} from '../utils/check-env-lock';
 import { prompt } from 'inquirer';
 import Table from 'cli-table3';
 import { IServiceInstance } from '@microlambda/remote-state';
-import { resolveDeltas } from '../utils/deploy/resolve-deltas';
-import { DeployEvent, printReport, RemoveEvent } from '../utils/deploy/print-report';
+import { printReport, RemoveEvent } from '../utils/deploy/print-report';
 import { from, Observable, of } from 'rxjs';
 import { catchError, concatAll, map, mergeAll, tap } from 'rxjs/operators';
 import { MilaSpinnies } from '../utils/spinnies';
 import { handleNext } from '../utils/deploy/handle-next';
+import {EnvsResolver} from "../utils/deploy/envs";
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
   const projectRoot = resolveProjectRoot();
@@ -26,14 +24,13 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
 
   const { env, project, state, config, services } = await beforeDeploy(cmd, eventsLog);
 
-  const runner = new Runner(project, getConcurrency(cmd.c), eventsLog);
-
   logger.lf();
   logger.info(chalk.underline(chalk.bold('▼ Account informations')));
   logger.lf();
   await printAccountInfos();
 
   const releaseLock = await checkIfEnvIsLock(cmd, env, project, config);
+  releaseLockOnProcessExit(releaseLock);
 
   const servicesInstances = await state.listServices(cmd.e);
 
@@ -49,6 +46,9 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
   const deployedServicesInstancesGroupedByName = new Map<string, Map<string, IServiceInstance>>();
 
   for (const servicesInstance of servicesInstances) {
+    if (services && !services.some((s) => s.name === servicesInstance.name)) {
+      continue;
+    }
     const deployedServicesInstances = deployedServicesInstancesGroupedByName.get(servicesInstance.name);
     if (deployedServicesInstances) {
       deployedServicesInstances.set(servicesInstance.region, servicesInstance);
@@ -60,11 +60,18 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
     }
   }
 
+  if (deployedServicesInstancesGroupedByName.size < 1) {
+    await releaseLock();
+    logger.lf()
+    logger.success('Nothing to do');
+    process.exit(0);
+  }
+
   for (const [serviceName, instancesByRegion] of deployedServicesInstancesGroupedByName.entries()) {
     const row = [chalk.bold(serviceName)];
     for (const region of env.regions) {
       const serviceInstance = instancesByRegion.get(region);
-      row.push(serviceInstance?.sha1 ?? '-');
+      row.push(serviceInstance ? `${chalk.bold.red('destroy')} (${serviceInstance.sha1.slice(0, 6)})` : chalk.grey('not deployed'));
     }
     table.push(row);
   }
@@ -73,7 +80,6 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
   console.log(table.toString());
 
   try {
-    const operations = await resolveDeltas(env, project, cmd, state, config, eventsLog);
     if (cmd.onlyPrompt) {
       logger.info('Not performing destroy as --only-prompt option has been given');
       await releaseLock();
@@ -94,18 +100,17 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
     }
 
     // Source env
-    const envs = await resolveEnvs(project, cmd.e, SSMResolverMode.ERROR, eventsLog.scope('remove/env'));
+    const envs = new EnvsResolver(project, env.name, eventsLog.scope('remove/env'));
 
     logger.lf();
-    logger.info('▼ Removing services');
+    logger.info(chalk.underline(chalk.bold('▼ Removing services')));
     logger.lf();
 
-    const failures: Set<DeployEvent> = new Set();
-    const actions: Set<DeployEvent> = new Set();
-    const removeCommands$: Array<Observable<DeployEvent>> = [];
-    logger.debug('Preparing remove commands');
-    for (const [serviceName, serviceOperations] of operations.entries()) {
-      logger.debug('Processing', serviceName);
+    const failures: Set<RemoveEvent> = new Set();
+    const actions: Set<RemoveEvent> = new Set();
+    const removeCommands$: Array<Observable<RemoveEvent>> = [];
+
+    for (const [serviceName, serviceInstancesByRegions] of deployedServicesInstancesGroupedByName.entries()) {
       const service = project.services.get(serviceName);
       if (!service) {
         logger.error('Unexpected error:', serviceName, 'cannot be resolved as a service locally');
@@ -113,74 +118,47 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
         process.exit(1);
       }
       const removeServiceInAllRegions$: Array<Observable<RemoveEvent>> = [];
-      for (const [region, type] of serviceOperations.entries()) {
-        logger.debug('Processing', serviceName, 'in region', region, type);
-        if (['destroy'].includes(type)) {
-          logger.debug('Executing mila-runner command', {
-            mode: 'parallel',
-            workspaces: [service.name],
-            cmd: 'destroy',
-            env: {
-              AWS_REGION: region,
-            },
-            stdio: cmd.verbose ? 'inherit' : 'pipe',
-          });
-          for (const env of envs.values()) {
-            env.AWS_REGION = region;
-          }
-          const remove$ = runner.runCommand({
-            mode: 'parallel',
-            workspaces: [service],
-            cmd: 'destroy',
-            env: envs,
-            stdio: cmd.verbose ? 'inherit' : 'pipe',
-          });
-          /*
-            .pipe(
-              map((evt) => ({
-                ...evt,
+      for (const [region] of serviceInstancesByRegions.entries()) {
+
+        const runner = new Runner(project, 1, eventsLog);
+        const remove$: Observable<RemoveEvent> = runner.runCommand({
+          mode: 'parallel',
+          workspaces: [service],
+          cmd: 'destroy',
+          env: await envs.resolve(region),
+          stdio: cmd.verbose ? 'inherit' : 'pipe',
+        }).pipe(
+            map((evt) => ({
+              ...evt,
+              region,
+              action: 'remove' as const,
+            })),
+            tap(async (evt) => {
+              if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+                await state.removeServiceInstances({env: env.name, service: service.name, region});
+              }
+            }),
+            catchError((err) => {
+              const evt = {
+                type: RunCommandEventEnum.NODE_ERRORED,
+                error: err,
+                target: { workspace: service, hasCommand: true },
                 region,
-              })),
-              tap(async (evt) => {
-                if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-                  if (evt.result.commands.every((cmd) => (cmd as ICommandResult).exitCode === 0)) {
-                    try {
-                      await state.createServiceInstance({
-                        name: service.name,
-                        region,
-                        env: env.name,
-                        sha1: currentRevision,
-                        checksums_buckets: config.state.checksums,
-                        checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
-                      });
-                    } catch (err) {
-                      logger.warn('Error updating state for service', service.name);
-                      eventsLog.scope('deploy').error('Error updating state for service', service.name, err);
-                    }
-                  }
-                }
-              }),
-              catchError((err) => {
-                const evt = {
-                  type: RunCommandEventEnum.NODE_ERRORED,
-                  error: err,
-                  target: { workspace: service, hasCommand: true },
-                  region,
-                } as DeployEvent;
-                return of(evt);
-              }),
-            );
-             */
-          removeServiceInAllRegions$.push(remove$);
-        }
+                action: 'remove' as const,
+              };
+              return of(evt as RemoveEvent);
+            }),
+          );
+        removeServiceInAllRegions$.push(remove$);
       }
       removeCommands$.push(from(removeServiceInAllRegions$).pipe(concatAll()));
     }
+
     const spinnies = new MilaSpinnies(cmd.verbose);
     const removeProcess$ = from(removeCommands$).pipe(mergeAll(getConcurrency(cmd.c)));
     removeProcess$.subscribe({
       next: (evt) => {
-        handleNext(evt, spinnies, failures, actions, cmd.verbose, 'remove');
+        handleNext(evt, spinnies, failures, actions, cmd.verbose);
       },
       error: async (err) => {
         logger.error('Unexpected error happened during removing process', err);
@@ -194,7 +172,8 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
           process.exit(1);
         }
         await releaseLock();
-        logger.success(`Successfully remove ${cmd.e} 🚀`);
+        logger.lf();
+        logger.success(`Successfully removed ${cmd.e} 🚀`);
         process.exit(0);
       },
     });

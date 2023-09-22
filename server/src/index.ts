@@ -166,7 +166,7 @@ export const startServer = (options: {
   app.get('/api/services/:service/environment/:env', async (req, res) => {
     const serviceName = req.params.service;
     const env = req.params.env;
-    const loader = new EnvironmentLoader(project);
+    const loader = new EnvironmentLoader(project, process.env.AWS_REGION);
     const vars: Array<ILoadedEnvironmentVariable> = await loader.loadAll({
       env: env,
       service: serviceName,

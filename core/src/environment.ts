@@ -6,10 +6,11 @@ export const resolveEnvs = async (
   project: Project,
   env: string,
   ssmMode = SSMResolverMode.ERROR,
+  region?: string,
   logger?: IBaseLogger,
 ): Promise<Map<string, Record<string, string>>> => {
   const envs = new Map<string, Record<string, string>>();
-  const loader = new EnvironmentLoader(project, logger);
+  const loader = new EnvironmentLoader(project, region, logger);
   const loadEnv$ = [...project.services.values()].map((service) =>
     loader
       .loadAll({

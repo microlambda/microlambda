@@ -251,6 +251,6 @@ export class Scheduler {
   }
 
   private async _resolveEnvs(): Promise<Map<string, Record<string, string>>> {
-    return resolveEnvs(this.project, 'local', SSMResolverMode.IGNORE, this._logger);
+    return resolveEnvs(this.project, 'local', SSMResolverMode.IGNORE, process.env.AWS_REGION, this._logger);
   }
 }

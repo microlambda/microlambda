@@ -14,7 +14,7 @@ export const packageServices = (
 ): Promise<{ failures: Set<RunCommandEvent>; success: Set<RunCommandEvent> }> => {
   return new Promise((resolve, reject) => {
     logger.lf();
-    logger.info('▼ Packaging services');
+    logger.info(chalk.bold.underline('▼ Packaging services'));
     logger.lf();
     const log = eventsLog?.scope('do-package');
     const success: Set<RunCommandEvent> = new Set();
