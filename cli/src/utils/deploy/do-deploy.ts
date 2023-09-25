@@ -1,43 +1,45 @@
-import {prompt} from "inquirer";
-import chalk from "chalk";
-import {ICommandResult, RunCommandEventEnum, Runner, Workspace} from "@microlambda/runner-core";
-import {logger} from "../logger";
-import {beforePackage} from "../package/before-package";
-import {MilaSpinnies} from "../spinnies";
+import { prompt } from 'inquirer';
+import chalk from 'chalk';
+import { ICommandResult, RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
+import { logger } from '../logger';
+import { beforePackage } from '../package/before-package';
+import { MilaSpinnies } from '../spinnies';
 import {
   deploySharedInfrastructure,
   ISharedInfraFailedDeployEvent,
   Project,
-  SharedInfraDeployEventType
-} from "@microlambda/core";
-import {getConcurrency} from "../get-concurrency";
-import {relative} from "path";
-import {packageServices} from "../package/do-package";
-import {DeployEvent, printReport, RemoveEvent} from "./print-report";
-import {from, Observable, of} from "rxjs";
-import {catchError, concatAll, map, mergeAll, tap} from "rxjs/operators";
-import {handleNext} from "./handle-next";
-import {IDeployCmd} from "./cmd-options";
-import {Operations} from "./resolve-deltas";
-import {IEnvironment, State} from "@microlambda/remote-state";
-import {IRootConfig} from "@microlambda/config";
-import {EnvsResolver} from "./envs";
-import {EventsLog} from "@microlambda/logger";
+  SharedInfraDeployEventType,
+} from '@microlambda/core';
+import { getConcurrency } from '../get-concurrency';
+import { relative } from 'path';
+import { packageServices } from '../package/do-package';
+import { DeployEvent, printReport, RemoveEvent } from './print-report';
+import { from, Observable, of } from 'rxjs';
+import { catchError, concatAll, map, mergeAll, tap } from 'rxjs/operators';
+import { handleNext } from './handle-next';
+import { IDeployCmd } from './cmd-options';
+import { Operations } from './resolve-deltas';
+import { IEnvironment, State } from '@microlambda/remote-state';
+import { IRootConfig } from '@microlambda/config';
+import { EnvsResolver } from './envs';
+import { EventsLog } from '@microlambda/logger';
+import {deploySharedInfra} from "../shared-infra/deploy";
 
 export const performDeploy = async (params: {
-  cmd: IDeployCmd,
-  releaseLock: (msg?: string) => Promise<void>,
-  operations: Operations,
-  env: IEnvironment,
-  project: Project,
-  projectRoot: string,
-  config: IRootConfig,
-  envs: EnvsResolver,
-  eventsLog: EventsLog,
-  state: State,
-  currentRevision: string,
+  cmd: IDeployCmd;
+  releaseLock: (msg?: string) => Promise<void>;
+  operations: Operations;
+  env: IEnvironment;
+  project: Project;
+  projectRoot: string;
+  config: IRootConfig;
+  envs: EnvsResolver;
+  eventsLog: EventsLog;
+  state: State;
+  currentRevision: string;
 }): Promise<void> => {
-  const { cmd, releaseLock, operations, env, project, projectRoot, config, envs, eventsLog, state, currentRevision } = params;
+  const { cmd, releaseLock, operations, env, project, projectRoot, config, envs, eventsLog, state, currentRevision } =
+    params;
   if (cmd.onlyPrompt) {
     await releaseLock();
     process.exit(0);
@@ -93,71 +95,23 @@ export const performDeploy = async (params: {
     },
     eventsLog,
   );
-  logger.lf();
-  logger.info(chalk.underline(chalk.bold('▼ Updating shared infrastructure')));
-  logger.lf();
-  await new Promise<void>((resolve) => {
-    const spinnies = new MilaSpinnies(options.verbose);
-    const failures = new Set<ISharedInfraFailedDeployEvent>();
-    deploySharedInfrastructure(projectRoot, config, env, getConcurrency(cmd.c)).subscribe({
-      next: (evt) => {
-        switch (evt.type) {
-          case SharedInfraDeployEventType.STACKS_RESOLVED:
-            if (!evt.stacks.length) {
-              logger.success('Nothing to do 👌');
-            }
-            break;
-          case SharedInfraDeployEventType.STARTED:
-            spinnies.add(
-              `${evt.stack}-${evt.region}`,
-              `Deploying ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
-            );
-            break;
-          case SharedInfraDeployEventType.SUCCEEDED:
-            spinnies.succeed(
-              `${evt.stack}-${evt.region}`,
-              `Successfully deployed ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
-            );
-            break;
-          case SharedInfraDeployEventType.FAILED:
-            spinnies.fail(
-              `${evt.stack}-${evt.region}`,
-              `Failed to deploy ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
-            );
-            failures.add(evt as ISharedInfraFailedDeployEvent);
-            break;
-        }
-      },
-      error: (err) => {
-        logger.error('Error happened updating shared infrastructure');
-        logger.error(err);
-        releaseLock().then(() => process.exit(1));
-      },
-      complete: () => {
-        if (failures.size) {
-          logger.error('Error happened updating shared infrastructure');
-          for (const failure of failures) {
-            logger.error(
-              `Error happened deploying ${relative(projectRoot, failure.stack)} in region ${failure.region}`,
-            );
-            const isExecaError = (err: unknown): err is { all: string } => !!(failure.err as { all: string }).all;
-            if (isExecaError(failure.err)) {
-              logger.error(failure.err.all);
-            } else {
-              logger.error(failure.err);
-            }
-          }
-          releaseLock().then(() => process.exit(1));
-        }
-        return resolve();
-      },
-    });
-  });
 
-  try {
-    await packageServices(options, await envs.resolve(config.defaultRegion), eventsLog);
-  } catch (e) {
-    await releaseLock();
+  await deploySharedInfra({
+    action: 'deploy',
+    projectRoot,
+    config,
+    env,
+    concurrency: cmd.c,
+    isVerbose: cmd.verbose,
+    releaseLock,
+  })
+
+  if (toDeploy.size) {
+    try {
+      await packageServices(options, await envs.resolve(config.defaultRegion), eventsLog);
+    } catch (e) {
+      await releaseLock();
+    }
   }
 
   logger.lf();
@@ -249,34 +203,36 @@ export const performDeploy = async (params: {
       }
       if (type === 'destroy') {
         const runner = new Runner(project, 1, eventsLog);
-        const remove$: Observable<RemoveEvent> = runner.runCommand({
-          mode: 'parallel',
-          workspaces: [service],
-          cmd: 'destroy',
-          env: await envs.resolve(region),
-          stdio: cmd.verbose ? 'inherit' : 'pipe',
-        }).pipe(
-          map((evt) => ({
-            ...evt,
-            region,
-            action: 'remove' as const,
-          })),
-          tap(async (evt) => {
-            if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-              await state.removeServiceInstances({env: env.name, service: service.name, region});
-            }
-          }),
-          catchError((err) => {
-            const evt = {
-              type: RunCommandEventEnum.NODE_ERRORED,
-              error: err,
-              action: 'remove',
-              target: { workspace: service, hasCommand: true },
+        const remove$: Observable<RemoveEvent> = runner
+          .runCommand({
+            mode: 'parallel',
+            workspaces: [service],
+            cmd: 'destroy',
+            env: await envs.resolve(region),
+            stdio: cmd.verbose ? 'inherit' : 'pipe',
+          })
+          .pipe(
+            map((evt) => ({
+              ...evt,
               region,
-            };
-            return of(evt as RemoveEvent);
-          }),
-        );
+              action: 'remove' as const,
+            })),
+            tap(async (evt) => {
+              if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
+                await state.removeServiceInstances({ env: env.name, service: service.name, region });
+              }
+            }),
+            catchError((err) => {
+              const evt = {
+                type: RunCommandEventEnum.NODE_ERRORED,
+                error: err,
+                action: 'remove',
+                target: { workspace: service, hasCommand: true },
+                region,
+              };
+              return of(evt as RemoveEvent);
+            }),
+          );
         deployServiceInAllRegions$.push(remove$);
       }
     }
@@ -307,4 +263,4 @@ export const performDeploy = async (params: {
       },
     });
   });
-}
+};

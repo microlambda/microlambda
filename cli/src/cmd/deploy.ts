@@ -1,15 +1,15 @@
 import chalk from 'chalk';
 import { logger } from '../utils/logger';
-import { resolveDeltas} from '../utils/deploy/resolve-deltas';
+import { resolveDeltas } from '../utils/deploy/resolve-deltas';
 import { beforeDeploy } from '../utils/deploy/pre-requisites';
 import { IDeployCmd } from '../utils/deploy/cmd-options';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { currentSha1 } from '@microlambda/runner-core';
 import { printAccountInfos } from './envs/list';
-import {checkIfEnvIsLock, releaseLockOnProcessExit} from '../utils/check-env-lock';
-import {EnvsResolver} from "../utils/deploy/envs";
-import {performDeploy} from "../utils/deploy/do-deploy";
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../utils/check-env-lock';
+import { EnvsResolver } from '../utils/deploy/envs';
+import { performDeploy } from '../utils/deploy/do-deploy';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -19,9 +19,6 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
 
-  logger.lf();
-  logger.info(chalk.underline(chalk.bold('▼ Account informations')));
-  logger.lf();
   await printAccountInfos();
 
   const { env, project, state, config } = await beforeDeploy(cmd, eventsLog);
@@ -47,6 +44,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       state,
       currentRevision,
     });
+    process.exit(0);
   } catch (e) {
     logger.error('Deployment failed', e);
     await releaseLock();

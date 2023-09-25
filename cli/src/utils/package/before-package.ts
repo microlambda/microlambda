@@ -5,7 +5,7 @@ import { typeCheck } from '../build/type-check';
 import { IPackageOptions } from './options';
 import { IPackageCmd } from './cmd-options';
 import { Project } from '@microlambda/core';
-import chalk from "chalk";
+import chalk from 'chalk';
 
 export const beforePackage = async (
   project: string | Project,

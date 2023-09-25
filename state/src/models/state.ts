@@ -1,4 +1,4 @@
-import Model, {beginsWith, eq} from 'dynamodels';
+import Model, { beginsWith, eq } from 'dynamodels';
 import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
 import { IRootConfig } from '@microlambda/config';
@@ -78,7 +78,7 @@ export interface ISharedInfraStateRequest {
   checksum: string;
 }
 
-export interface ISharedInfraState extends ISharedInfraStateRequest{
+export interface ISharedInfraState extends ISharedInfraStateRequest {
   k1: string; // $yml
   k2: string; // Shared-infra|$region
 }
@@ -190,10 +190,12 @@ export class State extends Model<unknown> {
   }
 
   async getSharedInfrastructureState(yml: string): Promise<Array<ISharedInfraState>> {
-    const currentState = await this.query().keys({
-      k1: eq(yml),
-      k2: beginsWith('shared-infra|')
-    }).execAll();
+    const currentState = await this.query()
+      .keys({
+        k1: eq(yml),
+        k2: beginsWith('shared-infra|'),
+      })
+      .execAll();
     return currentState as ISharedInfraState[];
   }
 
@@ -202,7 +204,7 @@ export class State extends Model<unknown> {
       k1: request.yml,
       k2: `shared-infra|${request.region}`,
       ...request,
-    })
+    });
   }
 
   async deleteSharedInfrastructureState(yml: string, region: string): Promise<void> {

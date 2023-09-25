@@ -36,7 +36,7 @@ export const printReport = async (
         chalk.bold(
           chalk.red(
             `#${i} - Failed to ${action} ${
-              (evt as { target: { workspace?: { name: string } }}).target?.workspace?.name
+              (evt as { target: { workspace?: { name: string } } }).target?.workspace?.name
             } in ${region} region\n`,
           ),
         ),
@@ -44,7 +44,11 @@ export const printReport = async (
     } else {
       logger.error(
         chalk.bold(
-          chalk.red(`#${i} - Failed to ${action} ${(evt as { target: { workspace?: { name: string } }}).target?.workspace?.name}\n`),
+          chalk.red(
+            `#${i} - Failed to ${action} ${
+              (evt as { target: { workspace?: { name: string } } }).target?.workspace?.name
+            }\n`,
+          ),
         ),
       );
     }

@@ -10,11 +10,12 @@ import { join } from 'path';
 import { init } from '../../utils/init';
 
 export const createEnv = async (name: string): Promise<void> => {
-  logger.info('Creating environment');
+  logger.info('✨ Creating environment');
   logger.lf();
   const projectRoot = resolveProjectRoot();
   const { project } = await init(projectRoot);
   logger.lf();
+
   const config = await printAccountInfos();
   await verifyState(config);
   const state = new State(config);

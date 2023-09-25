@@ -8,7 +8,7 @@ import { Project } from '@microlambda/core';
 import { IDeployCmd } from './cmd-options';
 import { IRootConfig } from '@microlambda/config';
 import { EventsLog } from '@microlambda/logger';
-import {EnvsResolver} from "./envs";
+import { EnvsResolver } from './envs';
 
 export type ActionType = 'first_deploy' | 'redeploy' | 'no_changes' | 'destroy' | 'not_deployed';
 export type Operations = Map<string, Map<string, ActionType>>;

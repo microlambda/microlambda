@@ -1,6 +1,5 @@
 import { IEnvironment, LockManager } from '@microlambda/remote-state';
 import { logger } from './logger';
-import { IDeployCmd } from './deploy/cmd-options';
 import { IRootConfig } from '@microlambda/config';
 import { Project } from '@microlambda/core';
 import ora from 'ora';
@@ -8,7 +7,7 @@ import { resolveProjectRoot } from '@microlambda/utils';
 import { init } from './init';
 
 export const checkIfEnvIsLock = async (
-  cmd: IDeployCmd,
+  cmd: { skipLock: boolean; s?: string },
   env: IEnvironment,
   project: Project,
   config: IRootConfig,
@@ -68,4 +67,4 @@ export const releaseLockOnProcessExit = (release: (msg?: string) => Promise<void
       process.exit(2);
     }
   });
-}
+};
