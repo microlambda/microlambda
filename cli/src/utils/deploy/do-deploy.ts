@@ -5,13 +5,8 @@ import { logger } from '../logger';
 import { beforePackage } from '../package/before-package';
 import { MilaSpinnies } from '../spinnies';
 import {
-  deploySharedInfrastructure,
-  ISharedInfraFailedDeployEvent,
   Project,
-  SharedInfraDeployEventType,
 } from '@microlambda/core';
-import { getConcurrency } from '../get-concurrency';
-import { relative } from 'path';
 import { packageServices } from '../package/do-package';
 import { DeployEvent, printReport, RemoveEvent } from './print-report';
 import { from, Observable, of } from 'rxjs';
@@ -24,6 +19,7 @@ import { IRootConfig } from '@microlambda/config';
 import { EnvsResolver } from './envs';
 import { EventsLog } from '@microlambda/logger';
 import {deploySharedInfra} from "../shared-infra/deploy";
+import {SSMResolverMode} from "@microlambda/environments";
 
 export const performDeploy = async (params: {
   cmd: IDeployCmd;
@@ -38,7 +34,7 @@ export const performDeploy = async (params: {
   state: State;
   currentRevision: string;
 }): Promise<void> => {
-  const { cmd, releaseLock, operations, env, project, projectRoot, config, envs, eventsLog, state, currentRevision } =
+  const { cmd, releaseLock, operations, env, project, config, envs, eventsLog, state, currentRevision } =
     params;
   if (cmd.onlyPrompt) {
     await releaseLock();
@@ -98,12 +94,14 @@ export const performDeploy = async (params: {
 
   await deploySharedInfra({
     action: 'deploy',
-    projectRoot,
+    project,
     config,
     env,
     concurrency: cmd.c,
     isVerbose: cmd.verbose,
     releaseLock,
+    currentRevision,
+    force: cmd.force,
   })
 
   if (toDeploy.size) {
@@ -134,7 +132,7 @@ export const performDeploy = async (params: {
     for (const [region, type] of serviceOperations.entries()) {
       logger.debug('Processing', serviceName, 'in region', region, type);
       if (['first_deploy', 'redeploy'].includes(type)) {
-        const cachePrefix = `caches/${service.name}/deploy/${region}`;
+        const cachePrefix = `caches/${service.name}/deploy/${env.name}/${region}`;
         logger.debug('Executing mila-runner command', {
           mode: 'parallel',
           workspaces: [service.name],
@@ -208,8 +206,9 @@ export const performDeploy = async (params: {
             mode: 'parallel',
             workspaces: [service],
             cmd: 'destroy',
-            env: await envs.resolve(region),
+            env: await envs.resolve(region, SSMResolverMode.WARN),
             stdio: cmd.verbose ? 'inherit' : 'pipe',
+            force: true,
           })
           .pipe(
             map((evt) => ({

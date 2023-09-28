@@ -43,7 +43,7 @@ export class Workspace {
   constructor(
     readonly pkg: Package,
     readonly root: string,
-    readonly _config: { regions?: string[], targets: ITargetsConfig },
+    readonly _config: { regions?: string[], targets: ITargetsConfig, sharedInfra?: { envSpecific?: boolean } },
     readonly project?: Project,
     readonly eventsLog?: EventsLog,
   ) {

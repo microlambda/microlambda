@@ -57,6 +57,8 @@ export interface IPackageConfig {
 
 export interface IResolvedPackageConfig {
   regions?: string[];
+
+  sharedInfra?: { envSpecific?: boolean };
   targets: {
     [cmd: string]: ITargetConfig;
   };

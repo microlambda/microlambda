@@ -1,7 +1,8 @@
-import { ExecaReturnValue } from 'execa';
+import {Workspace} from "../graph/workspace";
+import {IProcessResult} from "@microlambda/runner-core";
 
 export enum SharedInfraDeployEventType {
-  STACKS_RESOLVED = 'stack_resolved',
+  WORKSPACES_RESOLVED = 'workspaces_resolved',
   DEPLOYING = 'deploying',
   NO_CHANGES = 'no_changes',
   REMOVING = 'removing',
@@ -11,35 +12,35 @@ export enum SharedInfraDeployEventType {
   FAILED_REMOVE = 'failed_removed',
 }
 interface ISharedInfraStacksResolvedEvent {
-  type: SharedInfraDeployEventType.STACKS_RESOLVED;
-  stacks: string[];
+  type: SharedInfraDeployEventType.WORKSPACES_RESOLVED;
+  workspaces: Workspace[];
 }
 
 interface ISharedInfraStartDeployEvent {
   type: SharedInfraDeployEventType.DEPLOYING | SharedInfraDeployEventType.REMOVING;
-  stack: string;
+  workspace: Workspace;
   env: string;
   region: string;
 }
 
 interface ISharedInfraSkipDeployEvent {
   type: SharedInfraDeployEventType.NO_CHANGES;
-  stack: string;
+  workspace: Workspace;
   env: string;
   region: string;
 }
 
 interface ISharedInfraSuccessDeployEvent {
   type: SharedInfraDeployEventType.DEPLOYED | SharedInfraDeployEventType.REMOVED;
-  stack: string;
+  workspace: Workspace;
   env: string;
   region: string;
-  result: ExecaReturnValue<string>;
+  result: IProcessResult;
 }
 
 export interface ISharedInfraFailedDeployEvent {
   type: SharedInfraDeployEventType.FAILED_DEPLOY | SharedInfraDeployEventType.FAILED_REMOVE;
-  stack: string;
+  workspace: Workspace;
   env: string;
   region: string;
   err: unknown;

@@ -5,6 +5,7 @@ import { putObject } from './put-object';
 import { deleteObject } from './delete-object';
 import { uploadStream } from './upload-stream';
 import { objectExists } from './key-exists';
+import {emptyBucket} from "./empty-bucket";
 
 export const s3 = {
   bucketExists,
@@ -14,5 +15,6 @@ export const s3 = {
   uploadStream,
   objectExists,
   putObject,
+  emptyBucket,
   deleteObject,
 };

@@ -53,6 +53,7 @@ export const removeServices = async (params: {
           cmd: 'destroy',
           env: await envs.resolve(region, SSMResolverMode.WARN),
           stdio: isVerbose ? 'inherit' : 'pipe',
+          force: true,
         })
         .pipe(
           map((evt) => ({

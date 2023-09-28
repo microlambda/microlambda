@@ -10,6 +10,8 @@ export interface IEnvironment {
   regions: string[];
 }
 
+
+
 export interface IServiceInstanceRequest {
   name: string;
   region: string;
@@ -34,6 +36,7 @@ export interface ICmdExecutionRequest {
   current_sha1: string;
   region: string;
 }
+
 
 export interface ICmdExecution extends ICmdExecutionRequest {
   /**
@@ -73,9 +76,12 @@ export interface IServiceInstance extends IServiceInstanceRequest {
 }
 
 export interface ISharedInfraStateRequest {
-  yml: string;
+  name: string;
   region: string;
-  checksum: string;
+  env?: string;
+  sha1: string;
+  checksums_buckets: string;
+  checksums_key: string;
 }
 
 export interface ISharedInfraState extends ISharedInfraStateRequest {
@@ -189,25 +195,25 @@ export class State extends Model<unknown> {
     await this.delete(options.service, `service|${options.env}|${options.region}`);
   }
 
-  async getSharedInfrastructureState(yml: string): Promise<Array<ISharedInfraState>> {
-    const currentState = await this.query()
+  async getSharedInfrastructureState(yml: string, env?: string): Promise<Array<ISharedInfraState>> {
+    const currentState = (await this.query()
       .keys({
         k1: eq(yml),
         k2: beginsWith('shared-infra|'),
       })
-      .execAll();
-    return currentState as ISharedInfraState[];
+      .execAll()) as ISharedInfraState[];
+    return currentState.filter((s) => !env || !s.env || s.env === env);
   }
 
   async setSharedInfrastructureState(request: ISharedInfraStateRequest): Promise<void> {
     await this.save({
-      k1: request.yml,
-      k2: `shared-infra|${request.region}`,
+      k1: request.name,
+      k2: request.env ? `shared-infra|${request.env}|${request.region}` : `shared-infra|${request.region}`,
       ...request,
     });
   }
 
-  async deleteSharedInfrastructureState(yml: string, region: string): Promise<void> {
-    await this.delete(yml, `shared-infra|${region}`);
+  async deleteSharedInfrastructureState(name: string, region: string, env?: string): Promise<void> {
+    await this.delete(name, env ? `shared-infra|${env}|${region}` : `shared-infra|${region}`);
   }
 }

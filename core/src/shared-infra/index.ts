@@ -1,30 +1,60 @@
-import { from, mergeAll, Observable, of } from 'rxjs';
+import { from, mergeAll, Observable } from 'rxjs';
 import { SharedInfraDeployEvent, SharedInfraDeployEventType } from './types';
-import { resolveSharedInfrastructureYamls } from './resolve-path';
 import { IRootConfig } from '@microlambda/config';
 import {deploySharedInfraStack, removeSharedInfraStack} from './stack-deployer';
 import { IEnvironment, State } from '@microlambda/remote-state';
 import { IBaseLogger } from '@microlambda/types';
+import {Project} from "../graph/project";
+import {Workspace} from "../graph/workspace";
 
 const _applySharedInfrastructure = async (
-  action: 'deploy' | 'remove',
-  projectRoot: string,
+
+params: {  action: 'deploy' | 'remove',
+  project: Project,
   config: IRootConfig,
   env: IEnvironment,
-  concurrency?: number,
+  concurrency: number,
+  verbose: boolean,
+  force: boolean,
+  currentRevision: string,},
   logger?: IBaseLogger,
 ): Promise<Observable<SharedInfraDeployEvent>> => {
+  const {action, env, concurrency, project, config, verbose, force, currentRevision } = params;
   return new Observable<SharedInfraDeployEvent>((obs) => {
-    const stacks = resolveSharedInfrastructureYamls(config, projectRoot);
+    const sharedInfraWorkspaces: Workspace[] = [];
+    for (const workspace of project.workspaces.values()) {
+      if (workspace.hasCommand('infra:deploy') && workspace.hasCommand('infra:remove')) {
+        sharedInfraWorkspaces.push();
+      }
+    }
     logger?.debug('Deploying shared infrastructure');
-    logger?.debug('Stacks', stacks);
+    logger?.debug('Stacks', sharedInfraWorkspaces.map(w => w.name));
     const state = new State(config);
     obs.next({
-      type: SharedInfraDeployEventType.STACKS_RESOLVED,
-      stacks,
+      type: SharedInfraDeployEventType.WORKSPACES_RESOLVED,
+      workspaces: sharedInfraWorkspaces,
     });
-    const deployments$ = stacks.map((stack) =>
-      action === 'deploy' ? deploySharedInfraStack(env, projectRoot, stack, state, logger) : removeSharedInfraStack(env, projectRoot, stack, state, logger))
+    const deployments$ = sharedInfraWorkspaces.map((workspace) =>
+      action === 'deploy' ? deploySharedInfraStack({
+        env,
+        workspace,
+        state,
+        config,
+        verbose,
+        force,
+        project,
+        concurrency,
+        currentRevision,
+      }) : removeSharedInfraStack({
+        env,
+        workspace,
+        state,
+        config,
+        verbose,
+        project,
+        concurrency,
+        currentRevision,
+      }));
     logger?.debug('Prepared', deployments$.length, 'deploy/remove operations');
     from(deployments$)
       .pipe(mergeAll())
@@ -37,21 +67,28 @@ const _applySharedInfrastructure = async (
 };
 
 export const deploySharedInfrastructure = async (
-  projectRoot: string,
-  config: IRootConfig,
-  env: IEnvironment,
-  concurrency?: number,
+  params: {
+    project: Project,
+    config: IRootConfig,
+    env: IEnvironment,
+    concurrency: number,
+    verbose: boolean,
+    force: boolean,
+    currentRevision: string,},
   logger?: IBaseLogger,
 ): Promise<Observable<SharedInfraDeployEvent>> => {
-  return _applySharedInfrastructure('deploy', projectRoot, config, env, concurrency, logger);
+  return _applySharedInfrastructure({action: 'deploy', ...params}, logger);
 };
 
 export const removeSharedInfrastructure = async (
-  projectRoot: string,
-  config: IRootConfig,
-  env: IEnvironment,
-  concurrency?: number,
+  params: {
+    project: Project,
+    config: IRootConfig,
+    env: IEnvironment,
+    concurrency: number,
+    verbose: boolean,
+    currentRevision: string,},
   logger?: IBaseLogger,
 ): Promise<Observable<SharedInfraDeployEvent>> => {
-  return _applySharedInfrastructure('remove', projectRoot, config, env, concurrency, logger);
+  return _applySharedInfrastructure({action: 'remove', ...params, force: true}, logger);
 }

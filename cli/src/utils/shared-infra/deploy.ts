@@ -2,87 +2,103 @@ import {logger} from "../logger";
 import chalk from "chalk";
 import {
   deploySharedInfrastructure,
-  ISharedInfraFailedDeployEvent,
+  ISharedInfraFailedDeployEvent, Project,
   removeSharedInfrastructure, SharedInfraDeployEventType,
 } from "@microlambda/core";
-import {getConcurrency} from "../get-concurrency";
 import {MilaSpinnies} from "../spinnies";
-import {relative} from "path";
 import {IRootConfig} from "@microlambda/config";
 import {IEnvironment} from "@microlambda/remote-state";
+import {getConcurrency} from "../get-concurrency";
 
 export const deploySharedInfra = async (params: {
   action: 'remove' | 'deploy',
-  projectRoot: string,
+  project: Project,
   config: IRootConfig,
   env: IEnvironment,
   concurrency?: string,
   isVerbose: boolean,
+  force: boolean,
+  currentRevision: string,
   releaseLock: (msg?: string) => Promise<void>,
 }): Promise<void> => {
-  const { projectRoot, config, env, concurrency, isVerbose, releaseLock, action } = params;
+  const { project, config, force, currentRevision, env, concurrency, isVerbose, releaseLock, action } = params;
   logger.lf();
   logger.info(chalk.underline(chalk.bold(`▼ ${action === 'deploy' ? 'Updating' : 'Removing'} shared infrastructure`)));
   logger.lf();
   const deploySharedInfra$ = action === 'deploy'
-    ? await deploySharedInfrastructure(projectRoot, config, env, getConcurrency(concurrency))
-    : await removeSharedInfrastructure(projectRoot, config, env, getConcurrency(concurrency));
+    ? await deploySharedInfrastructure({
+      project,
+      config,
+      env,
+      concurrency: getConcurrency(concurrency),
+      verbose: isVerbose,
+      force,
+      currentRevision,
+    })
+    : await removeSharedInfrastructure({
+      project,
+      config,
+      env,
+      concurrency: getConcurrency(concurrency),
+      verbose: isVerbose,
+      currentRevision,
+    });
   await new Promise<void>((resolve) => {
     const spinnies = new MilaSpinnies(isVerbose);
     const failures = new Set<ISharedInfraFailedDeployEvent>();
     deploySharedInfra$.subscribe({
       next: (evt) => {
         switch (evt.type) {
-          case SharedInfraDeployEventType.STACKS_RESOLVED:
-            if (!evt.stacks.length) {
+          case SharedInfraDeployEventType.WORKSPACES_RESOLVED:
+            if (!evt.workspaces.length) {
               logger.success('Nothing to do 👌');
             }
             break;
           case SharedInfraDeployEventType.NO_CHANGES:
             spinnies.add(
-              `${evt.stack}-${evt.region}`,
-              `Skipping ${relative(projectRoot, evt.stack)} (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Skipping evt.workspace.name (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
             );
             spinnies.succeed(
-              `${evt.stack}-${evt.region}`,
-              `Skipped ${relative(projectRoot, evt.stack)} (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Skipped evt.workspace.name (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.DEPLOYING:
             spinnies.add(
-              `${evt.stack}-${evt.region}`,
-              `Deploying ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Deploying evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.DEPLOYED:
             spinnies.succeed(
-              `${evt.stack}-${evt.region}`,
-              `Successfully deployed ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Successfully deployed evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.FAILED_DEPLOY:
             spinnies.fail(
-              `${evt.stack}-${evt.region}`,
-              `Failed to deploy ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Failed to deploy evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
             );
             failures.add(evt as ISharedInfraFailedDeployEvent);
             break;
           case SharedInfraDeployEventType.REMOVING:
             spinnies.add(
-              `${evt.stack}-${evt.region}`,
-              `Removing ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Removing evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.REMOVED:
             spinnies.succeed(
-              `${evt.stack}-${evt.region}`,
-              `Successfully removed ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Successfully removed evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.FAILED_REMOVE:
             spinnies.fail(
-              `${evt.stack}-${evt.region}`,
-              `Failed to remove ${relative(projectRoot, evt.stack)} ${chalk.magenta(`[${evt.region}]`)}`,
+              `${evt.workspace.name}-${evt.region}`,
+              `Failed to remove evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
             );
             failures.add(evt as ISharedInfraFailedDeployEvent);
             break;
@@ -98,7 +114,7 @@ export const deploySharedInfra = async (params: {
           logger.error('Error happened updating shared infrastructure');
           for (const failure of failures) {
             logger.error(
-              `Error happened ${action === 'deploy' ? 'updating' : 'removing'} ${relative(projectRoot, failure.stack)} in region ${failure.region}`,
+              `Error happened ${action === 'deploy' ? 'updating' : 'removing'} ${failure.workspace.name} in region ${failure.region}`,
             );
             const isExecaError = (err: unknown): err is { all: string } => !!(failure.err as { all: string }).all;
             if (isExecaError(failure.err)) {

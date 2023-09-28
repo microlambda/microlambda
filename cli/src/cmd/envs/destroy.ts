@@ -11,6 +11,7 @@ import { removeServices } from '../../utils/remove/do-remove';
 import { promptConfirm } from '../../utils/remove/prompt-confirm';
 import { removeSsmAndSecrets } from '../../utils/remove/remove-ssm';
 import {deploySharedInfra} from "../../utils/shared-infra/deploy";
+import {currentSha1} from "@microlambda/runner-core";
 
 export const destroyEnv = async (
   name: string,
@@ -43,6 +44,8 @@ export const destroyEnv = async (
     }
   }
 
+  const currentRevision = currentSha1();
+
   const releaseLock = await checkIfEnvIsLock({ skipLock: false }, env, project, config);
   releaseLockOnProcessExit(releaseLock);
 
@@ -67,12 +70,14 @@ export const destroyEnv = async (
 
     await deploySharedInfra({
       action: 'remove',
-      projectRoot,
+      project,
       config,
       env,
       concurrency: cmd.c,
       isVerbose: cmd.verbose,
       releaseLock,
+      currentRevision,
+      force: true,
     })
 
     await releaseLock();
