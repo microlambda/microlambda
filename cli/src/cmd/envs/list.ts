@@ -7,6 +7,9 @@ import { ConfigReader, IRootConfig } from '@microlambda/config';
 import { verifyState } from '../../utils/verify-state';
 
 export const printAccountInfos = async (): Promise<IRootConfig> => {
+  logger.lf();
+  logger.info(chalk.underline(chalk.bold('▼ Account informations')));
+  logger.lf();
   const projectRoot = resolveProjectRoot();
   const config = new ConfigReader(projectRoot).rootConfig;
   const region = config.defaultRegion;
@@ -19,14 +22,17 @@ export const printAccountInfos = async (): Promise<IRootConfig> => {
 };
 
 export const listEnvs = async (): Promise<void> => {
-  logger.info('Listing deployed environments');
+  logger.lf();
+  logger.info('🔎 Listing deployed environments');
   logger.lf();
   const config = await printAccountInfos();
   await verifyState(config);
   const state = new State(config);
   const envs = await state.listEnvironments();
   if (!envs.length) {
-    logger.info('No deployed environments found. Run yarn mila envs create <name> to initialize a new environment');
+    logger.info('No deployed environments found.');
+    logger.lf();
+    logger.info(`Run ${chalk.bold.cyan('yarn mila envs create <name>')} to initialize a new environment`);
   } else {
     for (const e of envs) {
       logger.info(`${chalk.white.bold(e.name)} (${chalk.grey(e.regions.join(', '))})`);

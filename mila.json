@@ -1,0 +1,9 @@
+{
+  "defaultRegion": "eu-west-1",
+  "defaultRuntime": "nodejs16.x",
+  "state": {
+    "checksums": "my-app-mila-checksums",
+    "table": "my-app-mila-state"
+  },
+  "sharedResources": "infra/**/*.yml"
+}

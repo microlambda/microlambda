@@ -11,7 +11,7 @@ Enable layers
 ```yaml
 ```
 
-Redploy
+Redeploy
 
 Check out code in AWS console
 

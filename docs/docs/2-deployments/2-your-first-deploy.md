@@ -8,9 +8,11 @@ sidebar_position: 1
 
 You must log in AWS Profile.
 
-Minimal set of AWS IAM permissions are
-
+Minimal set of AWS IAM permissions are:
 
 ## Initialize remote state
 
 ## Create environment
+
+## Deploy
+

@@ -14,5 +14,5 @@ Custom domain and geo-latency records
 
 Using plugin
 
-## Shared table
+## Global table
 

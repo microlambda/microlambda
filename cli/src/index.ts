@@ -19,6 +19,7 @@ import { destroyEnv } from './cmd/envs/destroy';
 import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
 import { runTests } from './cmd/run-tests';
+import { releaseLock } from './utils/check-env-lock';
 
 const program = new Command();
 
@@ -65,12 +66,18 @@ envs
 
 envs
   .command('destroy <name>')
+  .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
+  .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
+  .option('--only-prompt', 'only display deployment information and return', false)
+  .option('-c <jobs>, --concurrency <jobs>', 'set maximum concurrent services being removed')
+  .option('--no-destroy', 'only patch state without removing existing services', true)
   .description(
     'Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.',
   )
-  .action(async (cmd) => {
+  .action(async (env, cmd) => {
     await commandWrapper(async () => {
-      await destroyEnv(cmd);
+      await destroyEnv(env, cmd);
     });
   });
 
@@ -79,24 +86,55 @@ envs
   .description(
     'Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.',
   )
-  .action(async (name, region) => {
+  .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('--no-deploy', 'only patch state without deploying/removing services', true)
+  .option('--no-install', 'skip installing dependencies', true)
+  .option('--no-recompile', 'skip package and service recompilation', true)
+  .option('--no-package', 'skip bundling service deployment package', true)
+  .option('--force-deploy', 'ignore deploy command checksums and re-deploy', false)
+  .option('--force-package', 'ignore package and deploy commands checksums and re-deploy', false)
+  .option('--force', 'ignore build, package and deploy checksums and re-deploy', false)
+  .option(
+    '-c, --concurrency',
+    'defines how much threads can be used for parallel tasks',
+    getDefaultThreads().toString(),
+  )
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
+  .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
+  .option('--only-prompt', 'only display deployment information and return', false)
+  .action(async (name, region, cmd) => {
     await commandWrapper(async () => {
-      await createReplicate(name, region);
+      await createReplicate(name, region, cmd);
     });
   });
 
 envs
   .command('destroy-replicate <name> <region>')
+  .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('--no-deploy', 'only patch state without deploying/removing services', true)
+  .option('--no-install', 'skip installing dependencies', true)
+  .option('--no-recompile', 'skip package and service recompilation', true)
+  .option('--no-package', 'skip bundling service deployment package', true)
+  .option('--force-deploy', 'ignore deploy command checksums and re-deploy', false)
+  .option('--force-package', 'ignore package and deploy commands checksums and re-deploy', false)
+  .option('--force', 'ignore build, package and deploy checksums and re-deploy', false)
+  .option(
+    '-c, --concurrency',
+    'defines how much threads can be used for parallel tasks',
+    getDefaultThreads().toString(),
+  )
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
+  .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
+  .option('--only-prompt', 'only display deployment information and return', false)
   .description(
     'Remove an existing deployed environment from AWS. This will destroy all microservices in every region for this environment.',
   )
-  .action(async (name, region) => {
+  .action(async (name, region, cmd) => {
     await commandWrapper(async () => {
-      await destroyReplicate(name, region);
+      await destroyReplicate(name, region, cmd);
     });
   });
 
-// FIXME
 program
   .command('start')
   .option('-i, --interactive', 'interactively choose microservices', false)
@@ -245,9 +283,9 @@ program
   .command('deploy')
   .requiredOption('-e <stage>, --stage <stage>', 'target stage for deployment')
   .option('--verbose', 'print child processes stdout and stderr', false)
-  .option('--no-install', 'skip installing dependencies', false)
-  .option('--no-recompile', 'skip package and service recompilation', false)
-  .option('--no-package', 'skip bundling service deployment package', false)
+  .option('--no-install', 'skip installing dependencies', true)
+  .option('--no-recompile', 'skip package and service recompilation', true)
+  .option('--no-package', 'skip bundling service deployment package', true)
   .option('--force-deploy', 'ignore deploy command checksums and re-deploy', false)
   .option('--force-package', 'ignore package and deploy commands checksums and re-deploy', false)
   .option('--force', 'ignore build, package and deploy checksums and re-deploy', false)
@@ -257,7 +295,7 @@ program
     getDefaultThreads().toString(),
   )
   .option('-s <service>, --service <service>', 'the services you want to deploy (coma-seperated list)')
-  .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
   .option('--only-prompt', 'only display deployment information and return', false)
   .description('deploy services to AWS')
@@ -268,7 +306,6 @@ program
       }, true),
   );
 
-// FIXME
 program
   .command('remove')
   .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion')
@@ -281,7 +318,7 @@ program
     'defines how much threads can be used for parallel tasks',
     getDefaultThreads().toString(),
   )
-  .option('--no-prompt', 'skip asking user confirmation before deploying', false)
+  .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')
@@ -289,6 +326,21 @@ program
     async (cmd) =>
       await commandWrapper(async () => {
         await remove(cmd);
+      }, true),
+  );
+
+program
+  .command('release-lock')
+  .requiredOption('-e <stage>, --stage <stage>', 'target stage for deletion')
+  .option(
+    '-s <service>, --service <service>',
+    'the service you want to unlock. If no specified all locks will be removed for the given environment.',
+  )
+  .description('Release lock for a given environment')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        await releaseLock(cmd.e, cmd.s);
       }),
   );
 

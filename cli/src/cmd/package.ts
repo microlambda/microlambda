@@ -16,7 +16,13 @@ export const packagr = async (cmd: IPackageCmd): Promise<void> => {
     const projectRoot = resolveProjectRoot();
     const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-package-${Date.now()}`)]);
     const options = await beforePackage(projectRoot, cmd, eventsLog);
-    const envs = await resolveEnvs(options.project, cmd.e, SSMResolverMode.ERROR, eventsLog.scope('deploy/env'));
+    const envs = await resolveEnvs(
+      options.project,
+      cmd.e,
+      SSMResolverMode.ERROR,
+      process.env.AWS_REGION,
+      eventsLog.scope('deploy/env'),
+    );
     const { failures, success } = await packageServices(options, envs);
     if (failures.size) {
       await printReport(success, failures, options.workspaces.length, 'package', options.verbose);

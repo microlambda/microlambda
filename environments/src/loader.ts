@@ -28,9 +28,9 @@ export class EnvironmentLoader {
   static readonly ssmParameterPattern = /^\$\{ssm:(.+)}$/;
   static readonly secretPattern = /^\$\{secret:(.+)}$/;
 
-  constructor(readonly project: Project, private readonly _logger?: IBaseLogger) {
+  constructor(readonly project: Project, region?: string, private readonly _logger?: IBaseLogger) {
     const config = new ConfigReader(this.project.root);
-    this.region = process.env.AWS_REGION || config.rootConfig.defaultRegion;
+    this.region = region ?? config.rootConfig.defaultRegion;
     this._logger?.info('[env] Resolving Secrets and SSM parameters in', this.region, 'region');
   }
 

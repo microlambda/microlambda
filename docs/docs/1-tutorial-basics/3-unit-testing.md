@@ -8,8 +8,11 @@ Testing handlers
 
 The TestBed
 
-## Recipes
+code example
 
-### Manage authentication
 
-### 
+## Manage authentication
+
+extend test bed
+add mock for auth
+

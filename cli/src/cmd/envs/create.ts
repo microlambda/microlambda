@@ -10,11 +10,13 @@ import { join } from 'path';
 import { init } from '../../utils/init';
 
 export const createEnv = async (name: string): Promise<void> => {
-  logger.info('Creating environment');
+  logger.lf();
+  logger.info('✨ Creating environment');
   logger.lf();
   const projectRoot = resolveProjectRoot();
   const { project } = await init(projectRoot);
   logger.lf();
+
   const config = await printAccountInfos();
   await verifyState(config);
   const state = new State(config);
@@ -29,8 +31,8 @@ export const createEnv = async (name: string): Promise<void> => {
       message: 'Choose regions where the environment should be deployed (coma-seperated list)',
       default: config.defaultRegion,
       validate: (input: string): boolean => {
-        const allValid = input.split(',').every((value) => regions.includes(value));
-        if (!allValid) {
+        const areAllValid = input.split(',').every((value) => regions.includes(value));
+        if (!areAllValid) {
           logger.error('Some regions are not valid. Accepted regions are', regions.join(', '));
           process.exit(1);
         }

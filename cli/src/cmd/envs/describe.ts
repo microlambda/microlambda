@@ -4,7 +4,8 @@ import { printAccountInfos } from './list';
 import { verifyState } from '../../utils/verify-state';
 
 export const describeEnv = async (name: string): Promise<void> => {
-  logger.info('Creating environment');
+  logger.lf();
+  logger.info('🔎 Describing environment', name);
   logger.lf();
   const config = await printAccountInfos();
   await verifyState(config);

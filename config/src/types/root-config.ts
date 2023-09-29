@@ -7,6 +7,5 @@ export interface IRootConfig {
     checksums: string;
     table: string;
   };
-  sharedResources?: string[] | string;
   targets?: ITargetsConfig;
 }

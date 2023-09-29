@@ -1,54 +1,79 @@
 import { logger } from '../../utils/logger';
-import { printAccountInfos } from './list';
-import { verifyState } from '../../utils/verify-state';
-import { regions } from '@microlambda/config';
-import { LockManager, State } from '@microlambda/remote-state';
-import { getDependenciesGraph } from '../../utils/parse-deps-graph';
-import { resolveProjectRoot } from '@microlambda/utils';
-import { init } from '../../utils/init';
-import { EnvironmentLoader } from '@microlambda/environments';
+import { currentSha1 } from '@microlambda/runner-core';
+import { EnvsResolver } from '../../utils/deploy/envs';
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../../utils/check-env-lock';
+import { resolveDeltas } from '../../utils/deploy/resolve-deltas';
+import { performDeploy } from '../../utils/deploy/do-deploy';
+import { beforeReplicate } from '../../utils/replicate/before-replicate';
+import { destroyRegionalSsmReplicate } from '../../utils/replicate/ssm';
+import { IReplicateCmd } from '../../utils/replicate/cmd';
 
-export const destroyReplicate = async (env: string, region: string): Promise<void> => {
-  logger.info('Removing regional replicate for', env);
+export const destroyReplicate = async (env: string, region: string, cmd: IReplicateCmd): Promise<void> => {
   logger.lf();
-  const projectRoot = resolveProjectRoot();
-  const { project } = await init(projectRoot);
-  const config = await printAccountInfos();
-  await verifyState(config);
-  if (!regions.includes(region)) {
-    logger.error('Invalid region', region);
-    logger.error('Valid regions are', regions.join(', '));
-    process.exit(1);
-  }
-  const state = new State(config);
-  const allServices = (await getDependenciesGraph(resolveProjectRoot())).services.keys();
-  const lock = new LockManager(config, env, [...allServices]);
-  const environment = await state.findEnv(env);
-  if (!environment) {
-    logger.error('Environment not found', env);
-    process.exit(1);
-  }
+  logger.info('🔥 Removing regional replicate for', env);
+  logger.lf();
+
+  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(env, region, 'destroy');
+
   if (!environment.regions.includes(region)) {
     logger.error('Environment is not replicated in region', region);
     process.exit(1);
   }
-  if (await lock.isLocked()) {
-    logger.error('Environment is locked, a deploy is probably in progress... aborting.');
+
+  const currentRevision = currentSha1();
+
+  const releaseLock = await checkIfEnvIsLock(cmd, environment, project, config);
+  releaseLockOnProcessExit(releaseLock);
+
+  let shouldRestoreEnv = false;
+  try {
+    const updatedEnvironment = await state.removeReplicate(env, region);
+    shouldRestoreEnv = true;
+
+    const envs = new EnvsResolver(project, env, eventsLog.scope('replicate/env'));
+
+    await destroyRegionalSsmReplicate(project, env, region, releaseLock);
+
+    if (!cmd.deploy) {
+      logger.success(
+        'Replicate destruction order created. On next deploy, environment resources will be destroyed from',
+        region,
+      );
+      logger.success(`Run yarn mila deploy -e ${env} to remove resources from AWS Cloud`);
+      await releaseLock();
+      process.exit(0);
+    }
+
+    const operations = await resolveDeltas(
+      updatedEnvironment,
+      project,
+      { ...cmd, e: env },
+      state,
+      config,
+      eventsLog,
+      envs,
+    );
+    await performDeploy({
+      cmd: { ...cmd, e: env },
+      releaseLock,
+      operations,
+      env: updatedEnvironment,
+      project,
+      projectRoot,
+      config,
+      envs,
+      eventsLog,
+      state,
+      currentRevision,
+    });
+
+    process.exit(0);
+  } catch (e) {
+    if (shouldRestoreEnv) {
+      await state.createReplicate(env, region);
+    }
+    logger.error('Error destroying replicate', e);
+    await releaseLock();
     process.exit(1);
   }
-  await lock.lock();
-  await state.removeReplicate(env, region);
-  const loader = new EnvironmentLoader(project);
-  const { failures } = await loader.destroyRegionalReplicate(env, region);
-  failures.forEach((err, envVar) => {
-    logger.warn(`Failed to destroy secret/ssm parameter ${envVar.raw} in region ${region}`);
-    logger.warn('Original error:', err);
-  });
-  await lock.releaseLock();
-  logger.success(
-    'Replicate destruction order created. On next deploy, environment resources will be destroyed from',
-    region,
-  );
-  logger.success(`Run yarn mila deploy -e ${env} to remove resources from AWS Cloud`);
-  process.exit(0);
 };
