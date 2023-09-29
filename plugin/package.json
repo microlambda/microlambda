@@ -1,6 +1,6 @@
 {
   "name": "serverless-microlambda",
-  "version": "1.0.0-alpha.31",
+  "version": "1.0.0-rc.1",
   "engines": {
     "node": ">=14.0"
   },
@@ -30,16 +30,16 @@
     ]
   },
   "dependencies": {
-    "@microlambda/aws": "workspace:*",
-    "@microlambda/core": "workspace:*",
-    "@microlambda/environments": "workspace:*",
-    "@microlambda/layers": "workspace:*",
-    "@microlambda/runner-core": "workspace:*",
+    "@microlambda/aws": "1.0.0-rc.1",
+    "@microlambda/core": "1.0.0-rc.1",
+    "@microlambda/environments": "1.0.0-rc.1",
+    "@microlambda/layers": "1.0.0-rc.1",
+    "@microlambda/runner-core": "1.0.0-rc.1",
     "chokidar": "^3.5.2",
     "hasha": "^5.2.2",
     "joi": "^17.9.2"
   },
   "devDependencies": {
-    "@microlambda/types": "1.0.0-alpha.31"
+    "@microlambda/types": "1.0.0-rc.1"
   }
 }

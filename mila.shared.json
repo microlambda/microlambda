@@ -50,6 +50,21 @@
         ]
       }
     },
+    "publish:dry": {
+      "cmd": "npm publish --dry",
+      "src": {
+        "internals": [
+          "lib/**/*.js",
+          "dist/**/*.js",
+          "package.json"
+        ],
+        "deps": [
+          "lib/**/*.js",
+          "dist/**/*.js",
+          "package.json"
+        ]
+      }
+    },
     "build": {
       "cmd": [
         "../node_modules/.bin/tsc --build"
