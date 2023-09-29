@@ -10,8 +10,6 @@ export interface IEnvironment {
   regions: string[];
 }
 
-
-
 export interface IServiceInstanceRequest {
   name: string;
   region: string;
@@ -36,7 +34,6 @@ export interface ICmdExecutionRequest {
   current_sha1: string;
   region: string;
 }
-
 
 export interface ICmdExecution extends ICmdExecutionRequest {
   /**

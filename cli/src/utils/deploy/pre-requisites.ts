@@ -44,7 +44,7 @@ export const beforeDeploy = async (
   const env = await state.findEnv(cmd.e);
   if (!env) {
     log.error('Target environment not found');
-    logger.lf()
+    logger.lf();
     logger.error(
       chalk.red(
         'Target environment not found in remote state. You must initialize environments using yarn mila envs create <name>',

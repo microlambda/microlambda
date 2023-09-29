@@ -4,9 +4,7 @@ import { ICommandResult, RunCommandEventEnum, Runner, Workspace } from '@microla
 import { logger } from '../logger';
 import { beforePackage } from '../package/before-package';
 import { MilaSpinnies } from '../spinnies';
-import {
-  Project,
-} from '@microlambda/core';
+import { Project } from '@microlambda/core';
 import { packageServices } from '../package/do-package';
 import { DeployEvent, printReport, RemoveEvent } from './print-report';
 import { from, Observable, of } from 'rxjs';
@@ -18,8 +16,8 @@ import { IEnvironment, State } from '@microlambda/remote-state';
 import { IRootConfig } from '@microlambda/config';
 import { EnvsResolver } from './envs';
 import { EventsLog } from '@microlambda/logger';
-import {deploySharedInfra} from "../shared-infra/deploy";
-import {SSMResolverMode} from "@microlambda/environments";
+import { deploySharedInfra } from '../shared-infra/deploy';
+import { SSMResolverMode } from '@microlambda/environments';
 
 export const performDeploy = async (params: {
   cmd: IDeployCmd;
@@ -34,8 +32,7 @@ export const performDeploy = async (params: {
   state: State;
   currentRevision: string;
 }): Promise<void> => {
-  const { cmd, releaseLock, operations, env, project, config, envs, eventsLog, state, currentRevision } =
-    params;
+  const { cmd, releaseLock, operations, env, project, config, envs, eventsLog, state, currentRevision } = params;
   if (cmd.onlyPrompt) {
     await releaseLock();
     process.exit(0);

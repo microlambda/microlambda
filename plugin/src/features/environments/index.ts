@@ -16,7 +16,11 @@ export const injectLambdasEnvironmentVariables = async (
     throw new Error('Assertion failed: project not resolved');
   }
   const stage = serverless.service.provider.stage;
-  const environmentLoader = new EnvironmentLoader(workspace.project, logger);
+  const environmentLoader = new EnvironmentLoader(
+    workspace.project,
+    undefined,
+    logger,
+  );
   logger?.info('[env] Loading environment for stage', stage);
   const variables = await environmentLoader.loadAll({
     env: stage,

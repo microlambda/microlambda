@@ -1,19 +1,18 @@
-import {EnvsResolver} from '../deploy/envs';
-import {logger} from '../logger';
+import { EnvsResolver } from '../deploy/envs';
+import { logger } from '../logger';
 import chalk from 'chalk';
-import {printReport, RemoveEvent} from '../deploy/print-report';
-import {from, Observable, of} from 'rxjs';
-import {RunCommandEventEnum, Runner} from '@microlambda/runner-core';
-import {catchError, concatAll, map, mergeAll, tap} from 'rxjs/operators';
-import {MilaSpinnies} from '../spinnies';
-import {getConcurrency} from '../get-concurrency';
-import {handleNext} from '../deploy/handle-next';
-import {Project} from '@microlambda/core';
-import {IEnvironment, State} from '@microlambda/remote-state';
-import {EventsLog} from '@microlambda/logger';
-import {RemoveOperations} from './resolve-deltas';
-import {SSMResolverMode} from "@microlambda/environments";
-
+import { printReport, RemoveEvent } from '../deploy/print-report';
+import { from, Observable, of } from 'rxjs';
+import { RunCommandEventEnum, Runner } from '@microlambda/runner-core';
+import { catchError, concatAll, map, mergeAll, tap } from 'rxjs/operators';
+import { MilaSpinnies } from '../spinnies';
+import { getConcurrency } from '../get-concurrency';
+import { handleNext } from '../deploy/handle-next';
+import { Project } from '@microlambda/core';
+import { IEnvironment, State } from '@microlambda/remote-state';
+import { EventsLog } from '@microlambda/logger';
+import { RemoveOperations } from './resolve-deltas';
+import { SSMResolverMode } from '@microlambda/environments';
 
 export const removeServices = async (params: {
   operations: RemoveOperations;

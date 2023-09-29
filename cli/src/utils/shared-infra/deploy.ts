@@ -1,51 +1,61 @@
-import {logger} from "../logger";
-import chalk from "chalk";
+import { logger } from '../logger';
+import chalk from 'chalk';
 import {
   deploySharedInfrastructure,
-  ISharedInfraFailedDeployEvent, Project,
-  removeSharedInfrastructure, SharedInfraDeployEventType,
-} from "@microlambda/core";
-import {MilaSpinnies} from "../spinnies";
-import {IRootConfig} from "@microlambda/config";
-import {IEnvironment} from "@microlambda/remote-state";
-import {getConcurrency} from "../get-concurrency";
+  ISharedInfraFailedDeployEvent,
+  Project,
+  removeSharedInfrastructure,
+  SharedInfraDeployEventType,
+} from '@microlambda/core';
+import { MilaSpinnies } from '../spinnies';
+import { IRootConfig } from '@microlambda/config';
+import { IEnvironment } from '@microlambda/remote-state';
+import { getConcurrency } from '../get-concurrency';
 
 export const deploySharedInfra = async (params: {
-  action: 'remove' | 'deploy',
-  project: Project,
-  config: IRootConfig,
-  env: IEnvironment,
-  concurrency?: string,
-  isVerbose: boolean,
-  force: boolean,
-  currentRevision: string,
-  releaseLock: (msg?: string) => Promise<void>,
-  onlyEnvSpecific: boolean,
+  action: 'remove' | 'deploy';
+  project: Project;
+  config: IRootConfig;
+  env: IEnvironment;
+  concurrency?: string;
+  isVerbose: boolean;
+  force: boolean;
+  currentRevision: string;
+  releaseLock: (msg?: string) => Promise<void>;
+  onlyEnvSpecific: boolean;
 }): Promise<void> => {
-  const { project, config, force, onlyEnvSpecific, currentRevision, env, concurrency, isVerbose, releaseLock, action } = params;
+  const { project, config, force, onlyEnvSpecific, currentRevision, env, concurrency, isVerbose, releaseLock, action } =
+    params;
   logger.lf();
   logger.info(chalk.underline(chalk.bold(`▼ ${action === 'deploy' ? 'Updating' : 'Removing'} shared infrastructure`)));
   logger.lf();
-  const deploySharedInfra$ = action === 'deploy'
-    ? await deploySharedInfrastructure({
-      project,
-      config,
-      env,
-      concurrency: getConcurrency(concurrency),
-      verbose: isVerbose,
-      force,
-      currentRevision,
-      onlyEnvSpecific,
-    }, logger)
-    : await removeSharedInfrastructure({
-      project,
-      config,
-      env,
-      concurrency: getConcurrency(concurrency),
-      verbose: isVerbose,
-      currentRevision,
-      onlyEnvSpecific,
-    }, logger);
+  const deploySharedInfra$ =
+    action === 'deploy'
+      ? await deploySharedInfrastructure(
+          {
+            project,
+            config,
+            env,
+            concurrency: getConcurrency(concurrency),
+            verbose: isVerbose,
+            force,
+            currentRevision,
+            onlyEnvSpecific,
+          },
+          logger,
+        )
+      : await removeSharedInfrastructure(
+          {
+            project,
+            config,
+            env,
+            concurrency: getConcurrency(concurrency),
+            verbose: isVerbose,
+            currentRevision,
+            onlyEnvSpecific,
+          },
+          logger,
+        );
   await new Promise<void>((resolve) => {
     const spinnies = new MilaSpinnies(isVerbose);
     const failures = new Set<ISharedInfraFailedDeployEvent>();
@@ -119,7 +129,9 @@ export const deploySharedInfra = async (params: {
           logger.error('Error happened updating shared infrastructure');
           for (const failure of failures) {
             logger.error(
-              `Error happened ${action === 'deploy' ? 'updating' : 'removing'} ${failure.workspace.name} in region ${failure.region}`,
+              `Error happened ${action === 'deploy' ? 'updating' : 'removing'} ${failure.workspace.name} in region ${
+                failure.region
+              }`,
             );
             const isExecaError = (err: unknown): err is { all: string } => !!(failure.err as { all: string }).all;
             if (isExecaError(failure.err)) {
@@ -134,4 +146,4 @@ export const deploySharedInfra = async (params: {
       },
     });
   });
-}
+};

@@ -1,10 +1,10 @@
-import {IEnvironment, ISharedInfraStateRequest, State} from '@microlambda/remote-state';
-import {concatAll, from, Observable, of} from 'rxjs';
-import {SharedInfraDeployEvent, SharedInfraDeployEventType} from './types';
-import {IBaseLogger} from '@microlambda/types';
-import {RunCommandEventEnum, Runner, Workspace} from "@microlambda/runner-core";
-import {IRootConfig} from "@microlambda/config";
-import {Project} from "../graph/project";
+import { IEnvironment, ISharedInfraStateRequest, State } from '@microlambda/remote-state';
+import { concatAll, from, Observable, of } from 'rxjs';
+import { SharedInfraDeployEvent, SharedInfraDeployEventType } from './types';
+import { IBaseLogger } from '@microlambda/types';
+import { RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
+import { IRootConfig } from '@microlambda/config';
+import { Project } from '../graph/project';
 
 const runSlsCommand = (
   params: {
@@ -16,13 +16,14 @@ const runSlsCommand = (
     state: State;
     verbose: boolean;
     force: boolean;
-    project: Project,
+    project: Project;
     concurrency: number;
     currentRevision: string;
   },
   logger?: IBaseLogger,
 ): Observable<SharedInfraDeployEvent> => {
-  const { action, region, verbose, env, workspace, force, currentRevision, state, config, project, concurrency } = params;
+  const { action, region, verbose, env, workspace, force, currentRevision, state, config, project, concurrency } =
+    params;
 
   return new Observable<SharedInfraDeployEvent>((obs) => {
     logger?.debug('starting evt', workspace.name, env, region, action);
@@ -36,110 +37,119 @@ const runSlsCommand = (
     let updatedState$: Promise<unknown> | undefined;
 
     const _env = workspace._config.sharedInfra?.envSpecific ? env : undefined;
-    const cachePrefix =
-      workspace._config.sharedInfra?.envSpecific
+    const cachePrefix = workspace._config.sharedInfra?.envSpecific
       ? `caches/${workspace.name}/${action}/${region}`
       : `caches/${workspace.name}/${action}/${env}/${region}`;
 
     const runner = new Runner(project, concurrency);
-    runner.runCommand({
-      cmd: `infra:${action}`,
-      mode: 'parallel',
-      workspaces: [workspace],
-      env: {
-        ...process.env,
-        AWS_REGION: region,
-        ENV: env,
-      },
-      force: action === 'remove' || force,
-      stdio: verbose ? 'inherit' : 'pipe',
-      remoteCache: action === 'deploy' ? {
-        region: config.defaultRegion,
-        bucket: config.state.checksums,
-      } : undefined,
-      cachePrefix,
-    }).subscribe({
-      next: (evt) => {
-        switch (evt.type) {
-          case RunCommandEventEnum.NODE_STARTED:
-            obs.next({
-              type: action === 'deploy' ? SharedInfraDeployEventType.DEPLOYING : SharedInfraDeployEventType.REMOVING,
-              region,
-              env: env,
-              workspace,
-            });
-            break;
-          case RunCommandEventEnum.NODE_SKIPPED:
-            obs.next({
-              type: SharedInfraDeployEventType.NO_CHANGES,
-              region,
-              env: env,
-              workspace,
-            });
-            break;
-          case RunCommandEventEnum.NODE_PROCESSED:
-            logger?.debug('Node processed', action, workspace.name, region);
-            const request: ISharedInfraStateRequest = {
-              name: workspace.name,
-              region,
-              sha1: currentRevision,
-              checksums_buckets: config.state.checksums,
-              checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
-            }
-            if (_env) {
-              request.env = _env;
-            }
-            updatedState$ = action === 'deploy'
-              ? state.setSharedInfrastructureState(request)
-              : state.deleteSharedInfrastructureState(workspace.name, region, env);
-            obs.next({
-              type: action === 'deploy' ? SharedInfraDeployEventType.DEPLOYED : SharedInfraDeployEventType.REMOVED,
-              region,
-              env: env,
-              workspace,
-              result: evt.result,
-            });
-            break;
-          case RunCommandEventEnum.NODE_ERRORED:
-            obs.next({
-              type: action === 'deploy' ? SharedInfraDeployEventType.FAILED_DEPLOY : SharedInfraDeployEventType.FAILED_REMOVE,
-              region,
-              env: env,
-              workspace,
-              err: evt.error,
-            });
-            break;
-        }
-      },
-      error: (err) => {
-        obs.next({
-          type: action === 'deploy' ? SharedInfraDeployEventType.FAILED_DEPLOY : SharedInfraDeployEventType.FAILED_REMOVE,
-          region,
-          env: env,
-          workspace,
-          err,
-        });
-      },
-      complete: () => {
-        const complete = (): void => {
-          logger?.debug('Target run', `infra:${action}`, workspace.name, region);
-          obs.complete()
-        }
-        if (updatedState$) {
-          updatedState$
-            .catch((e) => {
-              logger?.warn('Error updating state')
-              logger?.warn(e);
-            })
-            .finally(() => {
-              logger?.debug('State updated');
-              complete();
-            });
-        } else {
-          complete();
-        }
-      },
-    })
+    runner
+      .runCommand({
+        cmd: `infra:${action}`,
+        mode: 'parallel',
+        workspaces: [workspace],
+        env: {
+          ...process.env,
+          AWS_REGION: region,
+          ENV: env,
+        },
+        force: action === 'remove' || force,
+        stdio: verbose ? 'inherit' : 'pipe',
+        remoteCache:
+          action === 'deploy'
+            ? {
+                region: config.defaultRegion,
+                bucket: config.state.checksums,
+              }
+            : undefined,
+        cachePrefix,
+      })
+      .subscribe({
+        next: (evt) => {
+          switch (evt.type) {
+            case RunCommandEventEnum.NODE_STARTED:
+              obs.next({
+                type: action === 'deploy' ? SharedInfraDeployEventType.DEPLOYING : SharedInfraDeployEventType.REMOVING,
+                region,
+                env: env,
+                workspace,
+              });
+              break;
+            case RunCommandEventEnum.NODE_SKIPPED:
+              obs.next({
+                type: SharedInfraDeployEventType.NO_CHANGES,
+                region,
+                env: env,
+                workspace,
+              });
+              break;
+            case RunCommandEventEnum.NODE_PROCESSED:
+              logger?.debug('Node processed', action, workspace.name, region);
+              const request: ISharedInfraStateRequest = {
+                name: workspace.name,
+                region,
+                sha1: currentRevision,
+                checksums_buckets: config.state.checksums,
+                checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
+              };
+              if (_env) {
+                request.env = _env;
+              }
+              updatedState$ =
+                action === 'deploy'
+                  ? state.setSharedInfrastructureState(request)
+                  : state.deleteSharedInfrastructureState(workspace.name, region, env);
+              obs.next({
+                type: action === 'deploy' ? SharedInfraDeployEventType.DEPLOYED : SharedInfraDeployEventType.REMOVED,
+                region,
+                env: env,
+                workspace,
+                result: evt.result,
+              });
+              break;
+            case RunCommandEventEnum.NODE_ERRORED:
+              obs.next({
+                type:
+                  action === 'deploy'
+                    ? SharedInfraDeployEventType.FAILED_DEPLOY
+                    : SharedInfraDeployEventType.FAILED_REMOVE,
+                region,
+                env: env,
+                workspace,
+                err: evt.error,
+              });
+              break;
+          }
+        },
+        error: (err) => {
+          obs.next({
+            type:
+              action === 'deploy' ? SharedInfraDeployEventType.FAILED_DEPLOY : SharedInfraDeployEventType.FAILED_REMOVE,
+            region,
+            env: env,
+            workspace,
+            err,
+          });
+        },
+        complete: () => {
+          const complete = (): void => {
+            logger?.debug('Target run', `infra:${action}`, workspace.name, region);
+            obs.complete();
+          };
+          if (updatedState$) {
+            updatedState$
+              .catch((e) => {
+                logger?.warn('Error updating state');
+                logger?.warn(e);
+              })
+              .finally(() => {
+                logger?.debug('State updated');
+                complete();
+              });
+          } else {
+            complete();
+          }
+        },
+      });
   });
 };
 
@@ -150,17 +160,18 @@ const runSlsCommand = (
  * @param params
  * @param logger
  */
-export const deploySharedInfraStack = (params: {
-  env: IEnvironment,
-  workspace: Workspace,
-  state: State,
-  config: IRootConfig,
-                                         verbose: boolean,
-                                         force: boolean,
-                                         project: Project,
-                                         concurrency: number,
-                                         currentRevision: string,
-},
+export const deploySharedInfraStack = (
+  params: {
+    env: IEnvironment;
+    workspace: Workspace;
+    state: State;
+    config: IRootConfig;
+    verbose: boolean;
+    force: boolean;
+    project: Project;
+    concurrency: number;
+    currentRevision: string;
+  },
   logger?: IBaseLogger,
 ): Observable<SharedInfraDeployEvent> => {
   const { env, workspace, state, config, verbose, force, currentRevision, concurrency, project } = params;
@@ -202,19 +213,22 @@ export const deploySharedInfraStack = (params: {
           if (!env.regions.includes(region)) {
             logger?.debug('Environment', env.name, 'is no more replicated in', region);
             regionalDeployment$.push(
-              runSlsCommand({
-                workspace,
-                config,
-                env: env.name,
-                action: 'remove',
-                region,
-                state,
-                verbose,
-                force: true,
-                project,
-                concurrency,
-                currentRevision,
-              }, logger),
+              runSlsCommand(
+                {
+                  workspace,
+                  config,
+                  env: env.name,
+                  action: 'remove',
+                  region,
+                  state,
+                  verbose,
+                  force: true,
+                  project,
+                  concurrency,
+                  currentRevision,
+                },
+                logger,
+              ),
             );
           }
         }
@@ -225,7 +239,7 @@ export const deploySharedInfraStack = (params: {
             error: (err) => obs.error(err),
             complete: () => {
               logger?.debug('Target run in all region', workspace.name);
-              obs.complete()
+              obs.complete();
             },
           });
       })
@@ -235,10 +249,10 @@ export const deploySharedInfraStack = (params: {
 
 export const removeSharedInfraStack = (
   params: {
-    env: IEnvironment,
-    workspace: Workspace,
-    state: State,
-    config: IRootConfig,
+    env: IEnvironment;
+    workspace: Workspace;
+    state: State;
+    config: IRootConfig;
     verbose: boolean;
     currentRevision: string;
     concurrency: number;
@@ -270,5 +284,5 @@ export const removeSharedInfraStack = (
       ),
     );
   }
-  return from(regionalDeployment$).pipe(concatAll())
+  return from(regionalDeployment$).pipe(concatAll());
 };

@@ -5,9 +5,12 @@ import { regions } from '../regions';
 export const packageConfigSchema = joi.object().keys({
   extends: joi.string().optional(),
   targets: targetsConfigSchema.optional(),
-  sharedInfra: joi.object().keys({
-    envSpecific: joi.boolean().optional(),
-  }).optional(),
+  sharedInfra: joi
+    .object()
+    .keys({
+      envSpecific: joi.boolean().optional(),
+    })
+    .optional(),
   ports: joi
     .alternatives(
       joi.number().port().optional(),

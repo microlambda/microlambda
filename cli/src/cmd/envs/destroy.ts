@@ -10,12 +10,12 @@ import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { removeServices } from '../../utils/remove/do-remove';
 import { promptConfirm } from '../../utils/remove/prompt-confirm';
 import { removeSsmAndSecrets } from '../../utils/remove/remove-ssm';
-import {deploySharedInfra} from "../../utils/shared-infra/deploy";
-import {currentSha1} from "@microlambda/runner-core";
+import { deploySharedInfra } from '../../utils/shared-infra/deploy';
+import { currentSha1 } from '@microlambda/runner-core';
 
 export const destroyEnv = async (
   name: string,
-  cmd: { prompt: boolean; skipLock: boolean; onlyPrompt: boolean; destroy: boolean; c?: string, verbose: true },
+  cmd: { prompt: boolean; skipLock: boolean; onlyPrompt: boolean; destroy: boolean; c?: string; verbose: true },
 ): Promise<void> => {
   logger.lf();
   logger.info('🔥 Preparing to destroy environment');
@@ -52,9 +52,15 @@ export const destroyEnv = async (
 
   try {
     if (cmd.destroy) {
-      const operations = await resolveRemoveOperations(env, state, [...project.services.values()], releaseLock, async () => {
-        await state.removeEnv(name);
-      });
+      const operations = await resolveRemoveOperations(
+        env,
+        state,
+        [...project.services.values()],
+        releaseLock,
+        async () => {
+          await state.removeEnv(name);
+        },
+      );
       await promptConfirm(env.name, cmd, releaseLock);
       await removeServices({
         operations,
@@ -84,7 +90,7 @@ export const destroyEnv = async (
       currentRevision,
       force: true,
       onlyEnvSpecific: !noMoreEnv,
-    })
+    });
 
     await releaseLock();
     logger.lf();
