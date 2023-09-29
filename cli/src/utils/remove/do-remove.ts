@@ -14,6 +14,7 @@ import {EventsLog} from '@microlambda/logger';
 import {RemoveOperations} from './resolve-deltas';
 import {SSMResolverMode} from "@microlambda/environments";
 
+
 export const removeServices = async (params: {
   operations: RemoveOperations;
   project: Project;
@@ -100,9 +101,6 @@ export const removeServices = async (params: {
           await releaseLock();
           return reject();
         }
-        await releaseLock();
-        logger.lf();
-        logger.success(`Successfully removed ${env.name} 🚀`);
         return resolve();
       },
     });

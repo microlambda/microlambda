@@ -20,8 +20,9 @@ export const deploySharedInfra = async (params: {
   force: boolean,
   currentRevision: string,
   releaseLock: (msg?: string) => Promise<void>,
+  onlyEnvSpecific: boolean,
 }): Promise<void> => {
-  const { project, config, force, currentRevision, env, concurrency, isVerbose, releaseLock, action } = params;
+  const { project, config, force, onlyEnvSpecific, currentRevision, env, concurrency, isVerbose, releaseLock, action } = params;
   logger.lf();
   logger.info(chalk.underline(chalk.bold(`▼ ${action === 'deploy' ? 'Updating' : 'Removing'} shared infrastructure`)));
   logger.lf();
@@ -34,7 +35,8 @@ export const deploySharedInfra = async (params: {
       verbose: isVerbose,
       force,
       currentRevision,
-    })
+      onlyEnvSpecific,
+    }, logger)
     : await removeSharedInfrastructure({
       project,
       config,
@@ -42,7 +44,8 @@ export const deploySharedInfra = async (params: {
       concurrency: getConcurrency(concurrency),
       verbose: isVerbose,
       currentRevision,
-    });
+      onlyEnvSpecific,
+    }, logger);
   await new Promise<void>((resolve) => {
     const spinnies = new MilaSpinnies(isVerbose);
     const failures = new Set<ISharedInfraFailedDeployEvent>();
@@ -57,59 +60,61 @@ export const deploySharedInfra = async (params: {
           case SharedInfraDeployEventType.NO_CHANGES:
             spinnies.add(
               `${evt.workspace.name}-${evt.region}`,
-              `Skipping evt.workspace.name (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
+              `Skipping ${evt.workspace.name} (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
             );
             spinnies.succeed(
               `${evt.workspace.name}-${evt.region}`,
-              `Skipped evt.workspace.name (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
+              `Skipped ${evt.workspace.name} (no changes) ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.DEPLOYING:
             spinnies.add(
               `${evt.workspace.name}-${evt.region}`,
-              `Deploying evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
+              `Deploying ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.DEPLOYED:
             spinnies.succeed(
               `${evt.workspace.name}-${evt.region}`,
-              `Successfully deployed evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
+              `Successfully deployed ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.FAILED_DEPLOY:
             spinnies.fail(
               `${evt.workspace.name}-${evt.region}`,
-              `Failed to deploy evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
+              `Failed to deploy ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
             );
             failures.add(evt as ISharedInfraFailedDeployEvent);
             break;
           case SharedInfraDeployEventType.REMOVING:
             spinnies.add(
               `${evt.workspace.name}-${evt.region}`,
-              `Removing evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
+              `Removing ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.REMOVED:
             spinnies.succeed(
               `${evt.workspace.name}-${evt.region}`,
-              `Successfully removed evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
+              `Successfully removed ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
             );
             break;
           case SharedInfraDeployEventType.FAILED_REMOVE:
             spinnies.fail(
               `${evt.workspace.name}-${evt.region}`,
-              `Failed to remove evt.workspace.name ${chalk.magenta(`[${evt.region}]`)}`,
+              `Failed to remove ${evt.workspace.name} ${chalk.magenta(`[${evt.region}]`)}`,
             );
             failures.add(evt as ISharedInfraFailedDeployEvent);
             break;
         }
       },
       error: (err) => {
+        spinnies.stopAll();
         logger.error('Error happened updating shared infrastructure');
         logger.error(err);
         releaseLock().then(() => process.exit(1));
       },
       complete: () => {
+        spinnies.stopAll();
         if (failures.size) {
           logger.error('Error happened updating shared infrastructure');
           for (const failure of failures) {

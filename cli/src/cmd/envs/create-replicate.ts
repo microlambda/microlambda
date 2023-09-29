@@ -9,6 +9,7 @@ import { beforeReplicate } from '../../utils/replicate/before-replicate';
 import { replicateSsmParameters } from '../../utils/replicate/ssm';
 
 export const createReplicate = async (env: string, region: string, cmd: IReplicateCmd): Promise<void> => {
+  logger.lf();
   logger.info('🌎 Creating regional replicate for', env);
   logger.lf();
 

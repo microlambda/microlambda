@@ -1,5 +1,4 @@
-import {Workspace} from "../graph/workspace";
-import {IProcessResult} from "@microlambda/runner-core";
+import {IProcessResult, Workspace} from "@microlambda/runner-core";
 
 export enum SharedInfraDeployEventType {
   WORKSPACES_RESOLVED = 'workspaces_resolved',

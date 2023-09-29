@@ -1,9 +1,8 @@
-import {IEnvironment, State} from '@microlambda/remote-state';
+import {IEnvironment, ISharedInfraStateRequest, State} from '@microlambda/remote-state';
 import {concatAll, from, Observable, of} from 'rxjs';
 import {SharedInfraDeployEvent, SharedInfraDeployEventType} from './types';
 import {IBaseLogger} from '@microlambda/types';
-import {Workspace} from "../graph/workspace";
-import {RunCommandEventEnum, Runner} from "@microlambda/runner-core";
+import {RunCommandEventEnum, Runner, Workspace} from "@microlambda/runner-core";
 import {IRootConfig} from "@microlambda/config";
 import {Project} from "../graph/project";
 
@@ -33,6 +32,8 @@ const runSlsCommand = (
       env: env,
       workspace,
     });
+
+    let updatedState$: Promise<unknown> | undefined;
 
     const _env = workspace._config.sharedInfra?.envSpecific ? env : undefined;
     const cachePrefix =
@@ -77,29 +78,27 @@ const runSlsCommand = (
             });
             break;
           case RunCommandEventEnum.NODE_PROCESSED:
-            const action$ = action === 'deploy'
-              ? state.setSharedInfrastructureState({
-                name: workspace.name,
-                region,
-                env: _env,
-                sha1: currentRevision,
-                checksums_buckets: config.state.checksums,
-                checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
-              })
+            logger?.debug('Node processed', action, workspace.name, region);
+            const request: ISharedInfraStateRequest = {
+              name: workspace.name,
+              region,
+              sha1: currentRevision,
+              checksums_buckets: config.state.checksums,
+              checksums_key: `${cachePrefix}/${currentRevision}/checksums.json`,
+            }
+            if (_env) {
+              request.env = _env;
+            }
+            updatedState$ = action === 'deploy'
+              ? state.setSharedInfrastructureState(request)
               : state.deleteSharedInfrastructureState(workspace.name, region, env);
-            action$
-              .catch((e) => {
-                logger?.warn(e);
-              })
-              .finally(() => {
-                obs.next({
-                  type: action === 'deploy' ? SharedInfraDeployEventType.DEPLOYED : SharedInfraDeployEventType.REMOVED,
-                  region,
-                  env: env,
-                  workspace,
-                  result: evt.result,
-                });
-              })
+            obs.next({
+              type: action === 'deploy' ? SharedInfraDeployEventType.DEPLOYED : SharedInfraDeployEventType.REMOVED,
+              region,
+              env: env,
+              workspace,
+              result: evt.result,
+            });
             break;
           case RunCommandEventEnum.NODE_ERRORED:
             obs.next({
@@ -121,7 +120,25 @@ const runSlsCommand = (
           err,
         });
       },
-      complete: () => obs.complete(),
+      complete: () => {
+        const complete = (): void => {
+          logger?.debug('Target run', `infra:${action}`, workspace.name, region);
+          obs.complete()
+        }
+        if (updatedState$) {
+          updatedState$
+            .catch((e) => {
+              logger?.warn('Error updating state')
+              logger?.warn(e);
+            })
+            .finally(() => {
+              logger?.debug('State updated');
+              complete();
+            });
+        } else {
+          complete();
+        }
+      },
     })
   });
 };
@@ -206,7 +223,10 @@ export const deploySharedInfraStack = (params: {
           .subscribe({
             next: (evt) => obs.next(evt),
             error: (err) => obs.error(err),
-            complete: () => obs.complete(),
+            complete: () => {
+              logger?.debug('Target run in all region', workspace.name);
+              obs.complete()
+            },
           });
       })
       .catch((err) => obs.error(err));

@@ -30,6 +30,7 @@ import { typeCheck } from '../utils/build/type-check';
 
 export const runTests = async (cmd: ITestCommand): Promise<void> => {
   try {
+    logger.lf();
     logger.info('Running tests ✅');
     logger.lf();
 

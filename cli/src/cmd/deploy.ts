@@ -13,7 +13,7 @@ import { performDeploy } from '../utils/deploy/do-deploy';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
-  logger.info(chalk.underline(chalk.bold('▼ Preparing deployment')));
+  logger.info('🚀 Preparing to deploy environment');
   logger.lf();
 
   const projectRoot = resolveProjectRoot();

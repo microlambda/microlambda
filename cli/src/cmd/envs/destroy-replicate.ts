@@ -9,6 +9,7 @@ import { destroyRegionalSsmReplicate } from '../../utils/replicate/ssm';
 import { IReplicateCmd } from '../../utils/replicate/cmd';
 
 export const destroyReplicate = async (env: string, region: string, cmd: IReplicateCmd): Promise<void> => {
+  logger.lf();
   logger.info('🔥 Removing regional replicate for', env);
   logger.lf();
 

@@ -17,7 +17,7 @@
         "types": ["boolean"],
         "format": ["camelCase"],
         "custom": {
-          "regex": "^(is|has|are|have|was|had|were|can|do|does|should|would|use)",
+          "regex": "^(is|has|are|have|was|had|were|can|do|does|should|would|use|no|only|force|verbose)",
           "match": true
         }
       },

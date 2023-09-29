@@ -11,6 +11,7 @@ export const resolveRemoveOperations = async (
   state: State,
   services: Workspace[] | undefined,
   releaseLock: (msg?: string) => Promise<void>,
+  onNothing?: () => void | Promise<void>,
 ): Promise<RemoveOperations> => {
   const servicesInstances = await state.listServices(env.name);
 
@@ -44,6 +45,9 @@ export const resolveRemoveOperations = async (
     await releaseLock();
     logger.lf();
     logger.success('Nothing to do');
+    if (onNothing) {
+      await onNothing();
+    }
     process.exit(0);
   }
 

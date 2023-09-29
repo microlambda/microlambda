@@ -22,6 +22,7 @@ export const printAccountInfos = async (): Promise<IRootConfig> => {
 };
 
 export const listEnvs = async (): Promise<void> => {
+  logger.lf();
   logger.info('🔎 Listing deployed environments');
   logger.lf();
   const config = await printAccountInfos();
@@ -29,7 +30,9 @@ export const listEnvs = async (): Promise<void> => {
   const state = new State(config);
   const envs = await state.listEnvironments();
   if (!envs.length) {
-    logger.info('No deployed environments found. Run yarn mila envs create <name> to initialize a new environment');
+    logger.info('No deployed environments found.');
+    logger.lf();
+    logger.info(`Run ${chalk.bold.cyan('yarn mila envs create <name>')} to initialize a new environment`)
   } else {
     for (const e of envs) {
       logger.info(`${chalk.white.bold(e.name)} (${chalk.grey(e.regions.join(', '))})`);

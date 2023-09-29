@@ -17,6 +17,7 @@ export const destroyEnv = async (
   name: string,
   cmd: { prompt: boolean; skipLock: boolean; onlyPrompt: boolean; destroy: boolean; c?: string, verbose: true },
 ): Promise<void> => {
+  logger.lf();
   logger.info('🔥 Preparing to destroy environment');
   logger.lf();
 
@@ -51,7 +52,9 @@ export const destroyEnv = async (
 
   try {
     if (cmd.destroy) {
-      const operations = await resolveRemoveOperations(env, state, [...project.services.values()], releaseLock);
+      const operations = await resolveRemoveOperations(env, state, [...project.services.values()], releaseLock, async () => {
+        await state.removeEnv(name);
+      });
       await promptConfirm(env.name, cmd, releaseLock);
       await removeServices({
         operations,
@@ -68,6 +71,8 @@ export const destroyEnv = async (
     await state.removeEnv(name);
     await removeSsmAndSecrets(env, project, releaseLock);
 
+    const noMoreEnv = (await state.listEnvironments()).length === 0;
+
     await deploySharedInfra({
       action: 'remove',
       project,
@@ -78,10 +83,11 @@ export const destroyEnv = async (
       releaseLock,
       currentRevision,
       force: true,
+      onlyEnvSpecific: !noMoreEnv,
     })
 
     await releaseLock();
-
+    logger.lf();
     logger.success('Successfully destroyed 🔥');
     process.exit(0);
   } catch (e) {

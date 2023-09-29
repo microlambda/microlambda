@@ -102,7 +102,8 @@ export const performDeploy = async (params: {
     releaseLock,
     currentRevision,
     force: cmd.force,
-  })
+    onlyEnvSpecific: false,
+  });
 
   if (toDeploy.size) {
     try {

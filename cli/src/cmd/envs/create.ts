@@ -10,6 +10,7 @@ import { join } from 'path';
 import { init } from '../../utils/init';
 
 export const createEnv = async (name: string): Promise<void> => {
+  logger.lf();
   logger.info('✨ Creating environment');
   logger.lf();
   const projectRoot = resolveProjectRoot();

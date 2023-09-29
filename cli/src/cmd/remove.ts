@@ -10,6 +10,9 @@ import { removeServices } from '../utils/remove/do-remove';
 import { promptConfirm } from '../utils/remove/prompt-confirm';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
+  logger.lf();
+  logger.info('🔥 Preparing to remove services');
+  logger.lf();
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-remove-${Date.now()}`)]);
 
@@ -33,6 +36,9 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
       concurrency: cmd.c,
       state,
     });
+    await releaseLock();
+    logger.lf();
+    logger.success(`Successfully removed ${env.name} 🚀`);
   } catch (e) {
     logger.error('Remove failed', e);
     await releaseLock();
