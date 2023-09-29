@@ -66,27 +66,6 @@ export const start = async (options: IStartOptions): Promise<void> => {
     next: (log) => io.handleEventLog(log),
   });
 
-  // logger.logs$.subscribe((evt) => io.eventLogAdded(evt));
-  /*project.services.forEach((service) => {
-    service.status$.subscribe((status) => io.statusUpdated(service, status));
-    const offlineLogs$ = service.logs$.start.default;
-    if (offlineLogs$) {
-      offlineLogs$.subscribe((log) => io.handleServiceLog(service.getName(), log));
-    } else {
-      logger.log('start').error('Cannot subscribe to offline logs');
-    }
-  });
-  graph.getNodes().forEach((node) => {
-    node.tscLogs$.subscribe((log) => io.handleTscLogs(node.getName(), log));
-    node.typeCheck$.subscribe((typeCheckStatus) => io.typeCheckStatusUpdated(node, typeCheckStatus));
-    node.transpiled$.subscribe((transpileStatus) => io.transpilingStatusUpdated(node, transpileStatus));
-  });
-  scheduler.status$.subscribe((status) => io.schedulerStatusChanged(status));*/
-
-  /*const ipc = new IPCSocketsManager(projectRoot, scheduler, logger, graph);
-  await ipc.createServer();
-  graph.registerIPCServer(ipc);*/
-
   recreateLogDirectory(projectRoot, eventsLog);
 
   process.on('SIGINT', async () => {
@@ -102,9 +81,4 @@ export const start = async (options: IStartOptions): Promise<void> => {
     gracefulShutdown.succeed();
     process.exit(0);
   });
-
-  if (!options.interactive) {
-    eventsLog.scope('start').info('Starting services');
-    await scheduler.startAll();
-  }
 };
