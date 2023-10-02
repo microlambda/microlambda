@@ -26,8 +26,23 @@ A dedicated command is available to create a new environment in remote state.
 > yarn mila envs create dev
 ```
 
-
-
 ## List environments
 
+You can list deployed environments using
+
+```
+> yarn mila envs create list
+```
+
+This will give you the list of every live environment you registered and for each environment the target regions where the infrastructure is replicated.
+
 ## Destroy environments
+
+> **Be careful**: every service in every region will be destroyed (you will be prompt for confirmation before)
+
+To destroy an existing environment use the command:
+
+```
+> yarn mila envs destroy dev
+```
+
