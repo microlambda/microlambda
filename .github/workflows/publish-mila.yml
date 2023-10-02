@@ -1,0 +1,38 @@
+name: release
+run-name: Release a new Microlambda CLI and utils version
+
+on:
+  push:
+    tags:
+      - '**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - run: yarn install --immutable
+      - run: npx --yes @microlambda/runner-cli@latest run build -t --force
+      - uses: actions/upload-artifact@v3
+        with:
+          retention-days: 2
+          name: built-sources
+          path: |
+            ./*/dist
+            ./*/lib
+      - run: node ./runner/cli/dist/index.js run build -t --force
+      # - run: node ./runner/cli/dist/index.js run test -p --force
+      - run: npx ts-node ./scripts/set-version.ts ${{  github.ref_name }}
+      - run: npx ts-node ./scripts/add-ci-token.ts
+      - run: node ./runner/cli/dist/index.js run publish -t --force
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: '.'
+          author_name: Microlambda Release Bot
+          author_email: release-bot@microlamnda.dev
+          fetch: false
+          message: 'chore: release ${{  github.ref_name }}'
+          push: true
