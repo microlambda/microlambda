@@ -1,4 +1,4 @@
-<h1 align="center"></h1>
+<h1 align="center">Microlambda</h1>
 <p align="center">
   <img width="150" height="150" src="https://raw.githubusercontent.com/microlambda/.github/e6430357d33bcadea731c5979c5f837afb6a9d8f/logo-blue.svg" alt="Logo"/>
 </p>
@@ -8,9 +8,14 @@ project using typescript.
 
 ## Sponsors
 
-<img width="150" height="150" src="https://avatars.githubusercontent.com/u/1021573?s=50" alt="Logo"/>
-
-Neoxia - The 360 Cloud Company
+<a href="https://github.com/neoxia">
+    <p align="center">
+        <img width="50" height="50" src="https://avatars.githubusercontent.com/u/1021573?s=50" alt="Logo"/>
+    </p>
+    <p align="center">
+        Neoxia - The 360 Cloud Company
+    </p>
+</a>
 
 ## User documentation
 
