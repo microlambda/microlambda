@@ -37,7 +37,36 @@ The project is maintained as a monorepo (using yarn workspaces) and contains the
 
 ### Project first build
 
-1. Clone this repository
-2. Install dependencies with `yarn`
-3. Mila is designed to build itself, to do so, build mila-runner using ``yarn build:runner``
-4. Once the runner is built, use it to build the entire project ``yarn build --watch``
+```bash
+# Clone this repository
+git clone git@github.com:microlambda/microlambda.git
+
+# Install dependencies
+yarn
+
+# Mila is designed to build itself, to do so, build mila-runner
+yarn build:runner
+
+# Once the runner is built, use it to build the entire project
+yarn build --watch
+```
+
+To perform tests, fork the [mila-starter](https://github.com/microlambda/mila-starter) or use one of your microlambda project.
+
+Update your ``package.json`` to use yarn `link:` special protocol and use your local version of mila and run `yarn install`.
+
+```json
+{
+  "dependencies": {
+    "@microlambda/cli": "link:/path/to/your/clone/microlambda/cli",
+    "serverless-microlambda": "link:/path/to/your/clone/microlambda/plugin"
+  }
+}
+```
+
+With this setup, you are using a local version of microlambda which is rebuilt with `build --watch` on another shell.
+
+When you edit microlambda, changes are immediately available on your test project.
+
+You have a proper DX to fix yur bug or develop your feature :triangular_ruler: 
+
