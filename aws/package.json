@@ -24,7 +24,7 @@
     "@aws-sdk/client-acm": "^3.363.0",
     "@aws-sdk/client-apigatewayv2": "^3.423.0",
     "@aws-sdk/client-cloudformation": "^3.363.0",
-    "@aws-sdk/client-dynamodb": "^3.363.0",
+    "@aws-sdk/client-dynamodb": "^3.423.0",
     "@aws-sdk/client-iam": "^3.363.0",
     "@aws-sdk/client-lambda": "^3.363.0",
     "@aws-sdk/client-route-53": "^3.363.0",
