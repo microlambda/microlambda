@@ -32,8 +32,8 @@ export default function Home(): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title={`λ | ${siteConfig.title} | The serverless micro-services toolchain`}
+      description="Microlambda is an opinionated framework that allows you to manage large serverless projects on AWS Lambda, written in TypeScript.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

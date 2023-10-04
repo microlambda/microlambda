@@ -26,7 +26,6 @@ const config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
-
   presets: [
     [
       'classic',
@@ -57,6 +56,10 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      metadata: [
+        {name: 'keywords', content: 'lambda, aws'},
+        {name: 'og:image', content: 'https://avatars.githubusercontent.com/u/81293962'},
+      ],
       colorMode: {
         defaultMode: 'dark',
         disableSwitch: false,
