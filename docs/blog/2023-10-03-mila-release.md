@@ -1,7 +1,7 @@
 ---
 slug: mila-release
 title: Microlambda Public Release
-authors: []
+authors: [MarioArnt]
 tags: [mila, news]
 ---
 
