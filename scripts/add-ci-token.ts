@@ -18,7 +18,7 @@ import { dump, load } from 'js-yaml';
       }
     };
 
-    const scopesToCover = ['dataportal', 'dataportal-pr', 'datacorp']
+    const scopesToCover = ['microlambda']
     scopesToCover.forEach((scopeToCover) => {
       yarnConfigParsed.npmScopes[scopeToCover].npmAlwaysAuth = true;
       yarnConfigParsed.npmScopes[scopeToCover].npmAuthToken = process.env.NPM_TOKEN ?? '';
