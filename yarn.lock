@@ -2618,7 +2618,7 @@ __metadata:
     "@testing-library/jest-dom": ^5.17.0
     "@testing-library/svelte": ^4.0.3
     "@tsconfig/svelte": ^5.0.0
-    "@types/dagre-d3": ^0.6.3
+    "@types/dagre-d3": ^0.6.4
     ansi-to-html: ^0.7.2
     dagre-d3: ^0.6.4
     sass: ^1.64.1
@@ -4098,14 +4098,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/dagre-d3@npm:^0.6.3":
-  version: 0.6.3
-  resolution: "@types/dagre-d3@npm:0.6.3"
+"@types/dagre-d3@npm:^0.6.4":
+  version: 0.6.4
+  resolution: "@types/dagre-d3@npm:0.6.4"
   dependencies:
     "@types/d3": ^5
     "@types/dagre": "*"
     "@types/graphlib": "*"
-  checksum: a2fffcf8f913fe4c7fdbf61436a80ef489ec2dfcb8a270cbfd5333cc4a583f9bd95006fdf5ec936f678827097354afec5d7cfa5f2f82c67bc3192d5f02588dee
+  checksum: 6f348c7339eaa148dcfe4fe1ddeffbce00a1f9f3e17a56de10ac8dce92ebfbf7b3e1c0bf18c33646642b457ba76e62e0c30dd468f97930d7d1fe61928db6df64
   languageName: node
   linkType: hard
 
