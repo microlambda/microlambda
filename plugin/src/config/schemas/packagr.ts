@@ -3,13 +3,7 @@ import joi from 'joi';
 export const packagrSchema = joi.object().keys({
   useLayer: joi.boolean().optional(),
   level: joi.number().integer().min(0).max(9).optional(),
-  checksums: joi
-    .object()
-    .keys({
-      bucket: joi.string().required(),
-      key: joi.string().required(),
-    })
-    .optional(),
+  checksums: joi.boolean().optional(),
   runtimes: joi
     .array()
     .items(

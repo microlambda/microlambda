@@ -28,10 +28,7 @@ export type LambdaRuntimes =
 export interface IPackagrConfig {
   useLayer?: boolean;
   level?: number;
-  checksums?: {
-    bucket: string;
-    key: string;
-  };
+  checksums?: boolean;
   runtimes?: LambdaRuntimes[];
   architecture?: 'x86_64' | 'arm64';
   prune?: number;
