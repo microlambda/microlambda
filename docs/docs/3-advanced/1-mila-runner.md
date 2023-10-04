@@ -68,12 +68,12 @@ list of log conditions.
 
 A log condition is an object containing the following keys:
 
-| Name      | Required | Type                      | Default  | Description |
-|-----------|----------|---------------------------|----------|-------------|
-| `type`    | **yes**  | `success`, `failure`      | -        |             | 
-| `stdio`   | no       | `stdout`, `stderr`, `all` | all      |             |
-| `matcher` | no       | `contains`, `regex`       | contains |             |
-| `value`   | **yes**  | string, RegEx             | -        |             |
+| Name      | Required | Type                      | Default  | Description                                                                                         |
+|-----------|----------|---------------------------|----------|-----------------------------------------------------------------------------------------------------|
+| `type`    | **yes**  | `success`, `failure`      | -        | Whether the execution should be considered as a failure or a success when the log condition is met. | 
+| `stdio`   | no       | `stdout`, `stderr`, `all` | all      | Look in stdout, stderr or both                                                                      |
+| `matcher` | no       | `contains`, `regex`       | contains | Check if the logs contains a substring, or if a regexp is matched                                   |
+| `value`   | **yes**  | string                    | -        | The value to watch in the logs                                                                      |
 
 
 Here is a configuration example:
@@ -101,15 +101,5 @@ Here is a configuration example:
   }
 }
 ```
-
-## Local and remote caching
-
-
-Where it is cached
-
-Events invalidating cache (error, source changed, subsequent when changed)
-
-For deployments
-How to use with the runner
 
 
