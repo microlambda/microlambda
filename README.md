@@ -68,5 +68,5 @@ With this setup, you are using a local version of microlambda which is rebuilt w
 
 When you edit microlambda, changes are immediately available on your test project.
 
-You have a proper DX to fix yur bug or develop your feature :triangular_ruler: 
+You have a proper DX to fix a bug or develop a new feature :triangular_ruler: 
 
