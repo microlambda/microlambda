@@ -2660,7 +2660,7 @@ __metadata:
     "@types/fs-extra": ^11.0.1
     "@types/js-yaml": ^4.0.5
     "@types/lodash": ^4.14.195
-    "@types/node-ipc": ^9.2.0
+    "@types/node-ipc": ^9.2.1
     "@types/ps-tree": ^1.1.2
     "@types/rc": ^1.2.1
     "@types/socket.io": ^3.0.2
@@ -4350,12 +4350,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node-ipc@npm:^9.2.0":
-  version: 9.2.0
-  resolution: "@types/node-ipc@npm:9.2.0"
+"@types/node-ipc@npm:^9.2.1":
+  version: 9.2.1
+  resolution: "@types/node-ipc@npm:9.2.1"
   dependencies:
     "@types/node": "*"
-  checksum: 05954414de9e3c1e5022338774b02ffd91d2be391157c0d2d9a3de5ffd5cbe0e2d1b9e0f1979232331e7338b2e089a7ea6b6dd2a188b9796614829f7b27cedcc
+  checksum: 8f0bff57ecd90edabcddac2b091aacd56059a71391978598426e25e6d4dbc27cd05128eca57a1bc7ca79d0e803105a5a1524122dc985d8d38b92262125e91303
   languageName: node
   linkType: hard
 
