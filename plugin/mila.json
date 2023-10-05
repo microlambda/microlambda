@@ -1,12 +1,3 @@
 {
-  "extends": "../mila.shared.json",
-  "targets": {
-    "publish": {
-      "cmd": "npm publish",
-      "src": {
-        "internals": ["lib/**/*.js", "dist/**/*.js", "package.json"],
-        "deps": ["lib/**/*.js", "dist/**/*.js", "package.json"]
-      }
-    }
-  }
+  "extends": "../mila.shared.json"
 }
