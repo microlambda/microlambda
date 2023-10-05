@@ -35,6 +35,7 @@ jobs:
           add: '.'
           author_name: Microlambda Release Bot
           author_email: release-bot@microlamnda.dev
+          commit: --no-verify
           fetch: false
           message: 'chore: release ${{  github.ref_name }}'
-          push: true
+          push: --no-verify
