@@ -26,7 +26,7 @@ jobs:
       - run: node ./runner/cli/dist/index.js run build -t --force
       # - run: node ./runner/cli/dist/index.js run test -p --force
       - run: npx ts-node ./scripts/set-version.ts ${{  github.ref_name }}
-      - run: NPM_TOKEN=${{ secrets.NPM_TOKEN }} npx ts-node ./scripts/add-ci-token.ts
+      - run: NPM_TOKEN_PLUGIN=${{ secrets.NPM_TOKEN_PLUGIN }} NPM_TOKEN=${{ secrets.NPM_TOKEN }} npx ts-node ./scripts/add-ci-token.ts
       - run: node ./runner/cli/dist/index.js run publish -t --force
       - uses: EndBug/add-and-commit@v9
         with:
