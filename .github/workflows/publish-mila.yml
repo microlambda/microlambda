@@ -18,24 +18,20 @@ jobs:
           node-version: '16'
       - run: yarn install --immutable
       - run: npx --yes @microlambda/runner-cli@latest run build -t --force
-      - uses: actions/upload-artifact@v3
-        with:
-          retention-days: 2
-          name: built-sources
-          path: |
-            ./*/dist
-            ./*/lib
-      - run: node ./runner/cli/dist/index.js run build -t --force
-      # - run: node ./runner/cli/dist/index.js run test -p --force
+      - run: node ./runner/cli/dist/index.js run test -p --force
       - run: npx ts-node ./scripts/set-version.ts ${{  github.ref_name }}
       - run: NPM_TOKEN_PLUGIN=${{ secrets.NPM_TOKEN_PLUGIN }} NPM_TOKEN=${{ secrets.NPM_TOKEN }} npx ts-node ./scripts/add-ci-token.ts
       - run: node ./runner/cli/dist/index.js run publish -t --force
-      - uses: EndBug/add-and-commit@v9
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
         with:
-          add: '.'
-          author_name: Microlambda Release Bot
-          author_email: release-bot@microlambda.dev
-          commit: --no-verify
-          fetch: false
-          message: 'chore: release ${{  github.ref_name }}'
-          push: --no-verify
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+      - uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - run: git add .
+      - run: git status
+      - run: 'git commit -S -m"chore: release ${{  github.ref_name }}" --no-verify'
+      - run: git push --no-verify
