@@ -4,7 +4,7 @@
   "description": "µlambda framework server",
   "author": "Mario Arnautou",
   "repository": {
-    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+    "url": "https://github.com/microlambda/microlambda"
   },
   "license": "MIT",
   "main": "dist/index.js",

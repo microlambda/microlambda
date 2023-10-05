@@ -1,29 +1,24 @@
-# New Project
+<h1 align="center">Microlambda</h1>
+<p align="center">
+  <img width="150" height="150" src="https://raw.githubusercontent.com/microlambda/.github/e6430357d33bcadea731c5979c5f837afb6a9d8f/logo-blue.svg" alt="Logo"/>
+</p>
 
-> ✨ Bootstrapped with Create Snowpack App (CSA).
+This package is part of Microlambda project.
 
-## Available Scripts
+Microlambda is an opinionated framework that simplifies development of AWS serverless microservices
+project using typescript.
 
-### npm start
+## Sponsors
 
-Runs the app in the development mode.
-Open http://localhost:8080 to view it in the browser.
+<a href="https://github.com/neoxia">
+    <p align="center">
+        <img width="50" height="50" src="https://avatars.githubusercontent.com/u/1021573?s=50" alt="Logo"/>
+    </p>
+    <p align="center">
+        Neoxia - The 360 Cloud Company
+    </p>
+</a>
 
-The page will reload if you make edits.
-You will also see any lint errors in the console.
+## User documentation
 
-### npm test
-
-Launches the test runner in the interactive watch mode.
-See the section about running tests for more information.
-
-### npm run build
-
-Builds a static copy of your site to the `build/` folder.
-Your app is ready to be deployed!
-
-**For the best production performance:** Add a build bundler plugin like [@snowpack/plugin-webpack](https://github.com/snowpackjs/snowpack/tree/main/plugins/plugin-webpack) or [snowpack-plugin-rollup-bundle](https://github.com/ParamagicDev/snowpack-plugin-rollup-bundle) to your `snowpack.config.json` config file.
-
-### Q: What about Eject?
-
-No eject needed! Snowpack guarantees zero lock-in, and CSA strives for the same.
+A complete user guide is available on our [official website](https://microlambda.dev)

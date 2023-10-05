@@ -4,7 +4,7 @@
   "description": "Microlambda generic error management",
   "author": "Mario Arnautou",
   "repository": {
-    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+    "url": "https://github.com/microlambda/microlambda"
   },
   "scripts": {
     "build-runner": "npx tsc"

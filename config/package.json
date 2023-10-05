@@ -4,7 +4,7 @@
   "description": "Manage microlambda configuration files",
   "author": "Mario Arnautou",
   "repository": {
-    "url": "https://bitbucket.org/MarioArnt/microlambda/aws"
+    "url": "https://github.com/microlambda/microlambda"
   },
   "scripts": {
     "build-runner": "npx tsc"

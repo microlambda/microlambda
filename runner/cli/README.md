@@ -3,6 +3,7 @@
   <img width="150" height="150" src="https://raw.githubusercontent.com/microlambda/.github/e6430357d33bcadea731c5979c5f837afb6a9d8f/logo-blue.svg" alt="Logo"/>
 </p>
 
+
 This package is part of Microlambda project.
 
 Microlambda is an opinionated framework that simplifies development of AWS serverless microservices

@@ -4,7 +4,7 @@
   "description": "Microlambda package to handle .env files",
   "author": "Mario Arnautou",
   "repository": {
-    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+    "url": "https://github.com/microlambda/microlambda"
   },
   "scripts": {
     "test": "npx jest"
