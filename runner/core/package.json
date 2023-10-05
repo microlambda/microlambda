@@ -26,14 +26,14 @@
     "rxjs": "^7.8.1",
     "semver": "^7.5.4",
     "simple-git": "^3.19.1",
-    "tar-stream": "^2.2.0"
+    "tar-stream": "^3.1.6"
   },
   "devDependencies": {
     "@types/conventional-commits-parser": "^3.0.3",
     "@types/debug": "^4.1.8",
     "@types/lodash": "4.14.195",
     "@types/semver": "^7.5.0",
-    "@types/tar-stream": "^2.2.2",
+    "@types/tar-stream": "^3.1.1",
     "typescript": "^5.0.4"
   }
 }
