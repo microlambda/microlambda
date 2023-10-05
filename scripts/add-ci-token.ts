@@ -19,12 +19,14 @@ import { dump, load } from 'js-yaml';
     };
 
     const scopesToCover = ['microlambda']
+
     scopesToCover.forEach((scopeToCover) => {
       yarnConfigParsed.npmScopes[scopeToCover].npmAlwaysAuth = true;
       yarnConfigParsed.npmScopes[scopeToCover].npmAuthToken = process.env.NPM_TOKEN ?? '';
-      yarnConfigParsed.npmAlwaysAuth = true;
-      yarnConfigParsed.npmAuthToken = process.env.NPM_TOKEN ?? '';
     });
+
+    yarnConfigParsed.npmAlwaysAuth = true;
+    yarnConfigParsed.npmAuthToken = process.env.NPM_TOKEN_PLUGIN ?? '';
     writeFileSync(yarnConfigPath, dump(yarnConfigParsed));
     process.exit(0);
   } catch (e) {
