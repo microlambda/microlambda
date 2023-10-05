@@ -28,7 +28,7 @@
     "@microlambda/errors": "workspace:*",
     "@microlambda/logger": "workspace:*",
     "@microlambda/types": "workspace:*",
-    "jest": "^29.6.1",
+    "jest": "^29.7.0",
     "typescript": "^5.0.4"
   }
 }
