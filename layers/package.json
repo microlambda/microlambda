@@ -10,7 +10,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build-runner": "npx tsc"
+    "pre:build": "npx tsc"
   },
   "keywords": [
     "serverless",

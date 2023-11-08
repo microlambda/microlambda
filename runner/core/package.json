@@ -7,7 +7,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "pre:build": "../../node_modules/.bin/tsc -p tsconfig.json"
+    "pre:build": "npx tsc"
   },
   "dependencies": {
     "@microlambda/aws": "workspace:*",
