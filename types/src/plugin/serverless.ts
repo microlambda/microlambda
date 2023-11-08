@@ -22,9 +22,9 @@ export interface ServerlessInstance {
         deploymentRole?: string;
         role?: {
           name: string;
-          statements?: Array<{Effect: 'Allow' | 'Deny', Action: string[], Resource: string[]}>
-        }
-      }
+          statements?: Array<{ Effect: 'Allow' | 'Deny'; Action: string[]; Resource: string[] }>;
+        };
+      };
     };
     custom: {
       [key: string]: unknown;

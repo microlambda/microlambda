@@ -22,8 +22,8 @@ import {
 import { applyConditions } from './features/conditions/apply-conditions';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { removeDotServerless } from './features/package/remove-dot-serverless';
-import {ConfigReader, IRootConfig} from "@microlambda/config";
-import {updateDeploymentRole} from "./features/transforms/deployment-role";
+import { ConfigReader, IRootConfig } from '@microlambda/config';
+import { updateDeploymentRole } from './features/transforms/deployment-role';
 import { injectLambdasEnvironmentVariables } from './features/environments';
 
 class ServerlessMicrolambdaPlugin {
@@ -131,8 +131,8 @@ class ServerlessMicrolambdaPlugin {
       }),
       'before:deploy:deploy': this._plugHook(async (): Promise<void> => {
         const { region } = this._resolveBasicInformation();
-          updateDeploymentRole(this.serverless, this._rootConfig);
-          this._log.debug('Hook triggered', 'before:deploy:deploy');
+        updateDeploymentRole(this.serverless, this._rootConfig);
+        this._log.debug('Hook triggered', 'before:deploy:deploy');
         await createUpdateSecrets(
           region,
           this._pluginConfig?.secrets || [],
