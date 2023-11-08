@@ -10,7 +10,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build-runner": "npx tsc"
+    "pre:build": "npx tsc"
   },
   "keywords": [
     "serverless",
@@ -21,8 +21,10 @@
     "monorepo"
   ],
   "dependencies": {
+    "@microlambda/config": "workspace:*",
     "@microlambda/environments": "workspace:*",
     "@microlambda/logger": "workspace:*",
+    "@microlambda/remote-state": "workspace:*",
     "@microlambda/runner-core": "workspace:*",
     "@microlambda/types": "workspace:*",
     "@microlambda/utils": "workspace:*",

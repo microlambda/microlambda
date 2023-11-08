@@ -7,7 +7,8 @@
     "url": "https://github.com/microlambda/microlambda"
   },
   "scripts": {
-    "test": "npx jest"
+    "test": "npx jest",
+    "pre:build": "npx tsc"
   },
   "dependencies": {
     "@microlambda/aws": "workspace:*",

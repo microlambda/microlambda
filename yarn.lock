@@ -2651,8 +2651,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/core@workspace:core"
   dependencies:
+    "@microlambda/config": "workspace:*"
     "@microlambda/environments": "workspace:*"
     "@microlambda/logger": "workspace:*"
+    "@microlambda/remote-state": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
     "@microlambda/types": "workspace:*"
     "@microlambda/utils": "workspace:*"
