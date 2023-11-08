@@ -15,7 +15,7 @@
   const updateInfos = (from?: string) => {
     if ($selected) {
       logger.scope('<NodeInfos/>').debug(from, $selected.name, $selected.metrics);
-      isService = $selected.type === 'service';
+      isService = $selected.type === 'service' && $selected.hasTargets.start;
       transpiled = $selected.metrics.transpile?.finishedAt ? `${ago($selected.metrics.transpile.finishedAt)} (took ${numberWithThousandsSeparator($selected.metrics.transpile.took)}ms)${$selected.metrics.transpile.fromCache ? ' [from cache]' : ''}` : '-';
       typeChecked = $selected.metrics.typecheck?.finishedAt ? `${ago($selected.metrics.typecheck.finishedAt)} (took ${numberWithThousandsSeparator($selected.metrics.typecheck.took)}ms)${$selected.metrics.typecheck.fromCache ? ' [from cache]' : ''}` : '-';
       started = $selected.metrics.start?.finishedAt ? `${ago($selected.metrics.start.finishedAt)} (took ${numberWithThousandsSeparator($selected.metrics.start.took)}ms)` : '-';

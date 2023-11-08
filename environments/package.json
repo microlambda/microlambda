@@ -1,0 +1,33 @@
+{
+  "name": "@microlambda/environments",
+  "version": "1.0.0-rc.2",
+  "description": "Microlambda package to handle .env files",
+  "author": "Mario Arnautou",
+  "repository": {
+    "url": "https://github.com/microlambda/microlambda"
+  },
+  "scripts": {
+    "test": "npx jest"
+  },
+  "dependencies": {
+    "@microlambda/aws": "workspace:*",
+    "@microlambda/config": "workspace:*",
+    "@microlambda/errors": "workspace:*",
+    "@microlambda/logger": "workspace:*",
+    "@microlambda/remote-state": "workspace:*",
+    "@microlambda/runner-core": "workspace:*",
+    "@microlambda/utils": "workspace:*",
+    "dotenv": "^16.0.3"
+  },
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "keywords": [
+    "serverless",
+    "typescript",
+    "yarn",
+    "microservices",
+    "aws",
+    "monorepo"
+  ]
+}

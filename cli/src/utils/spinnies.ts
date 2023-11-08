@@ -19,7 +19,7 @@ export class MilaSpinnies {
 
   add(key: string, message: string): void {
     if (this.tty) {
-      this._spinnies.add(key, {text: message });
+      this._spinnies.add(key, { text: message });
     } else {
       logger.info(message);
     }
@@ -28,7 +28,7 @@ export class MilaSpinnies {
   succeed(key: string, message: string): void {
     if (this.tty && this._spinnies.pick(key)) {
       this._spinnies.succeed(key, { text: message });
-    } else if(!this.tty) {
+    } else if (!this.tty) {
       logger.info(message);
     }
   }
@@ -36,7 +36,7 @@ export class MilaSpinnies {
   fail(key: string, message: string): void {
     if (this.tty && this._spinnies.pick(key)) {
       this._spinnies.fail(key, { text: message });
-    } else if(!this.tty) {
+    } else if (!this.tty) {
       logger.info(message);
     }
   }
@@ -44,7 +44,7 @@ export class MilaSpinnies {
   update(key: string, message: string): void {
     if (this.tty && this._spinnies.pick(key)) {
       this._spinnies.update(key, { text: message });
-    } else if(!this.tty) {
+    } else if (!this.tty) {
       logger.info(message);
     }
   }

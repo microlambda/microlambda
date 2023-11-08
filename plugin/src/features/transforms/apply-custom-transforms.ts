@@ -1,11 +1,11 @@
-import { IBaseLogger, ServerlessInstance } from "@microlambda/types";
+import { IBaseLogger, ServerlessInstance } from '@microlambda/types';
 
 export const applyTransforms = (
   serverless: ServerlessInstance,
   transforms: string[] | undefined,
-  logger: IBaseLogger
+  logger: IBaseLogger,
 ): void => {
-  logger.debug("NotImplemented", serverless, transforms);
+  logger.debug('NotImplemented', serverless, transforms);
   // Check if script at path exists
 
   // If .ts transpile it

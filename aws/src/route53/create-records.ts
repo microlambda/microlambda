@@ -1,34 +1,24 @@
-import { IBaseLogger } from "@microlambda/types";
+import { IBaseLogger } from '@microlambda/types';
 import {
   ChangeResourceRecordSetsCommand,
   ChangeResourceRecordSetsRequest,
   Route53Client,
-} from "@aws-sdk/client-route-53";
-import { serviceName } from "./service-name";
-import { beforeChangeRecords } from "./before-change-records";
-import { getLatencyRecord } from "./get-latency-record";
-import { maxAttempts } from "../max-attempts";
+} from '@aws-sdk/client-route-53';
+import { serviceName } from './service-name';
+import { beforeChangeRecords } from './before-change-records';
+import { getLatencyRecord } from './get-latency-record';
+import { maxAttempts } from '../max-attempts';
 
 export const createLatencyRecord = async (
   region: string,
   domain: string,
   identifier?: string,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<void> => {
-  const { hostedZoneId, apiGatewayUrl } = await beforeChangeRecords(
-    region,
-    domain,
-    logger
-  );
-  const exists = await getLatencyRecord(
-    hostedZoneId,
-    domain,
-    apiGatewayUrl,
-    region,
-    logger
-  );
+  const { hostedZoneId, apiGatewayUrl } = await beforeChangeRecords(region, domain, logger);
+  const exists = await getLatencyRecord(hostedZoneId, domain, apiGatewayUrl, region, logger);
   if (exists) {
-    logger?.info("Latency DNS Record already exists");
+    logger?.info('Latency DNS Record already exists');
     return;
   }
   const route53 = new Route53Client({
@@ -39,10 +29,10 @@ export const createLatencyRecord = async (
     ChangeBatch: {
       Changes: [
         {
-          Action: "UPSERT",
+          Action: 'UPSERT',
           ResourceRecordSet: {
             Name: domain,
-            Type: "CNAME",
+            Type: 'CNAME',
             TTL: 300,
             SetIdentifier: identifier || `${domain}-${region}`,
             Region: region,
@@ -52,11 +42,11 @@ export const createLatencyRecord = async (
       ],
     },
   };
-  logger?.debug(serviceName, "Sending ChangeResourceRecordSetsCommand", params);
+  logger?.debug(serviceName, 'Sending ChangeResourceRecordSetsCommand', params);
   try {
     await route53.send(new ChangeResourceRecordSetsCommand(params));
   } catch (e) {
-    logger?.error(serviceName, "ChangeResourceRecordSetsCommand failed");
+    logger?.error(serviceName, 'ChangeResourceRecordSetsCommand failed');
     logger?.error(e);
     throw e;
   }

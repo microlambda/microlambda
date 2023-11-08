@@ -3,9 +3,9 @@ import {
   APIGatewayEventRequestContextWithAuthorizer,
   APIGatewayEventDefaultAuthorizerContext,
   Context,
-  Handler, Callback,
+  Handler,
+  Callback,
 } from 'aws-lambda';
-
 interface ITestBedOptions<TRequest = unknown, TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext> {
   body: TRequest | null;
   headers: { [name: string]: string };
@@ -36,7 +36,7 @@ interface IHandlerResponse<TResponse = unknown> {
 export class TestBed<
   TRequest = unknown,
   TResponse = unknown,
-  TAuthorizerContext = APIGatewayEventDefaultAuthorizerContext
+  TAuthorizerContext extends APIGatewayEventDefaultAuthorizerContext = APIGatewayEventDefaultAuthorizerContext,
 > {
   private readonly _handler: Handler;
 
@@ -45,16 +45,16 @@ export class TestBed<
 
   constructor(handler: Handler, options?: ITestBedOptions) {
     this._handler = handler;
-    this._event = TestBed._defaultEvent;
+    this._event = this.defaultEvent;
     if (options) {
       this._event = {
         ...options,
-        body: JSON.stringify(options.body),
+        body: options.body ? JSON.stringify(options.body) : null,
       };
     }
   }
 
-  private static _defaultEvent: APIGatewayEvent = {
+  readonly defaultEvent: APIGatewayEvent = {
     body: null,
     headers: {},
     multiValueHeaders: {},
@@ -182,7 +182,7 @@ export class TestBed<
     };
     return this;
   }
-
+  //
   public authorize(authorizerContext: TAuthorizerContext): TestBed<TRequest, TResponse, TAuthorizerContext> {
     this._event.requestContext.authorizer = authorizerContext;
     return this;
@@ -192,7 +192,7 @@ export class TestBed<
     this._event.httpMethod = method;
     this._event.requestContext.httpMethod = method;
     const response = await this._callHandler();
-    this._event = TestBed._defaultEvent;
+    this._event = this.defaultEvent;
     return response;
   }
 

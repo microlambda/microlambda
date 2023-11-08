@@ -1,4 +1,4 @@
-import joi from "joi";
+import joi from 'joi';
 
 export const secretsConfig = joi.array().items(
   joi.object().keys({
@@ -6,5 +6,5 @@ export const secretsConfig = joi.array().items(
     value: joi.string().required(),
     description: joi.string().optional(),
     kmsKeyId: joi.string().optional(),
-  })
+  }),
 );

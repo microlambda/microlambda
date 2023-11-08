@@ -1,10 +1,13 @@
 {
   "name": "@microlambda/errors",
-  "version": "1.0.0-alpha.31",
+  "version": "1.0.0-rc.2",
   "description": "Microlambda generic error management",
   "author": "Mario Arnautou",
   "repository": {
-    "url": "https://bitbucket.org/MarioArnt/microlambda/cli"
+    "url": "https://github.com/microlambda/microlambda"
+  },
+  "scripts": {
+    "build-runner": "npx tsc"
   },
   "license": "MIT",
   "main": "lib/index.js",

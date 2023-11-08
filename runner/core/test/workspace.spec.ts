@@ -1,6 +1,8 @@
 import { join, resolve } from "path";
 import { Workspace, Cache, ICommandResult, IDaemonCommandResult } from "../src";
 import { SinonStub, stub } from "sinon";
+import {Observable} from "rxjs";
+import {IProcessResult} from "../src";
 
 const mockedProcesses = {
   succeed: resolve(join(__dirname, 'mocks', 'process', 'success-process.js')),
@@ -274,6 +276,120 @@ describe('[class] workspace', () => {
         done();
       });
     });
+    it('should complete without emitting node processed event when killed', (done) => {
+      const workspace = new Workspace({} as any, '', {
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
+        },
+      });
+      stubs.cacheRead.resolves(null);
+      stubs.cacheWrite.resolves();
+      // cmd foo succeeds in 200ms, we kill process in 50ms (before)
+      setTimeout(() => {
+        workspace.kill({ cmd: 'foo'})
+      }, 50);
+      workspace.run({ cmd: 'foo', mode: 'topological' }).subscribe({
+        next: (evt) => {
+          expect(evt).toBeFalsy();
+        },
+        error: (e) => { expect(e).toBeFalsy() },
+        complete: () => {
+          done();
+        }
+      });
+    });
+    it('should return already running process if calling command and an execution is already running', (done) => {
+      const workspace = new Workspace({} as any, '', {
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
+        },
+      });
+      stubs.cacheRead.resolves(null);
+      stubs.cacheWrite.resolves();
+      let obs1: Observable<IProcessResult>;
+        let obs2:  Observable<IProcessResult>;
+      setTimeout(() => {
+        const fooProcesses = workspace.processes.get('foo');
+        if (!fooProcesses) {
+          throw new Error('Assertion failed: processes not registered');
+        }
+        expect(fooProcesses.size).toBe(1);
+        const pid1 = [...fooProcesses.values()].map((cp) => cp.pid);
+        obs2 = workspace.run({ cmd: 'foo', mode: 'topological' });
+        expect(obs1).toBe(obs2);
+        expect(workspace.processes.size).toBe(1);
+        const pid2 = [...fooProcesses.values()].map((cp) => cp.pid);
+        expect(pid1).toEqual(pid2);
+        let evts: IProcessResult[] = [];
+        obs2.subscribe({
+          next: (evt) => {
+            evts.push(evt);
+          },
+          error: (e) => { expect(e).toBeFalsy() },
+          complete: () => {
+            expect(evts).toHaveLength(1);
+            done();
+          }
+        });
+      }, 50);
+      workspace.run({ cmd: 'foo', mode: 'topological' });
+      obs1 = workspace.run({ cmd: 'foo', mode: 'topological' });
+      obs1.subscribe();
+    });
+    it('should re-run process after first execution is done', (done) => {
+      const workspace = new Workspace({} as any, '', {
+        targets: {
+          foo: {
+            cmd: `node ${mockedProcesses.succeed}`,
+          },
+        },
+      });
+      stubs.cacheRead.resolves(null);
+      stubs.cacheWrite.resolves();
+      let obs1: Observable<IProcessResult>;
+      let obs2:  Observable<IProcessResult>;
+      let pid1: (number | undefined)[];
+      let evts: IProcessResult[] = [];
+      setTimeout(() => {
+        pid1 = [...workspace.processes.get('foo')?.values() ?? []].map((cp) => cp.pid);
+      }, 50);
+      setTimeout(() => {
+        const fooProcesses = workspace.processes.get('foo');
+        if (!fooProcesses) {
+          throw new Error('Assertion failed: processes not registered');
+        }
+        expect(fooProcesses.size).toBe(0);
+        obs2 = workspace.run({ cmd: 'foo', mode: 'topological' });
+        expect(obs1 === obs2).toBe(false);
+        setTimeout(() => {
+          expect(workspace.processes.size).toBe(1);
+          const pid2 = [...workspace.processes.get('foo')?.values() ?? []].map((cp) => cp.pid);
+          expect(pid1.length === 1 && pid2.length === 1 && pid2[0] !== pid1[0]).toBe(true);
+        }, 50);
+        obs2.subscribe({
+          next: (evt) => {
+            evts.push(evt);
+          },
+          error: (e) => { expect(e).toBeFalsy() },
+          complete: () => {
+            expect(evts).toHaveLength(2);
+            done();
+          }
+        });
+      }, 350);
+      workspace.run({ cmd: 'foo', mode: 'topological' });
+      obs1 = workspace.run({ cmd: 'foo', mode: 'topological' });
+      obs1.subscribe({
+        next: (evt) => {
+          evts.push(evt);
+        },
+        error: (e) => { expect(e).toBeFalsy() },
+      });
+    });
   });
   describe('[method] invalidate', () => {
     it.todo('should be tested');
@@ -301,5 +417,11 @@ describe('[class] workspace', () => {
   });
   describe('[method] getLastReleaseTag', () => {
     it.todo('should be tested');
+  });
+  // TODO: Important
+  describe('[method] kill', () => {
+    it.todo('should resolves if no running process');
+    it.todo('should kill the whole process tree with SIGTERM');
+    it.todo('should kill the whole process tree with SIGKILL if ports no release without timeout');
   });
 });

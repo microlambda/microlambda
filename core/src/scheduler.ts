@@ -1,76 +1,51 @@
-import { Subject, Subscription } from "rxjs";
-import { EventsLog, EventsLogger } from "@microlambda/logger";
-import { getDefaultThreads } from "@microlambda/utils";
-import { Workspace } from "./graph/workspace";
-import { Project } from "./graph/project";
-import { RunCommandEvent, RunCommandEventEnum, Runner } from "@microlambda/runner-core";
-import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from "@microlambda/types";
+import { from, map, mergeAll, Observable, tap } from 'rxjs';
+import { EventsLog, EventsLogger } from '@microlambda/logger';
+import { getDefaultThreads } from '@microlambda/utils';
+import { Workspace } from './graph/workspace';
+import { Project } from './graph/project';
+import { RunCommandEvent, RunCommandEventEnum, Runner } from '@microlambda/runner-core';
+import { ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
+import { SSMResolverMode } from '@microlambda/environments';
+import { resolveEnvs } from './environment';
 
-export interface StopServiceEvent { service: Workspace, type: 'stopping' | 'stopped' }
-
-export type RunCommandSchedulerEvent = RunCommandEvent & { cmd: 'start' | 'transpile' | 'build' };
-
-export type SchedulerEvent = RunCommandSchedulerEvent | StopServiceEvent;
-
-export const isStopServiceEvent = (evt: SchedulerEvent): evt is StopServiceEvent => ['stopping', 'stopped'].includes(String(evt.type));
+export type SchedulerEvent = RunCommandEvent & { cmd: 'start' | 'transpile' | 'build' };
 
 export class Scheduler {
   private readonly _logger: EventsLogger;
   private readonly _concurrency: number;
-
-  private _events$ = new Subject<SchedulerEvent>();
-  events$ = this._events$.asObservable();
-
-  private _targets = new Set<Workspace>();
-  private readonly _runners: {
-    transpile: Runner,
-    build: Runner,
-    start: Map<string, Runner>,
-  };
-  private _subscriptions: {
-    transpile?: Subscription,
-    build?: Subscription,
-    start: Map<string, Subscription>,
-  } = {
-    start: new Map(),
-  };
+  private readonly _runner: Runner;
+  private _process: Observable<SchedulerEvent> | undefined;
 
   constructor(readonly project: Project, logger: EventsLog, concurrency?: number) {
     this._logger = logger.scope('core/scheduler');
     this._logger.debug('New recompilation scheduler instance');
     this._concurrency = concurrency || getDefaultThreads();
-    this._runners = {
-      transpile: new Runner(this.project, this._concurrency, logger),
-      build: new Runner(this.project, this._concurrency, logger),
-      start: new Map(),
-    }
+    this._runner = new Runner(this.project, this._concurrency, logger);
   }
 
   public startOne(service: Workspace): void {
     this._logger.info('Starting', service.name);
-    if (!this._runners.start?.has(service.name)) {
-      this._targets.add(service);
-      return this._exec({ toStart: new Set([service]), toStop: new Set() });
-    } else {
-      this._logger.info('Service', service.name, 'already started');
-    }
+    this._runner.addWorkspaces('start', [service]);
+    this._runner.addWorkspaces('build', [service]);
+    this._runner.addWorkspaces('transpile', [service]);
   }
 
   public startAll(): void {
-    if (this.project.services.size > (this._runners.start?.size || 0)) {
-      this.project.services.forEach((w) => this._targets.add(w));
-      return this._exec({ toStart: new Set([...this.project.services.values()]), toStop: new Set() });
-    }
+    this._runner.addWorkspaces('start', [...this.project.services.values()]);
+    this._runner.addWorkspaces('build', [...this.project.services.values()]);
+    this._runner.addWorkspaces('transpile', [...this.project.services.values()]);
   }
 
   public stopOne(service: Workspace): void {
-    this._targets.delete(service);
-    return this._exec({ toStart: new Set(), toStop: new Set([service]) });
+    this._runner.removeWorkspace('start', [service]);
+    this._runner.removeWorkspace('build', [service]);
+    this._runner.removeWorkspace('transpile', [service]);
   }
 
   public gracefulShutdown(): void {
-    this._targets.clear();
-    this._exec({ toStart: new Set(), toStop: new Set([...this.project.services.values()]) });
+    this._runner.removeWorkspace('start', [...this.project.services.values()]);
+    this._runner.removeWorkspace('build', [...this.project.services.values()]);
+    this._runner.removeWorkspace('transpile', [...this.project.services.values()]);
   }
 
   public stopAll(): void {
@@ -78,159 +53,204 @@ export class Scheduler {
     return this.gracefulShutdown();
   }
 
-  public restartOne(service: Workspace, recompile = false): void {
-    return this._exec({ toStart: new Set([service]), toStop: new Set([service]) });
+  public restartOne(service: Workspace): void {
+    this.stopOne(service);
+    this.startOne(service);
   }
 
-  public restartAll(recompile = true): void {
-    return this._exec({ toStart: new Set([...this.project.services.values()]), toStop: new Set([...this.project.services.values()]) });
+  public restartAll(): void {
+    this.stopAll();
+    this.startAll();
   }
 
-  private _exec(jobs: {toStart: Set<Workspace>, toStop: Set<Workspace>}): void {
-    this._logger.info('Executing tasks');
-    // Abort previous transpile and build and rerun in watch mode
-    this._logger.info('Aborting previous build processes');
-    this._runners.transpile.unwatch('transpile');
-    this._runners.build.unwatch('build');
-    this._subscriptions.transpile?.unsubscribe();
-    this._subscriptions.build?.unsubscribe();
-    this._runners.transpile = new Runner(this.project, this._concurrency, this._logger?.logger);
-    this._runners.build = new Runner(this.project, this._concurrency, this._logger?.logger);
-    this._logger.info('Building targets and their dependencies', [...this._targets].map((t) => t.name));
-    const transpile$ = this._runners.transpile.runCommand({
-      cmd: 'transpile',
-      mode: 'topological',
-      force: false,
-      to: [...this._targets],
-      watch: true,
-    });
-    const build$ = this._runners.transpile.runCommand({
-      cmd: 'build',
-      mode: 'topological',
-      force: false,
-      to: [...this._targets],
-      watch: true,
-    });
-    this._subscriptions.transpile = transpile$.subscribe({
-      next: (evt) => {
-        switch(evt.type) {
-          case RunCommandEventEnum.NODE_STARTED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.TRANSPILING);
-            break;
-          case RunCommandEventEnum.NODE_PROCESSED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.TRANSPILED);
-            this.project.getWorkspace(evt.workspace.name)?.updateMetric().transpile({
-              finishedAt: new Date().toISOString(),
-              took: evt.result.overall,
-              fromCache: evt.result.fromCache,
+  get execution$(): Observable<SchedulerEvent> {
+    if (!this._process) {
+      throw new Error('No process running');
+    }
+    return this._process;
+  }
+
+  exec(
+    initialScope: Workspace[],
+    debounce: { transpile: number; build: number; start: number },
+  ): Observable<SchedulerEvent> {
+    if (this._process) {
+      throw new Error('A process is already running');
+    }
+    this._process = new Observable<SchedulerEvent>((obs) => {
+      this._resolveEnvs()
+        .then((envs) => {
+          // TODO: Can be done in // on the whole tree
+          const transpile$: Observable<SchedulerEvent> = this._runner
+            .runCommand({
+              cmd: 'transpile',
+              mode: 'topological',
+              to: initialScope,
+              watch: true,
+              debounce: debounce.transpile,
             })
-            break;
-          case RunCommandEventEnum.NODE_ERRORED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.ERROR_TRANSPILING);
-            break;
-          case RunCommandEventEnum.NODE_INTERRUPTED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().transpiled(TranspilingStatus.NOT_TRANSPILED);
-            break;
-        }
-        this._events$.next({ ...evt, cmd: "transpile" });
-      },
-      error: (error) => {
-        this._logger.error(error);
-      },
-      complete: () => {
-        delete this._subscriptions.transpile;
-      },
-    });
-    this._subscriptions.build = build$.subscribe({
-      next: (evt) => {
-        switch(evt.type) {
-          case RunCommandEventEnum.NODE_STARTED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.CHECKING);
-            break;
-          case RunCommandEventEnum.NODE_PROCESSED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.SUCCESS);
-            this.project.getWorkspace(evt.workspace.name)?.updateMetric().typecheck({
-              finishedAt: new Date().toISOString(),
-              took: evt.result.overall,
-              fromCache: evt.result.fromCache,
-            });
-            break;
-          case RunCommandEventEnum.NODE_ERRORED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.ERROR);
-            break;
-          case RunCommandEventEnum.NODE_INTERRUPTED:
-            this.project.getWorkspace(evt.workspace.name)?.updateStatus().typechecked(TypeCheckStatus.NOT_CHECKED);
-            break;
-        }
-        this._events$.next({ ...evt, cmd: "build" });
-      },
-      error: (error) => {
-        this._logger.error(error);
-      },
-      complete: () => {
-        delete this._subscriptions.build;
-      },
-    });
+            .pipe(
+              tap((evt) => {
+                switch (evt.type) {
+                  case RunCommandEventEnum.NODE_STARTED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .transpiled(TranspilingStatus.TRANSPILING);
+                    break;
+                  case RunCommandEventEnum.NODE_PROCESSED:
+                    const workspace = this.project.getWorkspace(evt.target.workspace.name);
+                    workspace?.updateStatus().transpiled(TranspilingStatus.TRANSPILED);
+                    workspace?.updateMetric().transpile({
+                      took: evt.result.overall,
+                      finishedAt: new Date().toISOString(),
+                      fromCache: evt.result.fromCache,
+                    });
+                    break;
+                  case RunCommandEventEnum.NODE_ERRORED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .transpiled(TranspilingStatus.ERROR_TRANSPILING);
+                    break;
+                  case RunCommandEventEnum.NODE_INTERRUPTED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .transpiled(TranspilingStatus.NOT_TRANSPILED);
+                    break;
+                }
+              }),
+              map((evt) => ({ ...evt, cmd: 'transpile' })),
+            );
 
-    // Stop services, then start services
-    Promise.all([...jobs.toStop].map( async (w) => {
-      this._logger.info('Stopping', w.name);
-      if (this._runners.start.has(w.name)) {
-        this._events$.next({ service: w, type: 'stopping' });
-        this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPING);
-        await w.kill('start', [w.ports?.http, w.ports?.lambda, w.ports?.websocket].filter((p) => p != null) as number[]);
-        this._logger.info('Serverless offline process killed', w.name);
-        this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STOPPED);
-        this._events$.next({ service: w, type: 'stopped' });
-        this._subscriptions.start.get(w.name)?.unsubscribe();
-        this._runners.start.delete(w.name);
-      } else {
-        this._logger.warn('Service not registered as running ', w.name);
-      }
-    })).then(() => {
-      jobs.toStart.forEach((w) => {
-        this._logger.info('Starting', w.name);
-        if (!this._runners.start.has(w.name)) {
-          const runner = new Runner(this.project, this._concurrency, this._logger.logger);
-          this._runners.start.set(w.name, runner);
-          this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.STARTING);
-          const daemon$ = runner.runCommand({
-            cmd: 'start',
-            mode: 'parallel',
-            workspaces: [w],
-            force: true,
-            args: [
-              `--httpPort ${w.ports?.http.toString() || '3000'} --lambdaPort ${w.ports?.lambda.toString() || '4000'} --websocketPort ${w.ports?.websocket.toString() || '6000'}`,
-            ]
-          });
-          const subscription = daemon$.subscribe({
-            next: (evt) => {
-              this._logger.debug({ evt: evt.type, workspace: w.name});
-              this._events$.next({ ...evt, cmd: "start" });
-              if (evt.type === RunCommandEventEnum.NODE_ERRORED) {
-                this._logger.warn('Error starting', w.name);
-                this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.CRASHED);
-                this._targets.delete(w);
-              } else if (evt.type === RunCommandEventEnum.NODE_PROCESSED) {
-                this._logger.info('Successfully started', w.name);
-                this.project.getWorkspace(w.name)?.updateStatus().started(ServiceStatus.RUNNING);
-                this.project.getWorkspace(w.name)?.updateMetric().start({
-                  finishedAt: new Date().toISOString(),
-                  took: evt.result.overall,
-                  fromCache: evt.result.fromCache,
-                });
-              }
-            },
-            error: (error) => {
-              this._logger.error(error);
-            },
-            complete: () => {
-              this._subscriptions.start.delete(w.name);
-            },
-          });
-          this._subscriptions.start.set(w.name, subscription);
-        }
-      });
+          const build$: Observable<SchedulerEvent> = this._runner
+            .runCommand({
+              cmd: 'build',
+              mode: 'topological',
+              to: initialScope,
+              watch: true,
+              debounce: debounce.build,
+            })
+            .pipe(
+              tap((evt) => {
+                switch (evt.type) {
+                  case RunCommandEventEnum.NODE_STARTED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .typechecked(TypeCheckStatus.CHECKING);
+                    break;
+                  case RunCommandEventEnum.NODE_PROCESSED:
+                    const workspace = this.project.getWorkspace(evt.target.workspace.name);
+                    workspace?.updateStatus().typechecked(TypeCheckStatus.SUCCESS);
+                    workspace?.updateMetric().typecheck({
+                      took: evt.result.overall,
+                      finishedAt: new Date().toISOString(),
+                      fromCache: evt.result.fromCache,
+                    });
+                    break;
+                  case RunCommandEventEnum.NODE_ERRORED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .typechecked(TypeCheckStatus.ERROR);
+                    break;
+                  case RunCommandEventEnum.NODE_INTERRUPTED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .typechecked(TypeCheckStatus.NOT_CHECKED);
+                    break;
+                }
+              }),
+              map((evt) => ({ ...evt, cmd: 'build' })),
+            );
+
+          const start$: Observable<SchedulerEvent> = this._runner
+            .runCommand({
+              cmd: 'start',
+              mode: 'parallel',
+              watch: true,
+              force: true,
+              workspaces: initialScope,
+              debounce: debounce.start,
+              args: this._startArgs,
+              releasePorts: this._ports,
+              env: envs,
+            })
+            .pipe(
+              tap((evt) => {
+                switch (evt.type) {
+                  case RunCommandEventEnum.NODE_STARTED:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .started(ServiceStatus.STARTING);
+                    break;
+                  case RunCommandEventEnum.NODE_PROCESSED:
+                    const workspace = this.project.getWorkspace(evt.target.workspace.name);
+                    workspace?.updateStatus().started(ServiceStatus.RUNNING);
+                    workspace?.updateMetric().start({
+                      took: evt.result.overall,
+                      finishedAt: new Date().toISOString(),
+                      fromCache: evt.result.fromCache,
+                    });
+                    break;
+                  case RunCommandEventEnum.NODE_ERRORED:
+                    this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.CRASHED);
+                    break;
+                  case RunCommandEventEnum.NODE_INTERRUPTING:
+                    this.project
+                      .getWorkspace(evt.target.workspace.name)
+                      ?.updateStatus()
+                      .started(ServiceStatus.STOPPING);
+                    break;
+                  case RunCommandEventEnum.NODE_INTERRUPTED:
+                    this.project.getWorkspace(evt.target.workspace.name)?.updateStatus().started(ServiceStatus.STOPPED);
+                    break;
+                }
+              }),
+              map((evt) => ({ ...evt, cmd: 'start' })),
+            );
+
+          from([transpile$, build$, start$])
+            .pipe(mergeAll())
+            .subscribe({
+              next: (evt) => obs.next(evt),
+              error: (e) => obs.error(e),
+              complete: () => obs.complete(),
+            });
+        })
+        .catch((e) => obs.error(e));
     });
+    return this._process;
+  }
+  private get _startArgs(): Map<string, string[]> {
+    const args = new Map();
+    for (const service of this.project.services.values()) {
+      if (service.ports) {
+        args.set(service.name, [
+          `--httpPort ${service.ports?.http.toString() || '3000'} --lambdaPort ${
+            service.ports?.lambda.toString() || '4000'
+          } --websocketPort ${service.ports?.websocket.toString() || '6000'} --reloadHandler`,
+        ]);
+      }
+    }
+    return args;
+  }
+
+  private get _ports(): Map<string, number[]> {
+    const args = new Map();
+    for (const service of this.project.services.values()) {
+      if (service.ports) {
+        args.set(service.name, Object.values(service.ports));
+      }
+    }
+    return args;
+  }
+
+  private async _resolveEnvs(): Promise<Map<string, Record<string, string>>> {
+    return resolveEnvs(this.project, 'local', SSMResolverMode.IGNORE, process.env.AWS_REGION, this._logger);
   }
 }

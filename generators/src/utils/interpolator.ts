@@ -1,6 +1,6 @@
 const isPrimitive = (value: unknown): boolean => {
   return ['number', 'boolean', 'string'].includes(typeof value);
-}
+};
 
 export const interpolate = (str: string, inputs: Record<string, unknown>): string => {
   let interpolated = str;

@@ -4,5 +4,5 @@ export interface IAuthorizerConfig {
   resultTtlInSeconds: number;
   identitySource: string | string[];
   identityValidationExpression: string;
-  type: "token" | "request";
+  type: 'token' | 'request';
 }

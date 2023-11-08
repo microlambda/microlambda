@@ -5,7 +5,12 @@ import { aws } from '@microlambda/aws';
 import { calculateLayerChecksums } from './calculate-layer-checksums';
 import { IBaseLogger } from '@microlambda/types';
 
-export const shouldRecreateLayer = async (service: Workspace, env: string, config: IRootConfig, logger?: IBaseLogger): Promise<{ recreate: boolean, currentChecksums?: ISourcesChecksums }> => {
+export const shouldRecreateLayer = async (
+  service: Workspace,
+  env: string,
+  config: IRootConfig,
+  logger?: IBaseLogger,
+): Promise<{ recreate: boolean; currentChecksums?: ISourcesChecksums }> => {
   try {
     const state = new State(config);
     const lastLayer = await state.getLastLayerChecksums(service.name, env);
@@ -18,7 +23,7 @@ export const shouldRecreateLayer = async (service: Workspace, env: string, confi
       lastLayer.checksums_buckets,
       lastLayer.checksums_key,
       lastLayer.region,
-    )
+    );
     const storedChecksums = rawStoredChecksums ? JSON.parse(rawStoredChecksums?.toString('utf-8')) : {};
     logger?.info('[package] Last layer checksums found');
     logger?.debug('[package] Stored checksums', storedChecksums);
@@ -33,4 +38,4 @@ export const shouldRecreateLayer = async (service: Workspace, env: string, confi
     logger?.info('[package] Last layer checksums could not be determine, layer will be re-deployed');
     return { recreate: true };
   }
-}
+};

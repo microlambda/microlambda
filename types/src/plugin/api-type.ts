@@ -1,1 +1,1 @@
-export type ApiType = "rest" | "http" | "websocket";
+export type ApiType = 'rest' | 'http' | 'websocket';

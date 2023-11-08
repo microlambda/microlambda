@@ -4,8 +4,8 @@ import {
   CreateDomainNameRequest,
   CreateDomainNameResponse,
   EndpointType,
-} from "@aws-sdk/client-apigatewayv2";
-import { serviceName } from "./service-name";
+} from '@aws-sdk/client-apigatewayv2';
+import { serviceName } from './service-name';
 import { maxAttempts } from '../max-attempts';
 import { IBaseLogger } from '@microlambda/types';
 
@@ -24,16 +24,16 @@ export const createCustomDomain = async (
     DomainNameConfigurations: [
       {
         CertificateArn: certificateArn,
-        SecurityPolicy: "TLS_1_2",
+        SecurityPolicy: 'TLS_1_2',
         EndpointType: EndpointType.REGIONAL,
       },
     ],
   };
   try {
-    logger?.debug(serviceName, "CreateDomainNameCommand", params);
+    logger?.debug(serviceName, 'CreateDomainNameCommand', params);
     return await client.send(new CreateDomainNameCommand(params));
   } catch (e) {
-    logger?.error(serviceName, "CreateDomainNameCommand failed");
+    logger?.error(serviceName, 'CreateDomainNameCommand failed');
     logger?.error(e);
     throw e;
   }

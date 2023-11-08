@@ -8,8 +8,10 @@ import { Project } from '@microlambda/core';
 import { IDeployCmd } from './cmd-options';
 import { IRootConfig } from '@microlambda/config';
 import { EventsLog } from '@microlambda/logger';
+import { EnvsResolver } from './envs';
 
-type ActionType = 'first_deploy' | 'redeploy' | 'no_changes' | 'destroy' | 'not_deployed';
+export type ActionType = 'first_deploy' | 'redeploy' | 'no_changes' | 'destroy' | 'not_deployed';
+export type Operations = Map<string, Map<string, ActionType>>;
 
 export const resolveDeltas = async (
   env: IEnvironment,
@@ -18,8 +20,8 @@ export const resolveDeltas = async (
   state: State,
   config: IRootConfig,
   eventsLog: EventsLog,
+  envs: EnvsResolver,
 ): Promise<Map<string, Map<string, ActionType>>> => {
-
   const log = eventsLog.scope('resolve-deltas');
   logger.lf();
   logger.info(chalk.underline(chalk.bold('▼ Resolving deltas')));
@@ -27,17 +29,15 @@ export const resolveDeltas = async (
 
   // Resolve and print operations to perform
   const graphServices = [...project.services.values()];
-  const targets = cmd.s
-    ? graphServices.filter((s) => cmd.s?.split(',').includes(s.name))
-    : graphServices;
+  const targets = cmd.s ? graphServices.filter((s) => cmd.s?.split(',').includes(s.name)) : graphServices;
   const operations = new Map<string, Map<string, ActionType>>();
   const defaultRegions = env.regions;
-  log.debug('Resolving deltas');
 
   for (const localService of targets) {
     const serviceOperations = new Map<string, ActionType>();
     const deployedServices = await state.listServiceInstances(env.name, localService.name);
-    const targetRegions: string[] = localService.regions || defaultRegions;
+    const targetRegions: string[] = localService.regions ?? defaultRegions;
+
     for (const targetRegion of targetRegions) {
       if (!localService.hasCommand('deploy')) {
         serviceOperations.set(targetRegion, 'not_deployed');
@@ -55,21 +55,31 @@ export const resolveDeltas = async (
           const rawStoredChecksums = await aws.s3.downloadBuffer(
             deployedRegionalServiceInstance.checksums_buckets,
             deployedRegionalServiceInstance.checksums_key,
-            config.defaultRegion)
+            config.defaultRegion,
+          );
           const storedChecksums = rawStoredChecksums ? JSON.parse(rawStoredChecksums?.toString('utf-8')) : {};
-          const currentChecksums = await new Checksums(localService, 'deploy', [], { AWS_REGION: targetRegion }).calculate();
+          const resolvedEnvs = await envs.resolve(targetRegion);
+          const resolvedEnv = resolvedEnvs.get(localService.name) ?? { AWS_REGION: targetRegion };
+          const currentChecksums = await new Checksums(localService, 'deploy', [], resolvedEnv).calculate();
+
           if (Checksums.compare(currentChecksums, storedChecksums)) {
             serviceOperations.set(targetRegion, 'no_changes');
           } else {
             serviceOperations.set(targetRegion, 'redeploy');
           }
         } catch (e) {
-          logger.warn('Error reading currently deployed checksums for service', localService.name, 'in region', targetRegion);
+          logger.warn(
+            'Error reading currently deployed checksums for service',
+            localService.name,
+            'in region',
+            targetRegion,
+          );
           logger.warn('This service will be thus redeployed even if it is sources could have not been changed.');
           serviceOperations.set(targetRegion, 'redeploy');
         }
       }
     }
+
     const deployedRegions = deployedServices.map((s) => s.region);
     for (const deployedRegion of deployedRegions) {
       if (!targetRegions.includes(deployedRegion)) {
@@ -94,7 +104,7 @@ export const resolveDeltas = async (
   }
 
   const printType = (type: ActionType): string => {
-    switch(type) {
+    switch (type) {
       case 'redeploy':
       case 'first_deploy':
         return chalk.green(type);
@@ -103,9 +113,9 @@ export const resolveDeltas = async (
       case 'not_deployed':
         return chalk.grey(type);
       case 'destroy':
-        return chalk.red(type);
+        return chalk.red.bold(type);
     }
-  }
+  };
 
   const allRegions = new Set<string>();
   env.regions.forEach((r) => allRegions.add(r));
@@ -114,13 +124,13 @@ export const resolveDeltas = async (
   const table = new Table({
     head: ['Service', ...allRegions],
     style: {
-      head: ['cyan']
-    }
+      head: ['cyan'],
+    },
   });
 
   for (const [serviceName, serviceOperations] of operations.entries()) {
     const row = [chalk.bold(serviceName)];
-    for (const region of env.regions) {
+    for (const region of allRegions) {
       const type = serviceOperations.get(region);
       row.push(type ? printType(type) : printType('not_deployed'));
     }
@@ -130,4 +140,4 @@ export const resolveDeltas = async (
   console.log(table.toString());
   logger.lf();
   return operations;
-}
+};

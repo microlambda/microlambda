@@ -1,7 +1,7 @@
-import { getDependenciesGraph } from '@microlambda/cli/src/utils/parse-deps-graph';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { readJSONSync, writeJSONSync } from 'fs-extra'
 import { join } from 'path';
+import { getDependenciesGraph } from "@microlambda/cli/dist/utils/parse-deps-graph";
 
 (async () => {
   try {

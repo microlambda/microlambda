@@ -1,24 +1,24 @@
-# Microlambda Testing utilities
+<h1 align="center">Microlambda</h1>
+<p align="center">
+  <img width="150" height="150" src="https://raw.githubusercontent.com/microlambda/.github/e6430357d33bcadea731c5979c5f837afb6a9d8f/logo-blue.svg" alt="Logo"/>
+</p>
 
-## Test bed
+This package is part of Microlambda project.
 
-Test bed is a convenient helper to test API Gateway events handlers.
+Microlambda is an opinionated framework that simplifies development of AWS serverless microservices
+project using typescript.
 
-You can set up a test bed for your handler this way:
+## Sponsors
 
-```typescript
-import { TestBed } from '@microlambda/testing';
+<a href="https://github.com/neoxia">
+    <p align="center">
+        <img width="50" height="50" src="https://avatars.githubusercontent.com/u/1021573?s=50" alt="Logo"/>
+    </p>
+    <p align="center">
+        Neoxia - The 360 Cloud Company
+    </p>
+</a>
 
-import { handler } from '../src/get-books.ts';
+## User documentation
 
-const testBed = new TestBed(handler);
-
-const result = await testBed.pathParameters({ id: 176 }).get();
-
-expect(result).toEqual({ title: '1984', author: 'George Orwell', /* ... */ });
-
-```
-
-### Using custom authorizer
-
-TO DOCUMENT
+A complete user guide is available on our [official website](https://microlambda.dev)

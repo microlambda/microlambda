@@ -10,4 +10,4 @@ export const printCommand = (action: string, service?: string, only = false): vo
   } else {
     logger.info('🔧 Building all project services');
   }
-}
+};

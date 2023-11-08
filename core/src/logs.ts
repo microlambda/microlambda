@@ -1,5 +1,5 @@
 import { closeSync, existsSync, lstatSync, mkdirSync, openSync, stat } from 'fs';
-import rimraf from 'rimraf';
+import { rimrafSync } from 'rimraf';
 import { join, dirname } from 'path';
 import { spawnSync } from 'child_process';
 import { EventsLog } from '@microlambda/logger';
@@ -26,7 +26,7 @@ export const recreateLogDirectory = (projectRoot: string, logger: EventsLog): vo
     logger.scope('logs').error(`${logsDirectory} is not a directory`);
     process.exit(1);
   }
-  rimraf.sync(logsDirectory);
+  rimrafSync(logsDirectory);
   mkdirSync(logsDirectory);
 };
 

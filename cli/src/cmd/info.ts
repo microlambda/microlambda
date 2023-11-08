@@ -1,5 +1,5 @@
-import {Project} from "@microlambda/core";
-import { Workspace} from "@microlambda/runner-core";
+import { Project } from '@microlambda/core';
+import { Workspace } from '@microlambda/runner-core';
 import chalk from 'chalk';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { logger } from '../utils/logger';
@@ -10,9 +10,9 @@ const printTree = (wks: Workspace): void => {
       logger.info('   '.repeat(depth), chalk.grey(depth ? '|__' : ''), dep.name);
       printDeps(dep, depth + 1);
     }
-  }
+  };
   printDeps(wks);
-}
+};
 
 interface IInfosOptions {
   s: string;
@@ -23,7 +23,7 @@ interface IInfosOptions {
 
 export const info = async (cmd: IInfosOptions): Promise<void> => {
   const projectRoot = resolveProjectRoot();
-  const project =  await Project.loadProject(projectRoot);
+  const project = await Project.loadProject(projectRoot);
   if (!cmd.s) {
     logger.info('\n');
     logger.info(chalk.magenta.bold(project.name));
@@ -33,20 +33,28 @@ export const info = async (cmd: IInfosOptions): Promise<void> => {
         printTree(root);
       }
     } else if (cmd.roots) {
-      const roots: Workspace[] = []
-      for (const root of project.roots.values()) roots.push(root)
+      const roots: Workspace[] = [];
+      for (const root of project.roots.values()) roots.push(root);
       logger.info(chalk.cyan(`\nRoots (${roots.length})\n`));
       logger.info(roots.map((s) => `- ${s.name}`).join('\n'));
     } else if (cmd.leaves) {
-      const leaves: Workspace[] = []
-      for (const root of project.leaves.values()) leaves.push(root)
+      const leaves: Workspace[] = [];
+      for (const root of project.leaves.values()) leaves.push(root);
       logger.info(chalk.cyan(`\nLeaves (${leaves.length})\n`));
       logger.info(leaves.map((s) => `- ${s.name}`).join('\n'));
     } else {
       logger.info(chalk.cyan(`\nPackages (${project.packages.size})\n`));
-      logger.info(Array.from(project.packages.values()).map((pkg) => `- ${pkg.name}`).join('\n'));
+      logger.info(
+        Array.from(project.packages.values())
+          .map((pkg) => `- ${pkg.name}`)
+          .join('\n'),
+      );
       logger.info(chalk.cyan(`\nServices (${project.services.size})\n`));
-      logger.info(Array.from(project.services.values()).map((s) => `- ${s.name}`).join('\n'));
+      logger.info(
+        Array.from(project.services.values())
+          .map((s) => `- ${s.name}`)
+          .join('\n'),
+      );
     }
   } else {
     const wks = project.workspaces.get(cmd.s);
@@ -57,7 +65,11 @@ export const info = async (cmd: IInfosOptions): Promise<void> => {
       if (cmd.graph) {
         printTree(wks);
       } else {
-        logger.info(Array.from(wks.descendants.values()).map((s) => `- ${s.name}`).join('\n'));
+        logger.info(
+          Array.from(wks.descendants.values())
+            .map((s) => `- ${s.name}`)
+            .join('\n'),
+        );
       }
       logger.info(chalk.cyan('\nWorkspaces depending on\n'));
       if (!wks.ancestors.size) {

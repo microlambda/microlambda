@@ -1,4 +1,4 @@
-import { Schema } from '@hapi/joi';
+import { Schema } from 'joi';
 
 export const validate = async <T>(data: T, schema: Schema): Promise<T> => {
   const result = schema.validate(data);

@@ -1,0 +1,8 @@
+{
+  "label": "Deploy your app",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Learn how to operate a large serverless project using Microlambda."
+  }
+}

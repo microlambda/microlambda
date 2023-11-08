@@ -10,7 +10,7 @@ export const init = async (
   eventsLog?: EventsLog,
   reinstall = true,
 ): Promise<{ config: IRootConfig; project: Project }> => {
-  const project =  await getDependenciesGraph(projectRoot, eventsLog);
+  const project = await getDependenciesGraph(projectRoot, eventsLog);
   const config = await readConfig(projectRoot, eventsLog);
   if (reinstall) {
     await yarnInstall(project, eventsLog);

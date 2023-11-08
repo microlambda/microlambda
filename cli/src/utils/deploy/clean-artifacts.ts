@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { IDeployOptions } from './options';
 
 export const cleanArtifacts = async (options: IDeployOptions): Promise<void> => {
-  if(options.force) {
+  if (options.force) {
     logger.info('\n▼ Clean artifacts directories\n');
     // Cleaning artifact location
     const cleaningSpinnies = new MilaSpinnies(options.verbose);
@@ -35,4 +35,4 @@ export const cleanArtifacts = async (options: IDeployOptions): Promise<void> => 
       process.exit(1);
     }
   }
-}
+};

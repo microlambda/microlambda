@@ -4,7 +4,7 @@ import { regions } from './regions';
 import { rootConfigSchema } from './schemas/root-config';
 import { packageConfigSchema } from './schemas/package-config';
 import { IRootConfig } from './types/root-config';
-import { IPackageConfig, ITargetsConfig } from './types/package-config';
+import { IPackageConfig, IResolvedPackageConfig, ITargetsConfig } from './types/package-config';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { promises as fs } from 'fs';
 import { EventsLog } from '@microlambda/logger';
@@ -24,8 +24,8 @@ export class ConfigReader {
   }
 
   private _configs: {
-    root?: IRootConfig,
-    packages: Map<string, { regions?: string[], targets: ITargetsConfig }>,
+    root?: IRootConfig;
+    packages: Map<string, IResolvedPackageConfig>;
   } = {
     packages: new Map(),
   };
@@ -60,7 +60,7 @@ export class ConfigReader {
     return value;
   }
 
-  async loadPackageConfig(packageName: string, packageRoot: string): Promise<{ regions?: string[], targets: ITargetsConfig }> {
+  async loadPackageConfig(packageName: string, packageRoot: string): Promise<IResolvedPackageConfig> {
     this._logger?.debug('Loading package config', packageName, packageRoot);
     const alreadyLoaded = this._configs.packages.get(packageName);
     if (alreadyLoaded) {
@@ -69,8 +69,11 @@ export class ConfigReader {
     }
     const path = join(packageRoot, 'mila.json');
     const targets = await this._loadPackageConfig(path);
-    const rootConfig: IPackageConfig = await this._readPackageConfigFile(path) as IPackageConfig;
-    const loaded = { targets, regions: rootConfig.regions }
+    const packageConfig = (await this._readPackageConfigFile(path)) as IPackageConfig;
+    delete packageConfig.extends;
+    const loaded = packageConfig as IResolvedPackageConfig;
+    loaded.targets = targets;
+    loaded.regions = packageConfig.regions;
     this._logger?.debug('Config file loaded', packageName, loaded);
     this._configs.packages.set(packageName, loaded);
     return loaded;
@@ -81,12 +84,12 @@ export class ConfigReader {
     this._logger?.debug('Raw config file read', raw);
     const { error, value } = ConfigReader.schemas.package.validate(raw);
     if (error) {
-      this._logger?.error('Invalid config file', path,  error);
+      this._logger?.error('Invalid config file', path, error);
       throw new MilaError(MilaErrorCode.INVALID_PACKAGE_CONFIG, `Invalid package configuration ${path}`, error);
     }
     const config = value;
     const targets = config.targets || {};
-    this._logger?.debug('Resolved targets', targets)
+    this._logger?.debug('Resolved targets', targets);
     if (config.extends) {
       this._logger?.debug('Config extends', config.extends);
       const extending = join(dirname(path), ...config.extends.split('/'));
@@ -97,11 +100,14 @@ export class ConfigReader {
       }
       if (!existsSync(extending)) {
         this._logger?.error('Config trying to extends a file that does not exist', extending);
-        throw new MilaError(MilaErrorCode.INVALID_PACKAGE_CONFIG, `Package config ${path} is trying to extend a config ${extending} that does not exists`);
+        throw new MilaError(
+          MilaErrorCode.INVALID_PACKAGE_CONFIG,
+          `Package config ${path} is trying to extend a config ${extending} that does not exists`,
+        );
       }
       const parentConfig = await this._loadPackageConfig(extending);
       this._logger?.debug('Parent targets resolved', parentConfig);
-      return { ...parentConfig, ...targets}
+      return { ...parentConfig, ...targets };
     } else {
       this._logger?.debug('Targets resolved');
       return targets;

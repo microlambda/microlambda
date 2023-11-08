@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
+  import type {ServiceStatus, TranspilingStatus, TypeCheckStatus} from "@microlambda/types";
   import {
-    getServiceStatus, getServiceStatusClass,
+    getServiceStatus,
+    getServiceStatusClass,
     getTranspiled,
     getTranspiledClass,
     getTypeCheckClass,
@@ -10,22 +11,22 @@
 
   export let size: 'small' | 'big' = 'small';
   export let enabled = false;
-  export let transpiled: TranspilingStatus = null;
-  export let typeChecked: TypeCheckStatus = null;
-  export let serviceStatus: ServiceStatus = null;
+  export let transpiled: TranspilingStatus | undefined = undefined;
+  export let typeChecked: TypeCheckStatus | undefined = undefined;
+  export let serviceStatus: ServiceStatus | undefined = undefined;
 
   let status, statusClass: string;
 
   $: {
-    if (transpiled != null) {
+    if (transpiled !== undefined) {
       status = getTranspiled(transpiled);
       statusClass = getTranspiledClass(transpiled);
     }
-    if (typeChecked != null) {
+    if (typeChecked !== undefined) {
       status = getTypeChecked(typeChecked);
       statusClass = getTypeCheckClass(typeChecked);
     }
-    if (serviceStatus != null) {
+    if (serviceStatus !== undefined) {
       status = getServiceStatus(serviceStatus, enabled);
       statusClass = getServiceStatusClass(serviceStatus, enabled);
     }
@@ -51,6 +52,9 @@
     background-color: $grey;
     display: inline-flex;
     margin: 1px;
+    &.small.disabled {
+      background-color: transparent;
+    }
     &.red {
       background-color: $red;
     }
@@ -62,6 +66,9 @@
     }
     &.blue {
       background-color: $blue;
+    }
+    &.orange {
+      background-color: $orange;
     }
   }
 </style>

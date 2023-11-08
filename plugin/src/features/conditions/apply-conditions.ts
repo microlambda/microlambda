@@ -4,27 +4,28 @@ import {
   isKeepNeqCondition,
   isRemoveEqCondition,
   isRemoveNeqCondition,
-  IBaseLogger, ServerlessInstance
-} from "@microlambda/types";
+  IBaseLogger,
+  ServerlessInstance,
+} from '@microlambda/types';
 
 export const applyConditions = (
   serverless: ServerlessInstance,
   conditions: Condition[],
-  logger: IBaseLogger
+  logger: IBaseLogger,
 ): void => {
   const applyCondition = (
     resourcePath: string,
-    removeCondition: boolean
+    removeCondition: boolean,
   ): void => {
-    logger.info("Resolving resource", resourcePath);
+    logger.info('Resolving resource', resourcePath);
     const resolveResource = (): {
       obj: Record<string, unknown>;
       lastKey: string;
     } => {
-      const segments = resourcePath.split(".");
+      const segments = resourcePath.split('.');
       const lastKey = segments.pop();
       if (!lastKey) {
-        const msg = "Assertion failed: last key should be truthy";
+        const msg = 'Assertion failed: last key should be truthy';
         logger.error(msg);
         throw new Error(msg);
       }
@@ -35,7 +36,7 @@ export const applyConditions = (
         obj = obj[segment] as Record<string, unknown>;
         if (!obj) {
           const msg = `ConditionException: Cannot resolve resource ${resourcePath}: object at ${currentSegments.join(
-            "."
+            '.',
           )} is not defined`;
           logger.error(msg);
           throw Error(msg);
@@ -44,14 +45,14 @@ export const applyConditions = (
       return { obj, lastKey };
     };
     const { obj, lastKey } = resolveResource();
-    logger.debug("Resource resolved", { lastKey, value: obj[lastKey] });
-    logger.debug("Should be removed ?", removeCondition);
+    logger.debug('Resource resolved', { lastKey, value: obj[lastKey] });
+    logger.debug('Should be removed ?', removeCondition);
     if (removeCondition) {
       delete obj[lastKey];
     }
   };
   for (const condition of conditions) {
-    logger.info("Apply condition", condition);
+    logger.info('Apply condition', condition);
     if (isKeepEqCondition(condition)) {
       applyCondition(condition.keep, condition.when !== condition.eq);
     } else if (isKeepNeqCondition(condition)) {

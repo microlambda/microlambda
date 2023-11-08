@@ -5,10 +5,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2017",
-    "lib": [
-      "es2020",
-      "dom"
-    ],
+    "lib": ["es2020", "dom"],
     "declaration": true,
     "sourceMap": false,
     "forceConsistentCasingInFileNames": true,
@@ -18,9 +15,5 @@
     "noImplicitReturns": true,
     "noImplicitThis": true
   },
-  "include": [
-    "src/**/*.ts",
-    "src/generators/swagger/base/model.js",
-    "src/generators/swagger/base/path.js"
-  ]
+  "include": ["src/**/*.ts", "src/generators/swagger/base/model.js", "src/generators/swagger/base/path.js"]
 }

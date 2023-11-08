@@ -1,20 +1,25 @@
-import express, { Request } from 'express';
+import express from 'express';
 import { createServer, Server } from 'http';
-import { Project, Scheduler, Workspace } from "@microlambda/core";
+import { Project, Scheduler, Workspace } from '@microlambda/core';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { INodeSummary } from '@microlambda/types';
-import { EventsLog } from "@microlambda/logger";
-import { getTrimmedSlice } from "./utils/logs";
+import { EventsLog } from '@microlambda/logger';
+import { EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable } from '@microlambda/environments';
+import { State } from '@microlambda/remote-state';
+import { IRootConfig } from '@microlambda/config';
+import { aws } from '@microlambda/aws';
 
 export * from './socket';
 
-export const startServer = (
-  port = 4545,
-  project: Project,
-  logger: EventsLog,
-  scheduler: Scheduler,
-): Promise<Server> => {
+export const startServer = (options: {
+  port: number;
+  project: Project;
+  logger: EventsLog;
+  scheduler: Scheduler;
+  config: IRootConfig;
+}): Promise<Server> => {
+  const { port, project, logger, scheduler } = options;
   const log = logger.scope('api');
   const app = express();
 
@@ -29,7 +34,7 @@ export const startServer = (
   app.use('/', express.static(__dirname + '/static'));
 
   app.get('/api/ping', (req, res) => {
-    res.status(200).send('Pong')
+    res.status(200).send('Pong');
   });
 
   app.get('/api/graph', async (req, res) => {
@@ -37,17 +42,21 @@ export const startServer = (
       name: n.name,
       version: n.version || '',
       type: n.isService ? 'service' : 'package',
-      port: n.isService ? (n.ports?.http || null) : null,
+      port: n.isService ? n.ports?.http || null : null,
       enabled: n.hasCommand('start'),
       transpiled: n.transpiled,
       typeChecked: n.typechecked,
+      hasTargets: {
+        build: n.hasCommand('build'),
+        start: n.hasCommand('start'),
+      },
       status: n.started,
       children: Array.from(n.descendants.values()).map((n) => n.name),
       metrics: n.metrics,
-    })
+    });
     const response: {
-      packages: INodeSummary[],
-      services: INodeSummary[],
+      packages: INodeSummary[];
+      services: INodeSummary[];
     } = {
       packages: [...project.packages.values()].map(summaryMapper),
       services: [...project.services.values()].map(summaryMapper),
@@ -55,28 +64,12 @@ export const startServer = (
     res.json(response);
   });
 
-  const getSliceFromQuery = (req: Request): [number, number?] => {
-    if (!req.query.slice) {
-      return [0];
-    }
-    const rawSlice = req.query.slice.toString().split(',');
-    if (rawSlice.length === 0 || rawSlice.length > 2 || rawSlice.some((str) => !Number.isInteger(Number(str)))) {
-      log.warn('Invalid slice', rawSlice);
-      return [0];
-    }
-    return rawSlice[1] ? [Number(rawSlice[0]), Number(rawSlice[1])] : [Number(rawSlice[0])];
-  }
-
   app.get('/api/logs', (req, res) => {
     if (project.logger) {
-      let logs =  project.logger.buffer
-        .filter((log) => ['warn', 'info', 'error', 'debug'].includes(log.level));
-      if (req.query.scope && typeof req.query.scope === 'string') {
-        logs = logs.filter((entry) => entry.scope?.includes(req.query.scope!.toString()));
-      }
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
+      const logs = project.logger.getLogs();
+      return res.json(logs ?? []);
     } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+      return res.json([]);
     }
   });
 
@@ -135,11 +128,7 @@ export const startServer = (
       return res.status(404).send();
     }
     const logs: string[] | undefined = node.logs('in-memory')?.get('build') as string[] | undefined;
-    if (logs) {
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
-    } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
-    }
+    return res.json(logs ?? []);
   });
 
   app.get('/api/services/:service/logs', (req, res) => {
@@ -150,11 +139,43 @@ export const startServer = (
       return res.status(404).send();
     }
     const logs: string[] | undefined = service.logs('in-memory')?.get('start') as string[] | undefined;
-    if (logs) {
-      return res.json(getTrimmedSlice(logs, getSliceFromQuery(req)));
-    } else {
-      return res.json({ data: [], metadata: { count: 0, slice: [0, 0] }});
+    return res.json(logs ?? []);
+  });
+
+  app.get('/api/aws/account', async (req, res) => {
+    try {
+      const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
+      res.json({ connected: true, account });
+    } catch {
+      res.json({ connected: false });
     }
+  });
+
+  app.get('/api/environments', async (req, res) => {
+    const state = new State(options.config);
+    const envs = await state.listEnvironments();
+    return res.json(envs);
+  });
+
+  app.get('/api/state/:env', async (req, res) => {
+    const state = new State(options.config);
+    const services = await state.listServices(req.params.env);
+    return res.json(services);
+  });
+
+  app.get('/api/services/:service/environment/:env', async (req, res) => {
+    const serviceName = req.params.service;
+    const env = req.params.env;
+    const loader = new EnvironmentLoader(project, process.env.AWS_REGION);
+    const vars: Array<ILoadedEnvironmentVariable> = await loader.loadAll({
+      env: env,
+      service: serviceName,
+      inject: false,
+      shouldInterpolate: true,
+      ssmMode: SSMResolverMode.WARN,
+      overwrite: false,
+    });
+    return res.json(vars);
   });
 
   const http = createServer(app);

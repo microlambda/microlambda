@@ -1,11 +1,11 @@
-import { serviceName } from "./service-name";
+import { serviceName } from './service-name';
 import {
   ApiGatewayV2Client,
   GetDomainNameCommand,
   GetDomainNameRequest,
   GetDomainNameResponse,
-} from "@aws-sdk/client-apigatewayv2";
-import { maxAttempts } from "../max-attempts";
+} from '@aws-sdk/client-apigatewayv2';
+import { maxAttempts } from '../max-attempts';
 import { IBaseLogger } from '@microlambda/types';
 
 export const getCustomDomain = async (
@@ -18,13 +18,13 @@ export const getCustomDomain = async (
     DomainName: domainName,
   };
   try {
-    logger?.debug(serviceName, "GetDomainNameCommand", params);
+    logger?.debug(serviceName, 'GetDomainNameCommand', params);
     return await client.send(new GetDomainNameCommand(params));
   } catch (e) {
-    if ((e as Error).name === "NotFoundException") {
+    if ((e as Error).name === 'NotFoundException') {
       return undefined;
     }
-    logger?.error(serviceName, "GetDomainNameCommand failed");
+    logger?.error(serviceName, 'GetDomainNameCommand failed');
     logger?.error(e);
     throw e;
   }

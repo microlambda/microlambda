@@ -3,7 +3,7 @@ export interface ILogsCondition {
   stdio: 'stdout' | 'stderr' | 'all';
   matcher: 'contains' | 'regex';
   value: string;
-  timeout?: number
+  timeout?: number;
 }
 
 export interface ICommandConfig {
@@ -17,7 +17,7 @@ export interface ITargetCacheConfig {
     internals?: string[];
     deps?: string[];
     root?: string[];
-  }
+  };
   artifacts?: string[];
 }
 
@@ -33,16 +33,34 @@ export interface ITargetConfigCmd extends ITargetCacheConfig {
 
 export type ITargetConfig = ITargetConfigScript | ITargetConfigCmd;
 
-export const isScriptTarget = (target: ITargetConfig): target is ITargetConfigScript => !!(target as ITargetConfigScript).script;
+export const isScriptTarget = (target: ITargetConfig): target is ITargetConfigScript =>
+  !!(target as ITargetConfigScript)?.script;
 
 export interface ITargetsConfig {
   [cmd: string]: ITargetConfig;
+}
+
+interface IPortsConfig {
+  http?: number;
+  lambda?: number;
+  websocket?: number;
 }
 
 export interface IPackageConfig {
   regions?: string[];
   targets?: {
     [cmd: string]: ITargetConfig;
-  }
+  };
+  ports?: IPortsConfig | number;
   extends?: string;
+}
+
+export interface IResolvedPackageConfig {
+  regions?: string[];
+
+  sharedInfra?: { envSpecific?: boolean };
+  targets: {
+    [cmd: string]: ITargetConfig;
+  };
+  ports?: IPortsConfig | number;
 }

@@ -1,7 +1,7 @@
-import { inspect } from "util";
+import { inspect } from 'util';
 
 export const stringify = (input: unknown): string => {
-  if (typeof input === "object") {
+  if (typeof input === 'object') {
     return inspect(input, { depth: 10 });
   }
   if (Array.isArray(input)) {

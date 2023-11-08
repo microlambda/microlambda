@@ -57,28 +57,30 @@
        */
       if (_node.port) {
         switch (_node.status) {
-          case 4:
+          case 'crashed':
             node.style = 'fill: #e53935; stroke: white;';
             break;
-          case 1:
-          case 2:
+          case 'running':
             node.style = 'fill: #43a047; stroke: white;';
             break;
-          case 0:
+          case 'starting':
             node.style = 'fill: #1565c0; stroke: white;';
+            break;
+          case 'stopping':
+            node.style = 'fill: #F57C00; stroke: white;';
             break;
           default:
             node.style = 'fill: #616161; stroke: white;';
         }
       } else {
         switch (_node.typeChecked) {
-          case 3:
+          case 'error_checking_types':
             node.style = 'fill: #e53935; stroke: white;';
             break;
-          case 2:
+          case 'type_checked':
             node.style = 'fill: #43a047; stroke: white;';
             break;
-          case 1:
+          case 'checking':
             node.style = 'fill: #1565c0; stroke: white;';
             break;
           default:

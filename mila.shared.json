@@ -1,5 +1,16 @@
 {
   "targets": {
+    "prettier": {
+      "cmd": "../node_modules/.bin/prettier . --write",
+      "src": {
+        "internals": [
+          "**/*.{ts,tsx,json,yml,html,md,js,jsx}"
+        ],
+        "root": [
+          ".prettierrc.json"
+        ]
+      }
+    },
     "lint": {
       "cmd": "../node_modules/.bin/eslint {src,test}/**/*.{ts,tsx,json,yml}",
       "src": {
@@ -26,6 +37,21 @@
     },
     "publish": {
       "cmd": "yarn npm publish --access public",
+      "src": {
+        "internals": [
+          "lib/**/*.js",
+          "dist/**/*.js",
+          "package.json"
+        ],
+        "deps": [
+          "lib/**/*.js",
+          "dist/**/*.js",
+          "package.json"
+        ]
+      }
+    },
+    "publish:dry": {
+      "cmd": "npm publish --dry",
       "src": {
         "internals": [
           "lib/**/*.js",

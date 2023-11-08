@@ -3,15 +3,15 @@ import {
   RequestCertificateCommand,
   RequestCertificateRequest,
   RequestCertificateResponse,
-} from "@aws-sdk/client-acm";
-import { IBaseLogger } from "@microlambda/types";
-import { serviceName } from "./service-name";
-import { maxAttempts } from "../max-attempts";
+} from '@aws-sdk/client-acm';
+import { IBaseLogger } from '@microlambda/types';
+import { serviceName } from './service-name';
+import { maxAttempts } from '../max-attempts';
 
 export const createCertificate = async (
   region: string,
   targetDomain: string,
-  logger?: IBaseLogger
+  logger?: IBaseLogger,
 ): Promise<RequestCertificateResponse> => {
   const certificateManager = new ACMClient({
     region,
@@ -19,13 +19,13 @@ export const createCertificate = async (
   });
   const params: RequestCertificateRequest = {
     DomainName: targetDomain,
-    ValidationMethod: "DNS",
+    ValidationMethod: 'DNS',
   };
-  logger?.debug(serviceName, "Sending RequestCertificateCommand", params);
+  logger?.debug(serviceName, 'Sending RequestCertificateCommand', params);
   try {
     return await certificateManager.send(new RequestCertificateCommand(params));
   } catch (e) {
-    logger?.error(serviceName, "RequestCertificateCommand failed");
+    logger?.error(serviceName, 'RequestCertificateCommand failed');
     logger?.error(e);
     throw e;
   }

@@ -1,82 +1,47 @@
-import inquirer from 'inquirer';
-import {Deployer, DeployEvent} from '@microlambda/core';
-import chalk from 'chalk';
-import { EventsLog, EventLogsFileHandler } from "@microlambda/logger";
-import { logger } from '../utils/logger';
-import { resolveProjectRoot } from '@microlambda/utils';
-import { init } from '../utils/init';
-import { printReport } from '../utils/deploy/print-report';
-import { handleNext } from '../utils/deploy/handle-next';
 import { IDeployCmd } from '../utils/deploy/cmd-options';
-import { MilaSpinnies } from '../utils/spinnies';
+import { resolveProjectRoot } from '@microlambda/utils';
+import { beforeDeploy } from '../utils/deploy/pre-requisites';
+import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
+import { logger } from '../utils/logger';
+import { printAccountInfos } from './envs/list';
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../utils/check-env-lock';
+import { resolveRemoveOperations } from '../utils/remove/resolve-deltas';
+import { removeServices } from '../utils/remove/do-remove';
+import { promptConfirm } from '../utils/remove/prompt-confirm';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
-  return new Promise(async () => {
-    logger.info(chalk.underline(chalk.bold('\n▼ Preparing request\n')));
-    const projectRoot = resolveProjectRoot();
-    const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-remove-${Date.now()}`)]);
-    const { config, project } = await init(projectRoot, eventsLog);
-    //checkEnv(config, cmd, 'You must provide a target stage to remove services');
-    const service = cmd.s ? project.services.get(cmd.s) : null;
-    if (cmd.s && !service) {
-      logger.error(chalk.red('Error: unknown service', cmd.s));
-      process.exit(1);
-    }
-    const targets = service ? [service] : Array.from(project.services.values());
-    //const currentIAM = await getCurrentUserIAM();
-    logger.info(chalk.underline(chalk.bold('\n▼ Request summary\n')));
-    logger.info(chalk.bold('Warning: the following services will be deleted'));
-    logger.info('Stage:', cmd.e);
-    logger.info('Services:', cmd.s != null ? cmd.s : 'all');
-    //logger.info('As:', currentIAM);
+  logger.lf();
+  logger.info('🔥 Preparing to remove services');
+  logger.lf();
+  const projectRoot = resolveProjectRoot();
+  const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-remove-${Date.now()}`)]);
 
-    if (cmd.onlyPrompt) {
-      process.exit(0);
-    }
+  const { env, project, state, config, services } = await beforeDeploy(cmd, eventsLog);
 
-    if (cmd.prompt) {
-      const confirm = await inquirer.prompt([
-        {
-          name: 'ok',
-          type: 'confirm',
-          message: `This will remove the following services. Are you sure to proceed ?`,
-          default: true,
-        },
-      ]);
-      logger.info('');
-      if (!confirm.ok) {
-        logger.info('Aborted by user');
-        process.exit(0);
-      }
-    }
+  await printAccountInfos();
 
-    const spinnies = new MilaSpinnies(cmd.verbose);
+  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config);
+  releaseLockOnProcessExit(releaseLock);
 
-
-    const failures: Set<DeployEvent> = new Set();
-    const actions: Set<DeployEvent> = new Set();
-
-    const remover = new Deployer({
+  try {
+    const operations = await resolveRemoveOperations(env, state, services, releaseLock);
+    await promptConfirm(env.name, cmd, releaseLock);
+    await removeServices({
+      operations,
       project,
-      targets,
-      force: true,
-      verbose: cmd.verbose || false,
-      environment: cmd.e,
-    }, 'remove');
-    remover.deploy().subscribe({
-      next: (evt) => {
-        handleNext(evt, spinnies, failures, actions, cmd.verbose, 'remove');
-      },
-      error: (err) => {
-        logger.error(chalk.red('Error removing services'));
-        logger.error(err);
-        process.exit(1);
-      },
-      complete: async () => {
-        await printReport(actions, failures, actions.size, 'remove', cmd.verbose);
-        logger.info(`Successfully removed from ${cmd.e} :boom:`);
-        process.exit(0);
-      },
+      env,
+      eventsLog,
+      releaseLock,
+      isVerbose: cmd.verbose,
+      concurrency: cmd.c,
+      state,
     });
-  });
+    await releaseLock();
+    logger.lf();
+    logger.success(`Successfully removed ${env.name} 🚀`);
+  } catch (e) {
+    logger.error('Remove failed', e);
+    await releaseLock();
+    process.exit(1);
+  }
 };

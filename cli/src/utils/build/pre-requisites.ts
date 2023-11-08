@@ -32,9 +32,16 @@ export const beforeBuild = async (
           process.exit(1);
         }
         return workspace;
-      })
+      });
     }
     return [...project.services.values()];
-  }
-  return {project, concurrency, workspaces: resolveWorkspaces(), force: cmd.force || process.env.MILA_FORCE === 'true', install: cmd.install, verbose: cmd.verbose };
+  };
+  return {
+    project,
+    concurrency,
+    workspaces: resolveWorkspaces(),
+    force: cmd.force || process.env.MILA_FORCE === 'true',
+    install: cmd.install,
+    verbose: cmd.verbose,
+  };
 };
