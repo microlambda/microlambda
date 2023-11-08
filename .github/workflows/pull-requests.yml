@@ -23,7 +23,8 @@ jobs:
         with:
           node-version: '16'
       - run: yarn install --immutable
-      - run: npx --yes @microlambda/runner-cli@latest run build -t --force
+      - run: yarn build:runner
+      - run: yarn build
       - uses: actions/upload-artifact@v3
         with:
           retention-days: 2
