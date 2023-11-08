@@ -7,7 +7,7 @@
     "url": "https://git.neoxia.com/typescript/microlambda/-/tree/master/types"
   },
   "scripts": {
-    "build-runner": "npx tsc"
+    "pre:build": "npx tsc"
   },
   "license": "MIT",
   "main": "lib/index.js",
