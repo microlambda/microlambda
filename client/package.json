@@ -3,9 +3,9 @@
   "version": "1.0.0-rc.2",
   "type": "module",
   "scripts": {
-    "start": "../node_modules/.bin/vite",
-    "preview": "../node_modules/.bin/vite preview",
-    "check": "../node_modules/.bin/svelte-check --tsconfig ./tsconfig.json"
+    "start": "npx vite",
+    "preview": "npx vite preview",
+    "check": "npx svelte-check --tsconfig ./tsconfig.json"
   },
   "repository": {
     "url": "https://github.com/microlambda/microlambda"

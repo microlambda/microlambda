@@ -10,7 +10,7 @@
     }
   ],
   "scripts": {
-    "test": "../node_modules/.bin/jest"
+    "test": "npx jest"
   },
   "main": "lib/index.js",
   "keywords": [
