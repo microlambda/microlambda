@@ -3,3 +3,4 @@ export * from './env';
 export * from './platform';
 export * from './typescript';
 export * from './fs';
+export * from './npm';

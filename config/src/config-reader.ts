@@ -1,5 +1,5 @@
 import { dirname, join } from 'path';
-import { existsSync, readJSONSync } from 'fs-extra';
+import { existsSync, readJSONSync, writeFileSync } from 'fs-extra';
 import { regions } from './regions';
 import { rootConfigSchema } from './schemas/root-config';
 import { packageConfigSchema } from './schemas/package-config';
@@ -77,6 +77,15 @@ export class ConfigReader {
     this._logger?.debug('Config file loaded', packageName, loaded);
     this._configs.packages.set(packageName, loaded);
     return loaded;
+  }
+
+  addInstalledBlueprint(blueprint: string): void {
+    const rootConfig = this.rootConfig;
+    const existingBlueprints = new Set(this.rootConfig.installedBlueprints);
+    existingBlueprints.add(blueprint);
+    rootConfig.installedBlueprints = [...existingBlueprints];
+    const configPath = join(this.projectRoot, 'mila.json');
+    writeFileSync(configPath, JSON.stringify(rootConfig, null, 2));
   }
 
   private async _loadPackageConfig(path: string): Promise<ITargetsConfig> {
