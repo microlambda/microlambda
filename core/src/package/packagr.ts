@@ -10,6 +10,7 @@ import { Workspace as CentipodWorkspace } from '@microlambda/runner-core';
 import { Workspace } from '../graph/workspace';
 import { Project } from '../graph/project';
 import { resolveProjectRoot, getTsConfig } from '@microlambda/utils';
+import { IPackageEvent } from './package-event';
 
 export class Packager {
   private readonly _projectRoot: string;
@@ -88,8 +89,8 @@ export class Packager {
     }
     this._tmpPath = join(this._packagePath, 'tmp');
     this._logger.debug('Creating transient project in', this._tmpPath);
-    const packagePathExists = await pathExists(this._tmpPath);
-    if (packagePathExists) {
+    const doesPackagePathExists = await pathExists(this._tmpPath);
+    if (doesPackagePathExists) {
       this._logger.debug('Temporary path already exists, removing it');
       await remove(this._tmpPath);
     }

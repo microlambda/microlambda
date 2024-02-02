@@ -1,4 +1,5 @@
 export * from './package/packagr';
+export * from './package/package-event';
 export * from './logs';
 export * from './resolve-ports';
 export * from './graph/workspace';

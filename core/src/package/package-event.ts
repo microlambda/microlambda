@@ -1,4 +1,4 @@
-interface IPackageEvent {
+export interface IPackageEvent {
   message: string;
   took?: number;
   megabytes?: {
