@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>Microlambda Blog</title>
+        <link>https://microlambda.dev/blog</link>
+        <description>Microlambda Blog</description>
+        <lastBuildDate>Tue, 03 Oct 2023 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Microlambda Public Release]]></title>
+            <link>https://microlambda.dev/blog/mila-release</link>
+            <guid>https://microlambda.dev/blog/mila-release</guid>
+            <pubDate>Tue, 03 Oct 2023 00:00:00 GMT</pubDate>
+            <description><![CDATA[After several years of work on a sizable serverless platform, our team has, with the approval of our sponsors, publicly]]></description>
+            <content:encoded><![CDATA[<p>After several years of work on a sizable serverless platform, our team has, with the approval of our sponsors, publicly
+released our internal build and deployment orchestration framework.</p><p>This framework draws inspiration from a suite of tools developed for a specific project with unique requirements and
+topology. We have worked tirelessly to make it as flexible and agnostic as possible.</p><p>We are very proud of this effort and hope to see it adopted and enhanced by many members of the community.</p><p>This initial official release is still marked as a release candidate for a few weeks, allowing us time to finish writing
+our documentation and conducting more extensive testing.</p><p>Nevertheless, Microlambda powers applications running in production for several years, and you can already
+kickstart your project.</p><p>Feel free to ask questions or suggest improvements on our GitHub repository.</p>]]></content:encoded>
+            <category>mila</category>
+            <category>news</category>
+        </item>
+    </channel>
+</rss>

@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmila_docs=self.webpackChunkmila_docs||[]).push([[535],{5641:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Microlambda Public Release","permalink":"/blog/mila-release"}]}')}}]);

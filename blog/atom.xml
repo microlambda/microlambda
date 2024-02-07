@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://microlambda.dev/blog</id>
+    <title>Microlambda Blog</title>
+    <updated>2023-10-03T00:00:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://microlambda.dev/blog"/>
+    <subtitle>Microlambda Blog</subtitle>
+    <icon>https://microlambda.dev/img/logo-white.svg</icon>
+    <entry>
+        <title type="html"><![CDATA[Microlambda Public Release]]></title>
+        <id>https://microlambda.dev/blog/mila-release</id>
+        <link href="https://microlambda.dev/blog/mila-release"/>
+        <updated>2023-10-03T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[After several years of work on a sizable serverless platform, our team has, with the approval of our sponsors, publicly]]></summary>
+        <content type="html"><![CDATA[<p>After several years of work on a sizable serverless platform, our team has, with the approval of our sponsors, publicly
+released our internal build and deployment orchestration framework.</p><p>This framework draws inspiration from a suite of tools developed for a specific project with unique requirements and
+topology. We have worked tirelessly to make it as flexible and agnostic as possible.</p><p>We are very proud of this effort and hope to see it adopted and enhanced by many members of the community.</p><p>This initial official release is still marked as a release candidate for a few weeks, allowing us time to finish writing
+our documentation and conducting more extensive testing.</p><p>Nevertheless, Microlambda powers applications running in production for several years, and you can already
+kickstart your project.</p><p>Feel free to ask questions or suggest improvements on our GitHub repository.</p>]]></content>
+        <author>
+            <name>Mario Arnautou</name>
+            <uri>https://github.com/MarioArnt</uri>
+        </author>
+        <category label="mila" term="mila"/>
+        <category label="news" term="news"/>
+    </entry>
+</feed>

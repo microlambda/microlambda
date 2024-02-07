@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmila_docs=self.webpackChunkmila_docs||[]).push([[933],{4343:a=>{a.exports=JSON.parse('{"label":"mila","permalink":"/blog/tags/mila","allTagsPath":"/blog/tags","count":1}')}}]);
