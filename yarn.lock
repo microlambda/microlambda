@@ -2717,6 +2717,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/generators@workspace:generators"
   dependencies:
+    "@microlambda/errors": "workspace:*"
+    "@microlambda/logger": "workspace:*"
+    "@microlambda/types": "workspace:*"
+    "@microlambda/utils": "workspace:*"
     "@types/ejs": ^3.1.2
     ejs: ^3.1.9
     inquirer: ^8.2.5
