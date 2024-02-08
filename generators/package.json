@@ -25,6 +25,10 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
+    "@microlambda/errors": "workspace:*",
+    "@microlambda/logger": "workspace:*",
+    "@microlambda/types": "workspace:*",
+    "@microlambda/utils": "workspace:*",
     "ejs": "^3.1.9",
     "inquirer": "^8.2.5",
     "joi": "^17.9.2",

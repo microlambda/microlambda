@@ -178,9 +178,9 @@ export const packageService = async (
             logger?.info(`[package] ${evt.message} (took ${evt.took}ms)`);
             if (evt.megabytes?.code) {
               logger?.info(
-                `[package] Zip file generated in ${(0.5 * evt.overall).toFixed(
-                  2,
-                )}s - ${chalk.magenta(evt.megabytes.code + 'MB')}`,
+                `[package] Zip file generated in ${
+                  evt.overall ? (0.5 * evt.overall).toFixed(2) : 'unknown'
+                }s - ${chalk.magenta(evt.megabytes.code + 'MB')}`,
               );
             }
             if (evt.megabytes?.layer) {
