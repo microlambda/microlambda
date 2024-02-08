@@ -1,0 +1,4 @@
+name: service
+description: Create a new microlambda service
+
+destination: blueprints/${input.name}

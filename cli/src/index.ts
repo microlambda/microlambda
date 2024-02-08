@@ -20,6 +20,7 @@ import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
 import { runTests } from './cmd/run-tests';
 import { releaseLock } from './utils/check-env-lock';
+import { install } from './cmd/install';
 
 const program = new Command();
 
@@ -351,6 +352,16 @@ program
     async (blueprint: string) =>
       await commandWrapper(async () => {
         await generate(blueprint);
+      }),
+  );
+
+program
+  .command('install [blueprint]')
+  .description('install a blueprint from NPM')
+  .action(
+    async (blueprint: string) =>
+      await commandWrapper(async () => {
+        await install(blueprint);
       }),
   );
 
