@@ -52,7 +52,9 @@ export const runBlueprint = async (options: {
     loggers.events.debug(answers);
     blueprintPath = answers.blueprint;
   }
-  inputs = await resolveInputs(blueprintPath);
+  if (!inputs) {
+    inputs = await resolveInputs(blueprintPath);
+  }
   loggers.events.debug(inputs);
 
   const interpolated = interpolateYaml(blueprints.get(blueprintPath), inputs);
