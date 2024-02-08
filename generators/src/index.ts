@@ -6,3 +6,4 @@ export * from './utils/inputs-resolver';
 export * from './utils/interpolate-yaml';
 export * from './utils/post-processing';
 export * from './utils/injector';
+export * from './utils/run-blueprint';
