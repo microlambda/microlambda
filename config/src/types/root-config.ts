@@ -8,4 +8,5 @@ export interface IRootConfig {
     table: string;
   };
   targets?: ITargetsConfig;
+  deploymentRole?: string;
 }
