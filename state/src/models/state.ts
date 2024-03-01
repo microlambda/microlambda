@@ -61,6 +61,7 @@ export interface ICmdExecution {
   cmd: string;
   args: string;
   workspace: string;
+  date: string;
 }
 
 export interface ILayerChecksums extends ILayerChecksumsRequest {
@@ -245,6 +246,7 @@ export class State extends Model<unknown> {
       workspace: params.workspace,
       outputs: params.outputs,
       region: params.region,
+      date: new Date().toISOString(),
     };
     await this.save(exec);
   }
@@ -262,39 +264,38 @@ export class State extends Model<unknown> {
     return exec as ICmdExecution;
   }
 
-  async setBranchExecution(params: IBranchExecutionHash & { sha1: string }): Promise<void> {
+  async setLatestBranchExecution(params: IBranchExecutionHash & { sha1: string }): Promise<void> {
     await this.save({
-      k1: params.sha1,
-      k2: this._getBranchExecutionHash({
+      k1: params.branch,
+      k2: `branch|${this._getBranchExecutionHash({
         branch: params.branch,
         cmd: params.cmd,
         args: params.args,
         env: params.env,
         workspace: params.workspace,
-      }),
+      })}`,
       k3: params.branch,
       k4: params.workspace,
       cmd: params.cmd,
       args: JSON.stringify(params.args),
+      sha1: params.sha1,
       env: JSON.stringify(params.env),
       branch: params.branch,
+      date: new Date().toISOString(),
     });
   }
 
-  async getBranchExecutions(params: IBranchExecutionHash): Promise<string[]> {
-    const items = await this.query('GS1')
-      .keys({
-        k2: this._getBranchExecutionHash({
-          branch: params.branch,
-          cmd: params.cmd,
-          args: params.args,
-          env: params.env,
-          workspace: params.workspace,
-        }),
-      })
-      .projection(['k1'])
-      .execAll();
-    return items.map((i) => (i as { k1: string }).k1);
+  async getLatestBranchExecution(params: IBranchExecutionHash): Promise<{ sha1: string }> {
+    return this.get(
+      params.branch,
+      `branch|${this._getBranchExecutionHash({
+        branch: params.branch,
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      })}`,
+    ) as Promise<{ sha1: string }>;
   }
 
   async removeBranchExecution(params: IBranchExecutionHash & { sha1: string }): Promise<void> {

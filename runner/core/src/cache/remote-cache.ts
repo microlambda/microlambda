@@ -7,7 +7,7 @@ import { Cache } from './cache';
 import { currentSha1 } from '../remote-cache-utils';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import {git} from "../git";
-import {State} from "@microlambda/remote-state";
+import {ICmdExecution, State} from "@microlambda/remote-state";
 
 export class RemoteCache extends Cache {
   static readonly scope = '@microlambda/runner-core/remote-cache';
@@ -19,7 +19,7 @@ export class RemoteCache extends Cache {
     readonly table: string,
     readonly workspace: Workspace,
     readonly cmd: string,
-    readonly sha1?: string,
+    readonly affected?: string,
     readonly args: string[] | string = [],
     readonly env: {[key: string]: string} = {},
     readonly eventsLog?: EventsLog,
@@ -41,28 +41,51 @@ export class RemoteCache extends Cache {
     return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/checksums.json`;
   }
 
-  get storedChecksumsKey(): string {
-    if (!this.sha1) {
-      throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot compare checksums to previous execution, no relative sha1 were given');
-    }
-    return `${this.cachePrefix}/${this.sha1}/checksums.json`;
-  }
-
-  get storedOutputKey(): string {
-    if (!this.sha1) {
-      throw new MilaError(MilaErrorCode.BAD_REVISION, 'Cannot compare checksums to previous execution, no relative sha1 were given');
-    }
-    return `${this.cachePrefix}/${this.sha1}/outputs.json`;
-  }
-
   get currentOutputKey(): string {
     return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/outputs.json`;
   }
 
+  private async _getStoredExecution(): Promise<ICmdExecution | undefined> {
+    if (!this.affected) {
+      return undefined;
+    }
+    if (this.affected.match(/^[0-9a-f]{40}$/)) {
+      return this._state.getExecution({
+        args: this.args,
+        cmd: this.cmd,
+        env: this.env,
+        workspace: this.workspace.name,
+        sha1: this.affected
+      });
+    } else {
+      const latestExecutionOnBranch = await this._state.getLatestBranchExecution({
+        args: this.args,
+        cmd: this.cmd,
+        env: this.env,
+        workspace: this.workspace.name,
+        branch: this.affected
+      });
+      if (!latestExecutionOnBranch) {
+        return undefined;
+      }
+      return this._state.getExecution({
+        args: this.args,
+        cmd: this.cmd,
+        env: this.env,
+        workspace: this.workspace.name,
+        sha1: latestExecutionOnBranch.sha1,
+      });
+    }
+  }
+
   protected async _readChecksums(): Promise<ISourcesChecksums> {
     try {
-      this.logger?.debug('Reading checksums from S3', this.bucket, this.storedChecksumsKey, this.awsRegion);
-      const raw = await aws.s3.downloadBuffer(this.bucket, this.storedChecksumsKey, this.awsRegion);
+      const execution = await this._getStoredExecution();
+      if (!execution) {
+        return {} as ISourcesChecksums;
+      }
+      this.logger?.debug('Reading checksums from S3', execution.bucket, execution.checksums, execution.region);
+      const raw = await aws.s3.downloadBuffer(execution.bucket, execution.checksums, execution.region);
       this.logger?.debug('S3 raw response', raw);
       if (!raw) {
         return {} as ISourcesChecksums;
@@ -76,7 +99,11 @@ export class RemoteCache extends Cache {
   protected async _readOutput(): Promise<ICommandResult[]> {
     let raw: string | undefined;
     try {
-      const buffer = await aws.s3.downloadBuffer(this.bucket, this.storedOutputKey, this.awsRegion);
+      const execution = await this._getStoredExecution();
+      if (!execution) {
+        throw new Error('Not matching execution');
+      }
+      const buffer = await aws.s3.downloadBuffer(execution.bucket, execution.outputs, execution.region);
       raw = buffer?.toString('utf-8');
     } catch (e) {
       this.logger?.warn('Error reading output from AWS', e);
@@ -139,7 +166,7 @@ export class RemoteCache extends Cache {
     const currentBranch = git.getCurrentBranch();
     const currentSha = currentSha1();
     if (currentBranch) {
-      await this._state.setBranchExecution({
+      await this._state.setLatestBranchExecution({
         branch: currentBranch,
         sha1: currentSha,
         cmd: this.cmd,
