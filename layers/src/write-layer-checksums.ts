@@ -19,7 +19,7 @@ export const writeLayerChecksums = async (
       '[package] Writing current layer checksums at',
       `s3://${config.state.checksums}/${key} (${config.defaultRegion})`,
     );
-    const state = new State(config);
+    const state = new State(config.state.table, config.defaultRegion);
     await aws.s3.putObject(config.defaultRegion, key, JSON.stringify(checksums), config.defaultRegion);
     await state.setLayerChecksums({
       env,

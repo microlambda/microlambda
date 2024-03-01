@@ -27,7 +27,8 @@ export abstract class Cache {
   protected abstract _writeOutput(output: Array<ICommandResult>): Promise<void>;
   protected abstract _removeChecksums(): Promise<void>;
   protected abstract _removeOutput(): Promise<void>;
-
+  protected abstract _updateState(): Promise<void>;
+  protected abstract _invalidateState(): Promise<void>;
   async read(): Promise<Array<ICommandResult> | null> {
     if (!this.config.src) {
       this.logger?.warn('No sources declared in config, skipping cache');
@@ -70,6 +71,7 @@ export abstract class Cache {
         this._writeChecksums(toWrite),
         this._writeOutput(output),
       ]);
+      await this._updateState();
       this.logger?.info('Checksums written !');
     } catch (e) {
       this.logger?.warn('Error writing cache', e);
@@ -85,6 +87,7 @@ export abstract class Cache {
       await Promise.all([
         this._removeChecksums(),
         this._removeOutput(),
+        this._invalidateState()
       ]);
     } catch (e) {
       this.logger?.warn('Error invalidating cache. Next command runs could have unexpected result !', e);

@@ -59,6 +59,7 @@ const runSlsCommand = (
             ? {
                 region: config.defaultRegion,
                 bucket: config.state.checksums,
+                table: config.state.table,
               }
             : undefined,
         cachePrefix,

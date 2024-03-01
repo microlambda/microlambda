@@ -19,7 +19,8 @@ import { destroyEnv } from './cmd/envs/destroy';
 import { createReplicate } from './cmd/envs/create-replicate';
 import { destroyReplicate } from './cmd/envs/destroy-replicate';
 import { runTests } from './cmd/run-tests';
-import { releaseLock } from './utils/check-env-lock';
+import { releaseLock } from '@microlambda/core';
+import { logger } from './utils/logger';
 
 const program = new Command();
 
@@ -340,7 +341,7 @@ program
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await releaseLock(cmd.e, cmd.s);
+        await releaseLock(cmd.e, cmd.s, logger);
       }),
   );
 

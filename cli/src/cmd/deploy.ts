@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import { logger } from '../utils/logger';
 import { resolveDeltas } from '../utils/deploy/resolve-deltas';
 import { beforeDeploy } from '../utils/deploy/pre-requisites';
@@ -7,9 +6,9 @@ import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { currentSha1 } from '@microlambda/runner-core';
 import { printAccountInfos } from './envs/list';
-import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../utils/check-env-lock';
 import { EnvsResolver } from '../utils/deploy/envs';
 import { performDeploy } from '../utils/deploy/do-deploy';
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '@microlambda/core';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -25,8 +24,8 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
 
   const currentRevision = currentSha1();
 
-  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config);
-  releaseLockOnProcessExit(releaseLock);
+  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config, logger);
+  releaseLockOnProcessExit(releaseLock, logger);
 
   try {
     const envs = new EnvsResolver(project, env.name, eventsLog.scope('deploy/env'));

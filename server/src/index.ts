@@ -152,13 +152,13 @@ export const startServer = (options: {
   });
 
   app.get('/api/environments', async (req, res) => {
-    const state = new State(options.config);
+    const state = new State(options.config.state.table, options.config.defaultRegion);
     const envs = await state.listEnvironments();
     return res.json(envs);
   });
 
   app.get('/api/state/:env', async (req, res) => {
-    const state = new State(options.config);
+    const state = new State(options.config.state.table, options.config.defaultRegion);
     const services = await state.listServices(req.params.env);
     return res.json(services);
   });

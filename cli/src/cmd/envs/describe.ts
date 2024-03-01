@@ -1,15 +1,15 @@
 import { logger } from '../../utils/logger';
 import { State } from '@microlambda/remote-state';
 import { printAccountInfos } from './list';
-import { verifyState } from '../../utils/verify-state';
+import { verifyState } from '@microlambda/core';
 
 export const describeEnv = async (name: string): Promise<void> => {
   logger.lf();
   logger.info('🔎 Describing environment', name);
   logger.lf();
   const config = await printAccountInfos();
-  await verifyState(config);
-  const state = new State(config);
+  await verifyState(config, logger);
+  const state = new State(config.state.table, config.defaultRegion);
   const env = await state.findEnv(name);
   if (!env) {
     logger.error(`Environment not found: ${name}`);

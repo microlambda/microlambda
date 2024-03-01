@@ -88,6 +88,9 @@
         "dist/**/*.js",
         "dist/**/*.d.ts"
       ]
+    },
+    "clean": {
+      "cmd": "rm -rf ./node_modules"
     }
   }
 }

@@ -2781,7 +2781,6 @@ __metadata:
     "@microlambda/aws": "workspace:*"
     "@microlambda/config": "workspace:*"
     "@microlambda/logger": "workspace:*"
-    "@microlambda/runner-core": "workspace:*"
     dynamodels: ^2.0.1
   languageName: unknown
   linkType: soft
@@ -2808,6 +2807,7 @@ __metadata:
     "@microlambda/config": "workspace:*"
     "@microlambda/errors": "workspace:*"
     "@microlambda/logger": "workspace:*"
+    "@microlambda/remote-state": "workspace:*"
     "@microlambda/utils": "workspace:*"
     "@types/conventional-commits-parser": ^3.0.3
     "@types/debug": ^4.1.8

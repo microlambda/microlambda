@@ -1,23 +1,24 @@
 import { IEnvironment, LockManager } from '@microlambda/remote-state';
-import { logger } from './logger';
 import { IRootConfig } from '@microlambda/config';
-import { Project } from '@microlambda/core';
+import { Project } from './graph/project';
 import ora from 'ora';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { init } from './init';
+import { IBaseLogger } from '@microlambda/types';
+import * as process from 'process';
 
 export const checkIfEnvIsLock = async (
   cmd: { skipLock: boolean; s?: string },
   env: IEnvironment,
   project: Project,
   config: IRootConfig,
+  logger?: IBaseLogger,
 ): Promise<(msg?: string) => Promise<void>> => {
   let lock: LockManager | undefined;
   if (!cmd.skipLock) {
     lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
     if (await lock.isLocked()) {
-      logger.lf();
-      logger.info('🔒 Environment is locked. Waiting for the lock to be released');
+      logger?.info('🔒 Environment is locked. Waiting for the lock to be released');
       await lock.waitLockToBeReleased();
     }
     await lock.lock();
@@ -25,45 +26,45 @@ export const checkIfEnvIsLock = async (
   return async (msg?: string): Promise<void> => {
     if (lock) {
       try {
-        logger.lf();
+        if (logger) process.stdout.write('\n');
         const lockRelease = ora(msg || '🔒 Releasing lock...');
         await lock?.releaseLock();
         lockRelease.succeed('🔒 Lock released !');
       } catch (e) {
-        logger.error('Error releasing lock, you probably would have to do it yourself !', e);
+        logger?.error('Error releasing lock, you probably would have to do it yourself !', e);
         throw e;
       }
     }
   };
 };
 
-export const releaseLock = async (env: string, services?: string): Promise<void> => {
+export const releaseLock = async (env: string, services?: string, logger?: IBaseLogger): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const { config, project } = await init(projectRoot);
   const lock = new LockManager(config, env, services?.split(',') || [...project.services.keys()]);
-  const lockRelease = ora('🔒 Releasing lock...');
-  logger.lf();
+  const lockRelease = logger ? ora('🔒 Releasing lock...') : undefined;
+  if (logger) process.stdout.write('\n');
   try {
     if (await lock.isLocked()) {
       await lock.releaseLock();
-      lockRelease.succeed('🔒 Lock released !');
+      lockRelease?.succeed('🔒 Lock released !');
     } else {
-      lockRelease.succeed('🔒 Lock already released');
+      lockRelease?.succeed('🔒 Lock already released');
     }
     process.exit(0);
   } catch (e) {
-    logger.error('Error releasing lock, you probably would have to do it yourself !', e);
+    logger?.error('Error releasing lock, you probably would have to do it yourself !', e);
     process.exit(1);
   }
 };
 
-export const releaseLockOnProcessExit = (release: (msg?: string) => Promise<void>): void => {
+export const releaseLockOnProcessExit = (release: (msg?: string) => Promise<void>, logger?: IBaseLogger): void => {
   process.on('SIGINT', async () => {
     try {
       await release('🔒 SIGINT received, releasing lock...');
       process.exit(0);
     } catch (e) {
-      logger.error('Error releasing lock, you probably would have to do it yourself !');
+      logger?.error('Error releasing lock, you probably would have to do it yourself !');
       process.exit(2);
     }
   });

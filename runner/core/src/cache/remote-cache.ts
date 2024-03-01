@@ -6,13 +6,17 @@ import { aws } from '@microlambda/aws';
 import { Cache } from './cache';
 import { currentSha1 } from '../remote-cache-utils';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
+import {git} from "../git";
+import {State} from "@microlambda/remote-state";
 
 export class RemoteCache extends Cache {
   static readonly scope = '@microlambda/runner-core/remote-cache';
+  private readonly _state: State;
 
   constructor (
     readonly awsRegion: string,
     readonly bucket: string,
+    readonly table: string,
     readonly workspace: Workspace,
     readonly cmd: string,
     readonly sha1?: string,
@@ -22,6 +26,7 @@ export class RemoteCache extends Cache {
     private readonly _cachePrefix?: string,
   ) {
     super(workspace, cmd, args, env, eventsLog?.scope(RemoteCache.scope));
+    this._state = new State(this.table, this.awsRegion);
   }
 
   static cachePrefix(workspace: Workspace, cmd: string): string {
@@ -98,8 +103,61 @@ export class RemoteCache extends Cache {
 
   protected async _removeChecksums(): Promise<void> {
     /* nothing to do */
+    return;
   }
   protected async _removeOutput(): Promise<void> {
     /* nothing to do */
+    return;
+  }
+
+  protected async _invalidateState(): Promise<void> {
+    const currentBranch = git.getCurrentBranch();
+    const currentSha = currentSha1();
+    const operations$: Array<Promise<unknown>> = [
+      this._state.removeExecution({
+        sha1: currentSha,
+        cmd: this.cmd,
+        args: this.args,
+        env: this.env,
+        workspace: this.workspace.name,
+      }),
+    ];
+    if (currentBranch) {
+      operations$.push(this._state.removeBranchExecution({
+        branch: currentBranch,
+        sha1: currentSha,
+        cmd: this.cmd,
+        args: this.args,
+        env: this.env,
+        workspace: this.workspace.name,
+      }))
+    }
+    await Promise.all(operations$);
+  }
+
+  protected async _updateState(): Promise<void> {
+    const currentBranch = git.getCurrentBranch();
+    const currentSha = currentSha1();
+    if (currentBranch) {
+      await this._state.setBranchExecution({
+        branch: currentBranch,
+        sha1: currentSha,
+        cmd: this.cmd,
+        args: this.args,
+        env: this.env,
+        workspace: this.workspace.name,
+      });
+    }
+    await this._state.setExecution({
+      sha1: currentSha,
+      cmd: this.cmd,
+      args: this.args,
+      env: this.env,
+      bucket: this.bucket,
+      region: this.awsRegion,
+      checksums: this.currentChecksumsKey,
+      outputs: this.currentOutputKey,
+      workspace: this.workspace.name,
+    });
   }
 }

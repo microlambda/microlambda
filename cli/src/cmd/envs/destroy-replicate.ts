@@ -1,12 +1,12 @@
 import { logger } from '../../utils/logger';
 import { currentSha1 } from '@microlambda/runner-core';
 import { EnvsResolver } from '../../utils/deploy/envs';
-import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../../utils/check-env-lock';
 import { resolveDeltas } from '../../utils/deploy/resolve-deltas';
 import { performDeploy } from '../../utils/deploy/do-deploy';
 import { beforeReplicate } from '../../utils/replicate/before-replicate';
 import { destroyRegionalSsmReplicate } from '../../utils/replicate/ssm';
 import { IReplicateCmd } from '../../utils/replicate/cmd';
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '@microlambda/core';
 
 export const destroyReplicate = async (env: string, region: string, cmd: IReplicateCmd): Promise<void> => {
   logger.lf();
@@ -22,8 +22,8 @@ export const destroyReplicate = async (env: string, region: string, cmd: IReplic
 
   const currentRevision = currentSha1();
 
-  const releaseLock = await checkIfEnvIsLock(cmd, environment, project, config);
-  releaseLockOnProcessExit(releaseLock);
+  const releaseLock = await checkIfEnvIsLock(cmd, environment, project, config, logger);
+  releaseLockOnProcessExit(releaseLock, logger);
 
   let shouldRestoreEnv = false;
   try {

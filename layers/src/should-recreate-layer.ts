@@ -12,7 +12,7 @@ export const shouldRecreateLayer = async (
   logger?: IBaseLogger,
 ): Promise<{ recreate: boolean; currentChecksums?: ISourcesChecksums }> => {
   try {
-    const state = new State(config);
+    const state = new State(config.state.table, config.defaultRegion);
     const lastLayer = await state.getLastLayerChecksums(service.name, env);
     logger?.info('[package] Fetching last layer checksums');
     if (!lastLayer) {

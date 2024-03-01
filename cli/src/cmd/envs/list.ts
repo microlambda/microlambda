@@ -4,7 +4,7 @@ import { State } from '@microlambda/remote-state';
 import { aws } from '@microlambda/aws';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { ConfigReader, IRootConfig } from '@microlambda/config';
-import { verifyState } from '../../utils/verify-state';
+import { verifyState } from '@microlambda/core';
 
 export const printAccountInfos = async (): Promise<IRootConfig> => {
   logger.lf();
@@ -26,8 +26,8 @@ export const listEnvs = async (): Promise<void> => {
   logger.info('🔎 Listing deployed environments');
   logger.lf();
   const config = await printAccountInfos();
-  await verifyState(config);
-  const state = new State(config);
+  await verifyState(config, logger);
+  const state = new State(config.state.table, config.defaultRegion);
   const envs = await state.listEnvironments();
   if (!envs.length) {
     logger.info('No deployed environments found.');

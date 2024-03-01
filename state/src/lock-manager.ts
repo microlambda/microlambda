@@ -1,6 +1,5 @@
 import { State } from './models/state';
 import { IRootConfig } from '@microlambda/config';
-import { Workspace } from '@microlambda/runner-core';
 import { beginsWith } from 'dynamodels';
 
 const TEN_MINUTES = 10 * 60 * 1000;
@@ -15,12 +14,12 @@ interface ILock {
 
 export class LockManager {
   state: State;
-  constructor(config: IRootConfig, readonly env: string, private readonly _workspaces?: string[] | Workspace[]) {
-    this.state = new State(config);
+  constructor(config: IRootConfig, readonly env: string, private readonly _workspaces?: string[]) {
+    this.state = new State(config.state.table, config.defaultRegion);
   }
 
   get workspaces(): string[] | undefined {
-    return this._workspaces?.map((w) => (typeof w === 'string' ? w : w.name));
+    return this._workspaces;
   }
 
   async getLocks(): Promise<Array<ILock>> {

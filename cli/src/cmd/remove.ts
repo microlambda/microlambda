@@ -4,10 +4,10 @@ import { beforeDeploy } from '../utils/deploy/pre-requisites';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { logger } from '../utils/logger';
 import { printAccountInfos } from './envs/list';
-import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../utils/check-env-lock';
 import { resolveRemoveOperations } from '../utils/remove/resolve-deltas';
 import { removeServices } from '../utils/remove/do-remove';
 import { promptConfirm } from '../utils/remove/prompt-confirm';
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '@microlambda/core';
 
 export const remove = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();
@@ -20,8 +20,8 @@ export const remove = async (cmd: IDeployCmd): Promise<void> => {
 
   await printAccountInfos();
 
-  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config);
-  releaseLockOnProcessExit(releaseLock);
+  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config, logger);
+  releaseLockOnProcessExit(releaseLock, logger);
 
   try {
     const operations = await resolveRemoveOperations(env, state, services, releaseLock);

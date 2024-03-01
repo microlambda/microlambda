@@ -1,5 +1,6 @@
 import simpleGit, { FetchResult, TagResult } from 'simple-git';
 import { command } from "execa"
+import {execSync} from "child_process";
 
 // Types
 export interface GitTagsOptions {
@@ -57,6 +58,33 @@ export const git = {
       return true;
     } catch (e) {
       return false;
+    }
+  },
+
+  getCurrentBranch(throws  = false): string | undefined {
+    try {
+      const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+      if (branch === 'HEAD') {
+        // Detached HEAD
+        return;
+      }
+      return branch;
+    } catch (e) {
+      if (throws) {
+        throw e;
+      }
+      return;
+    }
+  },
+
+  listCommitsOnBranch(branch: string, throws  = false): string[] {
+    try {
+      return execSync('git log  --pretty=format:"%h" --abbrev-commit main').toString().split('\n');
+    } catch (e) {
+      if (throws) {
+        throw e;
+      }
+      return [];
     }
   }
 };

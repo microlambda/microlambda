@@ -156,6 +156,7 @@ export const performDeploy = async (params: {
             remoteCache: {
               region: config.defaultRegion,
               bucket: config.state.checksums,
+              table: config.state.table,
             },
             cachePrefix,
           })

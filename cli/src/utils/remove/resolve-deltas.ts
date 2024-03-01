@@ -2,7 +2,7 @@ import Table from 'cli-table3';
 import { IEnvironment, IServiceInstance, State } from '@microlambda/remote-state';
 import { logger } from '../logger';
 import chalk from 'chalk';
-import { Workspace } from '@microlambda/runner-core';
+import { Workspace } from '@microlambda/core';
 
 export type RemoveOperations = Map<string, Map<string, IServiceInstance>>;
 

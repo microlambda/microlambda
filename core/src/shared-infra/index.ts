@@ -35,7 +35,7 @@ const _applySharedInfrastructure = async (
       'Stacks',
       sharedInfraWorkspaces.map((w) => w.name),
     );
-    const state = new State(config);
+    const state = new State(config.state.table, config.defaultRegion);
     obs.next({
       type: SharedInfraDeployEventType.WORKSPACES_RESOLVED,
       workspaces: sharedInfraWorkspaces,

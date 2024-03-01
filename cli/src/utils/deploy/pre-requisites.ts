@@ -1,13 +1,11 @@
 import { logger } from '../logger';
 import chalk from 'chalk';
-import { checkWorkingDirectoryClean, Workspace } from '@microlambda/runner-core';
+import { checkWorkingDirectoryClean } from '@microlambda/runner-core';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventsLog } from '@microlambda/logger';
-import { init } from '../init';
 import { IEnvironment, State } from '@microlambda/remote-state';
-import { verifyState } from '../verify-state';
 import { IDeployCmd } from './cmd-options';
-import { Project } from '@microlambda/core';
+import { init, Project, verifyState, Workspace } from '@microlambda/core';
 import { IRootConfig } from '@microlambda/config';
 
 export const beforeDeploy = async (
@@ -33,11 +31,11 @@ export const beforeDeploy = async (
   const projectRoot = resolveProjectRoot();
   log.debug('Project root resolved', projectRoot);
   // Validate env
-  const { config, project } = await init(projectRoot, eventsLog, cmd.install);
+  const { config, project } = await init(projectRoot, logger, eventsLog, cmd.install);
 
   log.debug('Initializing and verifying state');
-  const state = new State(config);
-  await verifyState(config);
+  const state = new State(config.state.table, config.defaultRegion);
+  await verifyState(config, logger);
   log.debug('State OK');
 
   log.debug('Verifying target environment');

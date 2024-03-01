@@ -52,11 +52,11 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
     logger.error('Cannot using watch mode and remote caching simultaneously');
     process.exit(1);
   }
-  const resolveCache = (): { bucket: string, region: string } => {
+  const resolveCache = (): { bucket: string, region: string; table: string } => {
     const config = (new ConfigReader(project.root)).rootConfig;
     const bucket = config.state.checksums;
     const region = config.defaultRegion;
-    return { bucket, region };
+    return { bucket, region, table: config.state.table };
   }
 
   const resolveWorkspaces = (names: string | undefined): Workspace[] | undefined => {

@@ -6,12 +6,12 @@ import { readJSONSync } from 'fs-extra';
 import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler } from '@microlambda/logger';
-import { init } from '../utils/init';
+import { init } from '@microlambda/core';
 
 export const logs = async (serviceName: string, cmd: string): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-logs-${Date.now()}`)]);
-  const { project } = await init(projectRoot, eventsLog);
+  const { project } = await init(projectRoot, logger, eventsLog);
   const service = project.services.get(serviceName);
   if (!service) {
     logger.error(chalk.red('Unknown service', serviceName));

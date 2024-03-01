@@ -580,6 +580,7 @@ export class Workspace {
       cache = new RemoteCache(
         options.remoteCache.region,
         options.remoteCache.bucket,
+        options.remoteCache.table,
         this,
         options.cmd,
         options.affected,
@@ -644,6 +645,12 @@ export class Workspace {
     }
   }
 
+  /*async isAffected(): Promise<boolean> {
+    const cache = new RemoteCache(
+
+    );
+  }*/
+
   run(options: RunOptions, _workspaceName?: string): Observable<IProcessResult> {
     this._logger?.info('Preparing command', { cmd: options.cmd, workspace: this.name });
     const alreadyRunningProcess = this._runs.get(options.cmd);
@@ -690,6 +697,7 @@ export class Workspace {
       cache = new RemoteCache(
         options.remoteCache.region,
         options.remoteCache.bucket,
+        options.remoteCache.table,
         this,
         options.cmd,
         options.affected,
