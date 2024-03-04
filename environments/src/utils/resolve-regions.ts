@@ -1,7 +1,7 @@
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { State } from '@microlambda/remote-state';
 
-export const resolveTargetsRegions = async (config: IRootConfig, env?: string): Promise<Array<string>> => {
+export const resolveTargetsRegions = async (config: IStateConfig, env?: string): Promise<Array<string>> => {
   const state = new State(config.state.table, config.defaultRegion);
   if (env) {
     const stage = await state.findEnv(env);

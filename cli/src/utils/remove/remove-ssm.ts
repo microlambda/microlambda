@@ -8,9 +8,9 @@ export const removeSsmAndSecrets = async (
   project: Project,
   releaseLock: (msg?: string) => Promise<void>,
 ): Promise<void> => {
-  const loader = new EnvironmentLoader(project);
   let hasFailed = false;
   for (const region of env.regions) {
+    const loader = new EnvironmentLoader(project, region);
     const { failures } = await loader.destroyRegionalReplicate(env.name, region);
     failures.forEach((err, envVar) => {
       logger.error(`Failed to destroy secret/ssm parameter ${envVar.raw} in region ${region}`);

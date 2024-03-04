@@ -1,6 +1,6 @@
 import { aws } from '@microlambda/aws';
 import { IBaseLogger } from '@microlambda/types';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { ISourcesChecksums, Workspace } from '@microlambda/runner-core';
 import { calculateLayerChecksums } from './calculate-layer-checksums';
 import { State } from '@microlambda/remote-state';
@@ -8,7 +8,7 @@ import { State } from '@microlambda/remote-state';
 export const writeLayerChecksums = async (
   service: Workspace,
   env: string,
-  config: IRootConfig,
+  config: IStateConfig,
   _checksums?: ISourcesChecksums,
   logger?: IBaseLogger,
 ): Promise<void> => {

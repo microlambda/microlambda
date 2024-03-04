@@ -1,5 +1,5 @@
 import { IEnvironment, LockManager } from '@microlambda/remote-state';
-import { IRootConfig } from '@microlambda/config';
+import { getStateConfig, IStateConfig } from '@microlambda/config';
 import { Project } from './graph/project';
 import ora from 'ora';
 import { resolveProjectRoot } from '@microlambda/utils';
@@ -11,12 +11,17 @@ export const checkIfEnvIsLock = async (
   cmd: { skipLock: boolean; s?: string },
   env: IEnvironment,
   project: Project,
-  config: IRootConfig,
+  config: IStateConfig,
   logger?: IBaseLogger,
 ): Promise<(msg?: string) => Promise<void>> => {
   let lock: LockManager | undefined;
   if (!cmd.skipLock) {
-    lock = new LockManager(config, env.name, cmd.s?.split(',') || [...project.services.keys()]);
+    lock = new LockManager(
+      config.state.table,
+      config.defaultRegion,
+      env.name,
+      cmd.s?.split(',') || [...project.services.keys()],
+    );
     if (await lock.isLocked()) {
       logger?.info('🔒 Environment is locked. Waiting for the lock to be released');
       await lock.waitLockToBeReleased();
@@ -38,10 +43,23 @@ export const checkIfEnvIsLock = async (
   };
 };
 
-export const releaseLock = async (env: string, services?: string, logger?: IBaseLogger): Promise<void> => {
+export const releaseLock = async (
+  options: {
+    env: string;
+    account?: string;
+    services?: string;
+  },
+  logger?: IBaseLogger,
+): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const { config, project } = await init(projectRoot);
-  const lock = new LockManager(config, env, services?.split(',') || [...project.services.keys()]);
+  const stateConfig = getStateConfig(config, options.account);
+  const lock = new LockManager(
+    stateConfig.state.table,
+    stateConfig.defaultRegion,
+    options.env,
+    options.services?.split(',') || [...project.services.keys()],
+  );
   const lockRelease = logger ? ora('🔒 Releasing lock...') : undefined;
   if (logger) process.stdout.write('\n');
   try {

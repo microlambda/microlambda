@@ -20,7 +20,7 @@ export const packagr = async (cmd: IPackageCmd): Promise<void> => {
       options.project,
       cmd.e,
       SSMResolverMode.ERROR,
-      process.env.AWS_REGION,
+      process.env.AWS_REGION ?? 'us-east-1',
       eventsLog.scope('deploy/env'),
     );
     const { failures, success } = await packageServices(options, envs);

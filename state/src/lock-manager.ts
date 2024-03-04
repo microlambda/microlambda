@@ -1,5 +1,4 @@
 import { State } from './models/state';
-import { IRootConfig } from '@microlambda/config';
 import { beginsWith } from 'dynamodels';
 
 const TEN_MINUTES = 10 * 60 * 1000;
@@ -14,8 +13,8 @@ interface ILock {
 
 export class LockManager {
   state: State;
-  constructor(config: IRootConfig, readonly env: string, private readonly _workspaces?: string[]) {
-    this.state = new State(config.state.table, config.defaultRegion);
+  constructor(tableName: string, region: string, readonly env: string, private readonly _workspaces?: string[]) {
+    this.state = new State(tableName, region);
   }
 
   get workspaces(): string[] | undefined {

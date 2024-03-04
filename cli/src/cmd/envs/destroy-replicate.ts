@@ -13,7 +13,12 @@ export const destroyReplicate = async (env: string, region: string, cmd: IReplic
   logger.info('🔥 Removing regional replicate for', env);
   logger.lf();
 
-  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(env, region, 'destroy');
+  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(
+    env,
+    region,
+    'destroy',
+    cmd.a,
+  );
 
   if (!environment.regions.includes(region)) {
     logger.error('Environment is not replicated in region', region);
@@ -21,7 +26,6 @@ export const destroyReplicate = async (env: string, region: string, cmd: IReplic
   }
 
   const currentRevision = currentSha1();
-
   const releaseLock = await checkIfEnvIsLock(cmd, environment, project, config, logger);
   releaseLockOnProcessExit(releaseLock, logger);
 

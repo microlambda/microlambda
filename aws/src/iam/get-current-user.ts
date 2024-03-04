@@ -11,9 +11,9 @@ export interface IAmazonError {
   message: string;
 }
 
-const getUserArn = async (region: string): Promise<string | undefined> => {
+const getUserArn = async (region?: string): Promise<string | undefined> => {
   try {
-    const iam = new STS({ region });
+    const iam = new STS({ region: region ?? 'us-east-1' });
     const currentUser = await iam.send(new GetCallerIdentityCommand({}));
     return currentUser.Arn;
   } catch (e) {
@@ -41,7 +41,7 @@ export const arnToCurrentUserIAM = (arn: string): ICurrentUserIAM => {
 /**
  * Get the information of the currently connected user.
  */
-export const getCurrentUser = async (region: string): Promise<ICurrentUserIAM> => {
+export const getCurrentUser = async (region?: string): Promise<ICurrentUserIAM> => {
   const arn = await getUserArn(region);
   if (!arn) {
     throw new Error('Unable to resolve current user ARN');

@@ -15,5 +15,4 @@ export * from './init';
 export * from './parse-deps-graph';
 export * from './read-config';
 export * from './resolve-deltas';
-export * from './verify-state';
 export * from './yarn-install';

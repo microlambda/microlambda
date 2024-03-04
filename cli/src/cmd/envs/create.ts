@@ -1,14 +1,14 @@
 import { logger } from '../../utils/logger';
-import { State } from '@microlambda/remote-state';
+import { State, verifyState } from '@microlambda/remote-state';
 import { printAccountInfos } from './list';
 import { regions } from '@microlambda/config';
 import { prompt } from 'inquirer';
 import { existsSync, promises as fs } from 'fs';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { join } from 'path';
-import { init, verifyState } from '@microlambda/core';
+import { init } from '@microlambda/core';
 
-export const createEnv = async (name: string): Promise<void> => {
+export const createEnv = async (name: string, account?: string): Promise<void> => {
   logger.lf();
   logger.info('✨ Creating environment');
   logger.lf();
@@ -16,7 +16,7 @@ export const createEnv = async (name: string): Promise<void> => {
   const { project } = await init(projectRoot, logger);
   logger.lf();
 
-  const config = await printAccountInfos();
+  const config = await printAccountInfos(account);
   await verifyState(config, logger);
   const state = new State(config.state.table, config.defaultRegion);
   if (await state.environmentExists(name)) {

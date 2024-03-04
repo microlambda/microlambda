@@ -1,9 +1,8 @@
 import { resolveProjectRoot } from '@microlambda/utils';
 import { Checksums, ISourcesChecksums, Project, Workspace } from '@microlambda/runner-core';
-import { ICmdExecution, State } from '@microlambda/remote-state';
-import { IRootConfig } from '@microlambda/config';
+import { ICmdExecution, State, verifyState } from '@microlambda/remote-state';
+import { getStateConfig, IStateConfig } from '@microlambda/config';
 import { readConfig } from './read-config';
-import { verifyState } from './verify-state';
 import { aws } from '@microlambda/aws';
 
 interface IShouldRunWorkspace {
@@ -21,12 +20,17 @@ export const resolveDeltas = async (options: {
   args?: string | string[];
   env?: Record<string, string>;
   project?: Project;
-  config?: IRootConfig;
+  config?: IStateConfig;
+  account?: string;
   state?: State;
 }): Promise<Array<IShouldRunWorkspace>> => {
   const projectRoot = options.project?.root ?? resolveProjectRoot();
   const project = options.project ?? (await Project.loadProject(projectRoot));
-  const config = options.config ?? readConfig(projectRoot);
+  const readStateConfig = (): IStateConfig => {
+    const rootConfig = readConfig(projectRoot);
+    return getStateConfig(rootConfig, options.account);
+  };
+  const config = options.config ?? readStateConfig();
   const state = options.state ?? new State(config.state.table, config.defaultRegion);
   await verifyState(config);
   const shouldRun: Array<IShouldRunWorkspace> = [];

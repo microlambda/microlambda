@@ -1,5 +1,5 @@
 import { Workspace, Checksums, ISourcesChecksums } from '@microlambda/runner-core';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { State } from '@microlambda/remote-state';
 import { aws } from '@microlambda/aws';
 import { calculateLayerChecksums } from './calculate-layer-checksums';
@@ -8,7 +8,7 @@ import { IBaseLogger } from '@microlambda/types';
 export const shouldRecreateLayer = async (
   service: Workspace,
   env: string,
-  config: IRootConfig,
+  config: IStateConfig,
   logger?: IBaseLogger,
 ): Promise<{ recreate: boolean; currentChecksums?: ISourcesChecksums }> => {
   try {

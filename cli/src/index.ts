@@ -28,6 +28,7 @@ program.version('1.0.0-alpha.3');
 
 program
   .command('init')
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .option('--no-prompt', 'skip asking user confirmation before initializing', false)
   .description('Initialize remote state for current project.')
   .action(async (cmd) => {
@@ -40,33 +41,37 @@ const envs = program.command('envs').description('Manage deployed environments.'
 
 envs
   .command('list')
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .description('List environments deployed in current AWS subscription.')
-  .action(async () => {
+  .action(async (options) => {
     await commandWrapper(async () => {
-      await listEnvs();
+      await listEnvs(options.a);
     });
   });
 
 envs
   .command('create <name>')
-  .description('Create a new environment un current AWS subscription.')
-  .action(async (cmd) => {
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .description('Create a new environment in current AWS subscription.')
+  .action(async (cmd, options) => {
     await commandWrapper(async () => {
-      await createEnv(cmd);
+      await createEnv(cmd, options.a);
     });
   });
 
 envs
   .command('describe <name>')
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .description('Print details of an exiting environments.')
-  .action(async (cmd) => {
+  .action(async (cmd, options) => {
     await commandWrapper(async () => {
-      await describeEnv(cmd);
+      await describeEnv(cmd, options.a);
     });
   });
 
 envs
   .command('destroy <name>')
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .option('--verbose', 'print child processes stdout and stderr', false)
   .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
@@ -100,6 +105,7 @@ envs
     'defines how much threads can be used for parallel tasks',
     getDefaultThreads().toString(),
   )
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
   .option('--only-prompt', 'only display deployment information and return', false)
@@ -284,6 +290,7 @@ program
   .command('deploy')
   .requiredOption('-e <stage>, --stage <stage>', 'target stage for deployment')
   .option('--verbose', 'print child processes stdout and stderr', false)
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .option('--no-install', 'skip installing dependencies', true)
   .option('--no-recompile', 'skip package and service recompilation', true)
   .option('--no-package', 'skip bundling service deployment package', true)
@@ -320,6 +327,7 @@ program
     getDefaultThreads().toString(),
   )
   .option('--no-prompt', 'skip asking user confirmation before deploying', true)
+  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')
@@ -337,11 +345,15 @@ program
     '-s <service>, --service <service>',
     'the service you want to unlock. If no specified all locks will be removed for the given environment.',
   )
+  .option(
+    '-a <account>, --account <account>',
+    'the account where the state is stored (only required if multi-account setup)',
+  )
   .description('Release lock for a given environment')
   .action(
     async (cmd) =>
       await commandWrapper(async () => {
-        await releaseLock(cmd.e, cmd.s, logger);
+        await releaseLock({ env: cmd.e, account: cmd.a, services: cmd.s }, logger);
       }),
   );
 

@@ -1,6 +1,6 @@
 import { from, mergeAll, Observable } from 'rxjs';
 import { SharedInfraDeployEvent, SharedInfraDeployEventType } from './types';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { deploySharedInfraStack, removeSharedInfraStack } from './stack-deployer';
 import { IEnvironment, State } from '@microlambda/remote-state';
 import { IBaseLogger } from '@microlambda/types';
@@ -11,7 +11,7 @@ const _applySharedInfrastructure = async (
   params: {
     action: 'deploy' | 'remove';
     project: Project;
-    config: IRootConfig;
+    config: IStateConfig;
     env: IEnvironment;
     concurrency: number;
     verbose: boolean;
@@ -89,7 +89,7 @@ const _applySharedInfrastructure = async (
 export const deploySharedInfrastructure = async (
   params: {
     project: Project;
-    config: IRootConfig;
+    config: IStateConfig;
     env: IEnvironment;
     concurrency: number;
     verbose: boolean;
@@ -105,7 +105,7 @@ export const deploySharedInfrastructure = async (
 export const removeSharedInfrastructure = async (
   params: {
     project: Project;
-    config: IRootConfig;
+    config: IStateConfig;
     env: IEnvironment;
     concurrency: number;
     verbose: boolean;

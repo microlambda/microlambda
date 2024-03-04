@@ -18,18 +18,18 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-deploy-${Date.now()}`)]);
 
-  await printAccountInfos();
+  const stateConfig = await printAccountInfos(cmd.a);
 
-  const { env, project, state, config } = await beforeDeploy(cmd, eventsLog);
+  const { env, project, state } = await beforeDeploy(cmd, eventsLog);
 
   const currentRevision = currentSha1();
 
-  const releaseLock = await checkIfEnvIsLock(cmd, env, project, config, logger);
+  const releaseLock = await checkIfEnvIsLock(cmd, env, project, stateConfig, logger);
   releaseLockOnProcessExit(releaseLock, logger);
 
   try {
     const envs = new EnvsResolver(project, env.name, eventsLog.scope('deploy/env'));
-    const operations = await resolveDeltas(env, project, cmd, state, config, eventsLog, envs);
+    const operations = await resolveDeltas(env, project, cmd, state, stateConfig, eventsLog, envs);
     await performDeploy({
       cmd,
       releaseLock,
@@ -37,7 +37,7 @@ export const deploy = async (cmd: IDeployCmd): Promise<void> => {
       env,
       project,
       projectRoot,
-      config,
+      config: stateConfig,
       envs,
       eventsLog,
       state,

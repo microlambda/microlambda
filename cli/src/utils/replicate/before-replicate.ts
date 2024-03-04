@@ -1,20 +1,21 @@
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { printAccountInfos } from '../../cmd/envs/list';
-import { IRootConfig, regions } from '@microlambda/config';
+import { IStateConfig, regions } from '@microlambda/config';
 import { logger } from '../logger';
-import { IEnvironment, State } from '@microlambda/remote-state';
-import { init, Project, verifyState } from '@microlambda/core';
+import { IEnvironment, State, verifyState } from '@microlambda/remote-state';
+import { init, Project } from '@microlambda/core';
 
 export const beforeReplicate = async (
   env: string,
   region: string,
   action: 'create' | 'destroy',
+  account?: string,
 ): Promise<{
   environment: IEnvironment;
   project: Project;
   eventsLog: EventsLog;
-  config: IRootConfig;
+  config: IStateConfig;
   projectRoot: string;
   state: State;
 }> => {
@@ -25,7 +26,7 @@ export const beforeReplicate = async (
 
   const { project } = await init(projectRoot, logger);
 
-  const config = await printAccountInfos();
+  const config = await printAccountInfos(account);
 
   await verifyState(config, logger);
   if (!regions.includes(region)) {

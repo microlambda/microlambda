@@ -8,11 +8,17 @@ export const logger = {
   fromCache: chalk.bgCyanBright.bold.black(' FROM CACHE '),
   fromRemoteCache: chalk.bgCyanBright.bold.black(' FROM REMOTE CACHE '),
   took: (ms: number): string => chalk.magenta(`Took ${ms}ms`),
+  debug: (...args: unknown[]): void => {
+    console.debug(args.map(a => chalk.grey(a)).join(' '));
+  },
   info: (...args: unknown[]): void => {
     console.info(args.map(a => chalk.grey(a)).join(' '));
   },
   log: (...args: unknown[]): void => {
     console.log(args.join(' '));
+  },
+  warn: (...args: unknown[]): void => {
+    console.warn(args.map(a => chalk.yellow(a)).join(' '));
   },
   error: (...args: unknown[]): void => {
     console.error(args.map(a => chalk.red.bold(a)).join(' '));

@@ -13,7 +13,12 @@ export const createReplicate = async (env: string, region: string, cmd: IReplica
   logger.info('🌎 Creating regional replicate for', env);
   logger.lf();
 
-  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(env, region, 'create');
+  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(
+    env,
+    region,
+    'create',
+    cmd.a,
+  );
 
   if (environment.regions.includes(region)) {
     logger.warn('Environment is already replicated in region', region);

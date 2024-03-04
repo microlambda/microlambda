@@ -1,12 +1,12 @@
 import { aws } from '@microlambda/aws';
-import { verifyStateKeysSchema } from '@microlambda/remote-state';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { IBaseLogger } from '@microlambda/types';
+import { verifyStateKeysSchema } from './verify-state-keys-schema';
 
-export const verifyState = async (config: IRootConfig, logger?: IBaseLogger): Promise<void> => {
+export const verifyState = async (config: IStateConfig, logger?: IBaseLogger): Promise<void> => {
   const verifyTable = async (): Promise<void> => {
     try {
-      const isValid = await verifyStateKeysSchema(config);
+      const isValid = await verifyStateKeysSchema(config.state.table, config.defaultRegion);
       if (!isValid) {
         logger?.error('State verification failed. Please double-check config.state');
         logger?.error(

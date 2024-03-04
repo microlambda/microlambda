@@ -1,16 +1,13 @@
 import Model, { beginsWith, eq } from 'dynamodels';
 import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
-import { IRootConfig } from '@microlambda/config';
 import hasha from 'hasha';
-
 export interface IEnvironment {
   k1: string; // $name
   k2: string; // 'env'
   name: string;
   regions: string[];
 }
-
 export interface IServiceInstanceRequest {
   name: string;
   region: string;
@@ -19,7 +16,6 @@ export interface IServiceInstanceRequest {
   checksums_buckets: string;
   checksums_key: string;
 }
-
 export interface ILayerChecksumsRequest {
   service: string;
   env: string;
@@ -27,18 +23,15 @@ export interface ILayerChecksumsRequest {
   checksums_key: string;
   region: string;
 }
-
 export interface IExecutionHash {
   args: string[] | string;
   cmd: string;
   env: { [p: string]: string };
   workspace: string;
 }
-
 export interface IBranchExecutionHash extends IExecutionHash {
   branch: string;
 }
-
 export interface ICmdExecutionRequest extends IExecutionHash {
   sha1: string;
   bucket: string;
@@ -46,7 +39,6 @@ export interface ICmdExecutionRequest extends IExecutionHash {
   outputs: string;
   region: string;
 }
-
 export interface ICmdExecution {
   k1: string;
   k2: string;
@@ -63,7 +55,6 @@ export interface ICmdExecution {
   workspace: string;
   date: string;
 }
-
 export interface ILayerChecksums extends ILayerChecksumsRequest {
   /**
    * $serviceName
@@ -74,7 +65,6 @@ export interface ILayerChecksums extends ILayerChecksumsRequest {
    */
   k2: string;
 }
-
 export interface IServiceInstance extends IServiceInstanceRequest {
   /**
    * $name
@@ -89,7 +79,6 @@ export interface IServiceInstance extends IServiceInstanceRequest {
    */
   k3: string;
 }
-
 export interface ISharedInfraStateRequest {
   name: string;
   region: string;
@@ -98,12 +87,10 @@ export interface ISharedInfraStateRequest {
   checksums_buckets: string;
   checksums_key: string;
 }
-
 export interface ISharedInfraState extends ISharedInfraStateRequest {
   k1: string; // $yml
   k2: string; // Shared-infra|$region
 }
-
 export class State extends Model<unknown> {
   constructor(readonly tableName: string, awsRegion: string) {
     super();

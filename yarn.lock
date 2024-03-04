@@ -2789,6 +2789,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@microlambda/runner-cli@workspace:runner/cli"
   dependencies:
+    "@microlambda/config": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
     chalk: ^4.1.2
     commander: ^11.0.0

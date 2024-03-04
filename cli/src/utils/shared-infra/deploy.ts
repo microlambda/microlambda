@@ -9,13 +9,13 @@ import {
   SharedInfraDeployEventType,
 } from '@microlambda/core';
 import { MilaSpinnies } from '../spinnies';
-import { IRootConfig } from '@microlambda/config';
+import { IRootConfig, IStateConfig } from '@microlambda/config';
 import { IEnvironment } from '@microlambda/remote-state';
 
 export const deploySharedInfra = async (params: {
   action: 'remove' | 'deploy';
   project: Project;
-  config: IRootConfig;
+  config: IStateConfig;
   env: IEnvironment;
   concurrency?: string;
   isVerbose: boolean;

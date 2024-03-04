@@ -9,11 +9,20 @@ import { promptConfirm } from '../../utils/remove/prompt-confirm';
 import { removeSsmAndSecrets } from '../../utils/remove/remove-ssm';
 import { deploySharedInfra } from '../../utils/shared-infra/deploy';
 import { currentSha1 } from '@microlambda/runner-core';
-import { checkIfEnvIsLock, init, releaseLockOnProcessExit, verifyState } from '@microlambda/core';
+import { checkIfEnvIsLock, init, releaseLockOnProcessExit } from '@microlambda/core';
+import { verifyState } from '@microlambda/remote-state';
 
 export const destroyEnv = async (
   name: string,
-  cmd: { prompt: boolean; skipLock: boolean; onlyPrompt: boolean; destroy: boolean; c?: string; verbose: true },
+  cmd: {
+    prompt: boolean;
+    a?: string;
+    skipLock: boolean;
+    onlyPrompt: boolean;
+    destroy: boolean;
+    c?: string;
+    verbose: true;
+  },
 ): Promise<void> => {
   logger.lf();
   logger.info('🔥 Preparing to destroy environment');
@@ -23,7 +32,7 @@ export const destroyEnv = async (
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-destroy-${Date.now()}`)]);
 
   const { project } = await init(projectRoot, logger, eventsLog);
-  const config = await printAccountInfos();
+  const config = await printAccountInfos(cmd.a);
 
   await verifyState(config, logger);
   const state = new State(config.state.table, config.defaultRegion);

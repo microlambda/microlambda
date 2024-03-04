@@ -53,6 +53,7 @@ program
   .option('-c, --concurrency', 'maximum threads used to run command on target. Defaults to cu‡rrent machine half of CPUs.')
   .option('--force', 'ignore cached outputs and checksums')
   .option('--remote-cache', 'use a remote cache instead local cache.')
+  .option('--account <account>', 'If multiple accounts set in config, the AWS account ID or name where remote cache is located')
   .option('--affected <rev1> <rev2>', 'only run command on workspaces affected between two revisions. Unless remote cache this is based on git diff and it will not verify command artifact')
   .option('--watch', 'watch sources and run the command again on changes')
 

@@ -18,7 +18,7 @@ import { MilaSpinnies } from '../utils/spinnies';
 import { logger } from '../utils/logger';
 import { printError } from '../utils/print-process-error';
 import { printReport } from '../utils/deploy/print-report';
-import { ConfigReader } from '@microlambda/config';
+import { ConfigReader, getStateConfig } from '@microlambda/config';
 import { State } from '@microlambda/remote-state';
 import { execSync } from 'child_process';
 import { from, Observable } from 'rxjs';
@@ -67,9 +67,9 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
       }
       logger.lf();
     }
-
     const config = new ConfigReader(projectRoot, eventsLog).rootConfig;
-    const state = new State(config.state.table, config.defaultRegion);
+    const stateConfig = getStateConfig(config);
+    const state = new State(stateConfig.state.table, stateConfig.defaultRegion);
 
     await typeCheck(options);
     const { failures, success } = await (new Promise(async (resolve, reject) => {
@@ -196,9 +196,9 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
             force: options.force,
             stdio: spinnies.stdio,
             remoteCache: {
-              table: config.state.table,
-              bucket: config.state.checksums,
-              region: config.defaultRegion,
+              table: stateConfig.state.table,
+              bucket: stateConfig.state.checksums,
+              region: stateConfig.defaultRegion,
             },
             affected: currentBranch,
           };
