@@ -5,6 +5,7 @@ import { aws } from '@microlambda/aws';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { ConfigReader, getStateConfig, IStateConfig } from '@microlambda/config';
 import { verifyState } from '@microlambda/remote-state';
+import { MilaError, MilaErrorCode } from '@microlambda/errors';
 
 export const printAccountInfos = async (account?: string): Promise<IStateConfig> => {
   logger.lf();
@@ -18,6 +19,15 @@ export const printAccountInfos = async (account?: string): Promise<IStateConfig>
   logger.info('Cache location', chalk.white.bold(`s3://${config.state.checksums}`));
   logger.info('IAM user', chalk.white.bold(currentUser.arn));
   logger.lf();
+  if (account && currentUser.projectId && account !== currentUser.projectId) {
+    logger.error(
+      new MilaError(
+        MilaErrorCode.NOT_LOGGED_IN_CORRECT_ACCOUNT,
+        `You are trying to perform actions on AWS account ${account} whereas you are currently authenticated to account ${currentUser.projectId}`,
+      ),
+    );
+    process.exit(1);
+  }
   return config;
 };
 
