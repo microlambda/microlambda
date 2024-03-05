@@ -10,8 +10,8 @@ import { logger } from '../utils/logger';
 import { aws } from '@microlambda/aws';
 import chalk from 'chalk';
 import { debounceTime } from 'rxjs/operators';
-import { ICurrentUserIAM } from '@microlambda/aws/lib/iam/get-current-user';
 import { IStateConfig, getStateConfig } from '@microlambda/config';
+import { ICurrentUserIAM } from '@microlambda/types';
 
 interface IStartOptions {
   interactive: boolean;

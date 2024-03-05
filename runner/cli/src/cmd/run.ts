@@ -13,7 +13,7 @@ import chalk from 'chalk';
 import { logger } from "../utils/logger";
 import { resolveWorkspace } from "../utils/validate-workspace";
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
-import {ConfigReader, getStateConfig, IStateConfig} from '@microlambda/config';
+import {ConfigReader, getStateConfig, IStateConfig, verifyAccount} from '@microlambda/config';
 import { aws } from '@microlambda/aws/lib';
 import {verifyState} from "@microlambda/remote-state";
 
@@ -158,10 +158,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
     logger.info('AWS Account', chalk.white.bold(currentUser.projectId));
     logger.info('Cache location', chalk.white.bold(`s3://${config.state.checksums}`));
     logger.info('IAM user', chalk.white.bold(currentUser.arn));
-    if (options.remoteCache && options.account && options.account !== currentUser.projectId) {
-      logger.error(`Trying to use remote cache located in AWS account ${options.account} while logged in account ${currentUser.projectId}`);
-      process.exit(1);
-    }
+    verifyAccount(currentUser, config);
   }
   logger.seperator();
 

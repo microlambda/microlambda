@@ -8,20 +8,23 @@ const stateConfig = joi.object().keys({
   checksums: joi.string().required(),
   table: joi.string().required(),
 });
-export const accountsSchema = joi.object().keys({
-  id: joi
-    .string()
-    .pattern(/^[0-9]{12}$/)
-    .required(),
-  defaultRegion: region.required(),
-  state: stateConfig.required(),
-});
+export const accountsSchema = joi.object().pattern(
+  joi.string(),
+  joi.object().keys({
+    id: joi
+      .string()
+      .pattern(/^[0-9]{12}$/)
+      .required(),
+    defaultRegion: region.required(),
+    state: stateConfig.required(),
+  }),
+);
 
 const commonKeys = {
   defaultRuntime: joi
     .string()
     .pattern(/nodejs[0-9]{1,2}.x/)
-    .required(),
+    .optional(),
   targets: targetsConfigSchema.optional(),
 };
 

@@ -28,7 +28,7 @@ program.version('1.0.0-alpha.3');
 
 program
   .command('init')
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .option('--no-prompt', 'skip asking user confirmation before initializing', false)
   .description('Initialize remote state for current project.')
   .action(async (cmd) => {
@@ -41,7 +41,7 @@ const envs = program.command('envs').description('Manage deployed environments.'
 
 envs
   .command('list')
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .description('List environments deployed in current AWS subscription.')
   .action(async (options) => {
     await commandWrapper(async () => {
@@ -51,7 +51,7 @@ envs
 
 envs
   .command('create <name>')
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .description('Create a new environment in current AWS subscription.')
   .action(async (cmd, options) => {
     await commandWrapper(async () => {
@@ -61,7 +61,7 @@ envs
 
 envs
   .command('describe <name>')
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .description('Print details of an exiting environments.')
   .action(async (cmd, options) => {
     await commandWrapper(async () => {
@@ -71,7 +71,7 @@ envs
 
 envs
   .command('destroy <name>')
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .option('--verbose', 'print child processes stdout and stderr', false)
   .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
@@ -105,7 +105,7 @@ envs
     'defines how much threads can be used for parallel tasks',
     getDefaultThreads().toString(),
   )
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .option('--no-prompt', 'skip asking user confirmation before deploying', true)
   .option('--skip-lock', 'ignore lock and perform the actions anyway', false)
   .option('--only-prompt', 'only display deployment information and return', false)
@@ -290,7 +290,7 @@ program
   .command('deploy')
   .requiredOption('-e <stage>, --stage <stage>', 'target stage for deployment')
   .option('--verbose', 'print child processes stdout and stderr', false)
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .option('--no-install', 'skip installing dependencies', true)
   .option('--no-recompile', 'skip package and service recompilation', true)
   .option('--no-package', 'skip bundling service deployment package', true)
@@ -327,7 +327,7 @@ program
     getDefaultThreads().toString(),
   )
   .option('--no-prompt', 'skip asking user confirmation before deploying', true)
-  .option('-a, --account', 'the AWS account where the env is managed if multi-account setup')
+  .option('-a, --account <account>', 'the AWS account where the env is managed if multi-account setup')
   .option('--only-prompt', 'only display deployment information and return', false)
   .option('--verbose', 'print child processes stdout and stderr', false)
   .description('remove services from AWS')

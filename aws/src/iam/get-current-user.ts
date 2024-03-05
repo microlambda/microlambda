@@ -1,11 +1,5 @@
 import { STS, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
-
-export interface ICurrentUserIAM {
-  arn: string;
-  projectId?: string;
-  username?: string;
-}
-
+import { ICurrentUserIAM } from '@microlambda/types';
 export interface IAmazonError {
   Code: string;
   message: string;

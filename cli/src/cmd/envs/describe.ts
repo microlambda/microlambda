@@ -1,6 +1,6 @@
 import { logger } from '../../utils/logger';
 import { State, verifyState } from '@microlambda/remote-state';
-import { printAccountInfos } from './list';
+import { printAccountInfos } from '../../utils/account';
 
 export const describeEnv = async (name: string, account?: string): Promise<void> => {
   logger.lf();

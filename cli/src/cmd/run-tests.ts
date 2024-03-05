@@ -24,7 +24,7 @@ import { execSync } from 'child_process';
 import { from, Observable } from 'rxjs';
 import { map, mergeAll } from 'rxjs/operators';
 import chalk from 'chalk';
-import { printAccountInfos } from './envs/list';
+import { printAccountInfos } from '../utils/account';
 import { typeCheck } from '../utils/build/type-check';
 import { getConcurrency } from '@microlambda/core';
 

@@ -5,10 +5,10 @@ import { IDeployCmd } from '../utils/deploy/cmd-options';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { currentSha1 } from '@microlambda/runner-core';
-import { printAccountInfos } from './envs/list';
 import { EnvsResolver } from '../utils/deploy/envs';
 import { performDeploy } from '../utils/deploy/do-deploy';
 import { checkIfEnvIsLock, releaseLockOnProcessExit } from '@microlambda/core';
+import { printAccountInfos } from '../utils/account';
 
 export const deploy = async (cmd: IDeployCmd): Promise<void> => {
   logger.lf();

@@ -1,11 +1,10 @@
 import { ISourcesChecksums } from '../checksums';
 import { Workspace } from '../workspace';
 import { ICommandResult } from '../process';
-import { EventsLog } from '@microlambda/logger';
+import {EventsLog, EventsLogger} from '@microlambda/logger';
 import { aws } from '@microlambda/aws';
 import { Cache } from './cache';
 import { currentSha1 } from '../remote-cache-utils';
-import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import {git} from "../git";
 import {ICmdExecution, State} from "@microlambda/remote-state";
 
@@ -25,7 +24,7 @@ export class RemoteCache extends Cache {
     readonly eventsLog?: EventsLog,
     private readonly _cachePrefix?: string,
   ) {
-    super(workspace, cmd, args, env, eventsLog?.scope(RemoteCache.scope));
+    super(workspace, cmd, args, env, console as unknown as EventsLogger);
     this._state = new State(this.table, this.awsRegion);
   }
 

@@ -3,7 +3,7 @@ import { resolveProjectRoot } from '@microlambda/utils';
 import { beforeDeploy } from '../utils/deploy/pre-requisites';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { logger } from '../utils/logger';
-import { printAccountInfos } from './envs/list';
+import { printAccountInfos } from '../utils/account';
 import { resolveRemoveOperations } from '../utils/remove/resolve-deltas';
 import { removeServices } from '../utils/remove/do-remove';
 import { promptConfirm } from '../utils/remove/prompt-confirm';

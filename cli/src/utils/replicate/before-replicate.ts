@@ -1,6 +1,6 @@
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
-import { printAccountInfos } from '../../cmd/envs/list';
+import { printAccountInfos } from '../account';
 import { IStateConfig, regions } from '@microlambda/config';
 import { logger } from '../logger';
 import { IEnvironment, State, verifyState } from '@microlambda/remote-state';

@@ -1,35 +1,8 @@
 import { logger } from '../../utils/logger';
 import chalk from 'chalk';
 import { State } from '@microlambda/remote-state';
-import { aws } from '@microlambda/aws';
-import { resolveProjectRoot } from '@microlambda/utils';
-import { ConfigReader, getStateConfig, IStateConfig } from '@microlambda/config';
 import { verifyState } from '@microlambda/remote-state';
-import { MilaError, MilaErrorCode } from '@microlambda/errors';
-
-export const printAccountInfos = async (account?: string): Promise<IStateConfig> => {
-  logger.lf();
-  logger.info(chalk.underline(chalk.bold('▼ Account informations')));
-  logger.lf();
-  const projectRoot = resolveProjectRoot();
-  const rootConfig = new ConfigReader(projectRoot).rootConfig;
-  const config = getStateConfig(rootConfig, account);
-  const currentUser = await aws.iam.getCurrentUser();
-  logger.info('AWS Account', chalk.white.bold(currentUser.projectId));
-  logger.info('Cache location', chalk.white.bold(`s3://${config.state.checksums}`));
-  logger.info('IAM user', chalk.white.bold(currentUser.arn));
-  logger.lf();
-  if (account && currentUser.projectId && account !== currentUser.projectId) {
-    logger.error(
-      new MilaError(
-        MilaErrorCode.NOT_LOGGED_IN_CORRECT_ACCOUNT,
-        `You are trying to perform actions on AWS account ${account} whereas you are currently authenticated to account ${currentUser.projectId}`,
-      ),
-    );
-    process.exit(1);
-  }
-  return config;
-};
+import { printAccountInfos } from '../../utils/account';
 
 export const listEnvs = async (account?: string): Promise<void> => {
   logger.lf();

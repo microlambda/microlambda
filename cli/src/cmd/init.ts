@@ -6,8 +6,8 @@ import { prompt } from 'inquirer';
 import { verifyStateKeysSchema, createStateTable } from '@microlambda/remote-state';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { readConfig } from '@microlambda/core';
-import { getStateConfig } from '@microlambda/config';
-import { ICurrentUserIAM } from '@microlambda/aws/lib/iam/get-current-user';
+import { getStateConfig, verifyAccount } from '@microlambda/config';
+import { ICurrentUserIAM } from '@microlambda/types';
 
 export const init = async (cmd: { prompt: boolean; account?: string }): Promise<void> => {
   logger.lf();
@@ -23,6 +23,8 @@ export const init = async (cmd: { prompt: boolean; account?: string }): Promise<
         chalk.cyan.bold(user.username),
         chalk.gray(`(${user.arn})`),
       );
+      const account = getStateConfig(config, cmd.account);
+      verifyAccount(user, account);
       return user;
     } catch (e) {
       logger.error('Cannot determine current IAM user:', (e as Error).message);

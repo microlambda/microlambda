@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger';
-import { printAccountInfos } from './list';
+import { printAccountInfos } from '../../utils/account';
 import { State } from '@microlambda/remote-state/lib/models/state';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { resolveRemoveOperations } from '../../utils/remove/resolve-deltas';

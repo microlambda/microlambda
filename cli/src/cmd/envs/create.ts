@@ -1,6 +1,6 @@
 import { logger } from '../../utils/logger';
 import { State, verifyState } from '@microlambda/remote-state';
-import { printAccountInfos } from './list';
+import { printAccountInfos } from '../../utils/account';
 import { regions } from '@microlambda/config';
 import { prompt } from 'inquirer';
 import { existsSync, promises as fs } from 'fs';
