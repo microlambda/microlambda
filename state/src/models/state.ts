@@ -241,12 +241,12 @@ export class State extends Model<unknown> {
   async getExecution(params: IExecutionHash & { sha1: string }): Promise<ICmdExecution> {
     const exec = await this.get(
       params.sha1,
-      this._getExecutionHash({
+      `exec|${this._getExecutionHash({
         cmd: params.cmd,
         args: params.args,
         env: params.env,
         workspace: params.workspace,
-      }),
+      })}`,
     );
     return exec as ICmdExecution;
   }

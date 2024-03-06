@@ -12,6 +12,7 @@ export class RemoteCache extends Cache {
   static readonly scope = '@microlambda/runner-core/remote-cache';
   private readonly _state: State;
 
+  readonly date: Date;
   constructor (
     readonly awsRegion: string,
     readonly bucket: string,
@@ -24,8 +25,9 @@ export class RemoteCache extends Cache {
     readonly eventsLog?: EventsLog,
     private readonly _cachePrefix?: string,
   ) {
-    super(workspace, cmd, args, env, console as unknown as EventsLogger);
+    super(workspace, cmd, args, env, eventsLog?.scope('cache'));
     this._state = new State(this.table, this.awsRegion);
+    this.date = new Date();
   }
 
   static cachePrefix(workspace: Workspace, cmd: string): string {
@@ -37,18 +39,21 @@ export class RemoteCache extends Cache {
   }
 
   get currentChecksumsKey(): string {
-    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/checksums.json`;
+    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/${this.date.toISOString()}/checksums.json`;
   }
 
   get currentOutputKey(): string {
-    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/outputs.json`;
+    return `${this.cachePrefix}/${currentSha1(this.workspace.project?.root)}/${this.date.toISOString()}/outputs.json`;
   }
 
   private async _getStoredExecution(): Promise<ICmdExecution | undefined> {
+    this.logger?.debug('Last stored execution');
     if (!this.affected) {
+      this.logger?.debug('No --affected reference')
       return undefined;
     }
     if (this.affected.match(/^[0-9a-f]{40}$/)) {
+      this.logger?.debug('Matches commit sha1');
       return this._state.getExecution({
         args: this.args,
         cmd: this.cmd,
@@ -57,6 +62,7 @@ export class RemoteCache extends Cache {
         sha1: this.affected
       });
     } else {
+      this.logger?.debug('Matches branch name');
       const latestExecutionOnBranch = await this._state.getLatestBranchExecution({
         args: this.args,
         cmd: this.cmd,
@@ -64,6 +70,7 @@ export class RemoteCache extends Cache {
         workspace: this.workspace.name,
         branch: this.affected
       });
+      this.logger?.debug('Last exec on branch', latestExecutionOnBranch);
       if (!latestExecutionOnBranch) {
         return undefined;
       }
@@ -80,6 +87,7 @@ export class RemoteCache extends Cache {
   protected async _readChecksums(): Promise<ISourcesChecksums> {
     try {
       const execution = await this._getStoredExecution();
+      this.logger?.debug({execution});
       if (!execution) {
         return {} as ISourcesChecksums;
       }

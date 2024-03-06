@@ -28,6 +28,7 @@ interface IRunCommandOptions {
   affected?: string;
   debounce?: number;
   account?: string;
+  stdio?: string;
 }
 
 const resolveCache = async (
@@ -98,6 +99,7 @@ const mapToRunOptions = (
         force: options.force || false,
         watch: options.watch,
         debounce: options.debounce,
+        stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
         args,
       }
     }
@@ -109,6 +111,7 @@ const mapToRunOptions = (
       watch: false,
       remoteCache,
       affected: options.affected,
+      stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
       args,
     }
   } else {
@@ -119,6 +122,7 @@ const mapToRunOptions = (
         to: resolveWorkspaces(options.to),
         watch: options.watch,
         force: options.force || false,
+        stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
         debounce: options.debounce,
         args,
       }
@@ -131,6 +135,7 @@ const mapToRunOptions = (
       watch: false,
       remoteCache,
       affected: options.affected,
+      stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
       args,
     };
   }
@@ -180,7 +185,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
   const now = Date.now();
   let nbTargets = 0;
 
-  project.runCommand(mapToRunOptions(cmd, options,  project)).subscribe({
+  project.runCommand(mapToRunOptions(cmd, options,  project, config)).subscribe({
       next: (event) => {
         if (isTargetResolvedEvent(event)) {
           if (!event.targets.some((target) => target.hasCommand)) {
