@@ -1,6 +1,6 @@
 import { aws } from '@microlambda/aws';
 import { IBaseLogger } from '@microlambda/types';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { ISourcesChecksums, Workspace } from '@microlambda/runner-core';
 import { calculateLayerChecksums } from './calculate-layer-checksums';
 import { State } from '@microlambda/remote-state';
@@ -8,7 +8,7 @@ import { State } from '@microlambda/remote-state';
 export const writeLayerChecksums = async (
   service: Workspace,
   env: string,
-  config: IRootConfig,
+  config: IStateConfig,
   _checksums?: ISourcesChecksums,
   logger?: IBaseLogger,
 ): Promise<void> => {
@@ -19,7 +19,7 @@ export const writeLayerChecksums = async (
       '[package] Writing current layer checksums at',
       `s3://${config.state.checksums}/${key} (${config.defaultRegion})`,
     );
-    const state = new State(config);
+    const state = new State(config.state.table, config.defaultRegion);
     await aws.s3.putObject(config.defaultRegion, key, JSON.stringify(checksums), config.defaultRegion);
     await state.setLayerChecksums({
       env,

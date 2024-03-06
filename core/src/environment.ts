@@ -6,7 +6,7 @@ export const resolveEnvs = async (
   project: Project,
   env: string,
   ssmMode = SSMResolverMode.ERROR,
-  region?: string,
+  region: string,
   logger?: IBaseLogger,
 ): Promise<Map<string, Record<string, string>>> => {
   const envs = new Map<string, Record<string, string>>();

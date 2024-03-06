@@ -1,7 +1,6 @@
 import { Project, Workspace } from '@microlambda/runner-core';
 import { aws } from '@microlambda/aws';
 import { IBaseLogger } from '@microlambda/types';
-import { ConfigReader } from '@microlambda/config';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { DotenvManager } from './dotenv-manager';
 import chalk from 'chalk';
@@ -24,13 +23,10 @@ export enum SSMResolverMode {
 type ILoadedEnv = Array<ILoadedEnvironmentVariable>;
 
 export class EnvironmentLoader {
-  readonly region: string;
   static readonly ssmParameterPattern = /^\$\{ssm:(.+)}$/;
   static readonly secretPattern = /^\$\{secret:(.+)}$/;
 
-  constructor(readonly project: Project, region?: string, private readonly _logger?: IBaseLogger) {
-    const config = new ConfigReader(this.project.root);
-    this.region = region ?? config.rootConfig.defaultRegion;
+  constructor(readonly project: Project, readonly region: string, private readonly _logger?: IBaseLogger) {
     this._logger?.info('[env] Resolving Secrets and SSM parameters in', this.region, 'region');
   }
 

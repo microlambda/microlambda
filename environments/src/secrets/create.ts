@@ -1,10 +1,10 @@
 import { Project, Workspace } from '@microlambda/runner-core';
 import { resolveTargetsRegions } from '../utils/resolve-regions';
-import { IRootConfig } from '@microlambda/config';
 import { aws } from '@microlambda/aws';
 import { DotenvManager } from '../dotenv-manager';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { IUpdateSecretOptions } from './update';
+import { IStateConfig } from '@microlambda/config';
 
 export interface ICreateSecretOptions {
   env?: string;
@@ -15,7 +15,7 @@ export interface ICreateSecretOptions {
 }
 
 export const writeSecrets = async (
-  config: IRootConfig,
+  config: IStateConfig,
   secretName: string,
   options: IUpdateSecretOptions,
 ): Promise<void> => {
@@ -29,7 +29,7 @@ export const writeSecrets = async (
 
 export const createSecret = async (
   project: Project,
-  config: IRootConfig,
+  config: IStateConfig,
   options: ICreateSecretOptions,
 ): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });

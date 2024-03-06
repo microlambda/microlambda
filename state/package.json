@@ -18,7 +18,6 @@
     "@microlambda/aws": "workspace:*",
     "@microlambda/config": "workspace:*",
     "@microlambda/logger": "workspace:*",
-    "@microlambda/runner-core": "workspace:*",
     "dynamodels": "^2.0.1"
   }
 }

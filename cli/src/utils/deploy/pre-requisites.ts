@@ -1,18 +1,17 @@
 import { logger } from '../logger';
 import chalk from 'chalk';
-import { checkWorkingDirectoryClean, Workspace } from '@microlambda/runner-core';
+import { checkWorkingDirectoryClean } from '@microlambda/runner-core';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventsLog } from '@microlambda/logger';
-import { init } from '../init';
-import { IEnvironment, State } from '@microlambda/remote-state';
-import { verifyState } from '../verify-state';
+import { IEnvironment, State, verifyState } from '@microlambda/remote-state';
 import { IDeployCmd } from './cmd-options';
-import { Project } from '@microlambda/core';
-import { IRootConfig } from '@microlambda/config';
+import { init, Project, Workspace } from '@microlambda/core';
+import { getStateConfig, IRootConfig } from '@microlambda/config';
 
 export const beforeDeploy = async (
   cmd: IDeployCmd,
   eventsLog: EventsLog,
+  account?: string,
 ): Promise<{
   state: State;
   project: Project;
@@ -33,11 +32,12 @@ export const beforeDeploy = async (
   const projectRoot = resolveProjectRoot();
   log.debug('Project root resolved', projectRoot);
   // Validate env
-  const { config, project } = await init(projectRoot, eventsLog, cmd.install);
+  const { config, project } = await init(projectRoot, logger, eventsLog, cmd.install);
 
   log.debug('Initializing and verifying state');
-  const state = new State(config);
-  await verifyState(config);
+  const stateConfig = getStateConfig(config, account);
+  const state = new State(stateConfig.state.table, stateConfig.defaultRegion);
+  await verifyState(stateConfig, logger);
   log.debug('State OK');
 
   log.debug('Verifying target environment');

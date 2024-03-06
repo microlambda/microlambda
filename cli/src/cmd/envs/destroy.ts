@@ -1,21 +1,28 @@
 import { logger } from '../../utils/logger';
-import { printAccountInfos } from './list';
-import { verifyState } from '../../utils/verify-state';
+import { printAccountInfos } from '../../utils/account';
 import { State } from '@microlambda/remote-state/lib/models/state';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { resolveRemoveOperations } from '../../utils/remove/resolve-deltas';
-import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../../utils/check-env-lock';
-import { init } from '../../utils/init';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { removeServices } from '../../utils/remove/do-remove';
 import { promptConfirm } from '../../utils/remove/prompt-confirm';
 import { removeSsmAndSecrets } from '../../utils/remove/remove-ssm';
 import { deploySharedInfra } from '../../utils/shared-infra/deploy';
 import { currentSha1 } from '@microlambda/runner-core';
+import { checkIfEnvIsLock, init, releaseLockOnProcessExit } from '@microlambda/core';
+import { verifyState } from '@microlambda/remote-state';
 
 export const destroyEnv = async (
   name: string,
-  cmd: { prompt: boolean; skipLock: boolean; onlyPrompt: boolean; destroy: boolean; c?: string; verbose: true },
+  cmd: {
+    prompt: boolean;
+    a?: string;
+    skipLock: boolean;
+    onlyPrompt: boolean;
+    destroy: boolean;
+    c?: string;
+    verbose: true;
+  },
 ): Promise<void> => {
   logger.lf();
   logger.info('🔥 Preparing to destroy environment');
@@ -24,11 +31,11 @@ export const destroyEnv = async (
   const projectRoot = resolveProjectRoot();
   const eventsLog = new EventsLog(undefined, [new EventLogsFileHandler(projectRoot, `mila-destroy-${Date.now()}`)]);
 
-  const { project } = await init(projectRoot, eventsLog);
-  const config = await printAccountInfos();
+  const { project } = await init(projectRoot, logger, eventsLog);
+  const config = await printAccountInfos(cmd.a);
 
-  await verifyState(config);
-  const state = new State(config);
+  await verifyState(config, logger);
+  const state = new State(config.state.table, config.defaultRegion);
   const env = await state.findEnv(name);
 
   if (!env) {
@@ -47,8 +54,8 @@ export const destroyEnv = async (
 
   const currentRevision = currentSha1();
 
-  const releaseLock = await checkIfEnvIsLock({ skipLock: false }, env, project, config);
-  releaseLockOnProcessExit(releaseLock);
+  const releaseLock = await checkIfEnvIsLock({ skipLock: false }, env, project, config, logger);
+  releaseLockOnProcessExit(releaseLock, logger);
 
   try {
     if (cmd.destroy) {
