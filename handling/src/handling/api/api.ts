@@ -44,6 +44,15 @@ const httpMethodToStatus = (method: string, statusCode?: number): number => {
   return statusCode || (method === 'POST' ? 201 : 200);
 };
 
+const getHeader = (event: ApiHandlerEvent, headerName: string): string | undefined => {
+  for (const header of Object.keys(event.headers)) {
+    if (header.toLowerCase() === headerName.toLowerCase()) {
+      return event.headers[header];
+    }
+  }
+  return undefined;
+};
+
 const singleHeaders = (event: ApiHandlerEvent, headers: OutgoingHttpHeaders): ISingleValueHeaders => {
   const finalHeaders = Object.keys(headers)
     .filter((k: string) => ['boolean', 'string', 'number'].indexOf(typeof headers[k]) > -1)
@@ -51,9 +60,8 @@ const singleHeaders = (event: ApiHandlerEvent, headers: OutgoingHttpHeaders): IS
   const cors = getConfig().api.cors as IApiConfigCorsOptions;
   log.debug('[API] Reading CORS config', cors);
   if (cors) {
-    finalHeaders['Access-Control-Allow-Origin'] = cors.origin || event.headers.origin;
+    finalHeaders['Access-Control-Allow-Origin'] = cors.origin ?? getHeader(event, 'Origin');
   }
-
   return finalHeaders;
 };
 
