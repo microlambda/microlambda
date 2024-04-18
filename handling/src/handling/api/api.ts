@@ -108,7 +108,7 @@ const format = (event: ApiHandlerEvent, response: Response, content: any): APIGa
     multiValueHeaders,
     statusCode: httpMethodToStatus(event.httpMethod, response.statusCode),
     body: JSON.stringify(content, (key, value) => {
-      return getConfig().api.blacklist.indexOf(key) > -1 ? undefined : value;
+      return (getConfig().api.blacklist ?? []).indexOf(key) > -1 ? undefined : value;
     }),
   };
 };

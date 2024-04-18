@@ -12,7 +12,7 @@ export interface IApiConfigCorsOptions {
 
 export interface IApiConfigOptions {
   cors: boolean | IApiConfigCorsOptions;
-  blacklist: string[];
+  blacklist?: string[];
 }
 
 export interface IConfigOptions {
