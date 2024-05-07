@@ -13,7 +13,7 @@ import { handleNext } from './handle-next';
 import { IDeployCmd } from './cmd-options';
 import { Operations } from './resolve-deltas';
 import { IEnvironment, State } from '@microlambda/remote-state';
-import { IRootConfig } from '@microlambda/config';
+import { IRootConfig, IStateConfig } from '@microlambda/config';
 import { EnvsResolver } from './envs';
 import { EventsLog } from '@microlambda/logger';
 import { deploySharedInfra } from '../shared-infra/deploy';
@@ -26,7 +26,7 @@ export const performDeploy = async (params: {
   env: IEnvironment;
   project: Project;
   projectRoot: string;
-  config: IRootConfig;
+  config: IStateConfig;
   envs: EnvsResolver;
   eventsLog: EventsLog;
   state: State;
@@ -156,6 +156,7 @@ export const performDeploy = async (params: {
             remoteCache: {
               region: config.defaultRegion,
               bucket: config.state.checksums,
+              table: config.state.table,
             },
             cachePrefix,
           })

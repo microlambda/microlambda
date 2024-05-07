@@ -13,8 +13,9 @@ import chalk from 'chalk';
 import { logger } from "../utils/logger";
 import { resolveWorkspace } from "../utils/validate-workspace";
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
-import { ConfigReader } from '@microlambda/config';
+import {ConfigReader, getStateConfig, IStateConfig, verifyAccount} from '@microlambda/config';
 import { aws } from '@microlambda/aws/lib';
+import {verifyState} from "@microlambda/remote-state";
 
 interface IRunCommandOptions {
   parallel: boolean;
@@ -26,9 +27,26 @@ interface IRunCommandOptions {
   remoteCache?: boolean;
   affected?: string;
   debounce?: number;
+  account?: string;
+  stdio?: string;
 }
 
-const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Project): RunOptions => {
+const resolveCache = async (
+  projectRoot: string,
+  account?: string,
+): Promise<IStateConfig> => {
+  const config = (new ConfigReader(projectRoot)).rootConfig;
+  const stateConfig = getStateConfig(config, account);
+  await verifyState(stateConfig, logger);
+  return stateConfig;
+}
+
+const mapToRunOptions = (
+    cmd: string,
+    options: IRunCommandOptions,
+    project: Project,
+    state?: IStateConfig,
+  ): RunOptions => {
   if (options.parallel && options.topological) {
     logger.error('Conflict: incompatible options --parallel (-p) and --topological (-t)');
     process.exit(1);
@@ -52,17 +70,24 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
     logger.error('Cannot using watch mode and remote caching simultaneously');
     process.exit(1);
   }
-  const resolveCache = (): { bucket: string, region: string } => {
-    const config = (new ConfigReader(project.root)).rootConfig;
-    const bucket = config.state.checksums;
-    const region = config.defaultRegion;
-    return { bucket, region };
-  }
 
   const resolveWorkspaces = (names: string | undefined): Workspace[] | undefined => {
     if (!names) return undefined;
     const workspacesNames = names?.split(',') || [];
     return workspacesNames.map((name) => resolveWorkspace(project, name));
+  }
+
+  const remoteCache = options.remoteCache && state ? {
+    bucket: state.state.checksums,
+    table: state.state.table,
+    region: state.defaultRegion,
+  } : undefined;
+
+  // NPM-style additional arguments
+  let args: string[] = [];
+  const argsSeparator = process.argv.indexOf('--');
+  if (argsSeparator > -1) {
+    args = process.argv.slice(argsSeparator + 1);
   }
 
   if (options.parallel) {
@@ -74,6 +99,8 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
         force: options.force || false,
         watch: options.watch,
         debounce: options.debounce,
+        stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
+        args,
       }
     }
     return {
@@ -82,8 +109,10 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
       workspaces: resolveWorkspaces(options.workspaces),
       force: options.force || false,
       watch: false,
-      remoteCache: options.remoteCache ? resolveCache() : undefined,
+      remoteCache,
       affected: options.affected,
+      stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
+      args,
     }
   } else {
     if (options.watch) {
@@ -93,7 +122,9 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
         to: resolveWorkspaces(options.to),
         watch: options.watch,
         force: options.force || false,
+        stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
         debounce: options.debounce,
+        args,
       }
     }
     return {
@@ -102,8 +133,10 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
       to: resolveWorkspaces(options.to),
       force: options.force || false,
       watch: false,
-      remoteCache: options.remoteCache ? resolveCache() : undefined,
+      remoteCache,
       affected: options.affected,
+      stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
+      args,
     };
   }
 }
@@ -120,8 +153,9 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
   const mode = options.parallel ? 'parallel' : 'topological';
   logger.info('Mode:', chalk.white.bold(mode));
   logger.info('Use caches:', chalk.white(!options.force));
+  let config: IStateConfig | undefined;
   if (!options.force && options.remoteCache) {
-    const config = (new ConfigReader(project.root)).rootConfig;
+    config = await resolveCache(projectRoot, options.account);
     const region = config.defaultRegion;
     const currentUser = await aws.iam.getCurrentUser(region);
     logger.seperator();
@@ -129,6 +163,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
     logger.info('AWS Account', chalk.white.bold(currentUser.projectId));
     logger.info('Cache location', chalk.white.bold(`s3://${config.state.checksums}`));
     logger.info('IAM user', chalk.white.bold(currentUser.arn));
+    verifyAccount(currentUser, config);
   }
   logger.seperator();
 
@@ -150,7 +185,7 @@ export const run = async (cmd: string, options: IRunCommandOptions): Promise<voi
   const now = Date.now();
   let nbTargets = 0;
 
-  project.runCommand(mapToRunOptions(cmd, options,  project)).subscribe({
+  project.runCommand(mapToRunOptions(cmd, options,  project, config)).subscribe({
       next: (event) => {
         if (isTargetResolvedEvent(event)) {
           if (!event.targets.some((target) => target.hasCommand)) {

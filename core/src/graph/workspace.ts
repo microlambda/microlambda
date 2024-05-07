@@ -1,4 +1,4 @@
-import { InMemoryLogHandler, Workspace as CentipodWorkspace } from '@microlambda/runner-core';
+import { InMemoryLogHandler, Workspace as RunnerWorkspace } from '@microlambda/runner-core';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { transpileFiles } from '@microlambda/utils';
@@ -6,8 +6,8 @@ import { ICommandMetrics, ICommandMetric, ServiceStatus, TranspilingStatus, Type
 import { IServicePortsConfig } from '../resolve-ports';
 import { LogsFileHandler } from '../log-handlers/file';
 
-export class Workspace extends CentipodWorkspace {
-  constructor(wks: CentipodWorkspace, ports?: IServicePortsConfig) {
+export class Workspace extends RunnerWorkspace {
+  constructor(wks: RunnerWorkspace, ports?: IServicePortsConfig) {
     super(wks.pkg, wks.root, wks._config, wks.project);
     this._ports = ports;
     this._attachDefaultHandlers();

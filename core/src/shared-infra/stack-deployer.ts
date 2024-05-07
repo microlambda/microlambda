@@ -3,13 +3,13 @@ import { concatAll, from, Observable, of } from 'rxjs';
 import { SharedInfraDeployEvent, SharedInfraDeployEventType } from './types';
 import { IBaseLogger } from '@microlambda/types';
 import { RunCommandEventEnum, Runner, Workspace } from '@microlambda/runner-core';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { Project } from '../graph/project';
 
 const runSlsCommand = (
   params: {
     workspace: Workspace;
-    config: IRootConfig;
+    config: IStateConfig;
     env: string;
     action: 'deploy' | 'remove';
     region: string;
@@ -59,6 +59,7 @@ const runSlsCommand = (
             ? {
                 region: config.defaultRegion,
                 bucket: config.state.checksums,
+                table: config.state.table,
               }
             : undefined,
         cachePrefix,
@@ -165,7 +166,7 @@ export const deploySharedInfraStack = (
     env: IEnvironment;
     workspace: Workspace;
     state: State;
-    config: IRootConfig;
+    config: IStateConfig;
     verbose: boolean;
     force: boolean;
     project: Project;
@@ -252,7 +253,7 @@ export const removeSharedInfraStack = (
     env: IEnvironment;
     workspace: Workspace;
     state: State;
-    config: IRootConfig;
+    config: IStateConfig;
     verbose: boolean;
     currentRevision: string;
     concurrency: number;

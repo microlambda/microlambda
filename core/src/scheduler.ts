@@ -16,7 +16,7 @@ export class Scheduler {
   private readonly _runner: Runner;
   private _process: Observable<SchedulerEvent> | undefined;
 
-  constructor(readonly project: Project, logger: EventsLog, concurrency?: number) {
+  constructor(readonly project: Project, readonly defaultRegion: string, logger: EventsLog, concurrency?: number) {
     this._logger = logger.scope('core/scheduler');
     this._logger.debug('New recompilation scheduler instance');
     this._concurrency = concurrency || getDefaultThreads();
@@ -251,6 +251,6 @@ export class Scheduler {
   }
 
   private async _resolveEnvs(): Promise<Map<string, Record<string, string>>> {
-    return resolveEnvs(this.project, 'local', SSMResolverMode.IGNORE, process.env.AWS_REGION, this._logger);
+    return resolveEnvs(this.project, 'local', SSMResolverMode.IGNORE, this.defaultRegion, this._logger);
   }
 }

@@ -1,5 +1,4 @@
 import { aws } from '@microlambda/aws';
-import { IRootConfig } from '@microlambda/config';
 
 const keySchemaEquals = (
   actual?: Array<{ KeyType: 'HASH' | 'RANGE' | string | undefined; AttributeName: string | undefined }>,
@@ -11,10 +10,11 @@ const keySchemaEquals = (
   return expectedHash === actualHash && expectedRange === actualRange;
 };
 
-export const verifyStateKeysSchema = async (config: IRootConfig): Promise<boolean> => {
-  const metadata = await aws.dynamodb.describeTable(config.defaultRegion, config.state.table);
-  const checkKeys = metadata?.Table?.KeySchema?.length === 2 && keySchemaEquals(metadata?.Table?.KeySchema, 'k1,k2');
-  const checkGSIs =
+export const verifyStateKeysSchema = async (tableName: string, region: string): Promise<boolean> => {
+  const metadata = await aws.dynamodb.describeTable(region, tableName);
+  const areKeysCorrect =
+    metadata?.Table?.KeySchema?.length === 2 && keySchemaEquals(metadata?.Table?.KeySchema, 'k1,k2');
+  const areGSIsCorrect =
     metadata.Table?.GlobalSecondaryIndexes?.length === 3 &&
     keySchemaEquals(
       metadata.Table?.GlobalSecondaryIndexes.find((gsi) => gsi.IndexName === 'GS1')?.KeySchema,
@@ -25,5 +25,5 @@ export const verifyStateKeysSchema = async (config: IRootConfig): Promise<boolea
       'k3,k2',
     ) &&
     keySchemaEquals(metadata.Table?.GlobalSecondaryIndexes.find((gsi) => gsi.IndexName === 'GS3')?.KeySchema, 'k4,k2');
-  return checkKeys && checkGSIs;
+  return areKeysCorrect && areGSIsCorrect;
 };

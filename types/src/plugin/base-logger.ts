@@ -4,3 +4,8 @@ export interface IBaseLogger {
   warn: (...args: unknown[]) => void;
   error: (...args: unknown[]) => void;
 }
+
+export interface IExtendedLogger extends IBaseLogger {
+  lf: () => void;
+  separator: () => void;
+}

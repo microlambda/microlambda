@@ -1,15 +1,13 @@
 import Model, { beginsWith, eq } from 'dynamodels';
 import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import { DynamoDB } from '@aws-sdk/client-dynamodb';
-import { IRootConfig } from '@microlambda/config';
-
+import hasha from 'hasha';
 export interface IEnvironment {
   k1: string; // $name
   k2: string; // 'env'
   name: string;
   regions: string[];
 }
-
 export interface IServiceInstanceRequest {
   name: string;
   region: string;
@@ -18,7 +16,6 @@ export interface IServiceInstanceRequest {
   checksums_buckets: string;
   checksums_key: string;
 }
-
 export interface ILayerChecksumsRequest {
   service: string;
   env: string;
@@ -26,26 +23,38 @@ export interface ILayerChecksumsRequest {
   checksums_key: string;
   region: string;
 }
-
-export interface ICmdExecutionRequest {
-  service: string;
-  branch: string;
+export interface IExecutionHash {
+  args: string[] | string;
   cmd: string;
-  current_sha1: string;
+  env: { [p: string]: string };
+  workspace: string;
+}
+export interface IBranchExecutionHash extends IExecutionHash {
+  branch: string;
+}
+export interface ICmdExecutionRequest extends IExecutionHash {
+  sha1: string;
+  bucket: string;
+  checksums: string;
+  outputs: string;
   region: string;
 }
-
-export interface ICmdExecution extends ICmdExecutionRequest {
-  /**
-   * $branch
-   */
+export interface ICmdExecution {
   k1: string;
-  /**
-   * executions|$service|$cmd
-   */
   k2: string;
+  k3: string;
+  k4: string;
+  env: string;
+  sha1: string;
+  bucket: string;
+  checksums: string;
+  outputs: string;
+  region: string;
+  cmd: string;
+  args: string;
+  workspace: string;
+  date: string;
 }
-
 export interface ILayerChecksums extends ILayerChecksumsRequest {
   /**
    * $serviceName
@@ -56,7 +65,6 @@ export interface ILayerChecksums extends ILayerChecksumsRequest {
    */
   k2: string;
 }
-
 export interface IServiceInstance extends IServiceInstanceRequest {
   /**
    * $name
@@ -71,7 +79,6 @@ export interface IServiceInstance extends IServiceInstanceRequest {
    */
   k3: string;
 }
-
 export interface ISharedInfraStateRequest {
   name: string;
   region: string;
@@ -80,19 +87,16 @@ export interface ISharedInfraStateRequest {
   checksums_buckets: string;
   checksums_key: string;
 }
-
 export interface ISharedInfraState extends ISharedInfraStateRequest {
   k1: string; // $yml
   k2: string; // Shared-infra|$region
 }
-
 export class State extends Model<unknown> {
-  constructor(config: IRootConfig) {
+  constructor(readonly tableName: string, awsRegion: string) {
     super();
-    this.tableName = config.state.table;
     this.pk = 'k1';
     this.sk = 'k2';
-    this.documentClient = DynamoDBDocument.from(new DynamoDB({ region: config.defaultRegion }));
+    this.documentClient = DynamoDBDocument.from(new DynamoDB({ region: awsRegion }));
   }
 
   async environmentExists(name: string): Promise<boolean> {
@@ -175,19 +179,6 @@ export class State extends Model<unknown> {
     });
   }
 
-  async getExecution(branch: string, command: string, service: string): Promise<ICmdExecution> {
-    const exec = await this.get(branch, `executions|${service}|${command}`);
-    return exec as ICmdExecution;
-  }
-
-  async saveExecution(request: ICmdExecutionRequest): Promise<void> {
-    await this.save({
-      k1: request.branch,
-      k2: `executions|${request.service}|${request.cmd}`,
-      ...request,
-    });
-  }
-
   async removeServiceInstances(options: { service: string; env: string; region: string }): Promise<void> {
     await this.delete(options.service, `service|${options.env}|${options.region}`);
   }
@@ -212,5 +203,110 @@ export class State extends Model<unknown> {
 
   async deleteSharedInfrastructureState(name: string, region: string, env?: string): Promise<void> {
     await this.delete(name, env ? `shared-infra|${env}|${region}` : `shared-infra|${region}`);
+  }
+
+  private _getBranchExecutionHash(params: IBranchExecutionHash): string {
+    return hasha(JSON.stringify(params));
+  }
+
+  private _getExecutionHash(params: IExecutionHash): string {
+    return hasha(JSON.stringify(params));
+  }
+
+  async setExecution(params: ICmdExecutionRequest): Promise<void> {
+    const exec: ICmdExecution = {
+      k1: params.sha1,
+      k2: `exec|${this._getExecutionHash({
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      })}`,
+      k3: 'executions',
+      k4: params.workspace,
+      cmd: params.cmd,
+      args: JSON.stringify(params.args),
+      env: JSON.stringify(params.env),
+      bucket: params.bucket,
+      checksums: params.checksums,
+      sha1: params.sha1,
+      workspace: params.workspace,
+      outputs: params.outputs,
+      region: params.region,
+      date: new Date().toISOString(),
+    };
+    await this.save(exec);
+  }
+
+  async getExecution(params: IExecutionHash & { sha1: string }): Promise<ICmdExecution> {
+    const exec = await this.get(
+      params.sha1,
+      `exec|${this._getExecutionHash({
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      })}`,
+    );
+    return exec as ICmdExecution;
+  }
+
+  async setLatestBranchExecution(params: IBranchExecutionHash & { sha1: string }): Promise<void> {
+    await this.save({
+      k1: params.branch,
+      k2: `branch|${this._getBranchExecutionHash({
+        branch: params.branch,
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      })}`,
+      k3: params.branch,
+      k4: params.workspace,
+      cmd: params.cmd,
+      args: JSON.stringify(params.args),
+      sha1: params.sha1,
+      env: JSON.stringify(params.env),
+      branch: params.branch,
+      date: new Date().toISOString(),
+    });
+  }
+
+  async getLatestBranchExecution(params: IBranchExecutionHash): Promise<{ sha1: string }> {
+    return this.get(
+      params.branch,
+      `branch|${this._getBranchExecutionHash({
+        branch: params.branch,
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      })}`,
+    ) as Promise<{ sha1: string }>;
+  }
+
+  async removeBranchExecution(params: IBranchExecutionHash & { sha1: string }): Promise<void> {
+    await this.delete(
+      params.sha1,
+      this._getBranchExecutionHash({
+        branch: params.branch,
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      }),
+    );
+  }
+
+  async removeExecution(params: IExecutionHash & { sha1: string }): Promise<void> {
+    await this.get(
+      params.sha1,
+      this._getExecutionHash({
+        cmd: params.cmd,
+        args: params.args,
+        env: params.env,
+        workspace: params.workspace,
+      }),
+    );
   }
 }

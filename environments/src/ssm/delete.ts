@@ -1,5 +1,5 @@
 import { Project, Workspace } from '@microlambda/runner-core';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { DotenvManager } from '../dotenv-manager';
 import { checkIsParameter } from './update';
 import { resolveTargetsRegions } from '../utils/resolve-regions';
@@ -13,7 +13,7 @@ export interface IDeleteParameterOptions {
 
 export const removeParameter = async (
   project: Project,
-  config: IRootConfig,
+  config: IStateConfig,
   options: IDeleteParameterOptions,
 ): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });

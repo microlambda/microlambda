@@ -6,7 +6,7 @@ import { IEnvironment, State } from '@microlambda/remote-state';
 import Table from 'cli-table3';
 import { Project } from '@microlambda/core';
 import { IDeployCmd } from './cmd-options';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { EventsLog } from '@microlambda/logger';
 import { EnvsResolver } from './envs';
 
@@ -18,7 +18,7 @@ export const resolveDeltas = async (
   project: Project,
   cmd: IDeployCmd,
   state: State,
-  config: IRootConfig,
+  config: IStateConfig,
   eventsLog: EventsLog,
   envs: EnvsResolver,
 ): Promise<Map<string, Map<string, ActionType>>> => {

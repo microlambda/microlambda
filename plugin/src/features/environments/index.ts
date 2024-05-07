@@ -15,10 +15,17 @@ export const injectLambdasEnvironmentVariables = async (
   if (!workspace.project) {
     throw new Error('Assertion failed: project not resolved');
   }
+  const region = process.env.AWS_REGION;
+  if (!region) {
+    logger?.warn(
+      'Cannot determine AWS region for local run. Region us-east-1 will be used to resolve environment.',
+    );
+    logger?.warn('To use another region, export AWS_REGION and re-run command');
+  }
   const stage = serverless.service.provider.stage;
   const environmentLoader = new EnvironmentLoader(
     workspace.project,
-    undefined,
+    region ?? 'us-east-1',
     logger,
   );
   logger?.info('[env] Loading environment for stage', stage);
