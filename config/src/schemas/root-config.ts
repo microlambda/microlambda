@@ -16,4 +16,5 @@ export const rootConfigSchema = joi.object().keys({
     })
     .required(),
   targets: targetsConfigSchema.optional(),
+  installedBlueprints: joi.array().items(joi.string()).optional(),
 });
