@@ -20,6 +20,7 @@ interface IRunCommandOptions {
   parallel: boolean;
   topological: boolean;
   watch?: boolean;
+  reverse?: boolean;
   force?: boolean;
   to?: string;
   workspaces?: string;
@@ -94,6 +95,7 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
         watch: options.watch,
         force: options.force || false,
         debounce: options.debounce,
+        reverse: options.reverse,
       }
     }
     return {
@@ -104,6 +106,7 @@ const mapToRunOptions = (cmd: string, options: IRunCommandOptions, project: Proj
       watch: false,
       remoteCache: options.remoteCache ? resolveCache() : undefined,
       affected: options.affected,
+      reverse: options.reverse,
     };
   }
 }

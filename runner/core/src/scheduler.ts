@@ -101,7 +101,8 @@ export class Scheduler {
             this._logger?.info('No eligible targets found for command', this._options.cmd)
             return obs.complete();
           }
-          this._targets = initialTargets;
+          this._targets = this._options.reverse ? initialTargets.reverse() : initialTargets;
+          this._logger?.debug('targets', this._targets.map((t) => t.map((w) => w.workspace.name)));
           this._scheduleTasks();
           this._updateCurrentStep(0);
           this._executeNextTask();
@@ -161,7 +162,7 @@ export class Scheduler {
       this.obs.next({ type: RunCommandEventEnum.TARGETS_RESOLVED, targets: newTargets });
 
       this._options = newOptions;
-      this._targets = _newTargets;
+      this._targets = this._options.reverse ? _newTargets.reverse() : _newTargets;
       this._scopeChanged$.next();
       this._logger?.debug(`[${this._options.cmd}]`,'Reset watcher');
       this._resetWatcher();
@@ -523,12 +524,13 @@ export class Scheduler {
 
   private _scheduleTasks(): void {
     this._tasks$ = this._getInitialSchedule();
+    this._logger?.debug('Initial schedule', this._tasks$.map((t) => [t.type, t.target.workspace.name]));
   }
 
   private _getInitialSchedule(): ITask[] {
     return this._targets.flat().map((target) => ({
       target,
-      type: 'run',
+      type: 'run' as const,
       operation$: this._runForWorkspace(target),
     }));
   }
@@ -546,7 +548,7 @@ export class Scheduler {
       return false;
     }
 
-    // Check of next task can be done without breaking topological constraint
+    // Check if next task can be done without breaking topological constraint
     const nextTaskIndex = this._currentTaskIndex + 1;
     this._logger?.debug(`[${this._options.cmd}]`,'all', this._tasks$.map((t) =>[t.type, t.target.workspace.name]));
     this._logger?.debug(`[${this._options.cmd}]`,'cursor:', this._currentTaskIndex)
@@ -582,7 +584,6 @@ export class Scheduler {
           this.obs.error();
         }
         this._logger?.debug(`[${this._options.cmd}]`,{hasQueued, hasErrored, hasProcessing, hasPendingInvalidation});
-
         return hasQueued || hasErrored || hasProcessing || hasPendingInvalidation;
       } else {
         return false;
