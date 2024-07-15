@@ -2,20 +2,20 @@ import { logger } from '../logger';
 import chalk from 'chalk';
 import {
   deploySharedInfrastructure,
+  getConcurrency,
   ISharedInfraFailedDeployEvent,
   Project,
   removeSharedInfrastructure,
   SharedInfraDeployEventType,
 } from '@microlambda/core';
 import { MilaSpinnies } from '../spinnies';
-import { IRootConfig } from '@microlambda/config';
+import { IRootConfig, IStateConfig } from '@microlambda/config';
 import { IEnvironment } from '@microlambda/remote-state';
-import { getConcurrency } from '../get-concurrency';
 
 export const deploySharedInfra = async (params: {
   action: 'remove' | 'deploy';
   project: Project;
-  config: IRootConfig;
+  config: IStateConfig;
   env: IEnvironment;
   concurrency?: string;
   isVerbose: boolean;

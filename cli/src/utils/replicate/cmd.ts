@@ -6,6 +6,7 @@ export interface IReplicateCmd {
   onlyPrompt: boolean;
   skipLock: boolean;
   c: string;
+  a?: string;
   level: number;
   recompile: boolean;
   install: boolean;

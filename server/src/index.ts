@@ -7,7 +7,7 @@ import { INodeSummary } from '@microlambda/types';
 import { EventsLog } from '@microlambda/logger';
 import { EnvironmentLoader, SSMResolverMode, ILoadedEnvironmentVariable } from '@microlambda/environments';
 import { State } from '@microlambda/remote-state';
-import { IRootConfig } from '@microlambda/config';
+import { IRootConfig, IStateConfig } from '@microlambda/config';
 import { aws } from '@microlambda/aws';
 
 export * from './socket';
@@ -17,7 +17,7 @@ export const startServer = (options: {
   project: Project;
   logger: EventsLog;
   scheduler: Scheduler;
-  config: IRootConfig;
+  config?: IStateConfig;
 }): Promise<Server> => {
   const { port, project, logger, scheduler } = options;
   const log = logger.scope('api');
@@ -144,7 +144,7 @@ export const startServer = (options: {
 
   app.get('/api/aws/account', async (req, res) => {
     try {
-      const account = await aws.iam.getCurrentUser(options.config.defaultRegion);
+      const account = await aws.iam.getCurrentUser();
       res.json({ connected: true, account });
     } catch {
       res.json({ connected: false });
@@ -152,13 +152,19 @@ export const startServer = (options: {
   });
 
   app.get('/api/environments', async (req, res) => {
-    const state = new State(options.config);
+    if (!options.config) {
+      return res.status(401);
+    }
+    const state = new State(options.config.state.table, options.config.defaultRegion);
     const envs = await state.listEnvironments();
     return res.json(envs);
   });
 
   app.get('/api/state/:env', async (req, res) => {
-    const state = new State(options.config);
+    if (!options.config) {
+      return res.status(401);
+    }
+    const state = new State(options.config.state.table, options.config.defaultRegion);
     const services = await state.listServices(req.params.env);
     return res.json(services);
   });
@@ -166,7 +172,7 @@ export const startServer = (options: {
   app.get('/api/services/:service/environment/:env', async (req, res) => {
     const serviceName = req.params.service;
     const env = req.params.env;
-    const loader = new EnvironmentLoader(project, process.env.AWS_REGION);
+    const loader = new EnvironmentLoader(project, process.env.AWS_REGION ?? 'us-east-1');
     const vars: Array<ILoadedEnvironmentVariable> = await loader.loadAll({
       env: env,
       service: serviceName,

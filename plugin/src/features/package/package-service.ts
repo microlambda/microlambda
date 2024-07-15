@@ -16,7 +16,11 @@ import { aws } from '@microlambda/aws';
 import { shouldRecreateLayer, writeLayerChecksums } from '@microlambda/layers';
 import { checkPackageIntegrity } from './check-package-integrity';
 import { ISourcesChecksums } from '@microlambda/runner-core';
-import { ConfigReader } from '@microlambda/config';
+import {
+  ConfigReader,
+  getStateConfig,
+  IStateConfig,
+} from '@microlambda/config';
 
 const DEFAULT_LEVEL = 4;
 
@@ -37,6 +41,15 @@ export const packageService = async (
     throw new Error('Assertion failed: project root should have resolved');
   }
   const rootConfig = new ConfigReader(service.project.root).rootConfig;
+  let stateConfig: IStateConfig | undefined;
+  try {
+    stateConfig = getStateConfig(rootConfig, process.env.AWS_ACCOUNT_ID);
+  } catch (e) {
+    logger?.warn(
+      'Error reading state config. Layer caching cannot be performed and will be disabled.',
+    );
+    logger?.warn(e);
+  }
   const bundleLocation = join(service.root, '.package', 'bundle.zip');
   const layerLocation = join(service.root, '.package', 'layer.zip');
 
@@ -88,15 +101,16 @@ export const packageService = async (
           logger?.error('Original error', e);
           throw e;
         }
+
         if (layerArn) {
           logger?.info('Layer version published', layerArn);
           setLayer(layerArn);
-          if (useLayerChecksums && currentChecksums) {
+          if (useLayerChecksums && currentChecksums && stateConfig) {
             logger?.info('Writing checksums', layerArn);
             await writeLayerChecksums(
               service,
               env,
-              rootConfig,
+              stateConfig,
               currentChecksums,
               logger,
             );
@@ -140,11 +154,11 @@ export const packageService = async (
     let shouldRedeployLayer = true;
     let currentChecksums: ISourcesChecksums | undefined | null;
 
-    if (useLayerChecksums) {
+    if (useLayerChecksums && stateConfig) {
       const shouldRebuildLayer = await shouldRecreateLayer(
         service,
         env,
-        rootConfig,
+        stateConfig,
         logger,
       );
       currentChecksums = shouldRebuildLayer.currentChecksums;

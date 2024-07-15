@@ -83,4 +83,14 @@ export class LocalCache extends Cache {
       await fs.mkdir(this.cacheFolder, { recursive: true });
     }
   }
+
+  protected async _invalidateState(): Promise<void> {
+    /* nothing to do */
+    return;
+  }
+
+  protected async _updateState(): Promise<void> {
+    /* nothing to do */
+    return;
+  }
 }

@@ -1,6 +1,6 @@
 import { Project, Workspace } from '@microlambda/runner-core';
 import { resolveTargetsRegions } from '../utils/resolve-regions';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { aws } from '@microlambda/aws';
 import { DotenvManager } from '../dotenv-manager';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
@@ -15,7 +15,7 @@ export interface ICreateParameterOptions {
 }
 
 export const writeParameters = async (
-  config: IRootConfig,
+  config: IStateConfig,
   parameterName: string,
   options: IUpdateParameterOptions,
 ): Promise<void> => {
@@ -29,7 +29,7 @@ export const writeParameters = async (
 
 export const createParameter = async (
   project: Project,
-  config: IRootConfig,
+  config: IStateConfig,
   options: ICreateParameterOptions,
 ): Promise<void> => {
   const dotenvManager = new DotenvManager(project, { env: options.env, service: options.service });

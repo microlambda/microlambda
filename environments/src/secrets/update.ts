@@ -1,5 +1,5 @@
 import { Project, Workspace } from '@microlambda/runner-core';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { DotenvManager } from '../dotenv-manager';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { writeSecrets } from './create';
@@ -28,7 +28,7 @@ export const checkIsSecret = async (project: Project, options: IDeleteSecretOpti
 
 export const updateSecret = async (
   project: Project,
-  config: IRootConfig,
+  config: IStateConfig,
   options: IUpdateSecretOptions,
 ): Promise<void> => {
   const secretName = await checkIsSecret(project, options);

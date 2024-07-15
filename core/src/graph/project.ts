@@ -1,14 +1,14 @@
-import { Project as CentipodProject } from '@microlambda/runner-core';
+import { Project as RunnerProject } from '@microlambda/runner-core';
 import { Workspace } from './workspace';
 import { resolvePorts } from '../resolve-ports';
 import { EventsLog, EventsLogger } from '@microlambda/logger';
 import { ConfigReader } from '@microlambda/config';
 
-export class Project extends CentipodProject {
+export class Project extends RunnerProject {
   private _services = new Map<string, Workspace>();
   private _packages = new Map<string, Workspace>();
 
-  constructor(prj: CentipodProject, readonly logger?: EventsLogger) {
+  constructor(prj: RunnerProject, readonly logger?: EventsLogger) {
     super(prj.pkg, prj.root, prj._config, prj.project);
   }
 

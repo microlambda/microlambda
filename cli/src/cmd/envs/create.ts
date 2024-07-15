@@ -1,25 +1,24 @@
 import { logger } from '../../utils/logger';
-import { State } from '@microlambda/remote-state';
-import { printAccountInfos } from './list';
+import { State, verifyState } from '@microlambda/remote-state';
+import { printAccountInfos } from '../../utils/account';
 import { regions } from '@microlambda/config';
 import { prompt } from 'inquirer';
-import { verifyState } from '../../utils/verify-state';
 import { existsSync, promises as fs } from 'fs';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { join } from 'path';
-import { init } from '../../utils/init';
+import { init } from '@microlambda/core';
 
-export const createEnv = async (name: string): Promise<void> => {
+export const createEnv = async (name: string, account?: string): Promise<void> => {
   logger.lf();
   logger.info('✨ Creating environment');
   logger.lf();
   const projectRoot = resolveProjectRoot();
-  const { project } = await init(projectRoot);
+  const { project } = await init(projectRoot, logger);
   logger.lf();
 
-  const config = await printAccountInfos();
-  await verifyState(config);
-  const state = new State(config);
+  const config = await printAccountInfos(account);
+  await verifyState(config, logger);
+  const state = new State(config.state.table, config.defaultRegion);
   if (await state.environmentExists(name)) {
     logger.error(`An environment named ${name} already exists`);
     process.exit(1);

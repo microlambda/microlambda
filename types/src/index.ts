@@ -7,3 +7,4 @@ export * from './interfaces/event-logs';
 export * from './types/serverless-action';
 export * from './plugin';
 export * from './interfaces/ws';
+export * from './interfaces/current-iam-user';
