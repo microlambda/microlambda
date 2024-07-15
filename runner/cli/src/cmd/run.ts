@@ -21,6 +21,7 @@ interface IRunCommandOptions {
   parallel: boolean;
   topological: boolean;
   watch?: boolean;
+  reverse?: boolean;
   force?: boolean;
   to?: string;
   workspaces?: string;
@@ -124,6 +125,7 @@ const mapToRunOptions = (
         force: options.force || false,
         stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
         debounce: options.debounce,
+        reverse: options.reverse,
         args,
       }
     }
@@ -135,6 +137,7 @@ const mapToRunOptions = (
       watch: false,
       remoteCache,
       affected: options.affected,
+      reverse: options.reverse,
       stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
       args,
     };

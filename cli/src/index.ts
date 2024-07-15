@@ -369,6 +369,17 @@ program
   );
 
 program
+  .command('print-root-dir')
+  .description('Print microlambda root directory. Can be useful in shell scripts.')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        // eslint-disable-next-line no-console
+        console.info(resolveProjectRoot());
+      }),
+  );
+
+program
   .command('generate [blueprint]')
   .description('generate code from a blueprint')
   .action(

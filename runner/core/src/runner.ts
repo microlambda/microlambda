@@ -15,6 +15,7 @@ export interface ICommonRunOptions {
   args?: string[] | string | Map<string, string[] | string>;
   env?: Record<string, string> | Map<string, Record<string, string>>;
   force?: boolean;
+  reverse?: boolean;
   stdio?: 'pipe' | 'inherit';
   cachePrefix?: string;
 }
