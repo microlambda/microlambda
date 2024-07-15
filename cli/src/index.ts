@@ -5,7 +5,7 @@ import { checkService } from './cmd/check-service';
 import { build } from './cmd/build';
 import { packagr } from './cmd/package';
 import { deploy } from './cmd/deploy';
-import { getDefaultThreads } from '@microlambda/utils';
+import { getDefaultThreads, resolveProjectRoot } from '@microlambda/utils';
 import { remove } from './cmd/remove';
 import { generate } from './cmd/generate';
 import { info } from './cmd/info';
@@ -341,6 +341,17 @@ program
     async (cmd) =>
       await commandWrapper(async () => {
         await releaseLock(cmd.e, cmd.s);
+      }),
+  );
+
+program
+  .command('print-root-dir')
+  .description('Print microlambda root directory. Can be useful in shell scripts.')
+  .action(
+    async (cmd) =>
+      await commandWrapper(async () => {
+        // eslint-disable-next-line no-console
+        console.info(resolveProjectRoot());
       }),
   );
 
