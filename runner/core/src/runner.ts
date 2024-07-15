@@ -22,6 +22,7 @@ export interface ICommonRunOptions {
 export interface IRemoteCacheRunOptions {
   watch?: false;
   remoteCache?: {
+    table: string;
     region: string;
     bucket: string;
   }

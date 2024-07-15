@@ -3,17 +3,22 @@ import { resolveDeltas } from '../../utils/deploy/resolve-deltas';
 import { EnvsResolver } from '../../utils/deploy/envs';
 import { performDeploy } from '../../utils/deploy/do-deploy';
 import { currentSha1 } from '@microlambda/runner-core';
-import { checkIfEnvIsLock, releaseLockOnProcessExit } from '../../utils/check-env-lock';
 import { IReplicateCmd } from '../../utils/replicate/cmd';
 import { beforeReplicate } from '../../utils/replicate/before-replicate';
 import { replicateSsmParameters } from '../../utils/replicate/ssm';
+import { checkIfEnvIsLock, releaseLockOnProcessExit } from '@microlambda/core';
 
 export const createReplicate = async (env: string, region: string, cmd: IReplicateCmd): Promise<void> => {
   logger.lf();
   logger.info('🌎 Creating regional replicate for', env);
   logger.lf();
 
-  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(env, region, 'create');
+  const { environment, project, eventsLog, config, projectRoot, state } = await beforeReplicate(
+    env,
+    region,
+    'create',
+    cmd.a,
+  );
 
   if (environment.regions.includes(region)) {
     logger.warn('Environment is already replicated in region', region);
@@ -23,8 +28,8 @@ export const createReplicate = async (env: string, region: string, cmd: IReplica
 
   const envs = new EnvsResolver(project, env, eventsLog.scope('replicate/env'));
 
-  const releaseLock = await checkIfEnvIsLock(cmd, environment, project, config);
-  releaseLockOnProcessExit(releaseLock);
+  const releaseLock = await checkIfEnvIsLock(cmd, environment, project, config, logger);
+  releaseLockOnProcessExit(releaseLock, logger);
 
   let shouldRestoreEnv = false;
   try {

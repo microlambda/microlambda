@@ -3,7 +3,6 @@ import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler, EventsLog } from '@microlambda/logger';
 import { beforeBuild } from '../utils/build/pre-requisites';
 import { ITestOptions } from '../utils/test/options';
-import { getConcurrency } from '../utils/get-concurrency';
 import {
   checkWorkingDirectoryClean,
   IRemoteCacheRunOptions,
@@ -19,14 +18,15 @@ import { MilaSpinnies } from '../utils/spinnies';
 import { logger } from '../utils/logger';
 import { printError } from '../utils/print-process-error';
 import { printReport } from '../utils/deploy/print-report';
-import { ConfigReader } from '@microlambda/config';
+import { ConfigReader, getStateConfig } from '@microlambda/config';
 import { State } from '@microlambda/remote-state';
 import { execSync } from 'child_process';
 import { from, Observable } from 'rxjs';
 import { map, mergeAll } from 'rxjs/operators';
 import chalk from 'chalk';
-import { printAccountInfos } from './envs/list';
+import { printAccountInfos } from '../utils/account';
 import { typeCheck } from '../utils/build/type-check';
+import { getConcurrency } from '@microlambda/core';
 
 export const runTests = async (cmd: ITestCommand): Promise<void> => {
   try {
@@ -67,9 +67,9 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
       }
       logger.lf();
     }
-
     const config = new ConfigReader(projectRoot, eventsLog).rootConfig;
-    const state = new State(config);
+    const stateConfig = getStateConfig(config);
+    const state = new State(stateConfig.state.table, stateConfig.defaultRegion);
 
     await typeCheck(options);
     const { failures, success } = await (new Promise(async (resolve, reject) => {
@@ -142,17 +142,6 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
                 }
                 const sha1 = currentSha1();
                 logger.info('Current sha1:', chalk.cyan.bold(sha1));
-                if (currentBranch && sha1) {
-                  saveExecutions$.push(
-                    state.saveExecution({
-                      service: next.evt.target.workspace.name,
-                      branch: currentBranch,
-                      cmd: 'test',
-                      current_sha1: sha1,
-                      region: config.defaultRegion,
-                    }),
-                  );
-                }
               } catch (e) {
                 logger.warn(
                   next.evt.target.workspace.name,
@@ -200,48 +189,18 @@ export const runTests = async (cmd: ITestCommand): Promise<void> => {
 
       const process$: Array<Observable<{ evt: RunCommandEvent; runOptions: RunOptions }>> = await Promise.all(
         options.workspaces.map(async (workspace) => {
-          let remoteCache: { bucket: string; region: string } | undefined = undefined;
-          let affected: string | undefined = undefined;
-          if (options.remoteCache) {
-            remoteCache = { bucket: config.state.checksums, region: config.defaultRegion };
-            const lastTestExecution = await state.getExecution(
-              options.affectedSince || currentBranch,
-              'test',
-              workspace.name,
-            );
-            if (lastTestExecution) {
-              if (options.affectedSince) {
-                logger.info('Running command if sources affected since', chalk.magenta(options.affectedSince));
-                try {
-                  const lastCommitOnTargetBranch = execSync(
-                    `git log -n 1 --pretty=format:"%H" ${options.affectedSince}`,
-                  ).toString();
-                  logger.info('Last commit on branch', options.affectedSince, ':', lastCommitOnTargetBranch);
-                  if (lastCommitOnTargetBranch === lastTestExecution.current_sha1) {
-                    affected = lastTestExecution.current_sha1;
-                  } else {
-                    logger.info(
-                      'Last cached execution (',
-                      lastTestExecution.current_sha1,
-                      ') is not up-to-date. Command will be re-run.',
-                    );
-                  }
-                } catch (e) {
-                  logger.warn('Unable to find last commit of target branch, remote caching will be ignored', e);
-                }
-              } else {
-                affected = lastTestExecution.current_sha1;
-              }
-            }
-          }
           const runOptions: RunOptions = {
             cmd: 'test',
             workspaces: [workspace],
             mode: 'parallel',
             force: options.force,
             stdio: spinnies.stdio,
-            remoteCache,
-            affected,
+            remoteCache: {
+              table: stateConfig.state.table,
+              bucket: stateConfig.state.checksums,
+              region: stateConfig.defaultRegion,
+            },
+            affected: currentBranch,
           };
           return runner.runCommand(runOptions).pipe(map((evt) => ({ evt, runOptions })));
         }),

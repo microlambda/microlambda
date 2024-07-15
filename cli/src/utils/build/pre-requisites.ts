@@ -1,11 +1,10 @@
 import { EventsLog } from '@microlambda/logger';
-import { init } from '../init';
 import { Workspace as CentipodWorkspace } from '@microlambda/runner-core';
 import { logger } from '../logger';
 import chalk from 'chalk';
 import { IBuildCmd } from './cmd-options';
 import { IBuildOptions } from './options';
-import { Project } from '@microlambda/core';
+import { init, Project } from '@microlambda/core';
 import { getDefaultThreads, getThreads } from '@microlambda/utils';
 
 export const beforeBuild = async (
@@ -16,7 +15,7 @@ export const beforeBuild = async (
 ): Promise<IBuildOptions> => {
   let project: Project;
   if (typeof _project === 'string') {
-    project = (await init(_project, eventsLog, cmd.install)).project;
+    project = (await init(_project, logger, eventsLog, cmd.install)).project;
   } else {
     project = _project;
   }

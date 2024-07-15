@@ -1,33 +1,16 @@
 import { logger } from '../../utils/logger';
 import chalk from 'chalk';
 import { State } from '@microlambda/remote-state';
-import { aws } from '@microlambda/aws';
-import { resolveProjectRoot } from '@microlambda/utils';
-import { ConfigReader, IRootConfig } from '@microlambda/config';
-import { verifyState } from '../../utils/verify-state';
+import { verifyState } from '@microlambda/remote-state';
+import { printAccountInfos } from '../../utils/account';
 
-export const printAccountInfos = async (): Promise<IRootConfig> => {
-  logger.lf();
-  logger.info(chalk.underline(chalk.bold('▼ Account informations')));
-  logger.lf();
-  const projectRoot = resolveProjectRoot();
-  const config = new ConfigReader(projectRoot).rootConfig;
-  const region = config.defaultRegion;
-  const currentUser = await aws.iam.getCurrentUser(region);
-  logger.info('AWS Account', chalk.white.bold(currentUser.projectId));
-  logger.info('Cache location', chalk.white.bold(`s3://${config.state.checksums}`));
-  logger.info('IAM user', chalk.white.bold(currentUser.arn));
-  logger.lf();
-  return config;
-};
-
-export const listEnvs = async (): Promise<void> => {
+export const listEnvs = async (account?: string): Promise<void> => {
   logger.lf();
   logger.info('🔎 Listing deployed environments');
   logger.lf();
-  const config = await printAccountInfos();
-  await verifyState(config);
-  const state = new State(config);
+  const config = await printAccountInfos(account);
+  await verifyState(config, logger);
+  const state = new State(config.state.table, config.defaultRegion);
   const envs = await state.listEnvironments();
   if (!envs.length) {
     logger.info('No deployed environments found.');

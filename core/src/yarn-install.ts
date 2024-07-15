@@ -1,11 +1,11 @@
-import { Project } from '@microlambda/core';
+import { Project } from './graph/project';
 import { EventsLog } from '@microlambda/logger';
 import ora from 'ora';
 import { command } from 'execa';
-import { logger } from './logger';
+import { IBaseLogger } from '@microlambda/types';
 
-export const yarnInstall = async (project: Project, eventsLog?: EventsLog): Promise<void> => {
-  const installing = ora('Installing dependencies 📦').start();
+export const yarnInstall = async (project: Project, logger?: IBaseLogger, eventsLog?: EventsLog): Promise<void> => {
+  const installing = logger ? ora('Installing dependencies 📦').start() : undefined;
   try {
     await command('yarn install', {
       cwd: project.root,
@@ -16,10 +16,11 @@ export const yarnInstall = async (project: Project, eventsLog?: EventsLog): Prom
       'Error installing microservices dependencies. Run in verbose mode (export MILA_DEBUG=yarn) for more infos.';
     eventsLog?.scope('bootstrap').error(e);
     eventsLog?.scope('bootstrap').error(message);
-    logger.lf();
-    logger.error(message);
+    logger?.error('\n' + message);
     process.exit(1);
   }
-  installing.text = 'Dependencies installed 📦';
-  installing.succeed();
+  if (installing) {
+    installing.text = 'Dependencies installed 📦';
+    installing.succeed();
+  }
 };

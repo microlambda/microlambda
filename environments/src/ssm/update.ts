@@ -1,5 +1,5 @@
 import { Project, Workspace } from '@microlambda/runner-core';
-import { IRootConfig } from '@microlambda/config';
+import { IStateConfig } from '@microlambda/config';
 import { DotenvManager } from '../dotenv-manager';
 import { MilaError, MilaErrorCode } from '@microlambda/errors';
 import { writeParameters } from './create';
@@ -27,7 +27,7 @@ export const checkIsParameter = async (project: Project, options: IDeleteParamet
 
 export const createParameter = async (
   project: Project,
-  config: IRootConfig,
+  config: IStateConfig,
   options: IUpdateParameterOptions,
 ): Promise<void> => {
   const parameterName = await checkIsParameter(project, options);
