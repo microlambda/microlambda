@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/cli",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.18",
   "description": "Microlambda framework CLI ",
   "author": "Mario Arnautou & Arthur Brunck",
   "repository": {
