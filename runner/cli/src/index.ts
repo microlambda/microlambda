@@ -7,6 +7,8 @@ import { isAffected } from './cmd/is-affected';
 import { publish } from './cmd/publish';
 import { run } from './cmd/run';
 import { commandWrapper } from './utils/command-wapper';
+import {info} from "./cmd/info";
+import {resolveProjectRoot} from "@microlambda/utils";
 
 // TODO: Validate command input
 
@@ -43,6 +45,20 @@ program
         await isAffected(workspace, rev1, rev2);
       }, true),
   );
+
+program.command('root')
+  .description('Print workspace root directory')
+  .action(async () => {
+    // eslint-disable-next-line no-console
+    await commandWrapper(() => console.info(resolveProjectRoot()))
+  })
+
+
+program.command('info')
+    .description('Print workspace information')
+    .action(async () => {
+      await commandWrapper(async () => await info())
+    })
 
   program
   .command('run <cmd>')

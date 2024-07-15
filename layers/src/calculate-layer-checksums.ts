@@ -4,9 +4,9 @@ export const calculateLayerChecksums = async (service: Workspace): Promise<ISour
   return new Checksums(service, {
     cmd: 'create-layer',
     src: {
-      internals: ['package.json'],
+      internals: ['package.json', 'package-lock.json', 'pnpm-lock.yaml'],
       deps: ['package.json'],
-      root: ['package.json', 'yarn.lock'],
+      root: ['package.json', 'yarn.lock', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
     },
   }).calculate();
 };

@@ -11,6 +11,8 @@ import { RunCommandEvent } from './process';
 import { AbstractLogsHandler } from "./logs-handler";
 import { EventsLog } from '@microlambda/logger';
 import { getDefaultThreads } from '@microlambda/utils';
+import { existsSync, readFileSync } from "fs";
+import yaml from 'yaml'
 
 export class Project extends Workspace {
   // Attributes
@@ -22,6 +24,10 @@ export class Project extends Workspace {
   // Statics
   static async loadProject(root: string, logger?: EventsLog): Promise<Project> {
     const pkg = await this.loadPackage(root);
+    if (existsSync(join(root, 'pnpm-workspace.yaml'))) {
+      const workspaceDefinition = yaml.parse(readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8'));
+      pkg.workspaces = workspaceDefinition.packages;
+    }
     const prj = new Project(pkg, root, await this.loadConfig(pkg.name, root));
     await prj.loadWorkspaces(logger);
     return prj;
