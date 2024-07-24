@@ -25,7 +25,14 @@ export class LocalCache extends Cache {
   private _creatingCacheDirectory: Promise<void> | undefined;
 
   static cacheFolder(workspace: Workspace, cmd: string): string {
-    return join(workspace.root, '.caches', cmd);
+    const escapedCmd = cmd
+      .replaceAll('/', '-')
+      .replaceAll(':', '-')
+      .replaceAll('\\', '-')
+      .replaceAll('.', '-')
+      .replaceAll('?', '-')
+      .replaceAll('*', '-')
+    return join(workspace.root, '.caches', escapedCmd);
   }
 
   get cacheFolder(): string {
