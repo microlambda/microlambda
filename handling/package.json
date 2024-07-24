@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/handling",
-  "version": "1.0.0-rc.18",
+  "version": "1.0.0-rc.19",
   "description": "Helpers to simplify nodejs code on FASS environments",
   "author": "Thomas Ruiz <contact@thomasruiz.eu>",
   "license": "ISC",

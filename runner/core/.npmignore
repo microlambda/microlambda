@@ -9,3 +9,4 @@ tsconfig.eslint.json
 jest.config.json
 **/*.map
 sonar-project.properties
+coverage
