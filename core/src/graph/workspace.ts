@@ -1,10 +1,10 @@
 import { InMemoryLogHandler, Workspace as RunnerWorkspace } from '@microlambda/runner-core';
-import { existsSync } from 'fs';
-import { join } from 'path';
 import { transpileFiles } from '@microlambda/utils';
 import { ICommandMetrics, ICommandMetric, ServiceStatus, TranspilingStatus, TypeCheckStatus } from '@microlambda/types';
 import { IServicePortsConfig } from '../resolve-ports';
 import { LogsFileHandler } from '../log-handlers/file';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 export class Workspace extends RunnerWorkspace {
   constructor(wks: RunnerWorkspace, ports?: IServicePortsConfig) {
@@ -15,6 +15,7 @@ export class Workspace extends RunnerWorkspace {
 
   private _ports: IServicePortsConfig | undefined;
   private _isService: boolean | null = null;
+  private _isSlsService: boolean | null = null;
   private _transpiled = TranspilingStatus.NOT_TRANSPILED;
   private _typechecked = TypeCheckStatus.NOT_CHECKED;
   private _started: ServiceStatus | null = null;
@@ -72,7 +73,15 @@ export class Workspace extends RunnerWorkspace {
   }
 
   private _checkIfService(): boolean {
-    return existsSync(join(this.root, 'serverless.yml')) || existsSync(join(this.root, 'serverless.yaml'));
+    return this.config.hasOwnProperty('start');
+  }
+
+  get isSlsService(): boolean {
+    if (this._isSlsService == null) {
+      this._isSlsService =
+        existsSync(join(this.root, 'serverless.yml')) || existsSync(join(this.root, 'serverless.yaml'));
+    }
+    return this._isSlsService;
   }
 
   async transpile(): Promise<void> {

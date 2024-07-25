@@ -229,7 +229,7 @@ export class Scheduler {
   private get _startArgs(): Map<string, string[]> {
     const args = new Map();
     for (const service of this.project.services.values()) {
-      if (service.ports) {
+      if (service.ports && service.isSlsService) {
         args.set(service.name, [
           `--httpPort ${service.ports?.http.toString() || '3000'} --lambdaPort ${
             service.ports?.lambda.toString() || '4000'
