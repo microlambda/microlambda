@@ -34,7 +34,6 @@ import { isUsingRemoteCache, RunOptions } from './runner';
 import { checkWorkingDirectoryClean } from './remote-cache-utils';
 import Timer = NodeJS.Timer;
 import {IBaseLogger} from "@microlambda/types";
-import * as console from "node:console";
 
 const TWO_MINUTES = 2 * 60 * 1000;
 const DEFAULT_DAEMON_TIMEOUT = TWO_MINUTES;
