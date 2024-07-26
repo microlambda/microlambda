@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { resolveProjectRoot } from '@microlambda/utils';
 import { EventLogsFileHandler } from '@microlambda/logger';
 import { init } from '@microlambda/core';
+import { LocalCache } from '@microlambda/runner-core';
 
 export const logs = async (serviceName: string, cmd: string): Promise<void> => {
   const projectRoot = resolveProjectRoot();
@@ -17,7 +18,8 @@ export const logs = async (serviceName: string, cmd: string): Promise<void> => {
     logger.error(chalk.red('Unknown service', serviceName));
     process.exit(1);
   }
-  const logsFile = join(service?.root, '.caches', cmd || 'start', 'output.json');
+
+  const logsFile = join(LocalCache.cacheFolder(service, cmd || 'start'), 'output.json');
   if (existsSync(logsFile)) {
     const output = readJSONSync(logsFile);
     for (const result of output) {
