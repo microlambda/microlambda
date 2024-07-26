@@ -15,6 +15,7 @@ export class Workspace extends RunnerWorkspace {
 
   private _ports: IServicePortsConfig | undefined;
   private _isService: boolean | null = null;
+  private _isSlsService: boolean | null = null;
   private _transpiled = TranspilingStatus.NOT_TRANSPILED;
   private _typechecked = TypeCheckStatus.NOT_CHECKED;
   private _started: ServiceStatus | null = null;
@@ -72,7 +73,15 @@ export class Workspace extends RunnerWorkspace {
   }
 
   private _checkIfService(): boolean {
-    return existsSync(join(this.root, 'serverless.yml')) || existsSync(join(this.root, 'serverless.yaml'));
+    return this.config.hasOwnProperty('start');
+  }
+
+  get isSlsService(): boolean {
+    if (this._isSlsService == null) {
+      this._isSlsService =
+        existsSync(join(this.root, 'serverless.yml')) || existsSync(join(this.root, 'serverless.yaml'));
+    }
+    return this._isSlsService;
   }
 
   async transpile(): Promise<void> {
