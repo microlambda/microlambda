@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/environments",
-  "version": "1.0.0-rc.19",
+  "version": "1.0.0-rc.20",
   "description": "Microlambda package to handle .env files",
   "author": "Mario Arnautou",
   "repository": {

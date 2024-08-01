@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/config",
-  "version": "1.0.0-rc.19",
+  "version": "1.0.0-rc.20",
   "description": "Manage microlambda configuration files",
   "author": "Mario Arnautou",
   "repository": {
