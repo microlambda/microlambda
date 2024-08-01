@@ -481,12 +481,12 @@ export class Workspace {
   isDaemon(target: string): boolean {
     const config = this.config[target];
     if (isScriptTarget(config)) {
-      return !!config.daemon;
+      return !!config?.daemon;
     }
-    if (Array.isArray(config.cmd)) {
+    if (Array.isArray(config?.cmd)) {
       return config.cmd.some((cmd) => typeof cmd !== 'string' && !!cmd.daemon);
     }
-    return typeof config.cmd !== 'string' && !!config.cmd.daemon;
+    return typeof config?.cmd !== 'string' && !!config?.cmd.daemon;
   }
 
   private async _runCommands(
