@@ -4,6 +4,7 @@ import {
   ResourceRecordSet,
   ListResourceRecordSetsRequest,
   ListResourceRecordSetsCommand,
+  RRType,
 } from '@aws-sdk/client-route-53';
 import { serviceName } from './service-name';
 import { maxAttempts } from '../max-attempts';
@@ -36,7 +37,7 @@ export const getLatencyRecord = async (
     const params: ListResourceRecordSetsRequest = {
       HostedZoneId: hostedZoneId,
       StartRecordName: nextRecordName,
-      StartRecordType: nextRecordType,
+      StartRecordType: nextRecordType as RRType | undefined,
     };
     logger?.debug(serviceName, 'Sending ListResourceRecordSetsCommand', params);
     const result = await route53.send(new ListResourceRecordSetsCommand(params));
