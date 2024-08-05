@@ -2,6 +2,7 @@ import { IBaseLogger } from '@microlambda/types';
 import {
   ChangeResourceRecordSetsCommand,
   ChangeResourceRecordSetsRequest,
+  ResourceRecordSetRegion,
   Route53Client,
 } from '@aws-sdk/client-route-53';
 import { serviceName } from './service-name';
@@ -35,7 +36,7 @@ export const createLatencyRecord = async (
             Type: 'CNAME',
             TTL: 300,
             SetIdentifier: identifier || `${domain}-${region}`,
-            Region: region,
+            Region: region as ResourceRecordSetRegion,
             ResourceRecords: [{ Value: apiGatewayUrl }],
           },
         },

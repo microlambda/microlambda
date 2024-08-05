@@ -42,10 +42,6 @@ export const waitUntilCertificateIssued = async (
     const poll = setInterval(async () => {
       const details = await describeCertificate(region, arn);
       logger?.info('Status', details.Certificate?.Status);
-      if (details.Certificate?.Status === 'ISSUED') {
-        clearInterval(poll);
-        return resolve();
-      }
       switch (details.Certificate?.Status) {
         case CertificateStatus.EXPIRED:
           clearInterval(poll);

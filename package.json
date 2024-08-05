@@ -31,7 +31,7 @@
     "cli",
     "core",
     "client",
-    "docs/website",
+    "docs",
     "logger",
     "generators",
     "environments",
