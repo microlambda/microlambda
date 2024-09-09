@@ -3386,7 +3386,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@microlambda/types@1.0.0-rc.19, @microlambda/types@workspace:*, @microlambda/types@workspace:types":
+"@microlambda/types@1.0.0-rc.20, @microlambda/types@workspace:*, @microlambda/types@workspace:types":
   version: 0.0.0-use.local
   resolution: "@microlambda/types@workspace:types"
   languageName: unknown
@@ -14033,7 +14033,7 @@ __metadata:
     "@microlambda/environments": "workspace:*"
     "@microlambda/layers": "workspace:*"
     "@microlambda/runner-core": "workspace:*"
-    "@microlambda/types": 1.0.0-rc.19
+    "@microlambda/types": 1.0.0-rc.20
     chokidar: ^3.5.2
     hasha: ^5.2.2
     joi: ^17.9.2
