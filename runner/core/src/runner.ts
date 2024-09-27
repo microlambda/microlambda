@@ -17,6 +17,7 @@ export interface ICommonRunOptions {
   force?: boolean;
   reverse?: boolean;
   stdio?: 'pipe' | 'inherit';
+  concurrency?: number;
   cachePrefix?: string;
 }
 
@@ -77,7 +78,7 @@ export class Runner {
 
   constructor(
     private readonly _project: Project,
-    private readonly _concurrency: number = getDefaultThreads(),
+    private readonly _defaultConcurrency: number = getDefaultThreads(),
     readonly logger?: EventsLog,
   ) {
     this._logger = logger?.scope('runner-core/runner');
@@ -95,7 +96,7 @@ export class Runner {
       }
     }
     const scope = (isTopological(options) ? options.to : options.workspaces) ?? [...this._project.workspaces.values()];
-    const scheduler = new Scheduler(this._project, options, this._concurrency, this.logger);
+    const scheduler = new Scheduler(this._project, options, options.concurrency ?? this._defaultConcurrency, this.logger);
     const execution$ = scheduler.execute();
     this._currentExecution.set(options.cmd, {
       execution$,
