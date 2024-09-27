@@ -1,6 +1,6 @@
 {
   "name": "@microlambda/remote-state",
-  "version": "1.0.0-rc.21",
+  "version": "1.0.0-rc.22",
   "description": "Utilities to manage Microlambda remote state",
   "author": "Mario Arnautou",
   "repository": {

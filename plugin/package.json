@@ -1,6 +1,6 @@
 {
   "name": "serverless-microlambda",
-  "version": "1.0.0-rc.21",
+  "version": "1.0.0-rc.22",
   "engines": {
     "node": ">=14.0"
   },
@@ -40,6 +40,6 @@
     "joi": "^17.9.2"
   },
   "devDependencies": {
-    "@microlambda/types": "1.0.0-rc.21"
+    "@microlambda/types": "1.0.0-rc.22"
   }
 }
