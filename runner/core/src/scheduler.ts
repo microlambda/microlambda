@@ -761,7 +761,17 @@ export class Scheduler {
           const nextStep = this._targets.indexOf(step) + 1;
           for (let idx = nextStep; idx < this._targets.length; ++idx) {
             const subsequentStep = this._targets[idx];
-            subsequentStep.forEach((subsequentTarget) => addToInvalidations(subsequentTarget));
+            subsequentStep.forEach((subsequentTarget) => {
+              const hasSubsequentTargetCurrentTargetAsProdDep =
+                  !!subsequentTarget.workspace.pkg.dependencies && Object.keys(subsequentTarget.workspace.pkg.dependencies).includes(target.workspace.name);
+              const hasSubsequentTargetCurrentTargetAsDevDep =
+                  !!subsequentTarget.workspace.pkg.devDependencies && Object.keys(subsequentTarget.workspace.pkg.devDependencies).includes(target.workspace.name);
+
+              const hasToInvalidate = hasSubsequentTargetCurrentTargetAsProdDep || hasSubsequentTargetCurrentTargetAsDevDep;
+              if (hasToInvalidate) {
+                addToInvalidations(subsequentTarget)
+              }
+            });
           }
         }
       }
