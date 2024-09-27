@@ -21,6 +21,7 @@
     "postinstall": "husky install",
     "lint": "node ./runner/cli/dist/index.js run -p lint",
     "build:runner": "yarn workspaces foreach -pv --topological-dev run pre:build",
+    "publish": "node ./runner/cli/dist/index.js run publish",
     "build": "node ./runner/cli/dist/index.js run build",
     "test": "node ./runner/cli/dist/index.js run -p test"
   },

@@ -8,7 +8,7 @@ import {
   Workspace,
   isDaemon, RunOptions, isSourceChangedEvent, isNodeInterruptingEvent, isNodeInterruptedEvent,
 } from '@microlambda/runner-core';
-import { resolveProjectRoot } from "@microlambda/utils";
+import {getDefaultThreads, getThreads, resolveProjectRoot} from "@microlambda/utils";
 import chalk from 'chalk';
 import { logger } from "../utils/logger";
 import { resolveWorkspace } from "../utils/validate-workspace";
@@ -18,6 +18,7 @@ import { aws } from '@microlambda/aws/lib';
 import {verifyState} from "@microlambda/remote-state";
 
 interface IRunCommandOptions {
+  concurrency?: string;
   parallel: boolean;
   topological: boolean;
   watch?: boolean;
@@ -91,12 +92,14 @@ const mapToRunOptions = (
     args = process.argv.slice(argsSeparator + 1);
   }
 
+  const concurrency = options.concurrency ? getThreads(Number(options.concurrency)) : getDefaultThreads();
   if (options.parallel) {
     if (options.watch) {
       return {
         cmd,
         mode: 'parallel',
         workspaces: resolveWorkspaces(options.workspaces),
+        concurrency,
         force: options.force || false,
         watch: options.watch,
         debounce: options.debounce,
@@ -111,6 +114,7 @@ const mapToRunOptions = (
       force: options.force || false,
       watch: false,
       remoteCache,
+      concurrency,
       affected: options.affected,
       stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
       args,
@@ -122,6 +126,7 @@ const mapToRunOptions = (
         mode: 'topological',
         to: resolveWorkspaces(options.to),
         watch: options.watch,
+        concurrency,
         force: options.force || false,
         stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
         debounce: options.debounce,
@@ -136,6 +141,7 @@ const mapToRunOptions = (
       force: options.force || false,
       watch: false,
       remoteCache,
+      concurrency,
       affected: options.affected,
       reverse: options.reverse,
       stdio: options.stdio === 'inherit' ? 'inherit' : 'pipe',
